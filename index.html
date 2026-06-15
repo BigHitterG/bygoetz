@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>By Goetz — Isometric World</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="world" aria-label="Centered isometric plot grid">
+      <svg
+        class="iso-world"
+        viewBox="0 0 1600 1000"
+        role="img"
+        aria-labelledby="iso-title iso-desc"
+        preserveAspectRatio="xMidYMid slice"
+      >
+        <title id="iso-title">Isometric plot grid centered on the origin plot</title>
+        <desc id="iso-desc">
+          A clean white canvas with a light gray isometric grid that fades near the viewport edges and highlights the central build plot.
+        </desc>
+        <defs>
+          <mask id="edge-fade-mask">
+            <rect width="1600" height="1000" fill="black" />
+            <ellipse cx="800" cy="500" rx="720" ry="430" fill="white" />
+          </mask>
+          <g id="plot-diamond">
+            <polygon points="0,-56 112,0 0,56 -112,0" />
+          </g>
+        </defs>
+
+        <rect class="canvas" width="1600" height="1000" />
+
+        <g class="grid" mask="url(#edge-fade-mask)" aria-hidden="true">
+          <g class="grid-lines grid-lines-a">
+            <path d="M-120,460 L520,140" />
+            <path d="M-40,500 L600,180" />
+            <path d="M40,540 L680,220" />
+            <path d="M120,580 L760,260" />
+            <path d="M200,620 L840,300" />
+            <path d="M280,660 L920,340" />
+            <path d="M360,700 L1000,380" />
+            <path d="M440,740 L1080,420" />
+            <path d="M520,780 L1160,460" />
+            <path d="M600,820 L1240,500" />
+            <path d="M680,860 L1320,540" />
+            <path d="M760,900 L1400,580" />
+            <path d="M840,940 L1480,620" />
+            <path d="M920,980 L1560,660" />
+            <path d="M1000,1020 L1640,700" />
+          </g>
+          <g class="grid-lines grid-lines-b">
+            <path d="M-40,700 L600,1020" />
+            <path d="M40,660 L680,980" />
+            <path d="M120,620 L760,940" />
+            <path d="M200,580 L840,900" />
+            <path d="M280,540 L920,860" />
+            <path d="M360,500 L1000,820" />
+            <path d="M440,460 L1080,780" />
+            <path d="M520,420 L1160,740" />
+            <path d="M600,380 L1240,700" />
+            <path d="M680,340 L1320,660" />
+            <path d="M760,300 L1400,620" />
+            <path d="M840,260 L1480,580" />
+            <path d="M920,220 L1560,540" />
+            <path d="M1000,180 L1640,500" />
+            <path d="M1080,140 L1720,460" />
+          </g>
+        </g>
+
+        <g class="plots" aria-label="Named plot coordinates">
+          <use class="plot plot-ne" href="#plot-diamond" x="912" y="444" />
+          <use class="plot plot-se" href="#plot-diamond" x="912" y="556" />
+          <use class="plot plot-sw" href="#plot-diamond" x="688" y="556" />
+          <use class="plot plot-nw" href="#plot-diamond" x="688" y="444" />
+          <use class="plot plot-origin" href="#plot-diamond" x="800" y="500" />
+        </g>
+
+        <g class="origin-marker" aria-label="Central origin plot at coordinate 0,0">
+          <polygon class="origin-surface" points="800,396 1008,500 800,604 592,500" />
+          <path class="origin-axis origin-axis-x" d="M592,500 L800,604 L1008,500 L800,396 Z" />
+          <circle class="origin-pin" cx="800" cy="500" r="8" />
+          <text class="origin-label" x="800" y="648">Plot 0,0</text>
+        </g>
+      </svg>
+    </main>
+  </body>
+</html>
