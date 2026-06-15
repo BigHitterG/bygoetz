@@ -1,0 +1,109 @@
+:root {
+  --paper: #ffffff;
+  --grid-line: #d9dee7;
+  --grid-line-strong: #c8d0dc;
+  --plot-fill: #f8fafc;
+  --plot-origin: #eef6ff;
+  --plot-origin-stroke: #7aa7d9;
+  --ink: #445066;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  width: 100%;
+  min-height: 100%;
+  margin: 0;
+}
+
+body {
+  overflow: hidden;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.world {
+  display: grid;
+  width: 100vw;
+  height: 100vh;
+  place-items: center;
+  background: var(--paper);
+}
+
+.iso-world {
+  display: block;
+  width: 100vw;
+  height: 100vh;
+}
+
+.canvas {
+  fill: var(--paper);
+}
+
+.grid-lines path {
+  fill: none;
+  stroke: var(--grid-line);
+  stroke-linecap: square;
+  stroke-linejoin: miter;
+  stroke-width: 2;
+  vector-effect: non-scaling-stroke;
+}
+
+.grid-lines-a path:nth-child(4n),
+.grid-lines-b path:nth-child(4n) {
+  stroke: var(--grid-line-strong);
+}
+
+.plot {
+  fill: var(--plot-fill);
+  opacity: 0.36;
+  stroke: var(--grid-line);
+  stroke-linejoin: miter;
+  stroke-width: 2;
+  vector-effect: non-scaling-stroke;
+}
+
+.plot-origin {
+  fill: var(--plot-origin);
+  opacity: 0.78;
+  stroke: var(--plot-origin-stroke);
+}
+
+.origin-marker {
+  pointer-events: none;
+}
+
+.origin-surface {
+  fill: var(--plot-origin);
+  opacity: 0.34;
+  stroke: var(--plot-origin-stroke);
+  stroke-linejoin: miter;
+  stroke-width: 3;
+  vector-effect: non-scaling-stroke;
+}
+
+.origin-axis {
+  fill: none;
+  stroke: var(--plot-origin-stroke);
+  stroke-linecap: square;
+  stroke-linejoin: miter;
+  stroke-width: 2;
+  vector-effect: non-scaling-stroke;
+}
+
+.origin-pin {
+  fill: var(--plot-origin-stroke);
+}
+
+.origin-label {
+  fill: var(--ink);
+  font-size: 28px;
+  font-weight: 650;
+  letter-spacing: 0.08em;
+  text-anchor: middle;
+  text-transform: uppercase;
+}
