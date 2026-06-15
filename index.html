@@ -17,19 +17,34 @@
       >
         <title id="iso-title">Centered isometric plot grid</title>
         <desc id="iso-desc">
-          A minimal isometric grid where clicking a neighboring plot shifts that plot into the center of the screen.
+          A nine-plot isometric world window. The selected plot is always centered, and illustrated plots keep their world coordinates as you move.
         </desc>
+        <defs>
+          <filter id="soft-shadow" x="-30%" y="-30%" width="160%" height="170%">
+            <feDropShadow dx="0" dy="10" stdDeviation="8" flood-color="#334155" flood-opacity="0.18" />
+          </filter>
+        </defs>
         <rect class="canvas" width="1600" height="1000" />
         <g id="grid" class="grid"></g>
       </svg>
     </main>
 
     <script>
+      const svgNS = "http://www.w3.org/2000/svg";
       const grid = document.querySelector("#grid");
       const center = { x: 800, y: 500 };
-      const tile = { x: 184, y: 92 };
-      const radius = 6;
+      const tile = { x: 300, y: 150 };
+      const visibleRadius = 1;
+      const plotArtworkScale = 0.72;
       let current = { q: 0, r: 0 };
+
+      const plotIllustrations = new Map([
+        ["0,0", { type: "dog", label: "A friendly dog sitting on plot 0, 0" }],
+      ]);
+
+      function plotKey(q, r) {
+        return `${q},${r}`;
+      }
 
       function plotToScreen(q, r) {
         return {
@@ -42,25 +57,74 @@
         return `${x},${y - tile.y / 2} ${x + tile.x / 2},${y} ${x},${y + tile.y / 2} ${x - tile.x / 2},${y}`;
       }
 
+      function createSvgElement(tagName, attributes = {}) {
+        const element = document.createElementNS(svgNS, tagName);
+        Object.entries(attributes).forEach(([name, value]) => element.setAttribute(name, value));
+        return element;
+      }
+
       function moveTo(q, r) {
         current = { q, r };
         renderGrid();
       }
 
+      function appendDog(parent, x, y, label) {
+        const dog = createSvgElement("g", {
+          class: "plot-artwork dog-artwork",
+          transform: `translate(${x} ${y}) scale(${plotArtworkScale})`,
+          role: "img",
+          "aria-label": label,
+        });
+
+        dog.append(
+          createSvgElement("ellipse", { class: "artwork-shadow", cx: "0", cy: "48", rx: "56", ry: "15" }),
+          createSvgElement("path", { class: "dog-tail", d: "M46 4 C78 -8 82 -48 48 -50 C70 -34 61 -17 39 -14" }),
+          createSvgElement("ellipse", { class: "dog-body", cx: "-3", cy: "11", rx: "54", ry: "42" }),
+          createSvgElement("path", { class: "dog-chest", d: "M-33 -12 C-52 8 -48 41 -22 50 C-6 33 -8 4 -33 -12Z" }),
+          createSvgElement("circle", { class: "dog-head", cx: "-41", cy: "-38", r: "31" }),
+          createSvgElement("path", { class: "dog-ear", d: "M-64 -60 C-91 -48 -87 -11 -60 -2 C-50 -17 -50 -43 -64 -60Z" }),
+          createSvgElement("path", { class: "dog-ear dog-ear-back", d: "M-25 -59 C-2 -45 -7 -13 -29 -3 C-37 -20 -38 -43 -25 -59Z" }),
+          createSvgElement("ellipse", { class: "dog-muzzle", cx: "-52", cy: "-29", rx: "18", ry: "13" }),
+          createSvgElement("circle", { class: "dog-nose", cx: "-68", cy: "-32", r: "5" }),
+          createSvgElement("circle", { class: "dog-eye", cx: "-49", cy: "-48", r: "4" }),
+          createSvgElement("path", { class: "dog-smile", d: "M-62 -23 Q-56 -17 -48 -23" }),
+          createSvgElement("path", { class: "dog-leg", d: "M-37 31 C-48 39 -50 61 -34 63 C-21 62 -22 44 -17 31Z" }),
+          createSvgElement("path", { class: "dog-leg", d: "M18 30 C9 42 12 63 28 63 C42 62 39 43 47 31Z" }),
+          createSvgElement("ellipse", { class: "dog-paw", cx: "-35", cy: "62", rx: "15", ry: "7" }),
+          createSvgElement("ellipse", { class: "dog-paw", cx: "31", cy: "62", rx: "15", ry: "7" }),
+          createSvgElement("path", { class: "dog-collar", d: "M-55 -10 C-42 -2 -24 -3 -12 -12" })
+        );
+
+        parent.appendChild(dog);
+      }
+
+      function appendIllustration(parent, illustration, x, y) {
+        if (illustration.type === "dog") appendDog(parent, x, y - tile.y * 0.28, illustration.label);
+      }
+
       function renderGrid() {
         grid.replaceChildren();
+        const visiblePlots = [];
 
-        for (let q = current.q - radius; q <= current.q + radius; q += 1) {
-          for (let r = current.r - radius; r <= current.r + radius; r += 1) {
-            const { x, y } = plotToScreen(q, r);
-            if (x < -tile.x || x > 1600 + tile.x || y < -tile.y || y > 1000 + tile.y) continue;
+        for (let q = current.q - visibleRadius; q <= current.q + visibleRadius; q += 1) {
+          for (let r = current.r - visibleRadius; r <= current.r + visibleRadius; r += 1) {
+            visiblePlots.push({ q, r, ...plotToScreen(q, r) });
+          }
+        }
 
-            const plot = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
-            plot.setAttribute("points", diamondPoints(x, y));
-            plot.setAttribute("class", q === current.q && r === current.r ? "plot plot-current" : "plot");
-            plot.setAttribute("tabindex", "0");
-            plot.setAttribute("role", "button");
-            plot.setAttribute("aria-label", q === current.q && r === current.r ? "Current plot" : "Move to this plot");
+        visiblePlots
+          .sort((a, b) => a.y - b.y)
+          .forEach(({ q, r, x, y }) => {
+            const plotGroup = createSvgElement("g", { class: "plot-group" });
+            const isCurrent = q === current.q && r === current.r;
+            const plot = createSvgElement("polygon", {
+              points: diamondPoints(x, y),
+              class: isCurrent ? "plot plot-current" : "plot",
+              tabindex: "0",
+              role: "button",
+              "aria-label": isCurrent ? `Current plot ${q}, ${r}` : `Move to plot ${q}, ${r}`,
+            });
+
             plot.addEventListener("click", () => moveTo(q, r));
             plot.addEventListener("keydown", (event) => {
               if (event.key === "Enter" || event.key === " ") {
@@ -68,9 +132,12 @@
                 moveTo(q, r);
               }
             });
-            grid.appendChild(plot);
-          }
-        }
+
+            plotGroup.appendChild(plot);
+            const illustration = plotIllustrations.get(plotKey(q, r));
+            if (illustration) appendIllustration(plotGroup, illustration, x, y);
+            grid.appendChild(plotGroup);
+          });
       }
 
       renderGrid();
