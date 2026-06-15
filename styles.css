@@ -4,6 +4,11 @@
   --grid-line-hover: #b9c0ca;
   --plot-current: #e7e7e7;
   --plot-current-stroke: #a9afb8;
+  --dog-fur: #b97745;
+  --dog-fur-dark: #8f542f;
+  --dog-cream: #f6d7a9;
+  --dog-line: #5b341f;
+  --dog-collar: #ef6461;
 }
 
 * {
@@ -62,4 +67,66 @@ body {
 .plot-current {
   fill: var(--plot-current);
   stroke: var(--plot-current-stroke);
+}
+
+.plot-artwork {
+  filter: url(#soft-shadow);
+  pointer-events: none;
+  transform-box: fill-box;
+  transform-origin: center bottom;
+}
+
+.artwork-shadow {
+  fill: #475569;
+  opacity: 0.16;
+}
+
+.dog-body,
+.dog-head {
+  fill: var(--dog-fur);
+  stroke: var(--dog-line);
+  stroke-linejoin: round;
+  stroke-width: 4;
+}
+
+.dog-chest,
+.dog-muzzle,
+.dog-paw {
+  fill: var(--dog-cream);
+  stroke: var(--dog-line);
+  stroke-linejoin: round;
+  stroke-width: 3.5;
+}
+
+.dog-ear,
+.dog-tail,
+.dog-leg {
+  fill: var(--dog-fur-dark);
+  stroke: var(--dog-line);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 4;
+}
+
+.dog-ear-back {
+  fill: #a36237;
+}
+
+.dog-eye,
+.dog-nose {
+  fill: #2f1f18;
+}
+
+.dog-smile {
+  fill: none;
+  stroke: #2f1f18;
+  stroke-linecap: round;
+  stroke-width: 3;
+}
+
+.dog-collar {
+  fill: none;
+  stroke: var(--dog-collar);
+  stroke-linecap: round;
+  stroke-width: 6;
 }
