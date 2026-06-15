@@ -3,86 +3,77 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>By Goetz — Isometric World</title>
+    <title>By Goetz — Isometric Grid</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <main class="world" aria-label="Centered isometric plot grid">
+    <main class="world" aria-label="Interactive centered isometric plot grid">
       <svg
         class="iso-world"
         viewBox="0 0 1600 1000"
-        role="img"
+        role="application"
         aria-labelledby="iso-title iso-desc"
         preserveAspectRatio="xMidYMid slice"
       >
-        <title id="iso-title">Isometric plot grid centered on the origin plot</title>
+        <title id="iso-title">Centered isometric plot grid</title>
         <desc id="iso-desc">
-          A clean white canvas with a light gray isometric grid that fades near the viewport edges and highlights the central build plot.
+          A minimal isometric grid where clicking a neighboring plot shifts that plot into the center of the screen.
         </desc>
-        <defs>
-          <mask id="edge-fade-mask">
-            <rect width="1600" height="1000" fill="black" />
-            <ellipse cx="800" cy="500" rx="720" ry="430" fill="white" />
-          </mask>
-          <g id="plot-diamond">
-            <polygon points="0,-56 112,0 0,56 -112,0" />
-          </g>
-        </defs>
-
         <rect class="canvas" width="1600" height="1000" />
-
-        <g class="grid" mask="url(#edge-fade-mask)" aria-hidden="true">
-          <g class="grid-lines grid-lines-a">
-            <path d="M-120,460 L520,140" />
-            <path d="M-40,500 L600,180" />
-            <path d="M40,540 L680,220" />
-            <path d="M120,580 L760,260" />
-            <path d="M200,620 L840,300" />
-            <path d="M280,660 L920,340" />
-            <path d="M360,700 L1000,380" />
-            <path d="M440,740 L1080,420" />
-            <path d="M520,780 L1160,460" />
-            <path d="M600,820 L1240,500" />
-            <path d="M680,860 L1320,540" />
-            <path d="M760,900 L1400,580" />
-            <path d="M840,940 L1480,620" />
-            <path d="M920,980 L1560,660" />
-            <path d="M1000,1020 L1640,700" />
-          </g>
-          <g class="grid-lines grid-lines-b">
-            <path d="M-40,700 L600,1020" />
-            <path d="M40,660 L680,980" />
-            <path d="M120,620 L760,940" />
-            <path d="M200,580 L840,900" />
-            <path d="M280,540 L920,860" />
-            <path d="M360,500 L1000,820" />
-            <path d="M440,460 L1080,780" />
-            <path d="M520,420 L1160,740" />
-            <path d="M600,380 L1240,700" />
-            <path d="M680,340 L1320,660" />
-            <path d="M760,300 L1400,620" />
-            <path d="M840,260 L1480,580" />
-            <path d="M920,220 L1560,540" />
-            <path d="M1000,180 L1640,500" />
-            <path d="M1080,140 L1720,460" />
-          </g>
-        </g>
-
-        <g class="plots" aria-label="Named plot coordinates">
-          <use class="plot plot-ne" href="#plot-diamond" x="912" y="444" />
-          <use class="plot plot-se" href="#plot-diamond" x="912" y="556" />
-          <use class="plot plot-sw" href="#plot-diamond" x="688" y="556" />
-          <use class="plot plot-nw" href="#plot-diamond" x="688" y="444" />
-          <use class="plot plot-origin" href="#plot-diamond" x="800" y="500" />
-        </g>
-
-        <g class="origin-marker" aria-label="Central origin plot at coordinate 0,0">
-          <polygon class="origin-surface" points="800,396 1008,500 800,604 592,500" />
-          <path class="origin-axis origin-axis-x" d="M592,500 L800,604 L1008,500 L800,396 Z" />
-          <circle class="origin-pin" cx="800" cy="500" r="8" />
-          <text class="origin-label" x="800" y="648">Plot 0,0</text>
-        </g>
+        <g id="grid" class="grid"></g>
       </svg>
     </main>
+
+    <script>
+      const grid = document.querySelector("#grid");
+      const center = { x: 800, y: 500 };
+      const tile = { x: 184, y: 92 };
+      const radius = 6;
+      let current = { q: 0, r: 0 };
+
+      function plotToScreen(q, r) {
+        return {
+          x: center.x + (q - current.q - (r - current.r)) * (tile.x / 2),
+          y: center.y + (q - current.q + (r - current.r)) * (tile.y / 2),
+        };
+      }
+
+      function diamondPoints(x, y) {
+        return `${x},${y - tile.y / 2} ${x + tile.x / 2},${y} ${x},${y + tile.y / 2} ${x - tile.x / 2},${y}`;
+      }
+
+      function moveTo(q, r) {
+        current = { q, r };
+        renderGrid();
+      }
+
+      function renderGrid() {
+        grid.replaceChildren();
+
+        for (let q = current.q - radius; q <= current.q + radius; q += 1) {
+          for (let r = current.r - radius; r <= current.r + radius; r += 1) {
+            const { x, y } = plotToScreen(q, r);
+            if (x < -tile.x || x > 1600 + tile.x || y < -tile.y || y > 1000 + tile.y) continue;
+
+            const plot = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
+            plot.setAttribute("points", diamondPoints(x, y));
+            plot.setAttribute("class", q === current.q && r === current.r ? "plot plot-current" : "plot");
+            plot.setAttribute("tabindex", "0");
+            plot.setAttribute("role", "button");
+            plot.setAttribute("aria-label", q === current.q && r === current.r ? "Current plot" : "Move to this plot");
+            plot.addEventListener("click", () => moveTo(q, r));
+            plot.addEventListener("keydown", (event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                moveTo(q, r);
+              }
+            });
+            grid.appendChild(plot);
+          }
+        }
+      }
+
+      renderGrid();
+    </script>
   </body>
 </html>
