@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>By Goetz — Isometric Grid</title>
+    <title>Good Breakfast Good Coffee — By Goetz</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
@@ -17,22 +17,73 @@
       >
         <title id="iso-title">Centered isometric plot grid</title>
         <desc id="iso-desc">
-          A centered nine-by-nine isometric world window with lighter surrounding plots. The selected plot is always centered, and illustrated plots keep their world coordinates as you move.
+          A centered isometric world window with an illustrated coffee product on plot 1, 0. Clicking an off-center plot centers it; clicking the centered coffee plot opens the Good Breakfast Good Coffee landing page.
         </desc>
         <defs>
           <filter id="soft-shadow" x="-30%" y="-30%" width="160%" height="170%">
             <feDropShadow dx="0" dy="10" stdDeviation="8" flood-color="#334155" flood-opacity="0.18" />
           </filter>
+          <linearGradient id="coffee-bag-gradient" x1="0" x2="1" y1="0" y2="1">
+            <stop offset="0" stop-color="#fbf0c7" />
+            <stop offset="0.48" stop-color="#d59d4d" />
+            <stop offset="1" stop-color="#76502d" />
+          </linearGradient>
+          <linearGradient id="cup-gradient" x1="0" x2="1" y1="0" y2="1">
+            <stop offset="0" stop-color="#fff8e8" />
+            <stop offset="0.55" stop-color="#e7be77" />
+            <stop offset="1" stop-color="#8a5a31" />
+          </linearGradient>
         </defs>
         <rect class="canvas" width="1600" height="1000" />
         <g id="grid" class="grid"></g>
       </svg>
+
+      <section id="product-page" class="product-page" aria-labelledby="product-title" aria-hidden="true" inert>
+        <button class="product-close" type="button" aria-label="Return to the isometric world">×</button>
+        <div class="product-shell">
+          <p class="product-kicker">Small-batch morning ritual</p>
+          <h1 id="product-title">Good Breakfast<br />Good Coffee</h1>
+          <p class="product-copy">
+            A warm, earthy breakfast coffee set built for the first quiet minutes of the day — smooth roast, ceramic cup, and a grounded ritual that turns the kitchen counter into a calmer place.
+          </p>
+          <div class="product-actions" aria-label="Purchase actions">
+            <a class="button-primary" href="#buy-good-breakfast-good-coffee">Reserve the morning set</a>
+            <a class="button-secondary" href="#blend-details">See what is inside</a>
+          </div>
+          <dl class="product-proof" id="blend-details">
+            <div><dt>Roast</dt><dd>Balanced, cocoa, toasted grain</dd></div>
+            <div><dt>Made for</dt><dd>Breakfast tables, early risers, cozy kitchens</dd></div>
+            <div><dt>Includes</dt><dd>Signature beans + keepsake cup template</dd></div>
+          </dl>
+        </div>
+        <div class="product-visual" aria-hidden="true">
+          <svg viewBox="0 0 620 620" class="hero-cup">
+            <circle class="hero-sun" cx="310" cy="305" r="255" />
+            <path class="hero-leaf hero-leaf-one" d="M126 384 C64 304 92 220 187 197 C212 272 190 337 126 384Z" />
+            <path class="hero-leaf hero-leaf-two" d="M496 408 C574 338 558 242 458 209 C424 287 433 356 496 408Z" />
+            <ellipse class="hero-shadow" cx="312" cy="503" rx="154" ry="34" />
+            <path class="hero-saucer" d="M154 434 C211 493 421 493 477 434 C431 407 205 407 154 434Z" />
+            <path class="hero-handle" d="M421 265 C514 249 538 360 454 390 C435 397 424 366 443 358 C487 339 475 288 427 296Z" />
+            <path class="hero-cup-body" d="M176 211 H431 C420 376 388 443 304 446 C221 443 188 376 176 211Z" />
+            <ellipse class="hero-rim" cx="303" cy="211" rx="128" ry="39" />
+            <ellipse class="hero-coffee" cx="303" cy="213" rx="101" ry="24" />
+            <path class="hero-steam" d="M257 154 C229 119 286 105 260 68" />
+            <path class="hero-steam" d="M316 157 C282 114 351 98 318 55" />
+            <path class="hero-steam" d="M371 154 C345 121 399 105 374 70" />
+            <path class="hero-bag" d="M356 251 L474 223 L513 403 L401 442 Z" />
+            <path class="hero-bag-fold" d="M369 252 L464 230 L449 284 L384 302 Z" />
+            <text class="hero-bag-type" x="431" y="344" transform="rotate(-13 431 344)">G B</text>
+          </svg>
+        </div>
+      </section>
     </main>
 
     <script>
       const svgNS = "http://www.w3.org/2000/svg";
       const grid = document.querySelector("#grid");
       const svg = document.querySelector(".iso-world");
+      const productPage = document.querySelector("#product-page");
+      const closeProduct = document.querySelector(".product-close");
       const center = { x: 800, y: 500 };
       const viewBox = { width: 1600, height: 1000 };
       const tile = { x: 300, y: 150 };
@@ -42,179 +93,98 @@
       let current = { q: 0, r: 0 };
 
       const plotIllustrations = new Map([
-        ["0,0", { type: "dog", label: "A friendly dog sitting on plot 0, 0" }],
+        ["1,0", { type: "coffee", label: "Good Breakfast Good Coffee cup and breakfast set on plot 1, 0" }],
       ]);
 
-      function plotKey(q, r) {
-        return `${q},${r}`;
-      }
-
+      function plotKey(q, r) { return `${q},${r}`; }
+      function isCurrentPlot(q, r) { return q === current.q && r === current.r; }
       function plotToScreen(q, r) {
-        return {
-          x: center.x + (q - current.q - (r - current.r)) * (tile.x / 2),
-          y: center.y + (q - current.q + (r - current.r)) * (tile.y / 2),
-        };
+        return { x: center.x + (q - current.q - (r - current.r)) * (tile.x / 2), y: center.y + (q - current.q + (r - current.r)) * (tile.y / 2) };
       }
-
       function getVisibleViewBoxBounds() {
         const rect = svg.getBoundingClientRect();
         const viewportAspect = rect.width / rect.height;
         const viewBoxAspect = viewBox.width / viewBox.height;
-
         if (viewportAspect > viewBoxAspect) {
           const visibleWidth = viewBox.height * viewportAspect;
           const overflow = (visibleWidth - viewBox.width) / 2;
-
-          return {
-            minX: -overflow,
-            maxX: viewBox.width + overflow,
-            minY: 0,
-            maxY: viewBox.height,
-          };
+          return { minX: -overflow, maxX: viewBox.width + overflow, minY: 0, maxY: viewBox.height };
         }
-
         const visibleHeight = viewBox.width / viewportAspect;
         const overflow = (visibleHeight - viewBox.height) / 2;
-
-        return {
-          minX: 0,
-          maxX: viewBox.width,
-          minY: -overflow,
-          maxY: viewBox.height + overflow,
-        };
+        return { minX: 0, maxX: viewBox.width, minY: -overflow, maxY: viewBox.height + overflow };
       }
-
       function isDiamondVisible(x, y, bounds, padding = 0) {
-        return (
-          x + tile.x / 2 >= bounds.minX - padding &&
-          x - tile.x / 2 <= bounds.maxX + padding &&
-          y + tile.y / 2 >= bounds.minY - padding &&
-          y - tile.y / 2 <= bounds.maxY + padding
-        );
+        return x + tile.x / 2 >= bounds.minX - padding && x - tile.x / 2 <= bounds.maxX + padding && y + tile.y / 2 >= bounds.minY - padding && y - tile.y / 2 <= bounds.maxY + padding;
       }
-
       function isArtworkFullyVisible(x, y, bounds) {
-        const halfWidth = 68 * plotArtworkScale;
-        const top = y - tile.y * 0.28 - 72 * plotArtworkScale;
-        const bottom = y - tile.y * 0.28 + 68 * plotArtworkScale;
-
-        return (
-          x - halfWidth >= bounds.minX &&
-          x + halfWidth <= bounds.maxX &&
-          top >= bounds.minY &&
-          bottom <= bounds.maxY
-        );
+        const halfWidth = 110 * plotArtworkScale;
+        const top = y - tile.y * 0.28 - 118 * plotArtworkScale;
+        const bottom = y - tile.y * 0.28 + 78 * plotArtworkScale;
+        return x - halfWidth >= bounds.minX && x + halfWidth <= bounds.maxX && top >= bounds.minY && bottom <= bounds.maxY;
       }
-
-      function isPrimaryPlot(q, r) {
-        return (
-          q >= current.q - primaryRadius &&
-          q <= current.q + primaryRadius &&
-          r >= current.r - primaryRadius &&
-          r <= current.r + primaryRadius
-        );
-      }
-
-      function diamondPoints(x, y) {
-        return `${x},${y - tile.y / 2} ${x + tile.x / 2},${y} ${x},${y + tile.y / 2} ${x - tile.x / 2},${y}`;
-      }
-
+      function isPrimaryPlot(q, r) { return q >= current.q - primaryRadius && q <= current.q + primaryRadius && r >= current.r - primaryRadius && r <= current.r + primaryRadius; }
+      function diamondPoints(x, y) { return `${x},${y - tile.y / 2} ${x + tile.x / 2},${y} ${x},${y + tile.y / 2} ${x - tile.x / 2},${y}`; }
       function createSvgElement(tagName, attributes = {}) {
         const element = document.createElementNS(svgNS, tagName);
         Object.entries(attributes).forEach(([name, value]) => element.setAttribute(name, value));
         return element;
       }
+      function moveTo(q, r) { current = { q, r }; closeLandingPage(); renderGrid(); }
+      function openLandingPage() { productPage.removeAttribute("inert"); productPage.setAttribute("aria-hidden", "false"); productPage.classList.add("is-open"); }
+      function closeLandingPage() { productPage.setAttribute("aria-hidden", "true"); productPage.setAttribute("inert", ""); productPage.classList.remove("is-open"); }
 
-      function moveTo(q, r) {
-        current = { q, r };
-        renderGrid();
-      }
-
-      function appendDog(parent, x, y, label) {
-        const dog = createSvgElement("g", {
-          class: "plot-artwork dog-artwork",
-          transform: `translate(${x} ${y}) scale(${plotArtworkScale})`,
-          role: "img",
-          "aria-label": label,
-        });
-
-        dog.append(
-          createSvgElement("ellipse", { class: "artwork-shadow", cx: "0", cy: "48", rx: "56", ry: "15" }),
-          createSvgElement("path", { class: "dog-tail", d: "M46 4 C78 -8 82 -48 48 -50 C70 -34 61 -17 39 -14" }),
-          createSvgElement("ellipse", { class: "dog-body", cx: "-3", cy: "11", rx: "54", ry: "42" }),
-          createSvgElement("path", { class: "dog-chest", d: "M-33 -12 C-52 8 -48 41 -22 50 C-6 33 -8 4 -33 -12Z" }),
-          createSvgElement("circle", { class: "dog-head", cx: "-41", cy: "-38", r: "31" }),
-          createSvgElement("path", { class: "dog-ear", d: "M-64 -60 C-91 -48 -87 -11 -60 -2 C-50 -17 -50 -43 -64 -60Z" }),
-          createSvgElement("path", { class: "dog-ear dog-ear-back", d: "M-25 -59 C-2 -45 -7 -13 -29 -3 C-37 -20 -38 -43 -25 -59Z" }),
-          createSvgElement("ellipse", { class: "dog-muzzle", cx: "-52", cy: "-29", rx: "18", ry: "13" }),
-          createSvgElement("circle", { class: "dog-nose", cx: "-68", cy: "-32", r: "5" }),
-          createSvgElement("circle", { class: "dog-eye", cx: "-49", cy: "-48", r: "4" }),
-          createSvgElement("path", { class: "dog-smile", d: "M-62 -23 Q-56 -17 -48 -23" }),
-          createSvgElement("path", { class: "dog-leg", d: "M-37 31 C-48 39 -50 61 -34 63 C-21 62 -22 44 -17 31Z" }),
-          createSvgElement("path", { class: "dog-leg", d: "M18 30 C9 42 12 63 28 63 C42 62 39 43 47 31Z" }),
-          createSvgElement("ellipse", { class: "dog-paw", cx: "-35", cy: "62", rx: "15", ry: "7" }),
-          createSvgElement("ellipse", { class: "dog-paw", cx: "31", cy: "62", rx: "15", ry: "7" }),
-          createSvgElement("path", { class: "dog-collar", d: "M-55 -10 C-42 -2 -24 -3 -12 -12" })
+      function appendCoffee(parent, x, y, label) {
+        const coffee = createSvgElement("g", { class: "plot-artwork coffee-artwork", transform: `translate(${x} ${y}) scale(${plotArtworkScale})`, role: "img", "aria-label": label });
+        coffee.append(
+          createSvgElement("ellipse", { class: "coffee-shadow", cx: "0", cy: "70", rx: "96", ry: "21" }),
+          createSvgElement("path", { class: "coffee-saucer", d: "M-92 45 C-47 88 47 88 92 45 C52 28 -52 28 -92 45Z" }),
+          createSvgElement("path", { class: "coffee-handle", d: "M56 -13 C112 -19 126 49 75 65 C62 70 55 50 68 45 C94 34 88 5 58 10Z" }),
+          createSvgElement("path", { class: "coffee-cup", d: "M-65 -42 H64 C58 50 39 76 -2 77 C-44 76 -60 49 -65 -42Z" }),
+          createSvgElement("ellipse", { class: "coffee-rim", cx: "0", cy: "-42", rx: "67", ry: "22" }),
+          createSvgElement("ellipse", { class: "coffee-fill", cx: "0", cy: "-41", rx: "49", ry: "11" }),
+          createSvgElement("path", { class: "coffee-steam", d: "M-32 -69 C-52 -96 -18 -105 -34 -129" }),
+          createSvgElement("path", { class: "coffee-steam", d: "M1 -70 C-22 -101 26 -111 5 -144" }),
+          createSvgElement("path", { class: "coffee-steam", d: "M33 -69 C15 -96 50 -106 35 -130" }),
+          createSvgElement("path", { class: "coffee-bag", d: "M35 -8 L96 -25 L119 69 L59 84 Z" }),
+          createSvgElement("path", { class: "coffee-bag-fold", d: "M41 -8 L91 -22 L83 7 L50 17 Z" }),
+          createSvgElement("circle", { class: "coffee-badge", cx: "77", cy: "37", r: "17" }),
+          createSvgElement("text", { class: "coffee-badge-text", x: "77", y: "43", "text-anchor": "middle" })
         );
-
-        parent.appendChild(dog);
+        coffee.lastChild.textContent = "GB";
+        parent.appendChild(coffee);
       }
-
-      function appendIllustration(parent, illustration, x, y) {
-        if (illustration.type === "dog") appendDog(parent, x, y - tile.y * 0.28, illustration.label);
-      }
+      function appendIllustration(parent, illustration, x, y) { if (illustration.type === "coffee") appendCoffee(parent, x, y - tile.y * 0.28, illustration.label); }
+      function handlePlotActivation(q, r) { const illustration = plotIllustrations.get(plotKey(q, r)); if (illustration && isCurrentPlot(q, r)) openLandingPage(); else moveTo(q, r); }
 
       function renderGrid() {
         grid.replaceChildren();
         const visiblePlots = [];
         const bounds = getVisibleViewBoxBounds();
         const qRadius = Math.ceil((bounds.maxX - bounds.minX) / tile.x + (bounds.maxY - bounds.minY) / tile.y) + primaryRadius;
-        const rRadius = qRadius;
-
         for (let q = current.q - qRadius; q <= current.q + qRadius; q += 1) {
-          for (let r = current.r - rRadius; r <= current.r + rRadius; r += 1) {
+          for (let r = current.r - qRadius; r <= current.r + qRadius; r += 1) {
             const screenPlot = { q, r, ...plotToScreen(q, r) };
             if (isDiamondVisible(screenPlot.x, screenPlot.y, bounds, renderPadding)) visiblePlots.push(screenPlot);
           }
         }
-
-        visiblePlots
-          .sort((a, b) => a.y - b.y)
-          .forEach(({ q, r, x, y }) => {
-            const plotGroup = createSvgElement("g", { class: "plot-group" });
-            const isCurrent = q === current.q && r === current.r;
-            const plot = createSvgElement("polygon", {
-              points: diamondPoints(x, y),
-              class: `${isPrimaryPlot(q, r) ? "plot" : "plot plot-outer"}${isCurrent ? " plot-current" : ""}`,
-              tabindex: "0",
-              role: "button",
-              "aria-label": isCurrent ? `Current plot ${q}, ${r}` : `Move to plot ${q}, ${r}`,
-            });
-            const label = createSvgElement("text", {
-              class: isPrimaryPlot(q, r) ? "plot-label" : "plot-label plot-label-outer",
-              x,
-              y: y + 8,
-              transform: `rotate(-26.565 ${x} ${y + 8})`,
-              "aria-hidden": "true",
-            });
-            label.textContent = `${q},${r}`;
-
-            plot.addEventListener("click", () => moveTo(q, r));
-            plot.addEventListener("keydown", (event) => {
-              if (event.key === "Enter" || event.key === " ") {
-                event.preventDefault();
-                moveTo(q, r);
-              }
-            });
-
-            plotGroup.appendChild(plot);
-            plotGroup.appendChild(label);
-            const illustration = plotIllustrations.get(plotKey(q, r));
-            if (illustration && isArtworkFullyVisible(x, y, bounds)) appendIllustration(plotGroup, illustration, x, y);
-            grid.appendChild(plotGroup);
-          });
+        visiblePlots.sort((a, b) => a.y - b.y).forEach(({ q, r, x, y }) => {
+          const illustration = plotIllustrations.get(plotKey(q, r));
+          const isCurrent = isCurrentPlot(q, r);
+          const plotGroup = createSvgElement("g", { class: illustration ? "plot-group plot-group-featured" : "plot-group" });
+          const plot = createSvgElement("polygon", { points: diamondPoints(x, y), class: `${isPrimaryPlot(q, r) ? "plot" : "plot plot-outer"}${isCurrent ? " plot-current" : ""}${illustration ? " plot-featured" : ""}`, tabindex: "0", role: "button", "aria-label": illustration && isCurrent ? `Open ${illustration.label}` : isCurrent ? `Current plot ${q}, ${r}` : `Move to plot ${q}, ${r}` });
+          const label = createSvgElement("text", { class: isPrimaryPlot(q, r) ? "plot-label" : "plot-label plot-label-outer", x, y: y + 8, transform: `rotate(-26.565 ${x} ${y + 8})`, "aria-hidden": "true" });
+          label.textContent = `${q},${r}`;
+          plot.addEventListener("click", () => handlePlotActivation(q, r));
+          plot.addEventListener("keydown", (event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); handlePlotActivation(q, r); } });
+          plotGroup.append(plot, label);
+          if (illustration && isArtworkFullyVisible(x, y, bounds)) appendIllustration(plotGroup, illustration, x, y);
+          grid.appendChild(plotGroup);
+        });
       }
 
+      closeProduct.addEventListener("click", closeLandingPage);
+      window.addEventListener("keydown", (event) => { if (event.key === "Escape") closeLandingPage(); });
       renderGrid();
       window.addEventListener("resize", renderGrid);
     </script>
