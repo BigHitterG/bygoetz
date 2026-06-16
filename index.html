@@ -17,7 +17,7 @@
       >
         <title id="iso-title">Centered isometric plot grid</title>
         <desc id="iso-desc">
-          A nine-plot isometric world window. The selected plot is always centered, and illustrated plots keep their world coordinates as you move.
+          A centered nine-by-nine isometric world window with lighter surrounding plots. The selected plot is always centered, and illustrated plots keep their world coordinates as you move.
         </desc>
         <defs>
           <filter id="soft-shadow" x="-30%" y="-30%" width="160%" height="170%">
@@ -32,9 +32,12 @@
     <script>
       const svgNS = "http://www.w3.org/2000/svg";
       const grid = document.querySelector("#grid");
+      const svg = document.querySelector(".iso-world");
       const center = { x: 800, y: 500 };
+      const viewBox = { width: 1600, height: 1000 };
       const tile = { x: 300, y: 150 };
-      const visibleRadius = 1;
+      const primaryRadius = 4;
+      const renderPadding = Math.max(tile.x, tile.y) * 1.35;
       const plotArtworkScale = 0.72;
       let current = { q: 0, r: 0 };
 
@@ -51,6 +54,65 @@
           x: center.x + (q - current.q - (r - current.r)) * (tile.x / 2),
           y: center.y + (q - current.q + (r - current.r)) * (tile.y / 2),
         };
+      }
+
+      function getVisibleViewBoxBounds() {
+        const rect = svg.getBoundingClientRect();
+        const viewportAspect = rect.width / rect.height;
+        const viewBoxAspect = viewBox.width / viewBox.height;
+
+        if (viewportAspect > viewBoxAspect) {
+          const visibleWidth = viewBox.height * viewportAspect;
+          const overflow = (visibleWidth - viewBox.width) / 2;
+
+          return {
+            minX: -overflow,
+            maxX: viewBox.width + overflow,
+            minY: 0,
+            maxY: viewBox.height,
+          };
+        }
+
+        const visibleHeight = viewBox.width / viewportAspect;
+        const overflow = (visibleHeight - viewBox.height) / 2;
+
+        return {
+          minX: 0,
+          maxX: viewBox.width,
+          minY: -overflow,
+          maxY: viewBox.height + overflow,
+        };
+      }
+
+      function isDiamondVisible(x, y, bounds, padding = 0) {
+        return (
+          x + tile.x / 2 >= bounds.minX - padding &&
+          x - tile.x / 2 <= bounds.maxX + padding &&
+          y + tile.y / 2 >= bounds.minY - padding &&
+          y - tile.y / 2 <= bounds.maxY + padding
+        );
+      }
+
+      function isArtworkFullyVisible(x, y, bounds) {
+        const halfWidth = 68 * plotArtworkScale;
+        const top = y - tile.y * 0.28 - 72 * plotArtworkScale;
+        const bottom = y - tile.y * 0.28 + 68 * plotArtworkScale;
+
+        return (
+          x - halfWidth >= bounds.minX &&
+          x + halfWidth <= bounds.maxX &&
+          top >= bounds.minY &&
+          bottom <= bounds.maxY
+        );
+      }
+
+      function isPrimaryPlot(q, r) {
+        return (
+          q >= current.q - primaryRadius &&
+          q <= current.q + primaryRadius &&
+          r >= current.r - primaryRadius &&
+          r <= current.r + primaryRadius
+        );
       }
 
       function diamondPoints(x, y) {
@@ -105,10 +167,14 @@
       function renderGrid() {
         grid.replaceChildren();
         const visiblePlots = [];
+        const bounds = getVisibleViewBoxBounds();
+        const qRadius = Math.ceil((bounds.maxX - bounds.minX) / tile.x + (bounds.maxY - bounds.minY) / tile.y) + primaryRadius;
+        const rRadius = qRadius;
 
-        for (let q = current.q - visibleRadius; q <= current.q + visibleRadius; q += 1) {
-          for (let r = current.r - visibleRadius; r <= current.r + visibleRadius; r += 1) {
-            visiblePlots.push({ q, r, ...plotToScreen(q, r) });
+        for (let q = current.q - qRadius; q <= current.q + qRadius; q += 1) {
+          for (let r = current.r - rRadius; r <= current.r + rRadius; r += 1) {
+            const screenPlot = { q, r, ...plotToScreen(q, r) };
+            if (isDiamondVisible(screenPlot.x, screenPlot.y, bounds, renderPadding)) visiblePlots.push(screenPlot);
           }
         }
 
@@ -119,11 +185,19 @@
             const isCurrent = q === current.q && r === current.r;
             const plot = createSvgElement("polygon", {
               points: diamondPoints(x, y),
-              class: isCurrent ? "plot plot-current" : "plot",
+              class: `${isPrimaryPlot(q, r) ? "plot" : "plot plot-outer"}${isCurrent ? " plot-current" : ""}`,
               tabindex: "0",
               role: "button",
               "aria-label": isCurrent ? `Current plot ${q}, ${r}` : `Move to plot ${q}, ${r}`,
             });
+            const label = createSvgElement("text", {
+              class: isPrimaryPlot(q, r) ? "plot-label" : "plot-label plot-label-outer",
+              x,
+              y: y + 8,
+              transform: `rotate(-26.565 ${x} ${y + 8})`,
+              "aria-hidden": "true",
+            });
+            label.textContent = `${q},${r}`;
 
             plot.addEventListener("click", () => moveTo(q, r));
             plot.addEventListener("keydown", (event) => {
@@ -134,13 +208,15 @@
             });
 
             plotGroup.appendChild(plot);
+            plotGroup.appendChild(label);
             const illustration = plotIllustrations.get(plotKey(q, r));
-            if (illustration) appendIllustration(plotGroup, illustration, x, y);
+            if (illustration && isArtworkFullyVisible(x, y, bounds)) appendIllustration(plotGroup, illustration, x, y);
             grid.appendChild(plotGroup);
           });
       }
 
       renderGrid();
+      window.addEventListener("resize", renderGrid);
     </script>
   </body>
 </html>

@@ -1,9 +1,12 @@
 :root {
   --paper: #ffffff;
   --grid-line: #d8dde5;
+  --grid-line-outer: #eef1f5;
   --grid-line-hover: #b9c0ca;
   --plot-current: #e7e7e7;
   --plot-current-stroke: #a9afb8;
+  --label: #7b8491;
+  --label-outer: #c5cbd4;
   --dog-fur: #b97745;
   --dog-fur-dark: #8f542f;
   --dog-cream: #f6d7a9;
@@ -64,9 +67,31 @@ body {
   outline: none;
 }
 
+.plot-outer {
+  stroke: var(--grid-line-outer);
+  stroke-width: 1.25;
+}
+
 .plot-current {
   fill: var(--plot-current);
   stroke: var(--plot-current-stroke);
+}
+
+.plot-label {
+  fill: var(--label);
+  font-size: 20px;
+  font-weight: 650;
+  letter-spacing: 0.08em;
+  opacity: 0.28;
+  pointer-events: none;
+  text-anchor: middle;
+  user-select: none;
+}
+
+.plot-label-outer {
+  fill: var(--label-outer);
+  font-size: 17px;
+  opacity: 0.16;
 }
 
 .plot-artwork {
