@@ -3,190 +3,152 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Good Breakfast Good Coffee — By Goetz</title>
+    <title>By Goetz — Conceptual World</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <main class="world" aria-label="Interactive centered isometric plot grid">
-      <svg
-        class="iso-world"
-        viewBox="0 0 1600 1000"
-        role="application"
-        aria-labelledby="iso-title iso-desc"
-        preserveAspectRatio="xMidYMid slice"
-      >
-        <title id="iso-title">Centered isometric plot grid</title>
-        <desc id="iso-desc">
-          A centered isometric world window with an illustrated coffee product on plot 1, 0. Clicking an off-center plot centers it; clicking the centered coffee plot opens the Good Breakfast Good Coffee landing page.
-        </desc>
-        <defs>
-          <filter id="soft-shadow" x="-30%" y="-30%" width="160%" height="170%">
-            <feDropShadow dx="0" dy="10" stdDeviation="8" flood-color="#334155" flood-opacity="0.18" />
-          </filter>
-          <linearGradient id="coffee-bag-gradient" x1="0" x2="1" y1="0" y2="1">
-            <stop offset="0" stop-color="#fbf0c7" />
-            <stop offset="0.48" stop-color="#d59d4d" />
-            <stop offset="1" stop-color="#76502d" />
-          </linearGradient>
-          <linearGradient id="cup-gradient" x1="0" x2="1" y1="0" y2="1">
-            <stop offset="0" stop-color="#fff8e8" />
-            <stop offset="0.55" stop-color="#e7be77" />
-            <stop offset="1" stop-color="#8a5a31" />
-          </linearGradient>
-        </defs>
-        <rect class="canvas" width="1600" height="1000" />
-        <g id="grid" class="grid"></g>
-      </svg>
+    <main class="world" aria-labelledby="world-title">
+      <section class="intro" aria-label="World orientation">
+        <p class="eyebrow">By Goetz</p>
+        <h1 id="world-title">A small navigable world for many unfinished things.</h1>
+        <p>
+          Drag the field like an Apple Watch grid. Bring a plot into the sun, then tap it to enter.
+        </p>
+      </section>
 
-      <section id="product-page" class="product-page" aria-labelledby="product-title" aria-hidden="true" inert>
-        <button class="product-close" type="button" aria-label="Return to the isometric world">×</button>
-        <div class="product-shell">
-          <p class="product-kicker">Small-batch morning ritual</p>
-          <h1 id="product-title">Good Breakfast<br />Good Coffee</h1>
-          <p class="product-copy">
-            A warm, earthy breakfast coffee set built for the first quiet minutes of the day — smooth roast, ceramic cup, and a grounded ritual that turns the kitchen counter into a calmer place.
-          </p>
-          <div class="product-actions" aria-label="Purchase actions">
-            <a class="button-primary" href="#buy-good-breakfast-good-coffee">Reserve the morning set</a>
-            <a class="button-secondary" href="#blend-details">See what is inside</a>
-          </div>
-          <dl class="product-proof" id="blend-details">
-            <div><dt>Roast</dt><dd>Balanced, cocoa, toasted grain</dd></div>
-            <div><dt>Made for</dt><dd>Breakfast tables, early risers, cozy kitchens</dd></div>
-            <div><dt>Includes</dt><dd>Signature beans + keepsake cup template</dd></div>
-          </dl>
-        </div>
-        <div class="product-visual" aria-hidden="true">
-          <svg viewBox="0 0 620 620" class="hero-cup">
-            <circle class="hero-sun" cx="310" cy="305" r="255" />
-            <path class="hero-leaf hero-leaf-one" d="M126 384 C64 304 92 220 187 197 C212 272 190 337 126 384Z" />
-            <path class="hero-leaf hero-leaf-two" d="M496 408 C574 338 558 242 458 209 C424 287 433 356 496 408Z" />
-            <ellipse class="hero-shadow" cx="312" cy="503" rx="154" ry="34" />
-            <path class="hero-saucer" d="M154 434 C211 493 421 493 477 434 C431 407 205 407 154 434Z" />
-            <path class="hero-handle" d="M421 265 C514 249 538 360 454 390 C435 397 424 366 443 358 C487 339 475 288 427 296Z" />
-            <path class="hero-cup-body" d="M176 211 H431 C420 376 388 443 304 446 C221 443 188 376 176 211Z" />
-            <ellipse class="hero-rim" cx="303" cy="211" rx="128" ry="39" />
-            <ellipse class="hero-coffee" cx="303" cy="213" rx="101" ry="24" />
-            <path class="hero-steam" d="M257 154 C229 119 286 105 260 68" />
-            <path class="hero-steam" d="M316 157 C282 114 351 98 318 55" />
-            <path class="hero-steam" d="M371 154 C345 121 399 105 374 70" />
-            <path class="hero-bag" d="M356 251 L474 223 L513 403 L401 442 Z" />
-            <path class="hero-bag-fold" d="M369 252 L464 230 L449 284 L384 302 Z" />
-            <text class="hero-bag-type" x="431" y="344" transform="rotate(-13 431 344)">G B</text>
-          </svg>
+      <section class="bubble-stage" aria-label="Draggable isometric bubble grid">
+        <div class="sun" aria-hidden="true"></div>
+        <div class="viewport" id="viewport">
+          <div class="bubble-grid" id="bubble-grid" aria-live="polite"></div>
         </div>
       </section>
+
+      <aside class="plot-card" id="plot-card" aria-live="polite">
+        <p class="plot-kicker">Centered plot</p>
+        <h2 id="plot-title">Archive</h2>
+        <p id="plot-description">A place for memory, index, and collected fragments.</p>
+        <button class="enter-button" id="enter-button" type="button">Enter this plot</button>
+      </aside>
     </main>
 
+    <dialog class="plot-dialog" id="plot-dialog" aria-labelledby="dialog-title">
+      <button class="dialog-close" id="dialog-close" type="button" aria-label="Close plot">×</button>
+      <p class="plot-kicker">World placeholder</p>
+      <h2 id="dialog-title">Archive</h2>
+      <p id="dialog-copy">
+        This is an empty room for now — the interface is the test. Content can arrive later, brick by brick.
+      </p>
+    </dialog>
+
     <script>
-      const svgNS = "http://www.w3.org/2000/svg";
-      const grid = document.querySelector("#grid");
-      const svg = document.querySelector(".iso-world");
-      const productPage = document.querySelector("#product-page");
-      const closeProduct = document.querySelector(".product-close");
-      const center = { x: 800, y: 500 };
-      const viewBox = { width: 1600, height: 1000 };
-      const tile = { x: 300, y: 150 };
-      const primaryRadius = 4;
-      const renderPadding = Math.max(tile.x, tile.y) * 1.35;
-      const plotArtworkScale = 0.72;
-      let current = { q: 0, r: 0 };
+      const plots = [
+        { id: "archive", title: "Archive", description: "A place for memory, index, and collected fragments.", q: 0, r: 0 },
+        { id: "studio", title: "Studio", description: "Works in progress, experiments, drafts, and loose material.", q: 1, r: 0 },
+        { id: "field", title: "Field", description: "Notes from outside: walks, sunlight, errands, signals.", q: -1, r: 0 },
+        { id: "table", title: "Table", description: "Relational space for meals, people, meetings, and exchange.", q: 0, r: 1 },
+        { id: "shop", title: "Shop", description: "A future shelf for objects, editions, and products.", q: 0, r: -1 },
+        { id: "signal", title: "Signal", description: "Messages, announcements, contact, and live transmissions.", q: 1, r: -1 },
+      ];
 
-      const plotIllustrations = new Map([
-        ["1,0", { type: "coffee", label: "Good Breakfast Good Coffee cup and breakfast set on plot 1, 0" }],
-      ]);
+      const grid = document.querySelector("#bubble-grid");
+      const viewport = document.querySelector("#viewport");
+      const title = document.querySelector("#plot-title");
+      const description = document.querySelector("#plot-description");
+      const enterButton = document.querySelector("#enter-button");
+      const dialog = document.querySelector("#plot-dialog");
+      const dialogTitle = document.querySelector("#dialog-title");
+      const dialogCopy = document.querySelector("#dialog-copy");
+      const dialogClose = document.querySelector("#dialog-close");
 
-      function plotKey(q, r) { return `${q},${r}`; }
-      function isCurrentPlot(q, r) { return q === current.q && r === current.r; }
-      function plotToScreen(q, r) {
-        return { x: center.x + (q - current.q - (r - current.r)) * (tile.x / 2), y: center.y + (q - current.q + (r - current.r)) * (tile.y / 2) };
-      }
-      function getVisibleViewBoxBounds() {
-        const rect = svg.getBoundingClientRect();
-        const viewportAspect = rect.width / rect.height;
-        const viewBoxAspect = viewBox.width / viewBox.height;
-        if (viewportAspect > viewBoxAspect) {
-          const visibleWidth = viewBox.height * viewportAspect;
-          const overflow = (visibleWidth - viewBox.width) / 2;
-          return { minX: -overflow, maxX: viewBox.width + overflow, minY: 0, maxY: viewBox.height };
-        }
-        const visibleHeight = viewBox.width / viewportAspect;
-        const overflow = (visibleHeight - viewBox.height) / 2;
-        return { minX: 0, maxX: viewBox.width, minY: -overflow, maxY: viewBox.height + overflow };
-      }
-      function isDiamondVisible(x, y, bounds, padding = 0) {
-        return x + tile.x / 2 >= bounds.minX - padding && x - tile.x / 2 <= bounds.maxX + padding && y + tile.y / 2 >= bounds.minY - padding && y - tile.y / 2 <= bounds.maxY + padding;
-      }
-      function isArtworkFullyVisible(x, y, bounds) {
-        const halfWidth = 110 * plotArtworkScale;
-        const top = y - tile.y * 0.28 - 118 * plotArtworkScale;
-        const bottom = y - tile.y * 0.28 + 78 * plotArtworkScale;
-        return x - halfWidth >= bounds.minX && x + halfWidth <= bounds.maxX && top >= bounds.minY && bottom <= bounds.maxY;
-      }
-      function isPrimaryPlot(q, r) { return q >= current.q - primaryRadius && q <= current.q + primaryRadius && r >= current.r - primaryRadius && r <= current.r + primaryRadius; }
-      function diamondPoints(x, y) { return `${x},${y - tile.y / 2} ${x + tile.x / 2},${y} ${x},${y + tile.y / 2} ${x - tile.x / 2},${y}`; }
-      function createSvgElement(tagName, attributes = {}) {
-        const element = document.createElementNS(svgNS, tagName);
-        Object.entries(attributes).forEach(([name, value]) => element.setAttribute(name, value));
-        return element;
-      }
-      function moveTo(q, r) { current = { q, r }; closeLandingPage(); renderGrid(); }
-      function openLandingPage() { productPage.removeAttribute("inert"); productPage.setAttribute("aria-hidden", "false"); productPage.classList.add("is-open"); }
-      function closeLandingPage() { productPage.setAttribute("aria-hidden", "true"); productPage.setAttribute("inert", ""); productPage.classList.remove("is-open"); }
+      let centeredPlot = plots[0];
+      let offset = { x: 0, y: 0 };
+      let drag = null;
 
-      function appendCoffee(parent, x, y, label) {
-        const coffee = createSvgElement("g", { class: "plot-artwork coffee-artwork", transform: `translate(${x} ${y}) scale(${plotArtworkScale})`, role: "img", "aria-label": label });
-        coffee.append(
-          createSvgElement("ellipse", { class: "coffee-shadow", cx: "0", cy: "70", rx: "96", ry: "21" }),
-          createSvgElement("path", { class: "coffee-saucer", d: "M-92 45 C-47 88 47 88 92 45 C52 28 -52 28 -92 45Z" }),
-          createSvgElement("path", { class: "coffee-handle", d: "M56 -13 C112 -19 126 49 75 65 C62 70 55 50 68 45 C94 34 88 5 58 10Z" }),
-          createSvgElement("path", { class: "coffee-cup", d: "M-65 -42 H64 C58 50 39 76 -2 77 C-44 76 -60 49 -65 -42Z" }),
-          createSvgElement("ellipse", { class: "coffee-rim", cx: "0", cy: "-42", rx: "67", ry: "22" }),
-          createSvgElement("ellipse", { class: "coffee-fill", cx: "0", cy: "-41", rx: "49", ry: "11" }),
-          createSvgElement("path", { class: "coffee-steam", d: "M-32 -69 C-52 -96 -18 -105 -34 -129" }),
-          createSvgElement("path", { class: "coffee-steam", d: "M1 -70 C-22 -101 26 -111 5 -144" }),
-          createSvgElement("path", { class: "coffee-steam", d: "M33 -69 C15 -96 50 -106 35 -130" }),
-          createSvgElement("path", { class: "coffee-bag", d: "M35 -8 L96 -25 L119 69 L59 84 Z" }),
-          createSvgElement("path", { class: "coffee-bag-fold", d: "M41 -8 L91 -22 L83 7 L50 17 Z" }),
-          createSvgElement("circle", { class: "coffee-badge", cx: "77", cy: "37", r: "17" }),
-          createSvgElement("text", { class: "coffee-badge-text", x: "77", y: "43", "text-anchor": "middle" })
-        );
-        coffee.lastChild.textContent = "GB";
-        parent.appendChild(coffee);
+      function gridPoint(plot) {
+        const size = Math.min(window.innerWidth, window.innerHeight) < 680 ? 120 : 168;
+        return {
+          x: (plot.q - plot.r) * size * 0.72,
+          y: (plot.q + plot.r) * size * 0.42,
+        };
       }
-      function appendIllustration(parent, illustration, x, y) { if (illustration.type === "coffee") appendCoffee(parent, x, y - tile.y * 0.28, illustration.label); }
-      function handlePlotActivation(q, r) { const illustration = plotIllustrations.get(plotKey(q, r)); if (illustration && isCurrentPlot(q, r)) openLandingPage(); else moveTo(q, r); }
 
-      function renderGrid() {
-        grid.replaceChildren();
-        const visiblePlots = [];
-        const bounds = getVisibleViewBoxBounds();
-        const qRadius = Math.ceil((bounds.maxX - bounds.minX) / tile.x + (bounds.maxY - bounds.minY) / tile.y) + primaryRadius;
-        for (let q = current.q - qRadius; q <= current.q + qRadius; q += 1) {
-          for (let r = current.r - qRadius; r <= current.r + qRadius; r += 1) {
-            const screenPlot = { q, r, ...plotToScreen(q, r) };
-            if (isDiamondVisible(screenPlot.x, screenPlot.y, bounds, renderPadding)) visiblePlots.push(screenPlot);
-          }
-        }
-        visiblePlots.sort((a, b) => a.y - b.y).forEach(({ q, r, x, y }) => {
-          const illustration = plotIllustrations.get(plotKey(q, r));
-          const isCurrent = isCurrentPlot(q, r);
-          const plotGroup = createSvgElement("g", { class: illustration ? "plot-group plot-group-featured" : "plot-group" });
-          const plot = createSvgElement("polygon", { points: diamondPoints(x, y), class: `${isPrimaryPlot(q, r) ? "plot" : "plot plot-outer"}${isCurrent ? " plot-current" : ""}${illustration ? " plot-featured" : ""}`, tabindex: "0", role: "button", "aria-label": illustration && isCurrent ? `Open ${illustration.label}` : isCurrent ? `Current plot ${q}, ${r}` : `Move to plot ${q}, ${r}` });
-          const label = createSvgElement("text", { class: isPrimaryPlot(q, r) ? "plot-label" : "plot-label plot-label-outer", x, y: y + 8, transform: `rotate(-26.565 ${x} ${y + 8})`, "aria-hidden": "true" });
-          label.textContent = `${q},${r}`;
-          plot.addEventListener("click", () => handlePlotActivation(q, r));
-          plot.addEventListener("keydown", (event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); handlePlotActivation(q, r); } });
-          plotGroup.append(plot, label);
-          if (illustration && isArtworkFullyVisible(x, y, bounds)) appendIllustration(plotGroup, illustration, x, y);
-          grid.appendChild(plotGroup);
+      function setCentered(plot) {
+        centeredPlot = plot;
+        title.textContent = plot.title;
+        description.textContent = plot.description;
+        document.querySelectorAll(".bubble").forEach((bubble) => {
+          bubble.classList.toggle("is-centered", bubble.dataset.id === plot.id);
+          bubble.setAttribute("aria-pressed", bubble.dataset.id === plot.id ? "true" : "false");
         });
       }
 
-      closeProduct.addEventListener("click", closeLandingPage);
-      window.addEventListener("keydown", (event) => { if (event.key === "Escape") closeLandingPage(); });
-      renderGrid();
-      window.addEventListener("resize", renderGrid);
+      function nearestPlot() {
+        return plots.reduce((nearest, plot) => {
+          const point = gridPoint(plot);
+          const distance = Math.hypot(point.x + offset.x, point.y + offset.y);
+          const nearestPoint = gridPoint(nearest);
+          const nearestDistance = Math.hypot(nearestPoint.x + offset.x, nearestPoint.y + offset.y);
+          return distance < nearestDistance ? plot : nearest;
+        }, plots[0]);
+      }
+
+      function render() {
+        grid.style.transform = `translate3d(${offset.x}px, ${offset.y}px, 0) rotateX(58deg) rotateZ(-45deg)`;
+        plots.forEach((plot) => {
+          const bubble = grid.querySelector(`[data-id="${plot.id}"]`);
+          const point = gridPoint(plot);
+          const distance = Math.hypot(point.x + offset.x, point.y + offset.y);
+          const scale = Math.max(0.72, 1.16 - distance / 760);
+          bubble.style.setProperty("--x", `${point.x}px`);
+          bubble.style.setProperty("--y", `${point.y}px`);
+          bubble.style.setProperty("--scale", scale.toFixed(3));
+        });
+        setCentered(nearestPlot());
+      }
+
+      function focusPlot(plot) {
+        const point = gridPoint(plot);
+        offset = { x: -point.x, y: -point.y };
+        render();
+      }
+
+      function openPlot() {
+        dialogTitle.textContent = centeredPlot.title;
+        dialogCopy.textContent = `${centeredPlot.description} This room is intentionally blank while the world system is being shaped.`;
+        dialog.showModal();
+      }
+
+      plots.forEach((plot, index) => {
+        const bubble = document.createElement("button");
+        bubble.className = "bubble";
+        bubble.type = "button";
+        bubble.dataset.id = plot.id;
+        bubble.innerHTML = `<span class="bubble-number">0${index + 1}</span><span class="bubble-title">${plot.title}</span>`;
+        bubble.addEventListener("click", () => (centeredPlot.id === plot.id ? openPlot() : focusPlot(plot)));
+        grid.appendChild(bubble);
+      });
+
+      viewport.addEventListener("pointerdown", (event) => {
+        drag = { x: event.clientX, y: event.clientY, startX: offset.x, startY: offset.y };
+        viewport.setPointerCapture(event.pointerId);
+      });
+
+      viewport.addEventListener("pointermove", (event) => {
+        if (!drag) return;
+        offset = { x: drag.startX + event.clientX - drag.x, y: drag.startY + event.clientY - drag.y };
+        render();
+      });
+
+      viewport.addEventListener("pointerup", () => {
+        if (!drag) return;
+        drag = null;
+        focusPlot(nearestPlot());
+      });
+
+      enterButton.addEventListener("click", openPlot);
+      dialogClose.addEventListener("click", () => dialog.close());
+      window.addEventListener("resize", () => focusPlot(centeredPlot));
+      focusPlot(plots[0]);
     </script>
   </body>
 </html>
