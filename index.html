@@ -3,152 +3,46 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>By Goetz — Conceptual World</title>
+    <title>By Goetz — Concept Map</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <main class="world" aria-labelledby="world-title">
-      <section class="intro" aria-label="World orientation">
-        <p class="eyebrow">By Goetz</p>
-        <h1 id="world-title">A small navigable world for many unfinished things.</h1>
+    <header class="site-header">
+      <a class="brand" href="index.html">By Goetz</a>
+      <nav aria-label="Primary navigation">
+        <a href="concepts/explorers/index.html">Explorers</a>
+        <a href="concepts/nemean/index.html">Nemean</a>
+        <a href="bag/index.html">Bag <span data-bag-count>0</span></a>
+      </nav>
+    </header>
+
+    <main class="page-shell map-page" aria-labelledby="page-title">
+      <section class="hero">
+        <p class="eyebrow">Master grid</p>
+        <h1 id="page-title">A clear map for concepts, products, bag, and checkout.</h1>
         <p>
-          Drag the field like an Apple Watch grid. Bring a plot into the sun, then tap it to enter.
+          Start with a concept, move into its products, add a piece to the shared bag, then finish in a
+          single checkout flow.
         </p>
       </section>
 
-      <section class="bubble-stage" aria-label="Draggable isometric bubble grid">
-        <div class="sun" aria-hidden="true"></div>
-        <div class="viewport" id="viewport">
-          <div class="bubble-grid" id="bubble-grid" aria-live="polite"></div>
-        </div>
-      </section>
+      <section class="concept-grid" aria-label="Concept map">
+        <article class="concept-card explorers-card">
+          <p class="eyebrow">Concept 01</p>
+          <h2>Explorers</h2>
+          <p>Field gear, visual notes, and objects for moving through unfinished terrain.</p>
+          <a class="button" href="concepts/explorers/index.html">Enter Explorers</a>
+        </article>
 
-      <aside class="plot-card" id="plot-card" aria-live="polite">
-        <p class="plot-kicker">Centered plot</p>
-        <h2 id="plot-title">Archive</h2>
-        <p id="plot-description">A place for memory, index, and collected fragments.</p>
-        <button class="enter-button" id="enter-button" type="button">Enter this plot</button>
-      </aside>
+        <article class="concept-card nemean-card">
+          <p class="eyebrow">Concept 02</p>
+          <h2>Nemean</h2>
+          <p>Protective editions and mythic staples organized around strength and ritual.</p>
+          <a class="button" href="concepts/nemean/index.html">Enter Nemean</a>
+        </article>
+      </section>
     </main>
 
-    <dialog class="plot-dialog" id="plot-dialog" aria-labelledby="dialog-title">
-      <button class="dialog-close" id="dialog-close" type="button" aria-label="Close plot">×</button>
-      <p class="plot-kicker">World placeholder</p>
-      <h2 id="dialog-title">Archive</h2>
-      <p id="dialog-copy">
-        This is an empty room for now — the interface is the test. Content can arrive later, brick by brick.
-      </p>
-    </dialog>
-
-    <script>
-      const plots = [
-        { id: "archive", title: "Archive", description: "A place for memory, index, and collected fragments.", q: 0, r: 0 },
-        { id: "studio", title: "Studio", description: "Works in progress, experiments, drafts, and loose material.", q: 1, r: 0 },
-        { id: "field", title: "Field", description: "Notes from outside: walks, sunlight, errands, signals.", q: -1, r: 0 },
-        { id: "table", title: "Table", description: "Relational space for meals, people, meetings, and exchange.", q: 0, r: 1 },
-        { id: "shop", title: "Shop", description: "A future shelf for objects, editions, and products.", q: 0, r: -1 },
-        { id: "signal", title: "Signal", description: "Messages, announcements, contact, and live transmissions.", q: 1, r: -1 },
-      ];
-
-      const grid = document.querySelector("#bubble-grid");
-      const viewport = document.querySelector("#viewport");
-      const title = document.querySelector("#plot-title");
-      const description = document.querySelector("#plot-description");
-      const enterButton = document.querySelector("#enter-button");
-      const dialog = document.querySelector("#plot-dialog");
-      const dialogTitle = document.querySelector("#dialog-title");
-      const dialogCopy = document.querySelector("#dialog-copy");
-      const dialogClose = document.querySelector("#dialog-close");
-
-      let centeredPlot = plots[0];
-      let offset = { x: 0, y: 0 };
-      let drag = null;
-
-      function gridPoint(plot) {
-        const size = Math.min(window.innerWidth, window.innerHeight) < 680 ? 120 : 168;
-        return {
-          x: (plot.q - plot.r) * size * 0.72,
-          y: (plot.q + plot.r) * size * 0.42,
-        };
-      }
-
-      function setCentered(plot) {
-        centeredPlot = plot;
-        title.textContent = plot.title;
-        description.textContent = plot.description;
-        document.querySelectorAll(".bubble").forEach((bubble) => {
-          bubble.classList.toggle("is-centered", bubble.dataset.id === plot.id);
-          bubble.setAttribute("aria-pressed", bubble.dataset.id === plot.id ? "true" : "false");
-        });
-      }
-
-      function nearestPlot() {
-        return plots.reduce((nearest, plot) => {
-          const point = gridPoint(plot);
-          const distance = Math.hypot(point.x + offset.x, point.y + offset.y);
-          const nearestPoint = gridPoint(nearest);
-          const nearestDistance = Math.hypot(nearestPoint.x + offset.x, nearestPoint.y + offset.y);
-          return distance < nearestDistance ? plot : nearest;
-        }, plots[0]);
-      }
-
-      function render() {
-        grid.style.transform = `translate3d(${offset.x}px, ${offset.y}px, 0) rotateX(58deg) rotateZ(-45deg)`;
-        plots.forEach((plot) => {
-          const bubble = grid.querySelector(`[data-id="${plot.id}"]`);
-          const point = gridPoint(plot);
-          const distance = Math.hypot(point.x + offset.x, point.y + offset.y);
-          const scale = Math.max(0.72, 1.16 - distance / 760);
-          bubble.style.setProperty("--x", `${point.x}px`);
-          bubble.style.setProperty("--y", `${point.y}px`);
-          bubble.style.setProperty("--scale", scale.toFixed(3));
-        });
-        setCentered(nearestPlot());
-      }
-
-      function focusPlot(plot) {
-        const point = gridPoint(plot);
-        offset = { x: -point.x, y: -point.y };
-        render();
-      }
-
-      function openPlot() {
-        dialogTitle.textContent = centeredPlot.title;
-        dialogCopy.textContent = `${centeredPlot.description} This room is intentionally blank while the world system is being shaped.`;
-        dialog.showModal();
-      }
-
-      plots.forEach((plot, index) => {
-        const bubble = document.createElement("button");
-        bubble.className = "bubble";
-        bubble.type = "button";
-        bubble.dataset.id = plot.id;
-        bubble.innerHTML = `<span class="bubble-number">0${index + 1}</span><span class="bubble-title">${plot.title}</span>`;
-        bubble.addEventListener("click", () => (centeredPlot.id === plot.id ? openPlot() : focusPlot(plot)));
-        grid.appendChild(bubble);
-      });
-
-      viewport.addEventListener("pointerdown", (event) => {
-        drag = { x: event.clientX, y: event.clientY, startX: offset.x, startY: offset.y };
-        viewport.setPointerCapture(event.pointerId);
-      });
-
-      viewport.addEventListener("pointermove", (event) => {
-        if (!drag) return;
-        offset = { x: drag.startX + event.clientX - drag.x, y: drag.startY + event.clientY - drag.y };
-        render();
-      });
-
-      viewport.addEventListener("pointerup", () => {
-        if (!drag) return;
-        drag = null;
-        focusPlot(nearestPlot());
-      });
-
-      enterButton.addEventListener("click", openPlot);
-      dialogClose.addEventListener("click", () => dialog.close());
-      window.addEventListener("resize", () => focusPlot(centeredPlot));
-      focusPlot(plots[0]);
-    </script>
+    <script src="scripts.js"></script>
   </body>
 </html>
