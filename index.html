@@ -26,23 +26,29 @@
         </p>
       </section>
 
-      <section class="concept-grid" aria-label="Concept map">
-        <article class="concept-card explorers-card">
-          <p class="eyebrow">Concept 01</p>
-          <h2>Explorers</h2>
-          <p>Field gear, visual notes, and objects for moving through unfinished terrain.</p>
-          <a class="button" href="concepts/explorers/index.html">Enter Explorers</a>
-        </article>
-
-        <article class="concept-card nemean-card">
-          <p class="eyebrow">Concept 02</p>
-          <h2>Nemean</h2>
-          <p>Protective editions and mythic staples organized around strength and ritual.</p>
-          <a class="button" href="concepts/nemean/index.html">Enter Nemean</a>
-        </article>
-      </section>
+      <section class="concept-grid" aria-label="Concept map" data-concept-grid></section>
     </main>
 
     <script src="scripts.js"></script>
+    <script type="module">
+      import { concepts } from "./data/concepts.js";
+
+      const conceptGrid = document.querySelector("[data-concept-grid]");
+
+      if (conceptGrid) {
+        conceptGrid.innerHTML = concepts
+          .map(
+            (concept, index) => `
+              <article class="concept-card ${concept.themeClass}" style="--q: ${concept.q}; --r: ${concept.r};">
+                <p class="eyebrow">Concept ${String(index + 1).padStart(2, "0")} · ${concept.icon}</p>
+                <h2>${concept.title}</h2>
+                <p>${concept.shortDescription}</p>
+                <a class="button" href="${concept.route}">Enter ${concept.title}</a>
+              </article>
+            `
+          )
+          .join("");
+      }
+    </script>
   </body>
 </html>

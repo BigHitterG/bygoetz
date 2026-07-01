@@ -140,6 +140,9 @@ p {
 
 .explorers-card { background: linear-gradient(135deg, rgba(97, 116, 90, 0.24), rgba(255,255,255,0.68)); }
 .nemean-card { background: linear-gradient(135deg, rgba(215, 111, 69, 0.24), rgba(255,255,255,0.68)); }
+.archive-card { background: linear-gradient(135deg, rgba(88, 104, 137, 0.22), rgba(255,255,255,0.68)); }
+.studio-card { background: linear-gradient(135deg, rgba(151, 109, 77, 0.22), rgba(255,255,255,0.68)); }
+.shop-card { background: linear-gradient(135deg, rgba(185, 156, 84, 0.24), rgba(255,255,255,0.68)); }
 
 .button {
   display: inline-flex;
