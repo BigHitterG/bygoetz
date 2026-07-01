@@ -242,3 +242,203 @@ textarea {
   .product-detail { grid-template-columns: 1fr; }
   .concept-card { min-height: 320px; }
 }
+
+.plot-stage {
+  position: relative;
+  display: block;
+  min-height: min(78vh, 760px);
+  overflow: hidden;
+  border: 1px solid rgba(21, 21, 21, 0.1);
+  border-radius: clamp(30px, 5vw, 64px);
+  background:
+    linear-gradient(120deg, rgba(255, 255, 255, 0.72), rgba(235, 230, 218, 0.38)),
+    radial-gradient(circle at 22% 18%, rgba(255, 242, 168, 0.5), transparent 24rem),
+    radial-gradient(circle at 86% 82%, rgba(97, 116, 90, 0.22), transparent 20rem);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7), 0 34px 110px rgba(43, 39, 30, 0.12);
+  touch-action: none;
+}
+
+.plot-stage::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(21, 21, 21, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(21, 21, 21, 0.05) 1px, transparent 1px);
+  background-size: 72px 72px;
+  mask-image: radial-gradient(circle at center, #000 0 48%, transparent 82%);
+  transform: rotate(45deg) scale(1.45);
+}
+
+.plot-viewport {
+  position: absolute;
+  inset: 0;
+  cursor: grab;
+  overflow: hidden;
+}
+
+.plot-viewport.is-dragging {
+  cursor: grabbing;
+}
+
+.plot-grid {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 1px;
+  height: 1px;
+  transform: translate(var(--plot-x, -80px), var(--plot-y, -80px));
+  transform-style: preserve-3d;
+  transition: transform 180ms ease-out;
+}
+
+.plot-viewport.is-dragging .plot-grid {
+  transition: none;
+}
+
+.plot {
+  --tile: clamp(142px, 18vw, 220px);
+  --plot-fill: #e8dfca;
+  --plot-edge: #bcae8c;
+  --plot-ridge: rgba(255, 255, 255, 0.72);
+  --iso-x: calc((var(--q) - var(--r)) * var(--tile) * 0.78);
+  --iso-y: calc((var(--q) + var(--r)) * var(--tile) * 0.43);
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: grid;
+  place-items: center;
+  width: var(--tile);
+  min-height: calc(var(--tile) * 0.82);
+  padding: calc(var(--tile) * 0.14);
+  color: var(--ink);
+  text-align: center;
+  text-decoration: none;
+  transform: translate(-50%, -50%) translate(var(--iso-x), var(--iso-y));
+  transform-style: preserve-3d;
+  isolation: isolate;
+}
+
+.plot-top,
+.plot::before,
+.plot::after {
+  content: "";
+  position: absolute;
+  inset: 8%;
+  clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+  transform: rotateX(58deg) rotateZ(45deg);
+  transform-origin: center;
+  pointer-events: none;
+}
+
+.plot::before {
+  translate: 0 22px;
+  background: color-mix(in srgb, var(--plot-edge), #2f2b21 18%);
+  filter: blur(0.2px);
+  z-index: -2;
+}
+
+.plot::after {
+  translate: 0 35px;
+  background: rgba(43, 39, 30, 0.18);
+  filter: blur(18px);
+  z-index: -3;
+}
+
+.plot-top {
+  background:
+    linear-gradient(135deg, var(--plot-ridge), transparent 36%),
+    repeating-linear-gradient(90deg, rgba(21, 21, 21, 0.08) 0 1px, transparent 1px 18px),
+    linear-gradient(135deg, var(--plot-fill), color-mix(in srgb, var(--plot-fill), #000 12%));
+  border: 1px solid rgba(21, 21, 21, 0.16);
+  box-shadow: inset 0 -18px 28px rgba(21, 21, 21, 0.08), inset 0 12px 24px rgba(255, 255, 255, 0.45);
+  z-index: -1;
+}
+
+.plot-content {
+  display: grid;
+  gap: 7px;
+  max-width: 13rem;
+  padding: 12px;
+  border-radius: 22px;
+  background: rgba(251, 250, 246, 0.72);
+  box-shadow: 0 10px 30px rgba(43, 39, 30, 0.1);
+  backdrop-filter: blur(12px);
+}
+
+.plot-content strong {
+  font-size: clamp(1.25rem, 2.2vw, 2rem);
+  line-height: 0.95;
+  letter-spacing: -0.055em;
+}
+
+.plot-content span:not(.eyebrow),
+.plot-content em {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-style: normal;
+  font-weight: 800;
+  line-height: 1.25;
+}
+
+.plot-content em {
+  color: var(--ink);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+
+.plot.is-centered {
+  --plot-fill: #fff2a8;
+  --plot-edge: #d6a847;
+  z-index: 4;
+}
+
+.plot.is-centered .plot-top {
+  border-color: rgba(21, 21, 21, 0.32);
+  box-shadow: inset 0 -18px 28px rgba(21, 21, 21, 0.1), 0 0 0 10px rgba(255, 242, 168, 0.2);
+}
+
+.plot.is-future {
+  --plot-fill: #d8d3c8;
+  --plot-edge: #a9a295;
+  opacity: 0.68;
+  cursor: not-allowed;
+}
+
+.plot.is-future .plot-top {
+  background:
+    repeating-linear-gradient(45deg, rgba(21, 21, 21, 0.1) 0 8px, transparent 8px 17px),
+    linear-gradient(135deg, var(--plot-fill), #bbb4a8);
+}
+
+.plot.is-owned {
+  --plot-fill: #c8d2bc;
+  --plot-edge: #61745a;
+}
+
+.nemean-card.plot {
+  --plot-fill: #e6aa87;
+  --plot-edge: #b85d38;
+}
+
+.archive-card.plot {
+  --plot-fill: #c6ccda;
+  --plot-edge: #75809d;
+}
+
+.studio-card.plot {
+  --plot-fill: #d7b99b;
+  --plot-edge: #976d4d;
+}
+
+.shop-card.plot {
+  --plot-fill: #e6d392;
+  --plot-edge: #b99c54;
+}
+
+@media (max-width: 760px) {
+  .plot-stage { min-height: 620px; }
+  .plot { --tile: 150px; }
+  .plot-content span:not(.eyebrow) { display: none; }
+}

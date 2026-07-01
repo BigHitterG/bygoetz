@@ -36,19 +36,37 @@
       const conceptGrid = document.querySelector("[data-concept-grid]");
 
       if (conceptGrid) {
-        conceptGrid.innerHTML = concepts
-          .map(
-            (concept, index) => `
-              <article class="concept-card ${concept.themeClass}" style="--q: ${concept.q}; --r: ${concept.r};">
-                <p class="eyebrow">Concept ${String(index + 1).padStart(2, "0")} · ${concept.icon}</p>
-                <h2>${concept.title}</h2>
-                <p>${concept.shortDescription}</p>
-                <a class="button" href="${concept.route}">Enter ${concept.title}</a>
-              </article>
-            `
-          )
+        const plots = concepts
+          .map((concept, index) => {
+            const isOwned = concept.products.length > 0;
+            const isFuture = concept.route.startsWith("#");
+            const stateClass = isFuture ? "is-future" : isOwned ? "is-owned" : "";
+            const href = isFuture ? "#" : concept.route;
+            const actionText = isFuture ? "Future parcel" : `Enter ${concept.title}`;
+
+            return `
+              <a class="plot ${concept.themeClass} ${stateClass}" href="${href}" style="--q: ${concept.q}; --r: ${concept.r};" data-plot data-index="${index}" aria-label="${concept.title}: ${concept.shortDescription}">
+                <span class="plot-top" aria-hidden="true"></span>
+                <span class="plot-content">
+                  <span class="eyebrow">Plot ${String(index + 1).padStart(2, "0")} · ${concept.icon}</span>
+                  <strong>${concept.title}</strong>
+                  <span>${concept.shortDescription}</span>
+                  <em>${actionText}</em>
+                </span>
+              </a>
+            `;
+          })
           .join("");
+
+        conceptGrid.classList.add("plot-stage");
+        conceptGrid.innerHTML = `
+          <div class="plot-viewport" data-plot-viewport aria-label="Draggable concept parcel map">
+            <div class="plot-grid" data-plot-grid>${plots}</div>
+          </div>
+        `;
       }
+
+      window.initPlotMap?.();
     </script>
   </body>
 </html>
