@@ -1,11 +1,10 @@
 # bygoetz
 
-A single-page blank bubble grid.
+A Next.js/React Apple Watch-style honeycomb home interface with pannable, zoomable, rearrangeable app bubbles.
 
-## Files
+## Development
 
-```text
-index.html
-styles.css
-scripts.js
+```bash
+npm install
+npm run dev
 ```

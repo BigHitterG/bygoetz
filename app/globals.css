@@ -1,0 +1,5 @@
+* { box-sizing: border-box; }
+html, body { width: 100%; min-height: 100%; margin: 0; overflow: hidden; background: #000; }
+body { min-height: 100vh; min-height: 100dvh; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+a { color: inherit; }
+button { font: inherit; }
