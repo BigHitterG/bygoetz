@@ -185,7 +185,14 @@ export function HoneycombBubbles({
       nextFocused?.classList.add(styles.focusedBubble);
       focusedBubbleId.current = nearestId;
     }
+
+    surfaceRef.current?.setAttribute("data-bubbles-ready", "true");
   }, [bubbles, maxInfluenceRadius, maxScale, minScale]);
+
+  const renderImmediately = useCallback(() => {
+    if (raf.current != null) cancelAnimationFrame(raf.current);
+    render();
+  }, [render]);
 
   const scheduleRender = useCallback(() => {
     if (raf.current == null) raf.current = requestAnimationFrame(render);
@@ -286,7 +293,7 @@ export function HoneycombBubbles({
         );
       }
 
-      scheduleRender();
+      renderImmediately();
     };
 
     updateViewport();
@@ -296,11 +303,12 @@ export function HoneycombBubbles({
       window.removeEventListener("resize", updateViewport);
       window.visualViewport?.removeEventListener("resize", updateViewport);
     };
-  }, [baseBubbleSize, maxScale, scheduleRender]);
+  }, [baseBubbleSize, maxScale, renderImmediately]);
 
   useLayoutEffect(() => {
-    scheduleRender();
-  }, [bubbles, resolvedBaseBubbleSize, scheduleRender]);
+    surfaceRef.current?.removeAttribute("data-bubbles-ready");
+    renderImmediately();
+  }, [bubbles, resolvedBaseBubbleSize, renderImmediately]);
 
   useEffect(
     () => () => {

@@ -12,6 +12,10 @@
   cursor: grabbing;
 }
 
+.surface:not([data-bubbles-ready="true"]) .bubble {
+  opacity: 0;
+}
+
 .bubble {
   position: absolute;
   left: 0;
