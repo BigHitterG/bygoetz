@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import styles from "./HoneycombHome.module.css";
 
 type Bubble = {
@@ -35,6 +35,10 @@ const DEFAULT_CONFIG = {
 const MOMENTUM_FRICTION = 0.94;
 const MOMENTUM_STOP_SPEED = 0.08;
 const SNAP_DURATION = 620;
+const MOBILE_BREAKPOINT = 760;
+const MOBILE_CENTER_BUBBLE_VIEWPORT_RATIO = 0.36;
+const MOBILE_CENTER_BUBBLE_MIN_SIZE = 116;
+const MOBILE_CENTER_BUBBLE_MAX_SIZE = 152;
 
 function axialDistance(q: number, r: number) {
   return (Math.abs(q) + Math.abs(r) + Math.abs(q + r)) / 2;
@@ -56,6 +60,20 @@ function easeOutCubic(t: number) {
   return 1 - Math.pow(1 - t, 3);
 }
 
+function getResponsiveBaseBubbleSize(viewportWidth: number, maxScale: number) {
+  if (viewportWidth > MOBILE_BREAKPOINT) return DEFAULT_CONFIG.baseBubbleSize;
+
+  const targetCenterBubbleSize = Math.min(
+    MOBILE_CENTER_BUBBLE_MAX_SIZE,
+    Math.max(
+      MOBILE_CENTER_BUBBLE_MIN_SIZE,
+      viewportWidth * MOBILE_CENTER_BUBBLE_VIEWPORT_RATIO,
+    ),
+  );
+
+  return targetCenterBubbleSize / maxScale;
+}
+
 function generateBubbles(rings: number, spacing: number) {
   const bubbles: Bubble[] = [];
 
@@ -73,12 +91,15 @@ function generateBubbles(rings: number, spacing: number) {
 
 export function HoneycombBubbles({
   rings = DEFAULT_CONFIG.rings,
-  baseBubbleSize = DEFAULT_CONFIG.baseBubbleSize,
+  baseBubbleSize,
   maxScale = DEFAULT_CONFIG.maxScale,
   minScale = DEFAULT_CONFIG.minScale,
   maxInfluenceRadius = DEFAULT_CONFIG.maxInfluenceRadius,
   minimumGap = DEFAULT_CONFIG.minimumGap,
 }: HoneycombBubblesConfig) {
+  const [responsiveBaseBubbleSize, setResponsiveBaseBubbleSize] = useState(
+    baseBubbleSize ?? DEFAULT_CONFIG.baseBubbleSize,
+  );
   const surfaceRef = useRef<HTMLDivElement>(null);
   const bubbleRefs = useRef(new Map<string, HTMLDivElement>());
   const translate = useRef({ x: 0, y: 0 });
@@ -90,7 +111,8 @@ export function HoneycombBubbles({
   const snap = useRef<number | null>(null);
   const focusedBubbleId = useRef<string | null>(null);
 
-  const spacing = baseBubbleSize * maxScale + minimumGap;
+  const resolvedBaseBubbleSize = baseBubbleSize ?? responsiveBaseBubbleSize;
+  const spacing = resolvedBaseBubbleSize * maxScale + minimumGap;
   const bubbles = useMemo(
     () => generateBubbles(rings, spacing),
     [rings, spacing],
@@ -228,18 +250,25 @@ export function HoneycombBubbles({
   }, [moveBy, snapNearestBubbleToCenter, stopMomentum]);
 
   useEffect(() => {
-    const updateViewportCenter = () => {
+    const updateViewport = () => {
       viewportCenter.current = {
         x: window.innerWidth / 2,
         y: window.innerHeight / 2,
       };
+
+      if (baseBubbleSize == null) {
+        setResponsiveBaseBubbleSize(
+          getResponsiveBaseBubbleSize(window.innerWidth, maxScale),
+        );
+      }
+
       scheduleRender();
     };
 
-    updateViewportCenter();
-    window.addEventListener("resize", updateViewportCenter);
-    return () => window.removeEventListener("resize", updateViewportCenter);
-  }, [scheduleRender]);
+    updateViewport();
+    window.addEventListener("resize", updateViewport);
+    return () => window.removeEventListener("resize", updateViewport);
+  }, [baseBubbleSize, maxScale, scheduleRender]);
 
   useEffect(
     () => () => {
@@ -311,7 +340,7 @@ export function HoneycombBubbles({
           className={styles.bubble}
           style={
             {
-              "--base-size": `${baseBubbleSize}px`,
+              "--base-size": `${resolvedBaseBubbleSize}px`,
             } as React.CSSProperties
           }
           aria-hidden="true"
