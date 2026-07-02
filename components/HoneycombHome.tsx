@@ -9,28 +9,32 @@ type Bubble = {
   r: number;
   x: number;
   y: number;
-  size: number;
 };
 
 type HoneycombBubblesConfig = {
   rings?: number;
-  maxBubbleSize?: number;
-  minBubbleSize?: number;
-  spacing?: number;
+  baseBubbleSize?: number;
+  maxScale?: number;
+  minScale?: number;
+  maxInfluenceRadius?: number;
+  minimumGap?: number;
 };
 
-type Transform = { x: number; y: number; zoom: number };
 type PointerInfo = { x: number; y: number; t: number };
+type ViewportCenter = { x: number; y: number };
 
 const DEFAULT_CONFIG = {
-  rings: 5,
-  maxBubbleSize: 104,
-  minBubbleSize: 34,
-  spacing: 112,
+  rings: 8,
+  baseBubbleSize: 72,
+  maxScale: 1.45,
+  minScale: 0.45,
+  maxInfluenceRadius: 420,
+  minimumGap: 14,
 };
 
-const MIN_ZOOM = 0.45;
-const MAX_ZOOM = 2.4;
+const MOMENTUM_FRICTION = 0.94;
+const MOMENTUM_STOP_SPEED = 0.08;
+const SNAP_DURATION = 620;
 
 function axialDistance(q: number, r: number) {
   return (Math.abs(q) + Math.abs(r) + Math.abs(q + r)) / 2;
@@ -43,122 +47,191 @@ function axialToPixel(q: number, r: number, spacing: number) {
   };
 }
 
-function generateBubbles({ rings = DEFAULT_CONFIG.rings, maxBubbleSize = DEFAULT_CONFIG.maxBubbleSize, minBubbleSize = DEFAULT_CONFIG.minBubbleSize, spacing = DEFAULT_CONFIG.spacing }: HoneycombBubblesConfig = {}) {
+function smoothstep(edge0: number, edge1: number, x: number) {
+  const t = Math.max(0, Math.min(1, (x - edge0) / (edge1 - edge0)));
+  return t * t * (3 - 2 * t);
+}
+
+function easeOutCubic(t: number) {
+  return 1 - Math.pow(1 - t, 3);
+}
+
+function generateBubbles(rings: number, spacing: number) {
   const bubbles: Bubble[] = [];
 
   for (let q = -rings; q <= rings; q += 1) {
     for (let r = -rings; r <= rings; r += 1) {
-      const distance = axialDistance(q, r);
-      if (distance > rings) continue;
+      if (axialDistance(q, r) > rings) continue;
 
       const { x, y } = axialToPixel(q, r, spacing);
-      const falloff = 1 - distance / rings;
-      const smoothFalloff = falloff * falloff * (3 - 2 * falloff);
-      const size = minBubbleSize + (maxBubbleSize - minBubbleSize) * smoothFalloff;
-
-      bubbles.push({ id: `${q}:${r}`, q, r, x, y, size });
+      bubbles.push({ id: `${q}:${r}`, q, r, x, y });
     }
   }
 
   return bubbles;
 }
 
-function distance(a: PointerInfo, b: PointerInfo) {
-  return Math.hypot(a.x - b.x, a.y - b.y);
-}
-
-export function HoneycombBubbles(config: HoneycombBubblesConfig) {
+export function HoneycombBubbles({
+  rings = DEFAULT_CONFIG.rings,
+  baseBubbleSize = DEFAULT_CONFIG.baseBubbleSize,
+  maxScale = DEFAULT_CONFIG.maxScale,
+  minScale = DEFAULT_CONFIG.minScale,
+  maxInfluenceRadius = DEFAULT_CONFIG.maxInfluenceRadius,
+  minimumGap = DEFAULT_CONFIG.minimumGap,
+}: HoneycombBubblesConfig) {
   const surfaceRef = useRef<HTMLDivElement>(null);
-  const gridRef = useRef<HTMLDivElement>(null);
-  const transform = useRef<Transform>({ x: 0, y: 0, zoom: 1 });
+  const bubbleRefs = useRef(new Map<string, HTMLDivElement>());
+  const translate = useRef({ x: 0, y: 0 });
   const velocity = useRef({ x: 0, y: 0 });
+  const viewportCenter = useRef<ViewportCenter>({ x: 0, y: 0 });
   const pointers = useRef(new Map<number, PointerInfo>());
-  const pinch = useRef<{ distance: number; zoom: number } | null>(null);
   const raf = useRef<number | null>(null);
-  const inertia = useRef<number | null>(null);
+  const momentum = useRef<number | null>(null);
+  const snap = useRef<number | null>(null);
+  const focusedBubbleId = useRef<string | null>(null);
 
-  const bubbles = useMemo(() => generateBubbles(config), [config.rings, config.maxBubbleSize, config.minBubbleSize, config.spacing]);
+  const spacing = baseBubbleSize * maxScale + minimumGap;
+  const bubbles = useMemo(() => generateBubbles(rings, spacing), [rings, spacing]);
+
+  const stopMomentum = useCallback(() => {
+    if (momentum.current != null) cancelAnimationFrame(momentum.current);
+    momentum.current = null;
+  }, []);
+
+  const stopSnap = useCallback(() => {
+    if (snap.current != null) cancelAnimationFrame(snap.current);
+    snap.current = null;
+  }, []);
 
   const render = useCallback(() => {
     raf.current = null;
-    if (!gridRef.current) return;
+    const center = viewportCenter.current;
+    let nearestId: string | null = null;
+    let nearestDistance = Number.POSITIVE_INFINITY;
 
-    const { x, y, zoom } = transform.current;
-    gridRef.current.style.transform = `translate3d(${x}px, ${y}px, 0) scale(${zoom})`;
-  }, []);
+    for (const bubble of bubbles) {
+      const element = bubbleRefs.current.get(bubble.id);
+      if (!element) continue;
+
+      const screenX = center.x + translate.current.x + bubble.x;
+      const screenY = center.y + translate.current.y + bubble.y;
+      const distanceFromCenter = Math.hypot(screenX - center.x, screenY - center.y);
+      const normalized = Math.min(distanceFromCenter / maxInfluenceRadius, 1);
+      const scale = maxScale - (maxScale - minScale) * smoothstep(0, 1, normalized);
+
+      if (distanceFromCenter < nearestDistance) {
+        nearestDistance = distanceFromCenter;
+        nearestId = bubble.id;
+      }
+
+      element.style.transform = `translate(-50%, -50%) translate3d(${screenX}px, ${screenY}px, 0) scale(${scale})`;
+      element.style.zIndex = String(Math.round((1 - normalized) * 1000));
+    }
+
+    if (focusedBubbleId.current !== nearestId) {
+      const previousFocused = focusedBubbleId.current ? bubbleRefs.current.get(focusedBubbleId.current) : null;
+      previousFocused?.classList.remove(styles.focusedBubble);
+      const nextFocused = nearestId ? bubbleRefs.current.get(nearestId) : null;
+      nextFocused?.classList.add(styles.focusedBubble);
+      focusedBubbleId.current = nearestId;
+    }
+  }, [bubbles, maxInfluenceRadius, maxScale, minScale]);
 
   const scheduleRender = useCallback(() => {
     if (raf.current == null) raf.current = requestAnimationFrame(render);
   }, [render]);
 
-  const stopInertia = useCallback(() => {
-    if (inertia.current != null) cancelAnimationFrame(inertia.current);
-    inertia.current = null;
-  }, []);
-
   const moveBy = useCallback((dx: number, dy: number) => {
-    transform.current.x += dx;
-    transform.current.y += dy;
+    translate.current.x += dx;
+    translate.current.y += dy;
     scheduleRender();
   }, [scheduleRender]);
 
-  const zoomAround = useCallback((nextZoom: number, clientX: number, clientY: number) => {
-    const surface = surfaceRef.current;
-    if (!surface) return;
+  const snapNearestBubbleToCenter = useCallback(() => {
+    stopSnap();
+    const center = viewportCenter.current;
+    let nearestBubble: Bubble | null = null;
+    let nearestDistance = Number.POSITIVE_INFINITY;
 
-    const rect = surface.getBoundingClientRect();
-    const current = transform.current;
-    const zoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, nextZoom));
-    const pointerX = clientX - rect.left - rect.width / 2;
-    const pointerY = clientY - rect.top - rect.height / 2;
-    const zoomRatio = zoom / current.zoom;
+    for (const bubble of bubbles) {
+      const screenX = center.x + translate.current.x + bubble.x;
+      const screenY = center.y + translate.current.y + bubble.y;
+      const distanceFromCenter = Math.hypot(screenX - center.x, screenY - center.y);
+      if (distanceFromCenter < nearestDistance) {
+        nearestDistance = distanceFromCenter;
+        nearestBubble = bubble;
+      }
+    }
 
-    transform.current = {
-      x: pointerX - (pointerX - current.x) * zoomRatio,
-      y: pointerY - (pointerY - current.y) * zoomRatio,
-      zoom,
+    if (!nearestBubble || nearestDistance < 0.5) return;
+
+    const start = { ...translate.current };
+    const delta = {
+      x: center.x - (center.x + start.x + nearestBubble.x),
+      y: center.y - (center.y + start.y + nearestBubble.y),
     };
-    scheduleRender();
-  }, [scheduleRender]);
+    const startTime = performance.now();
 
-  const startInertia = useCallback(() => {
-    stopInertia();
+    const tick = (now: number) => {
+      const progress = Math.min((now - startTime) / SNAP_DURATION, 1);
+      const eased = easeOutCubic(progress);
+      translate.current = {
+        x: start.x + delta.x * eased,
+        y: start.y + delta.y * eased,
+      };
+      scheduleRender();
 
-    const tick = () => {
-      velocity.current.x *= 0.94;
-      velocity.current.y *= 0.94;
-      moveBy(velocity.current.x, velocity.current.y);
-
-      if (Math.hypot(velocity.current.x, velocity.current.y) > 0.08) {
-        inertia.current = requestAnimationFrame(tick);
+      if (progress < 1) {
+        snap.current = requestAnimationFrame(tick);
       } else {
-        inertia.current = null;
+        snap.current = null;
       }
     };
 
-    inertia.current = requestAnimationFrame(tick);
-  }, [moveBy, stopInertia]);
+    snap.current = requestAnimationFrame(tick);
+  }, [bubbles, scheduleRender, stopSnap]);
+
+  const startMomentum = useCallback(() => {
+    stopMomentum();
+
+    const tick = () => {
+      velocity.current.x *= MOMENTUM_FRICTION;
+      velocity.current.y *= MOMENTUM_FRICTION;
+      moveBy(velocity.current.x, velocity.current.y);
+
+      if (Math.hypot(velocity.current.x, velocity.current.y) > MOMENTUM_STOP_SPEED) {
+        momentum.current = requestAnimationFrame(tick);
+      } else {
+        momentum.current = null;
+        snapNearestBubbleToCenter();
+      }
+    };
+
+    momentum.current = requestAnimationFrame(tick);
+  }, [moveBy, snapNearestBubbleToCenter, stopMomentum]);
 
   useEffect(() => {
-    const centerGrid = () => {
-      const width = surfaceRef.current?.clientWidth ?? window.innerWidth;
-      transform.current = { x: 0, y: 0, zoom: width < 760 ? 0.78 : 1 };
+    const updateViewportCenter = () => {
+      viewportCenter.current = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
       scheduleRender();
     };
 
-    centerGrid();
-    window.addEventListener("resize", centerGrid);
-    return () => window.removeEventListener("resize", centerGrid);
+    updateViewportCenter();
+    window.addEventListener("resize", updateViewportCenter);
+    return () => window.removeEventListener("resize", updateViewportCenter);
   }, [scheduleRender]);
 
   useEffect(() => () => {
     if (raf.current != null) cancelAnimationFrame(raf.current);
-    if (inertia.current != null) cancelAnimationFrame(inertia.current);
+    if (momentum.current != null) cancelAnimationFrame(momentum.current);
+    if (snap.current != null) cancelAnimationFrame(snap.current);
   }, []);
 
   function onPointerDown(event: React.PointerEvent<HTMLDivElement>) {
     event.preventDefault();
-    stopInertia();
+    stopMomentum();
+    stopSnap();
+    velocity.current = { x: 0, y: 0 };
     pointers.current.set(event.pointerId, { x: event.clientX, y: event.clientY, t: performance.now() });
     event.currentTarget.setPointerCapture(event.pointerId);
   }
@@ -171,18 +244,6 @@ export function HoneycombBubbles(config: HoneycombBubblesConfig) {
     const now = performance.now();
     const current = { x: event.clientX, y: event.clientY, t: now };
     pointers.current.set(event.pointerId, current);
-    const activePointers = [...pointers.current.values()];
-
-    if (activePointers.length >= 2) {
-      const [first, second] = activePointers;
-      const pinchDistance = distance(first, second);
-      const centerX = (first.x + second.x) / 2;
-      const centerY = (first.y + second.y) / 2;
-
-      if (!pinch.current) pinch.current = { distance: pinchDistance, zoom: transform.current.zoom };
-      zoomAround(pinch.current.zoom * (pinchDistance / pinch.current.distance), centerX, centerY);
-      return;
-    }
 
     const dx = current.x - previous.x;
     const dy = current.y - previous.y;
@@ -193,10 +254,13 @@ export function HoneycombBubbles(config: HoneycombBubblesConfig) {
 
   function onPointerUp(event: React.PointerEvent<HTMLDivElement>) {
     pointers.current.delete(event.pointerId);
-    pinch.current = null;
 
-    if (pointers.current.size === 0 && Math.hypot(velocity.current.x, velocity.current.y) > 0.5) {
-      startInertia();
+    if (pointers.current.size !== 0) return;
+
+    if (Math.hypot(velocity.current.x, velocity.current.y) > 0.5) {
+      startMomentum();
+    } else {
+      snapNearestBubbleToCenter();
     }
   }
 
@@ -209,25 +273,21 @@ export function HoneycombBubbles(config: HoneycombBubblesConfig) {
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
         onPointerCancel={onPointerUp}
-        onWheel={(event) => {
-          event.preventDefault();
-          zoomAround(transform.current.zoom * Math.exp(-event.deltaY * 0.0016), event.clientX, event.clientY);
-        }}
       >
-        <div ref={gridRef} className={styles.grid}>
-          {bubbles.map((bubble) => (
-            <div
-              key={bubble.id}
-              className={styles.bubble}
-              style={{
-                "--x": `${bubble.x}px`,
-                "--y": `${bubble.y}px`,
-                "--size": `${bubble.size}px`,
-              } as React.CSSProperties}
-              aria-hidden="true"
-            />
-          ))}
-        </div>
+        {bubbles.map((bubble) => (
+          <div
+            key={bubble.id}
+            ref={(element) => {
+              if (element) bubbleRefs.current.set(bubble.id, element);
+              else bubbleRefs.current.delete(bubble.id);
+            }}
+            className={styles.bubble}
+            style={{
+              "--base-size": `${baseBubbleSize}px`,
+            } as React.CSSProperties}
+            aria-hidden="true"
+          />
+        ))}
       </div>
     </main>
   );
