@@ -1,444 +1,79 @@
-:root {
-  --paper: #fbfaf6;
-  --ink: #151515;
-  --muted: #62605a;
-  --line: rgba(21, 21, 21, 0.12);
-  --sun: #fff2a8;
-  --clay: #d76f45;
-  --moss: #61745a;
-  --night: #1f2937;
+* {
+  box-sizing: border-box;
 }
 
-* { box-sizing: border-box; }
-
-html { min-height: 100%; }
-
+html,
 body {
+  width: 100%;
   min-height: 100%;
   margin: 0;
-  color: var(--ink);
-  background:
-    radial-gradient(circle at 78% 16%, rgba(255, 242, 168, 0.72), transparent 18rem),
-    linear-gradient(135deg, #ffffff 0%, var(--paper) 58%, #ebe6da 100%);
-  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-}
-
-a { color: inherit; }
-
-.site-header {
-  position: sticky;
-  top: 0;
-  z-index: 10;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 18px;
-  padding: 18px clamp(18px, 4vw, 56px);
-  background: rgba(251, 250, 246, 0.82);
-  border-bottom: 1px solid var(--line);
-  backdrop-filter: blur(18px);
-}
-
-.brand,
-.site-header a {
-  font-weight: 900;
-  text-decoration: none;
-}
-
-.site-header nav {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  color: var(--muted);
-  font-size: 0.92rem;
-}
-
-.site-header nav a[aria-current="page"] { color: var(--ink); }
-
-.page-shell {
-  width: min(1180px, calc(100% - 32px));
-  margin: 0 auto;
-  padding: clamp(32px, 6vw, 88px) 0;
-}
-
-.hero {
-  max-width: 900px;
-  margin-bottom: clamp(28px, 5vw, 60px);
-}
-
-.hero.compact { max-width: 720px; }
-
-.eyebrow {
-  margin: 0 0 12px;
-  color: var(--muted);
-  font-size: 0.72rem;
-  font-weight: 950;
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
-}
-
-h1,
-h2 {
-  margin: 0;
-  letter-spacing: -0.055em;
-  line-height: 0.94;
-}
-
-h1 { font-size: clamp(3rem, 8vw, 7.8rem); }
-h2 { font-size: clamp(2.1rem, 5vw, 4.8rem); }
-
-p {
-  color: var(--muted);
-  font-size: clamp(1rem, 1.8vw, 1.2rem);
-  font-weight: 650;
-  line-height: 1.45;
-}
-
-.concept-grid,
-.product-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: clamp(18px, 3vw, 34px);
-}
-
-.concept-card,
-.product-card,
-.bag-panel,
-.checkout-form,
-.product-detail {
-  border: 1px solid var(--line);
-  border-radius: clamp(28px, 4vw, 54px);
-  background: rgba(255, 255, 255, 0.62);
-  box-shadow: 0 28px 90px rgba(43, 39, 30, 0.1);
-  backdrop-filter: blur(18px);
-}
-
-.concept-card,
-.product-card,
-.bag-panel,
-.checkout-form { padding: clamp(22px, 4vw, 44px); }
-
-.concept-card {
-  min-height: 430px;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
   overflow: hidden;
-  position: relative;
-}
-
-.concept-card::before {
-  content: "";
-  position: absolute;
-  inset: 28px 28px auto auto;
-  width: 180px;
-  aspect-ratio: 1;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.55);
-  box-shadow: inset 0 -18px 30px rgba(21, 21, 21, 0.08);
-}
-
-.explorers-card { background: linear-gradient(135deg, rgba(97, 116, 90, 0.24), rgba(255,255,255,0.68)); }
-.nemean-card { background: linear-gradient(135deg, rgba(215, 111, 69, 0.24), rgba(255,255,255,0.68)); }
-.archive-card { background: linear-gradient(135deg, rgba(88, 104, 137, 0.22), rgba(255,255,255,0.68)); }
-.studio-card { background: linear-gradient(135deg, rgba(151, 109, 77, 0.22), rgba(255,255,255,0.68)); }
-.shop-card { background: linear-gradient(135deg, rgba(185, 156, 84, 0.24), rgba(255,255,255,0.68)); }
-
-.button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 52px;
-  margin-top: 16px;
-  padding: 0 22px;
-  border: 1px solid rgba(21, 21, 21, 0.2);
-  border-radius: 999px;
-  color: var(--ink);
   background: #fff;
-  cursor: pointer;
-  font: inherit;
-  font-weight: 950;
-  letter-spacing: 0.05em;
-  text-decoration: none;
-  text-transform: uppercase;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
-.product-detail {
-  display: grid;
-  grid-template-columns: minmax(220px, 0.8fr) minmax(0, 1fr);
-  gap: clamp(24px, 5vw, 60px);
-  padding: clamp(22px, 5vw, 60px);
+body {
+  min-height: 100vh;
+  min-height: 100dvh;
 }
 
-.product-media {
-  display: grid;
-  place-items: center;
-  min-height: 420px;
-  border-radius: 38px;
-  color: rgba(21, 21, 21, 0.26);
-  background: radial-gradient(circle, var(--sun), #f0ece2 62%);
-  font-size: clamp(5rem, 14vw, 11rem);
-  font-weight: 950;
-  letter-spacing: -0.08em;
-}
-
-.price {
-  color: var(--ink);
-  font-size: 1.6rem;
-  font-weight: 950;
-}
-
-.back-link {
-  display: inline-block;
-  margin-bottom: 18px;
-  color: var(--muted);
-  font-weight: 900;
-  text-decoration: none;
-}
-
-.bag-row,
-.bag-total {
-  display: flex;
-  justify-content: space-between;
-  gap: 20px;
-  padding: 16px 0;
-  border-bottom: 1px solid var(--line);
-  font-weight: 850;
-}
-
-.bag-total {
-  border-bottom: 0;
-  font-size: 1.35rem;
-}
-
-.checkout-form {
-  display: grid;
-  gap: 18px;
-  max-width: 720px;
-}
-
-label {
-  display: grid;
-  gap: 8px;
-  color: var(--muted);
-  font-weight: 900;
-}
-
-input,
-textarea {
-  width: 100%;
-  border: 1px solid var(--line);
-  border-radius: 18px;
-  padding: 14px 16px;
-  color: var(--ink);
-  background: #fff;
-  font: inherit;
-}
-
-@media (max-width: 760px) {
-  .site-header { align-items: flex-start; flex-direction: column; }
-  .concept-grid,
-  .product-grid,
-  .product-detail { grid-template-columns: 1fr; }
-  .concept-card { min-height: 320px; }
-}
-
-.plot-stage {
-  position: relative;
-  display: block;
-  min-height: min(78vh, 760px);
+.watch-grid {
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
   overflow: hidden;
-  border: 1px solid rgba(21, 21, 21, 0.1);
-  border-radius: clamp(30px, 5vw, 64px);
-  background:
-    linear-gradient(120deg, rgba(255, 255, 255, 0.72), rgba(235, 230, 218, 0.38)),
-    radial-gradient(circle at 22% 18%, rgba(255, 242, 168, 0.5), transparent 24rem),
-    radial-gradient(circle at 86% 82%, rgba(97, 116, 90, 0.22), transparent 20rem);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7), 0 34px 110px rgba(43, 39, 30, 0.12);
+  background: #fff;
+  touch-action: none;
+  user-select: none;
+}
+
+.grid-surface {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  cursor: grab;
+  background: #fff;
   touch-action: none;
 }
 
-.plot-stage::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background-image:
-    linear-gradient(rgba(21, 21, 21, 0.05) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(21, 21, 21, 0.05) 1px, transparent 1px);
-  background-size: 72px 72px;
-  mask-image: radial-gradient(circle at center, #000 0 48%, transparent 82%);
-  transform: rotate(45deg) scale(1.45);
-}
-
-.plot-viewport {
-  position: absolute;
-  inset: 0;
-  cursor: grab;
-  overflow: hidden;
-}
-
-.plot-viewport.is-dragging {
+.grid-surface.is-dragging {
   cursor: grabbing;
 }
 
-.plot-grid {
+.bubble-field {
+  --grid-x: 0px;
+  --grid-y: 0px;
   position: absolute;
   left: 50%;
   top: 50%;
   width: 1px;
   height: 1px;
-  transform: translate(var(--plot-x, -80px), var(--plot-y, -80px));
-  transform-style: preserve-3d;
-  transition: transform 180ms ease-out;
+  transform: translate3d(var(--grid-x), var(--grid-y), 0);
+  will-change: transform;
 }
 
-.plot-viewport.is-dragging .plot-grid {
-  transition: none;
-}
-
-.plot {
-  --tile: clamp(142px, 18vw, 220px);
-  --plot-fill: #e8dfca;
-  --plot-edge: #bcae8c;
-  --plot-ridge: rgba(255, 255, 255, 0.72);
-  --iso-x: calc((var(--q) - var(--r)) * var(--tile) * 0.78);
-  --iso-y: calc((var(--q) + var(--r)) * var(--tile) * 0.43);
+.bubble {
+  --size: 76px;
   position: absolute;
   left: 0;
   top: 0;
-  display: grid;
-  place-items: center;
-  width: var(--tile);
-  min-height: calc(var(--tile) * 0.82);
-  padding: calc(var(--tile) * 0.14);
-  color: var(--ink);
-  text-align: center;
-  text-decoration: none;
-  transform: translate(-50%, -50%) translate(var(--iso-x), var(--iso-y));
-  transform-style: preserve-3d;
-  isolation: isolate;
-}
-
-.plot-top,
-.plot::before,
-.plot::after {
-  content: "";
-  position: absolute;
-  inset: 8%;
-  clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
-  transform: rotateX(58deg) rotateZ(45deg);
-  transform-origin: center;
+  width: var(--size);
+  height: var(--size);
+  border: 0;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 32% 24%, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.12) 28%, transparent 42%),
+    linear-gradient(145deg, hsl(var(--hue), 78%, 63%), hsl(var(--hue), 72%, 45%));
+  box-shadow:
+    inset 0 -12px 18px rgba(0, 0, 0, 0.16),
+    inset 0 8px 16px rgba(255, 255, 255, 0.28),
+    0 10px 24px rgba(0, 0, 0, 0.1);
+  transform: translate(-50%, -50%) translate3d(var(--x), var(--y), 0) scale(var(--scale, 1));
   pointer-events: none;
 }
 
-.plot::before {
-  translate: 0 22px;
-  background: color-mix(in srgb, var(--plot-edge), #2f2b21 18%);
-  filter: blur(0.2px);
-  z-index: -2;
-}
-
-.plot::after {
-  translate: 0 35px;
-  background: rgba(43, 39, 30, 0.18);
-  filter: blur(18px);
-  z-index: -3;
-}
-
-.plot-top {
-  background:
-    linear-gradient(135deg, var(--plot-ridge), transparent 36%),
-    repeating-linear-gradient(90deg, rgba(21, 21, 21, 0.08) 0 1px, transparent 1px 18px),
-    linear-gradient(135deg, var(--plot-fill), color-mix(in srgb, var(--plot-fill), #000 12%));
-  border: 1px solid rgba(21, 21, 21, 0.16);
-  box-shadow: inset 0 -18px 28px rgba(21, 21, 21, 0.08), inset 0 12px 24px rgba(255, 255, 255, 0.45);
-  z-index: -1;
-}
-
-.plot-content {
-  display: grid;
-  gap: 7px;
-  max-width: 13rem;
-  padding: 12px;
-  border-radius: 22px;
-  background: rgba(251, 250, 246, 0.72);
-  box-shadow: 0 10px 30px rgba(43, 39, 30, 0.1);
-  backdrop-filter: blur(12px);
-}
-
-.plot-content strong {
-  font-size: clamp(1.25rem, 2.2vw, 2rem);
-  line-height: 0.95;
-  letter-spacing: -0.055em;
-}
-
-.plot-content span:not(.eyebrow),
-.plot-content em {
-  color: var(--muted);
-  font-size: 0.78rem;
-  font-style: normal;
-  font-weight: 800;
-  line-height: 1.25;
-}
-
-.plot-content em {
-  color: var(--ink);
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-}
-
-.plot.is-centered {
-  --plot-fill: #fff2a8;
-  --plot-edge: #d6a847;
-  z-index: 4;
-}
-
-.plot.is-centered .plot-top {
-  border-color: rgba(21, 21, 21, 0.32);
-  box-shadow: inset 0 -18px 28px rgba(21, 21, 21, 0.1), 0 0 0 10px rgba(255, 242, 168, 0.2);
-}
-
-.plot.is-future {
-  --plot-fill: #d8d3c8;
-  --plot-edge: #a9a295;
-  opacity: 0.68;
-  cursor: not-allowed;
-}
-
-.plot.is-future .plot-top {
-  background:
-    repeating-linear-gradient(45deg, rgba(21, 21, 21, 0.1) 0 8px, transparent 8px 17px),
-    linear-gradient(135deg, var(--plot-fill), #bbb4a8);
-}
-
-.plot.is-owned {
-  --plot-fill: #c8d2bc;
-  --plot-edge: #61745a;
-}
-
-.nemean-card.plot {
-  --plot-fill: #e6aa87;
-  --plot-edge: #b85d38;
-}
-
-.archive-card.plot {
-  --plot-fill: #c6ccda;
-  --plot-edge: #75809d;
-}
-
-.studio-card.plot {
-  --plot-fill: #d7b99b;
-  --plot-edge: #976d4d;
-}
-
-.shop-card.plot {
-  --plot-fill: #e6d392;
-  --plot-edge: #b99c54;
-}
-
-@media (max-width: 760px) {
-  .plot-stage { min-height: 620px; }
-  .plot { --tile: 150px; }
-  .plot-content span:not(.eyebrow) { display: none; }
+@media (max-width: 680px) {
+  .bubble {
+    --size: 62px;
+  }
 }

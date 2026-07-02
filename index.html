@@ -3,70 +3,16 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>By Goetz — Concept Map</title>
+    <title>Blank Grid</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <header class="site-header">
-      <a class="brand" href="index.html">By Goetz</a>
-      <nav aria-label="Primary navigation">
-        <a href="concepts/explorers/index.html">Explorers</a>
-        <a href="concepts/nemean/index.html">Nemean</a>
-        <a href="bag/index.html">Bag <span data-bag-count>0</span></a>
-      </nav>
-    </header>
-
-    <main class="page-shell map-page" aria-labelledby="page-title">
-      <section class="hero">
-        <p class="eyebrow">Master grid</p>
-        <h1 id="page-title">A clear map for concepts, products, bag, and checkout.</h1>
-        <p>
-          Start with a concept, move into its products, add a piece to the shared bag, then finish in a
-          single checkout flow.
-        </p>
-      </section>
-
-      <section class="concept-grid" aria-label="Concept map" data-concept-grid></section>
+    <main class="watch-grid" aria-label="Blank draggable bubble grid">
+      <div class="grid-surface" data-grid-surface>
+        <div class="bubble-field" data-bubble-field aria-hidden="true"></div>
+      </div>
     </main>
 
     <script src="scripts.js"></script>
-    <script type="module">
-      import { concepts } from "./data/concepts.js";
-
-      const conceptGrid = document.querySelector("[data-concept-grid]");
-
-      if (conceptGrid) {
-        const plots = concepts
-          .map((concept, index) => {
-            const isOwned = concept.products.length > 0;
-            const isFuture = concept.route.startsWith("#");
-            const stateClass = isFuture ? "is-future" : isOwned ? "is-owned" : "";
-            const href = isFuture ? "#" : concept.route;
-            const actionText = isFuture ? "Future parcel" : `Enter ${concept.title}`;
-
-            return `
-              <a class="plot ${concept.themeClass} ${stateClass}" href="${href}" style="--q: ${concept.q}; --r: ${concept.r};" data-plot data-index="${index}" aria-label="${concept.title}: ${concept.shortDescription}">
-                <span class="plot-top" aria-hidden="true"></span>
-                <span class="plot-content">
-                  <span class="eyebrow">Plot ${String(index + 1).padStart(2, "0")} · ${concept.icon}</span>
-                  <strong>${concept.title}</strong>
-                  <span>${concept.shortDescription}</span>
-                  <em>${actionText}</em>
-                </span>
-              </a>
-            `;
-          })
-          .join("");
-
-        conceptGrid.classList.add("plot-stage");
-        conceptGrid.innerHTML = `
-          <div class="plot-viewport" data-plot-viewport aria-label="Draggable concept parcel map">
-            <div class="plot-grid" data-plot-grid>${plots}</div>
-          </div>
-        `;
-      }
-
-      window.initPlotMap?.();
-    </script>
   </body>
 </html>
