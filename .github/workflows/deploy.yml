@@ -24,6 +24,48 @@ jobs:
           node-version: 20
           cache: npm
       - uses: actions/configure-pages@v5
+      - name: Ensure Pages source is GitHub Actions
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+
+          pages_api="https://api.github.com/repos/${REPOSITORY}/pages"
+          headers=(
+            -H "Accept: application/vnd.github+json"
+            -H "Authorization: Bearer ${GITHUB_TOKEN}"
+            -H "X-GitHub-Api-Version: 2022-11-28"
+          )
+
+          status="$(curl -sS -o /tmp/pages.json -w '%{http_code}' "${headers[@]}" "${pages_api}")"
+          if [ "${status}" = "200" ]; then
+            update_status="$(curl -sS -L -X PUT "${headers[@]}" "${pages_api}" \
+              -d '{"build_type":"workflow"}' \
+              -o /tmp/pages-update.json \
+              -w '%{http_code}')"
+            if [ "${update_status}" != "204" ]; then
+              cat /tmp/pages-update.json
+              echo "Unable to update Pages source to GitHub Actions (HTTP ${update_status})."
+              exit 1
+            fi
+            echo "Updated Pages source to GitHub Actions."
+          elif [ "${status}" = "404" ]; then
+            create_status="$(curl -sS -L -X POST "${headers[@]}" "${pages_api}" \
+              -d '{"build_type":"workflow"}' \
+              -o /tmp/pages-create.json \
+              -w '%{http_code}')"
+            if [ "${create_status}" != "201" ]; then
+              cat /tmp/pages-create.json
+              echo "Unable to create GitHub Actions Pages site (HTTP ${create_status})."
+              exit 1
+            fi
+            echo "Created GitHub Actions Pages site."
+          else
+            cat /tmp/pages.json
+            echo "Unable to inspect GitHub Pages configuration (HTTP ${status})."
+            exit 1
+          fi
       - run: npm ci
       - run: npm run build
       - run: test -f out/index.html
