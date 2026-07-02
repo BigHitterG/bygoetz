@@ -22,6 +22,7 @@ type HoneycombBubblesConfig = {
   rings?: number;
   baseBubbleSize?: number;
   maxScale?: number;
+  centerBubbleScaleMultiplier?: number;
   minScale?: number;
   maxInfluenceRadius?: number;
   minimumGap?: number;
@@ -34,6 +35,7 @@ const DEFAULT_CONFIG = {
   rings: 8,
   baseBubbleSize: 72,
   maxScale: 1.45,
+  centerBubbleScaleMultiplier: 2,
   minScale: 0.45,
   maxInfluenceRadius: 420,
   minimumGap: 14,
@@ -43,9 +45,9 @@ const MOMENTUM_FRICTION = 0.94;
 const MOMENTUM_STOP_SPEED = 0.08;
 const SNAP_DURATION = 620;
 const MOBILE_BREAKPOINT = 760;
-const MOBILE_CENTER_BUBBLE_VIEWPORT_RATIO = 0.36;
-const MOBILE_CENTER_BUBBLE_MIN_SIZE = 116;
-const MOBILE_CENTER_BUBBLE_MAX_SIZE = 152;
+const MOBILE_CENTER_BUBBLE_VIEWPORT_RATIO = 0.48;
+const MOBILE_CENTER_BUBBLE_MIN_SIZE = 180;
+const MOBILE_CENTER_BUBBLE_MAX_SIZE = 256;
 
 function axialDistance(q: number, r: number) {
   return (Math.abs(q) + Math.abs(r) + Math.abs(q + r)) / 2;
@@ -78,7 +80,11 @@ function getViewportSize() {
   };
 }
 
-function getResponsiveBaseBubbleSize(viewportWidth: number, maxScale: number) {
+function getResponsiveBaseBubbleSize(
+  viewportWidth: number,
+  maxScale: number,
+  centerBubbleScaleMultiplier: number,
+) {
   if (viewportWidth > MOBILE_BREAKPOINT) return DEFAULT_CONFIG.baseBubbleSize;
 
   const targetCenterBubbleSize = Math.min(
@@ -89,7 +95,7 @@ function getResponsiveBaseBubbleSize(viewportWidth: number, maxScale: number) {
     ),
   );
 
-  return targetCenterBubbleSize / maxScale;
+  return targetCenterBubbleSize / (maxScale * centerBubbleScaleMultiplier);
 }
 
 function generateBubbles(rings: number, spacing: number) {
@@ -111,13 +117,18 @@ export function HoneycombBubbles({
   rings = DEFAULT_CONFIG.rings,
   baseBubbleSize,
   maxScale = DEFAULT_CONFIG.maxScale,
+  centerBubbleScaleMultiplier = DEFAULT_CONFIG.centerBubbleScaleMultiplier,
   minScale = DEFAULT_CONFIG.minScale,
   maxInfluenceRadius = DEFAULT_CONFIG.maxInfluenceRadius,
   minimumGap = DEFAULT_CONFIG.minimumGap,
 }: HoneycombBubblesConfig) {
   const [responsiveBaseBubbleSize, setResponsiveBaseBubbleSize] = useState(() => {
     if (baseBubbleSize != null) return baseBubbleSize;
-    return getResponsiveBaseBubbleSize(getViewportSize().width, maxScale);
+    return getResponsiveBaseBubbleSize(
+      getViewportSize().width,
+      maxScale,
+      centerBubbleScaleMultiplier,
+    );
   });
   const surfaceRef = useRef<HTMLDivElement>(null);
   const bubbleRefs = useRef(new Map<string, HTMLDivElement>());
@@ -131,7 +142,8 @@ export function HoneycombBubbles({
   const focusedBubbleId = useRef<string | null>(null);
 
   const resolvedBaseBubbleSize = baseBubbleSize ?? responsiveBaseBubbleSize;
-  const spacing = resolvedBaseBubbleSize * maxScale + minimumGap;
+  const centerScale = maxScale * centerBubbleScaleMultiplier;
+  const spacing = resolvedBaseBubbleSize * centerScale + minimumGap;
   const bubbles = useMemo(
     () => generateBubbles(rings, spacing),
     [rings, spacing],
@@ -165,7 +177,7 @@ export function HoneycombBubbles({
       );
       const normalized = Math.min(distanceFromCenter / maxInfluenceRadius, 1);
       const scale =
-        maxScale - (maxScale - minScale) * smoothstep(0, 1, normalized);
+        centerScale - (centerScale - minScale) * smoothstep(0, 1, normalized);
 
       if (distanceFromCenter < nearestDistance) {
         nearestDistance = distanceFromCenter;
@@ -187,7 +199,7 @@ export function HoneycombBubbles({
     }
 
     surfaceRef.current?.setAttribute("data-bubbles-ready", "true");
-  }, [bubbles, maxInfluenceRadius, maxScale, minScale]);
+  }, [bubbles, centerScale, maxInfluenceRadius, minScale]);
 
   const renderImmediately = useCallback(() => {
     if (raf.current != null) cancelAnimationFrame(raf.current);
@@ -289,7 +301,11 @@ export function HoneycombBubbles({
 
       if (baseBubbleSize == null) {
         setResponsiveBaseBubbleSize(
-          getResponsiveBaseBubbleSize(width, maxScale),
+          getResponsiveBaseBubbleSize(
+            width,
+            maxScale,
+            centerBubbleScaleMultiplier,
+          ),
         );
       }
 
@@ -303,7 +319,7 @@ export function HoneycombBubbles({
       window.removeEventListener("resize", updateViewport);
       window.visualViewport?.removeEventListener("resize", updateViewport);
     };
-  }, [baseBubbleSize, maxScale, renderImmediately]);
+  }, [baseBubbleSize, centerBubbleScaleMultiplier, maxScale, renderImmediately]);
 
   useLayoutEffect(() => {
     surfaceRef.current?.removeAttribute("data-bubbles-ready");
