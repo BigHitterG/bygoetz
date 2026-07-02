@@ -23,9 +23,11 @@ jobs:
         with:
           node-version: 20
           cache: npm
+      - uses: actions/configure-pages@v5
       - run: npm ci
       - run: npm run build
       - run: test -f out/index.html
+      - run: touch out/.nojekyll
       - uses: actions/upload-pages-artifact@v3
         with:
           path: ./out
