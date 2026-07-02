@@ -1,6 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import styles from "./HoneycombHome.module.css";
 
 type Bubble = {
@@ -60,6 +67,17 @@ function easeOutCubic(t: number) {
   return 1 - Math.pow(1 - t, 3);
 }
 
+function getViewportSize() {
+  if (typeof window === "undefined") return { width: 0, height: 0 };
+
+  const viewport = window.visualViewport;
+
+  return {
+    width: viewport?.width ?? window.innerWidth,
+    height: viewport?.height ?? window.innerHeight,
+  };
+}
+
 function getResponsiveBaseBubbleSize(viewportWidth: number, maxScale: number) {
   if (viewportWidth > MOBILE_BREAKPOINT) return DEFAULT_CONFIG.baseBubbleSize;
 
@@ -97,9 +115,10 @@ export function HoneycombBubbles({
   maxInfluenceRadius = DEFAULT_CONFIG.maxInfluenceRadius,
   minimumGap = DEFAULT_CONFIG.minimumGap,
 }: HoneycombBubblesConfig) {
-  const [responsiveBaseBubbleSize, setResponsiveBaseBubbleSize] = useState(
-    baseBubbleSize ?? DEFAULT_CONFIG.baseBubbleSize,
-  );
+  const [responsiveBaseBubbleSize, setResponsiveBaseBubbleSize] = useState(() => {
+    if (baseBubbleSize != null) return baseBubbleSize;
+    return getResponsiveBaseBubbleSize(getViewportSize().width, maxScale);
+  });
   const surfaceRef = useRef<HTMLDivElement>(null);
   const bubbleRefs = useRef(new Map<string, HTMLDivElement>());
   const translate = useRef({ x: 0, y: 0 });
@@ -249,16 +268,21 @@ export function HoneycombBubbles({
     momentum.current = requestAnimationFrame(tick);
   }, [moveBy, snapNearestBubbleToCenter, stopMomentum]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const updateViewport = () => {
+      const surfaceBounds = surfaceRef.current?.getBoundingClientRect();
+      const viewportSize = getViewportSize();
+      const width = surfaceBounds?.width ?? viewportSize.width;
+      const height = surfaceBounds?.height ?? viewportSize.height;
+
       viewportCenter.current = {
-        x: window.innerWidth / 2,
-        y: window.innerHeight / 2,
+        x: width / 2,
+        y: height / 2,
       };
 
       if (baseBubbleSize == null) {
         setResponsiveBaseBubbleSize(
-          getResponsiveBaseBubbleSize(window.innerWidth, maxScale),
+          getResponsiveBaseBubbleSize(width, maxScale),
         );
       }
 
@@ -267,8 +291,16 @@ export function HoneycombBubbles({
 
     updateViewport();
     window.addEventListener("resize", updateViewport);
-    return () => window.removeEventListener("resize", updateViewport);
+    window.visualViewport?.addEventListener("resize", updateViewport);
+    return () => {
+      window.removeEventListener("resize", updateViewport);
+      window.visualViewport?.removeEventListener("resize", updateViewport);
+    };
   }, [baseBubbleSize, maxScale, scheduleRender]);
+
+  useLayoutEffect(() => {
+    scheduleRender();
+  }, [bubbles, resolvedBaseBubbleSize, scheduleRender]);
 
   useEffect(
     () => () => {
