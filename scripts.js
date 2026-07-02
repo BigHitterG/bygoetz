@@ -1,132 +1,75 @@
-const BAG_KEY = "bygoetz-bag";
+const surface = document.querySelector("[data-grid-surface]");
+const field = document.querySelector("[data-bubble-field]");
 
-function readBag() {
-  return JSON.parse(localStorage.getItem(BAG_KEY) || "[]");
-}
-
-function writeBag(items) {
-  localStorage.setItem(BAG_KEY, JSON.stringify(items));
-  updateBagCount();
-}
-
-function updateBagCount() {
-  const count = readBag().length;
-  document.querySelectorAll("[data-bag-count]").forEach((node) => {
-    node.textContent = count;
-  });
-}
-
-function renderBagPage() {
-  const itemsNode = document.querySelector("#bag-items");
-  const totalNode = document.querySelector("#bag-total");
-  if (!itemsNode || !totalNode) return;
-
-  const items = readBag();
-  if (!items.length) {
-    itemsNode.innerHTML = '<p class="empty-state">Your bag is empty. Start from a concept and add a product.</p>';
-  } else {
-    itemsNode.innerHTML = items
-      .map((item) => `<div class="bag-row"><span>${item.product}</span><strong>$${item.price}</strong></div>`)
-      .join("");
-  }
-
-  const total = items.reduce((sum, item) => sum + Number(item.price), 0);
-  totalNode.textContent = `$${total}`;
-}
-
-document.querySelectorAll("[data-add-to-bag]").forEach((button) => {
-  button.addEventListener("click", () => {
-    const item = { product: button.dataset.product, price: button.dataset.price };
-    writeBag([...readBag(), item]);
-    button.textContent = "Added to bag";
-  });
-});
-
-updateBagCount();
-renderBagPage();
-
-function initPlotMap() {
-  const viewport = document.querySelector('[data-plot-viewport]');
-  const grid = document.querySelector('[data-plot-grid]');
-  const plots = Array.from(document.querySelectorAll('[data-plot]'));
-  if (!viewport || !grid || !plots.length) return;
-
-  const position = { x: -80, y: -80 };
+if (surface && field) {
+  const spacing = 86;
+  const rows = 13;
+  const columns = 13;
+  const position = { x: 0, y: 0 };
   let drag = null;
-  let didDrag = false;
+  let animationFrame = null;
+
+  function buildBubbles() {
+    const bubbles = [];
+    const rowOffset = (rows - 1) / 2;
+    const columnOffset = (columns - 1) / 2;
+
+    for (let row = 0; row < rows; row += 1) {
+      for (let column = 0; column < columns; column += 1) {
+        const bubble = document.createElement("span");
+        const x = (column - columnOffset + (row % 2 ? 0.5 : 0)) * spacing;
+        const y = (row - rowOffset) * spacing * 0.86;
+        const distance = Math.hypot(column - columnOffset, row - rowOffset);
+        const hue = (row * 31 + column * 19) % 360;
+        const scale = Math.max(0.72, 1.08 - distance * 0.035);
+
+        bubble.className = "bubble";
+        bubble.style.setProperty("--x", `${x}px`);
+        bubble.style.setProperty("--y", `${y}px`);
+        bubble.style.setProperty("--hue", hue);
+        bubble.style.setProperty("--scale", scale.toFixed(2));
+        bubbles.push(bubble);
+      }
+    }
+
+    field.replaceChildren(...bubbles);
+  }
 
   function applyPosition() {
-    grid.style.setProperty('--plot-x', `${position.x}px`);
-    grid.style.setProperty('--plot-y', `${position.y}px`);
+    animationFrame = null;
+    field.style.setProperty("--grid-x", `${position.x}px`);
+    field.style.setProperty("--grid-y", `${position.y}px`);
   }
 
-  function setCenteredPlot() {
-    const bounds = viewport.getBoundingClientRect();
-    const center = { x: bounds.left + bounds.width / 2, y: bounds.top + bounds.height / 2 };
-    let closestPlot = plots[0];
-    let closestDistance = Number.POSITIVE_INFINITY;
-
-    plots.forEach((plot) => {
-      const rect = plot.getBoundingClientRect();
-      const plotCenter = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
-      const distance = Math.hypot(center.x - plotCenter.x, center.y - plotCenter.y);
-      if (distance < closestDistance) {
-        closestDistance = distance;
-        closestPlot = plot;
-      }
-    });
-
-    plots.forEach((plot) => plot.classList.toggle('is-centered', plot === closestPlot));
+  function requestPositionUpdate() {
+    if (animationFrame) return;
+    animationFrame = window.requestAnimationFrame(applyPosition);
   }
 
-  function moveBy(deltaX, deltaY) {
-    position.x += deltaX;
-    position.y += deltaY;
-    applyPosition();
-    setCenteredPlot();
+  function endDrag() {
+    drag = null;
+    surface.classList.remove("is-dragging");
   }
 
-  viewport.addEventListener('pointerdown', (event) => {
-    drag = { pointerId: event.pointerId, x: event.clientX, y: event.clientY };
-    didDrag = false;
-    viewport.classList.add('is-dragging');
-    viewport.setPointerCapture(event.pointerId);
+  surface.addEventListener("pointerdown", (event) => {
+    drag = { id: event.pointerId, x: event.clientX, y: event.clientY };
+    surface.classList.add("is-dragging");
+    surface.setPointerCapture(event.pointerId);
   });
 
-  viewport.addEventListener('pointermove', (event) => {
-    if (!drag || drag.pointerId !== event.pointerId) return;
-    const deltaX = event.clientX - drag.x;
-    const deltaY = event.clientY - drag.y;
-    if (Math.abs(deltaX) + Math.abs(deltaY) > 3) didDrag = true;
+  surface.addEventListener("pointermove", (event) => {
+    if (!drag || drag.id !== event.pointerId) return;
+
+    position.x += event.clientX - drag.x;
+    position.y += event.clientY - drag.y;
     drag.x = event.clientX;
     drag.y = event.clientY;
-    moveBy(deltaX, deltaY);
+    requestPositionUpdate();
   });
 
-  viewport.addEventListener('pointerup', (event) => {
-    if (!drag || drag.pointerId !== event.pointerId) return;
-    drag = null;
-    viewport.classList.remove('is-dragging');
-  });
+  surface.addEventListener("pointerup", endDrag);
+  surface.addEventListener("pointercancel", endDrag);
 
-  viewport.addEventListener('pointercancel', () => {
-    drag = null;
-    viewport.classList.remove('is-dragging');
-  });
-
-  plots.forEach((plot) => {
-    plot.addEventListener('click', (event) => {
-      if (didDrag || plot.classList.contains('is-future')) {
-        event.preventDefault();
-      }
-      setCenteredPlot();
-    });
-  });
-
+  buildBubbles();
   applyPosition();
-  setCenteredPlot();
-  window.addEventListener('resize', setCenteredPlot);
 }
-
-window.initPlotMap = initPlotMap;
-initPlotMap();
