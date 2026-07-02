@@ -91,7 +91,10 @@ export function HoneycombBubbles({
   const focusedBubbleId = useRef<string | null>(null);
 
   const spacing = baseBubbleSize * maxScale + minimumGap;
-  const bubbles = useMemo(() => generateBubbles(rings, spacing), [rings, spacing]);
+  const bubbles = useMemo(
+    () => generateBubbles(rings, spacing),
+    [rings, spacing],
+  );
 
   const stopMomentum = useCallback(() => {
     if (momentum.current != null) cancelAnimationFrame(momentum.current);
@@ -115,9 +118,13 @@ export function HoneycombBubbles({
 
       const screenX = center.x + translate.current.x + bubble.x;
       const screenY = center.y + translate.current.y + bubble.y;
-      const distanceFromCenter = Math.hypot(screenX - center.x, screenY - center.y);
+      const distanceFromCenter = Math.hypot(
+        screenX - center.x,
+        screenY - center.y,
+      );
       const normalized = Math.min(distanceFromCenter / maxInfluenceRadius, 1);
-      const scale = maxScale - (maxScale - minScale) * smoothstep(0, 1, normalized);
+      const scale =
+        maxScale - (maxScale - minScale) * smoothstep(0, 1, normalized);
 
       if (distanceFromCenter < nearestDistance) {
         nearestDistance = distanceFromCenter;
@@ -129,7 +136,9 @@ export function HoneycombBubbles({
     }
 
     if (focusedBubbleId.current !== nearestId) {
-      const previousFocused = focusedBubbleId.current ? bubbleRefs.current.get(focusedBubbleId.current) : null;
+      const previousFocused = focusedBubbleId.current
+        ? bubbleRefs.current.get(focusedBubbleId.current)
+        : null;
       previousFocused?.classList.remove(styles.focusedBubble);
       const nextFocused = nearestId ? bubbleRefs.current.get(nearestId) : null;
       nextFocused?.classList.add(styles.focusedBubble);
@@ -141,11 +150,14 @@ export function HoneycombBubbles({
     if (raf.current == null) raf.current = requestAnimationFrame(render);
   }, [render]);
 
-  const moveBy = useCallback((dx: number, dy: number) => {
-    translate.current.x += dx;
-    translate.current.y += dy;
-    scheduleRender();
-  }, [scheduleRender]);
+  const moveBy = useCallback(
+    (dx: number, dy: number) => {
+      translate.current.x += dx;
+      translate.current.y += dy;
+      scheduleRender();
+    },
+    [scheduleRender],
+  );
 
   const snapNearestBubbleToCenter = useCallback(() => {
     stopSnap();
@@ -156,7 +168,10 @@ export function HoneycombBubbles({
     for (const bubble of bubbles) {
       const screenX = center.x + translate.current.x + bubble.x;
       const screenY = center.y + translate.current.y + bubble.y;
-      const distanceFromCenter = Math.hypot(screenX - center.x, screenY - center.y);
+      const distanceFromCenter = Math.hypot(
+        screenX - center.x,
+        screenY - center.y,
+      );
       if (distanceFromCenter < nearestDistance) {
         nearestDistance = distanceFromCenter;
         nearestBubble = bubble;
@@ -199,7 +214,9 @@ export function HoneycombBubbles({
       velocity.current.y *= MOMENTUM_FRICTION;
       moveBy(velocity.current.x, velocity.current.y);
 
-      if (Math.hypot(velocity.current.x, velocity.current.y) > MOMENTUM_STOP_SPEED) {
+      if (
+        Math.hypot(velocity.current.x, velocity.current.y) > MOMENTUM_STOP_SPEED
+      ) {
         momentum.current = requestAnimationFrame(tick);
       } else {
         momentum.current = null;
@@ -212,7 +229,10 @@ export function HoneycombBubbles({
 
   useEffect(() => {
     const updateViewportCenter = () => {
-      viewportCenter.current = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
+      viewportCenter.current = {
+        x: window.innerWidth / 2,
+        y: window.innerHeight / 2,
+      };
       scheduleRender();
     };
 
@@ -221,18 +241,25 @@ export function HoneycombBubbles({
     return () => window.removeEventListener("resize", updateViewportCenter);
   }, [scheduleRender]);
 
-  useEffect(() => () => {
-    if (raf.current != null) cancelAnimationFrame(raf.current);
-    if (momentum.current != null) cancelAnimationFrame(momentum.current);
-    if (snap.current != null) cancelAnimationFrame(snap.current);
-  }, []);
+  useEffect(
+    () => () => {
+      if (raf.current != null) cancelAnimationFrame(raf.current);
+      if (momentum.current != null) cancelAnimationFrame(momentum.current);
+      if (snap.current != null) cancelAnimationFrame(snap.current);
+    },
+    [],
+  );
 
   function onPointerDown(event: React.PointerEvent<HTMLDivElement>) {
     event.preventDefault();
     stopMomentum();
     stopSnap();
     velocity.current = { x: 0, y: 0 };
-    pointers.current.set(event.pointerId, { x: event.clientX, y: event.clientY, t: performance.now() });
+    pointers.current.set(event.pointerId, {
+      x: event.clientX,
+      y: event.clientY,
+      t: performance.now(),
+    });
     event.currentTarget.setPointerCapture(event.pointerId);
   }
 
@@ -265,31 +292,32 @@ export function HoneycombBubbles({
   }
 
   return (
-    <main className={styles.home} aria-label="Interactive honeycomb bubble grid">
-      <div
-        ref={surfaceRef}
-        className={styles.surface}
-        onPointerDown={onPointerDown}
-        onPointerMove={onPointerMove}
-        onPointerUp={onPointerUp}
-        onPointerCancel={onPointerUp}
-      >
-        {bubbles.map((bubble) => (
-          <div
-            key={bubble.id}
-            ref={(element) => {
-              if (element) bubbleRefs.current.set(bubble.id, element);
-              else bubbleRefs.current.delete(bubble.id);
-            }}
-            className={styles.bubble}
-            style={{
+    <div
+      ref={surfaceRef}
+      className={styles.surface}
+      aria-label="Interactive honeycomb bubble grid"
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onPointerUp={onPointerUp}
+      onPointerCancel={onPointerUp}
+    >
+      {bubbles.map((bubble) => (
+        <div
+          key={bubble.id}
+          ref={(element) => {
+            if (element) bubbleRefs.current.set(bubble.id, element);
+            else bubbleRefs.current.delete(bubble.id);
+          }}
+          className={styles.bubble}
+          style={
+            {
               "--base-size": `${baseBubbleSize}px`,
-            } as React.CSSProperties}
-            aria-hidden="true"
-          />
-        ))}
-      </div>
-    </main>
+            } as React.CSSProperties
+          }
+          aria-hidden="true"
+        />
+      ))}
+    </div>
   );
 }
 
