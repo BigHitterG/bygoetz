@@ -8,6 +8,7 @@ import {
   useRef,
   useState,
 } from "react";
+import centerLogo from "../public/concepts/images/Logo-01.png";
 import styles from "./HoneycombHome.module.css";
 
 type Bubble = {
@@ -48,7 +49,6 @@ const MOBILE_BREAKPOINT = 760;
 const MOBILE_CENTER_BUBBLE_VIEWPORT_RATIO = 0.48;
 const MOBILE_CENTER_BUBBLE_MIN_SIZE = 180;
 const MOBILE_CENTER_BUBBLE_MAX_SIZE = 256;
-const CENTER_BUBBLE_LOGO_SRC = "/concepts/images/Logo-01.png";
 
 function axialDistance(q: number, r: number) {
   return (Math.abs(q) + Math.abs(r) + Math.abs(q + r)) / 2;
@@ -405,7 +405,7 @@ export function HoneycombBubbles({
           {bubble.q === 0 && bubble.r === 0 ? (
             <img
               className={styles.centerLogo}
-              src={CENTER_BUBBLE_LOGO_SRC}
+              src={centerLogo.src}
               alt=""
               draggable="false"
             />
