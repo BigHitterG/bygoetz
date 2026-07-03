@@ -32,6 +32,18 @@
     border-width 180ms ease;
 }
 
+.centerLogo {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 78%;
+  height: 78%;
+  object-fit: contain;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+  user-select: none;
+}
+
 .focusedBubble {
   border-color: #70757a;
   border-width: 2.5px;
