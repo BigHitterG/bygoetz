@@ -48,6 +48,7 @@ const MOBILE_BREAKPOINT = 760;
 const MOBILE_CENTER_BUBBLE_VIEWPORT_RATIO = 0.48;
 const MOBILE_CENTER_BUBBLE_MIN_SIZE = 180;
 const MOBILE_CENTER_BUBBLE_MAX_SIZE = 256;
+const CENTER_BUBBLE_LOGO_SRC = "/concepts/images/goetz-logo.png";
 
 function axialDistance(q: number, r: number) {
   return (Math.abs(q) + Math.abs(r) + Math.abs(q + r)) / 2;
@@ -400,7 +401,16 @@ export function HoneycombBubbles({
             } as React.CSSProperties
           }
           aria-hidden="true"
-        />
+        >
+          {bubble.q === 0 && bubble.r === 0 ? (
+            <img
+              className={styles.centerLogo}
+              src={CENTER_BUBBLE_LOGO_SRC}
+              alt=""
+              draggable="false"
+            />
+          ) : null}
+        </div>
       ))}
     </div>
   );
