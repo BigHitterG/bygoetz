@@ -27,6 +27,8 @@ The generated `out/` directory is the deployable site. The repository README is 
 
 This repository includes `.github/workflows/deploy.yml`, which builds the Next.js app, verifies `out/index.html`, uploads `./out` with `actions/upload-pages-artifact`, and deploys it with `actions/deploy-pages`.
 
+**GitHub Pages must be set to Source: GitHub Actions, not Deploy from branch.**
+
 For GitHub Pages, set the repository's Pages source to **GitHub Actions**:
 
 1. Open the repository on GitHub.
