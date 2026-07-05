@@ -8,6 +8,7 @@ import {
   useRef,
   useState,
 } from "react";
+import conceptDrawing from "../public/concepts/images/551F39B2-861F-4C86-A128-FFDC16CEB303.png";
 import centerLogo from "../public/concepts/images/Logo-01.png";
 import styles from "./HoneycombHome.module.css";
 
@@ -49,6 +50,7 @@ const MOBILE_BREAKPOINT = 760;
 const MOBILE_CENTER_BUBBLE_VIEWPORT_RATIO = 0.48;
 const MOBILE_CENTER_BUBBLE_MIN_SIZE = 180;
 const MOBILE_CENTER_BUBBLE_MAX_SIZE = 256;
+const FEATURED_CONCEPT_BUBBLE = { q: 1, r: 0 };
 
 function axialDistance(q: number, r: number) {
   return (Math.abs(q) + Math.abs(r) + Math.abs(q + r)) / 2;
@@ -406,6 +408,15 @@ export function HoneycombBubbles({
             <img
               className={styles.centerLogo}
               src={centerLogo.src}
+              alt=""
+              draggable="false"
+            />
+          ) : null}
+          {bubble.q === FEATURED_CONCEPT_BUBBLE.q &&
+          bubble.r === FEATURED_CONCEPT_BUBBLE.r ? (
+            <img
+              className={styles.conceptDrawing}
+              src={conceptDrawing.src}
               alt=""
               draggable="false"
             />

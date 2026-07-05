@@ -47,6 +47,20 @@
   user-select: none;
 }
 
+.conceptDrawing {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  display: block;
+  width: 82%;
+  height: 82%;
+  object-fit: contain;
+  object-position: center;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+  user-select: none;
+}
+
 .focusedBubble {
   border-color: #70757a;
   border-width: 1.25px;
