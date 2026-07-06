@@ -182,6 +182,26 @@
   margin: 18px 0 0;
 }
 
+.priceStack {
+  display: grid;
+  gap: 4px;
+  margin-top: 20px;
+}
+
+.priceStack span {
+  color: #77716a;
+  font-size: 0.95rem;
+  font-weight: 700;
+  text-decoration: line-through;
+  text-decoration-thickness: 1px;
+}
+
+.priceStack strong {
+  color: #111;
+  font-size: clamp(1.9rem, 4vw, 3rem);
+  line-height: 1;
+}
+
 .bundlePrice {
   color: #111 !important;
   font-size: clamp(1.7rem, 3vw, 2.6rem) !important;
@@ -451,11 +471,12 @@
   display: grid;
   grid-template-columns: minmax(300px, 1.08fr) minmax(280px, 0.92fr);
   gap: clamp(32px, 7vw, 92px);
-  align-items: center;
+  align-items: start;
 }
 
 .detailArtworkFrame,
-.downloadArtworkPanel {
+.downloadArtworkPanel,
+.downloadFeaturedArtwork {
   overflow: hidden;
   border: 1px solid #e3ded5;
   background: #fff;
@@ -464,8 +485,51 @@
   padding: clamp(18px, 3vw, 34px);
 }
 
-.downloadArtworkPanel {
+.downloadArtworkPanel,
+.downloadPreviewPanel,
+.downloadFeaturedArtwork {
   aspect-ratio: 1 / 1;
+}
+
+.downloadPreviewPanel {
+  display: grid;
+  gap: 18px;
+  align-content: start;
+}
+
+.downloadFeaturedArtwork {
+  width: min(100%, 520px);
+}
+
+.downloadPreviewGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.downloadPreviewTile {
+  display: grid;
+  gap: 8px;
+  overflow: hidden;
+  border: 1px solid #e3ded5;
+  background: #fff;
+  padding: 10px;
+}
+
+.downloadPreviewTile .artworkImage,
+.downloadPreviewTile .artworkPlaceholder {
+  aspect-ratio: 1 / 1;
+  height: auto;
+}
+
+.downloadPreviewTile span {
+  overflow: hidden;
+  color: #333;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .detailCopy h1,
@@ -588,6 +652,10 @@
 
   .bundleArtworkFrame {
     max-width: 260px;
+  }
+
+  .downloadPreviewGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .heroGallery {
