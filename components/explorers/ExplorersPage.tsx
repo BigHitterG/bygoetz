@@ -6,7 +6,10 @@ import styles from "./Explorers.module.css";
 export function ExplorersPage() {
   const digitalBundleCta = explorerDigitalBundle.checkoutLink
     ? "Download the Collection"
-    : "Digital Bundle Coming Soon";
+    : "Preview Digital Bundle";
+  const digitalBundleHref = explorerDigitalBundle.checkoutLink
+    ? explorerDigitalBundle.checkoutLink
+    : withSiteBasePath("/explorers/digital-downloads");
 
   return (
     <main className={styles.page}>
@@ -44,15 +47,9 @@ export function ExplorersPage() {
                 <li key={item}>{item}</li>
               ))}
             </ul>
-            {explorerDigitalBundle.checkoutLink ? (
-              <a className={styles.primaryButton} href={explorerDigitalBundle.checkoutLink}>
-                {digitalBundleCta}
-              </a>
-            ) : (
-              <button className={styles.disabledButton} type="button" disabled>
-                {digitalBundleCta}
-              </button>
-            )}
+            <a className={styles.primaryButton} href={digitalBundleHref}>
+              {digitalBundleCta}
+            </a>
           </div>
         </aside>
       </section>
