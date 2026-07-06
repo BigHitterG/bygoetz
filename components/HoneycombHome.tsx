@@ -31,6 +31,7 @@ type HoneycombBubblesConfig = {
 };
 
 type PointerInfo = { x: number; y: number; t: number };
+type PinchInfo = { distance: number; zoom: number };
 type ViewportCenter = { x: number; y: number };
 
 const DEFAULT_CONFIG = {
@@ -50,6 +51,9 @@ const MOBILE_BREAKPOINT = 760;
 const MOBILE_CENTER_BUBBLE_VIEWPORT_RATIO = 0.48;
 const MOBILE_CENTER_BUBBLE_MIN_SIZE = 180;
 const MOBILE_CENTER_BUBBLE_MAX_SIZE = 256;
+const MIN_ZOOM = 0.88;
+const MAX_ZOOM = 1;
+const WHEEL_ZOOM_SENSITIVITY = 0.0012;
 const FEATURED_CONCEPT_BUBBLE = { q: 1, r: 0 };
 
 function axialDistance(q: number, r: number) {
@@ -72,6 +76,10 @@ function easeOutCubic(t: number) {
   return 1 - Math.pow(1 - t, 3);
 }
 
+function clampZoom(value: number) {
+  return Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, value));
+}
+
 function getViewportSize() {
   if (typeof window === "undefined") return { width: 0, height: 0 };
 
@@ -88,6 +96,13 @@ function snapToDevicePixel(value: number) {
 
   const ratio = window.devicePixelRatio || 1;
   return Math.round(value * ratio) / ratio;
+}
+
+function getPointerDistance(pointers: Map<number, PointerInfo>) {
+  if (pointers.size < 2) return null;
+
+  const [first, second] = Array.from(pointers.values());
+  return Math.hypot(second.x - first.x, second.y - first.y);
 }
 
 function getResponsiveBaseBubbleSize(
@@ -144,8 +159,10 @@ export function HoneycombBubbles({
   const bubbleRefs = useRef(new Map<string, HTMLDivElement>());
   const translate = useRef({ x: 0, y: 0 });
   const velocity = useRef({ x: 0, y: 0 });
+  const zoom = useRef(MAX_ZOOM);
   const viewportCenter = useRef<ViewportCenter>({ x: 0, y: 0 });
   const pointers = useRef(new Map<number, PointerInfo>());
+  const pinch = useRef<PinchInfo | null>(null);
   const raf = useRef<number | null>(null);
   const momentum = useRef<number | null>(null);
   const snap = useRef<number | null>(null);
@@ -172,6 +189,7 @@ export function HoneycombBubbles({
   const render = useCallback(() => {
     raf.current = null;
     const center = viewportCenter.current;
+    const zoomLevel = zoom.current;
     let nearestId: string | null = null;
     let nearestDistance = Number.POSITIVE_INFINITY;
 
@@ -179,8 +197,10 @@ export function HoneycombBubbles({
       const element = bubbleRefs.current.get(bubble.id);
       if (!element) continue;
 
-      const screenX = center.x + translate.current.x + bubble.x;
-      const screenY = center.y + translate.current.y + bubble.y;
+      const gridX = bubble.x * zoomLevel;
+      const gridY = bubble.y * zoomLevel;
+      const screenX = center.x + translate.current.x + gridX;
+      const screenY = center.y + translate.current.y + gridY;
       const distanceFromCenter = Math.hypot(
         screenX - center.x,
         screenY - center.y,
@@ -188,7 +208,9 @@ export function HoneycombBubbles({
       const normalized = Math.min(distanceFromCenter / maxInfluenceRadius, 1);
       const scale =
         centerScale - (centerScale - minScale) * smoothstep(0, 1, normalized);
-      const renderedBubbleSize = snapToDevicePixel(resolvedBaseBubbleSize * scale);
+      const renderedBubbleSize = snapToDevicePixel(
+        resolvedBaseBubbleSize * scale * zoomLevel,
+      );
       const snappedScreenX = snapToDevicePixel(screenX);
       const snappedScreenY = snapToDevicePixel(screenY);
 
@@ -224,6 +246,17 @@ export function HoneycombBubbles({
     if (raf.current == null) raf.current = requestAnimationFrame(render);
   }, [render]);
 
+  const setZoom = useCallback(
+    (nextZoom: number) => {
+      const clampedZoom = clampZoom(nextZoom);
+      if (Math.abs(clampedZoom - zoom.current) < 0.001) return;
+
+      zoom.current = clampedZoom;
+      scheduleRender();
+    },
+    [scheduleRender],
+  );
+
   const moveBy = useCallback(
     (dx: number, dy: number) => {
       translate.current.x += dx;
@@ -236,12 +269,13 @@ export function HoneycombBubbles({
   const snapNearestBubbleToCenter = useCallback(() => {
     stopSnap();
     const center = viewportCenter.current;
+    const zoomLevel = zoom.current;
     let nearestBubble: Bubble | null = null;
     let nearestDistance = Number.POSITIVE_INFINITY;
 
     for (const bubble of bubbles) {
-      const screenX = center.x + translate.current.x + bubble.x;
-      const screenY = center.y + translate.current.y + bubble.y;
+      const screenX = center.x + translate.current.x + bubble.x * zoomLevel;
+      const screenY = center.y + translate.current.y + bubble.y * zoomLevel;
       const distanceFromCenter = Math.hypot(
         screenX - center.x,
         screenY - center.y,
@@ -256,8 +290,8 @@ export function HoneycombBubbles({
 
     const start = { ...translate.current };
     const delta = {
-      x: center.x - (center.x + start.x + nearestBubble.x),
-      y: center.y - (center.y + start.y + nearestBubble.y),
+      x: center.x - (center.x + start.x + nearestBubble.x * zoomLevel),
+      y: center.y - (center.y + start.y + nearestBubble.y * zoomLevel),
     };
     const startTime = performance.now();
 
@@ -359,6 +393,9 @@ export function HoneycombBubbles({
       y: event.clientY,
       t: performance.now(),
     });
+
+    const distance = getPointerDistance(pointers.current);
+    pinch.current = distance == null ? null : { distance, zoom: zoom.current };
     event.currentTarget.setPointerCapture(event.pointerId);
   }
 
@@ -371,6 +408,19 @@ export function HoneycombBubbles({
     const current = { x: event.clientX, y: event.clientY, t: now };
     pointers.current.set(event.pointerId, current);
 
+    if (pointers.current.size >= 2) {
+      const distance = getPointerDistance(pointers.current);
+      if (distance != null) {
+        if (!pinch.current) {
+          pinch.current = { distance, zoom: zoom.current };
+        } else if (pinch.current.distance > 0) {
+          setZoom(pinch.current.zoom * (distance / pinch.current.distance));
+        }
+      }
+      velocity.current = { x: 0, y: 0 };
+      return;
+    }
+
     const dx = current.x - previous.x;
     const dy = current.y - previous.y;
     const dt = Math.max(16, current.t - previous.t);
@@ -380,6 +430,7 @@ export function HoneycombBubbles({
 
   function onPointerUp(event: React.PointerEvent<HTMLDivElement>) {
     pointers.current.delete(event.pointerId);
+    pinch.current = null;
 
     if (pointers.current.size !== 0) return;
 
@@ -388,6 +439,16 @@ export function HoneycombBubbles({
     } else {
       snapNearestBubbleToCenter();
     }
+  }
+
+  function onWheel(event: React.WheelEvent<HTMLDivElement>) {
+    if (!event.ctrlKey && !event.metaKey) return;
+
+    event.preventDefault();
+    stopMomentum();
+    stopSnap();
+    velocity.current = { x: 0, y: 0 };
+    setZoom(zoom.current - event.deltaY * WHEEL_ZOOM_SENSITIVITY);
   }
 
   return (
@@ -399,6 +460,7 @@ export function HoneycombBubbles({
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
       onPointerCancel={onPointerUp}
+      onWheel={onWheel}
     >
       {bubbles.map((bubble) => (
         <div
