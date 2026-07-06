@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { withSiteBasePath } from "@/lib/sitePath";
 import styles from "./Explorers.module.css";
 
 type ArtworkImageProps = {
@@ -23,7 +24,7 @@ export function ArtworkImage({ src, title, className }: ArtworkImageProps) {
   return (
     <img
       className={`${styles.artworkImage} ${className ?? ""}`}
-      src={src}
+      src={withSiteBasePath(src)}
       alt={`${title} artwork from The Explorers Series`}
       loading="lazy"
       onError={() => setMissing(true)}
