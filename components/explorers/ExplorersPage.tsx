@@ -63,7 +63,7 @@ export function ExplorersPage() {
           <h2>Choose your explorer.</h2>
           <p>
             Collect one favorite or build a coordinated wall of curious animals and
-            characters, available as premium prints or framed art.
+            characters, available as prints, matted prints, or individual digital files.
           </p>
         </div>
         <div className={styles.productGrid}>
@@ -78,12 +78,12 @@ export function ExplorersPage() {
               <div className={styles.productCardBody}>
                 <div>
                   <h3>{product.title}</h3>
-                  <p>Prints &amp; framed prints</p>
+                  <p>Prints, matted prints &amp; digital files</p>
                 </div>
                 <div className={styles.productMeta}>
-                  <span>From {product.priceFrom}</span>
+                  <span>Prints from {product.priceFrom}</span>
                   <a href={withSiteBasePath(`/explorers/products/${product.slug}`)}>
-                    View Print
+                    View Artwork
                   </a>
                 </div>
               </div>
@@ -116,9 +116,9 @@ export function ExplorersPage() {
         {[
           "Museum-quality prints",
           "Archival paper",
-          "Available framed or unframed",
-          "Multiple sizes",
-          "Made to order",
+          "Print and matted print options",
+          "8x10 and 11x14 sizes",
+          "Digital files available individually",
           "Designed as a coordinated collection",
         ].map((point) => (
           <div className={styles.qualityItem} key={point}>
