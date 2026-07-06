@@ -10,6 +10,15 @@ export type ExplorerProduct = {
   featured?: boolean;
 };
 
+export type ExplorerDigitalBundle = {
+  title: string;
+  price: string;
+  image: string;
+  description: string;
+  includes: string[];
+  checkoutLink: string;
+};
+
 export const explorerSizes = ["8x10", "11x14", "16x20", "18x24", "24x36"];
 
 export const explorerFrameOptions = [
@@ -18,6 +27,20 @@ export const explorerFrameOptions = [
   "White frame",
   "Natural oak frame",
 ];
+
+export const explorerDigitalBundle: ExplorerDigitalBundle = {
+  title: "Complete Digital Collection",
+  price: "$14.99",
+  image: "/explorers/Explorer.png",
+  description:
+    "Get the full Explorers Series as high-resolution digital files for personal printing and creative projects.",
+  includes: [
+    "All eight Explorers artworks",
+    "High-resolution PNG files",
+    "Ready for personal prints and decor projects",
+  ],
+  checkoutLink: "",
+};
 
 // TODO: Add final artwork files to public/explorers/ as they become available.
 export const explorerProducts: ExplorerProduct[] = [
