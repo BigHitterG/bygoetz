@@ -1,8 +1,8 @@
-import Link from "next/link";
 import {
   ExplorerProduct,
   getRelatedExplorerProducts,
 } from "@/lib/explorers/products";
+import { withSiteBasePath } from "@/lib/sitePath";
 import { ArtworkImage } from "./ArtworkImage";
 import styles from "./Explorers.module.css";
 
@@ -17,9 +17,9 @@ export function ExplorerProductPage({ product }: ExplorerProductPageProps) {
   return (
     <main className={styles.page}>
       <section className={styles.detailHero}>
-        <Link href="/explorers" className={styles.backLink}>
+        <a href={withSiteBasePath("/explorers")} className={styles.backLink}>
           Back to The Explorers Series
-        </Link>
+        </a>
         <div className={styles.detailGrid}>
           <div className={styles.detailArtworkFrame}>
             <ArtworkImage src={product.image} title={product.title} />
@@ -68,14 +68,14 @@ export function ExplorerProductPage({ product }: ExplorerProductPageProps) {
         </div>
         <div className={styles.relatedGrid}>
           {relatedProducts.map((related) => (
-            <Link
+            <a
               className={styles.relatedCard}
-              href={`/explorers/products/${related.slug}`}
+              href={withSiteBasePath(`/explorers/products/${related.slug}`)}
               key={related.slug}
             >
               <ArtworkImage src={related.image} title={related.title} />
               <span>{related.title}</span>
-            </Link>
+            </a>
           ))}
         </div>
       </section>
