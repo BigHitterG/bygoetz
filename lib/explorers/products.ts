@@ -1,0 +1,121 @@
+export type ExplorerProduct = {
+  title: string;
+  slug: string;
+  image: string;
+  description: string;
+  priceFrom: string;
+  availableSizes: string[];
+  frameOptions: string[];
+  stripePaymentLink: string;
+  featured?: boolean;
+};
+
+export const explorerSizes = ["8x10", "11x14", "16x20", "18x24", "24x36"];
+
+export const explorerFrameOptions = [
+  "Unframed print",
+  "Black frame",
+  "White frame",
+  "Natural oak frame",
+];
+
+// TODO: Add final artwork files to public/explorers/ as they become available.
+export const explorerProducts: ExplorerProduct[] = [
+  {
+    title: "Monkey",
+    slug: "monkey",
+    image: "/explorers/Monkey.png",
+    description:
+      "A bright geometric companion with expressive linework and a curious, playful presence.",
+    priceFrom: "$28",
+    availableSizes: explorerSizes,
+    frameOptions: explorerFrameOptions,
+    stripePaymentLink: "",
+    featured: true,
+  },
+  {
+    title: "Dog",
+    slug: "dog",
+    image: "/explorers/Dog.png",
+    description:
+      "A loyal study in bold color, simple form, and warm modern character.",
+    priceFrom: "$28",
+    availableSizes: explorerSizes,
+    frameOptions: explorerFrameOptions,
+    stripePaymentLink: "",
+  },
+  {
+    title: "Horse",
+    slug: "horse",
+    image: "/explorers/Horse.png",
+    description:
+      "Architectural shapes and confident lines give this explorer a quiet sense of motion.",
+    priceFrom: "$28",
+    availableSizes: explorerSizes,
+    frameOptions: explorerFrameOptions,
+    stripePaymentLink: "",
+  },
+  {
+    title: "Cow",
+    slug: "cow",
+    image: "/explorers/Cow.png",
+    description:
+      "A calm, graphic portrait made for bright rooms and thoughtful collections.",
+    priceFrom: "$28",
+    availableSizes: explorerSizes,
+    frameOptions: explorerFrameOptions,
+    stripePaymentLink: "",
+  },
+  {
+    title: "Turtle",
+    slug: "turtle",
+    image: "/explorers/Turtle.png",
+    description:
+      "A steady little explorer built from clean geometry and cheerful primary color.",
+    priceFrom: "$28",
+    availableSizes: explorerSizes,
+    frameOptions: explorerFrameOptions,
+    stripePaymentLink: "",
+  },
+  {
+    title: "Owl",
+    slug: "owl",
+    image: "/explorers/Owl.png",
+    description:
+      "A watchful modern owl with minimal forms, crisp contrast, and a wise gaze.",
+    priceFrom: "$28",
+    availableSizes: explorerSizes,
+    frameOptions: explorerFrameOptions,
+    stripePaymentLink: "",
+  },
+  {
+    title: "Explorer",
+    slug: "explorer",
+    image: "/explorers/Explorer.png",
+    description:
+      "A character print for rooms where imagination, learning, and discovery meet.",
+    priceFrom: "$28",
+    availableSizes: explorerSizes,
+    frameOptions: explorerFrameOptions,
+    stripePaymentLink: "",
+  },
+  {
+    title: "Snorkeler",
+    slug: "snorkeler",
+    image: "/explorers/Snorkeler.png",
+    description:
+      "An aquatic explorer with bright shapes, expressive details, and a sense of wonder.",
+    priceFrom: "$28",
+    availableSizes: explorerSizes,
+    frameOptions: explorerFrameOptions,
+    stripePaymentLink: "",
+  },
+];
+
+export function getExplorerProduct(slug: string) {
+  return explorerProducts.find((product) => product.slug === slug);
+}
+
+export function getRelatedExplorerProducts(slug: string, limit = 3) {
+  return explorerProducts.filter((product) => product.slug !== slug).slice(0, limit);
+}
