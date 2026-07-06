@@ -1,0 +1,10 @@
+const defaultBasePath = process.env.NODE_ENV === "production" ? "/bygoetz" : "";
+
+export const siteBasePath = process.env.NEXT_PUBLIC_BASE_PATH ?? defaultBasePath;
+
+export function withSiteBasePath(path: string) {
+  if (!path || path.startsWith("#") || /^https?:\/\//.test(path)) return path;
+
+  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+  return `${siteBasePath}${normalizedPath}`;
+}
