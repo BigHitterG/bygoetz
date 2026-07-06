@@ -71,7 +71,7 @@
   color: #111;
   text-align: center;
   text-decoration: none;
-  pointer-events: none;
+  cursor: pointer;
 }
 
 .explorersPreview {
@@ -91,6 +91,7 @@
   font-size: clamp(0.52rem, calc(var(--bubble-size) * 0.085), 0.88rem);
   font-weight: 700;
   line-height: 1.05;
+  pointer-events: none;
 }
 
 .focusedBubble {
