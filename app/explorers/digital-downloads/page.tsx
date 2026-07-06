@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { ArtworkImage } from "@/components/explorers/ArtworkImage";
 import styles from "@/components/explorers/Explorers.module.css";
-import { explorerDigitalBundle } from "@/lib/explorers/products";
+import { explorerDigitalBundle, explorerProducts } from "@/lib/explorers/products";
 import { withSiteBasePath } from "@/lib/sitePath";
 
 export const metadata: Metadata = {
@@ -18,14 +18,27 @@ export default function Page() {
           Back to The Explorers Series
         </a>
         <div className={styles.downloadGrid}>
-          <div className={styles.downloadArtworkPanel}>
-            <ArtworkImage src={explorerDigitalBundle.image} title="Explorer" />
+          <div className={styles.downloadPreviewPanel}>
+            <div className={styles.downloadFeaturedArtwork}>
+              <ArtworkImage src={explorerDigitalBundle.image} title="Explorer" />
+            </div>
+            <div className={styles.downloadPreviewGrid} aria-label="Digital bundle artwork previews">
+              {explorerProducts.map((product) => (
+                <div className={styles.downloadPreviewTile} key={product.slug}>
+                  <ArtworkImage src={product.image} title={product.title} />
+                  <span>{product.title}</span>
+                </div>
+              ))}
+            </div>
           </div>
           <div className={styles.downloadCopy}>
             <p className={styles.eyebrow}>Digital files</p>
             <h1>{explorerDigitalBundle.title}</h1>
             <p>{explorerDigitalBundle.description}</p>
-            <p className={styles.bundlePrice}>{explorerDigitalBundle.price}</p>
+            <div className={styles.priceStack}>
+              <span>{explorerDigitalBundle.compareAtPrice} value</span>
+              <strong>{explorerDigitalBundle.price}</strong>
+            </div>
 
             <div className={styles.checkoutPreview}>
               <h2>What you will receive</h2>
