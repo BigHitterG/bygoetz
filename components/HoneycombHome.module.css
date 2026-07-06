@@ -29,7 +29,19 @@
   will-change: transform, width, height;
   transition:
     border-color 180ms ease,
-    border-width 180ms ease;
+    border-width 180ms ease,
+    filter 220ms ease,
+    opacity 220ms ease;
+}
+
+.surface:has(.focusOverlay) .bubble:not(.focusedBubble) {
+  opacity: 0.18;
+  filter: blur(0.4px);
+}
+
+.surface:has(.focusOverlay) .focusedBubble {
+  opacity: 1;
+  filter: none;
 }
 
 .centerLogo {
@@ -95,7 +107,6 @@
   inset: 0;
   z-index: 2000;
   pointer-events: none;
-  background: rgba(255, 255, 255, 0.58);
   opacity: 0;
   animation: focusOverlayIn 220ms ease forwards;
 }
@@ -151,8 +162,8 @@
     border-width: 1.25px;
   }
 
-  .focusOverlay {
-    background: rgba(255, 255, 255, 0.64);
+  .surface:has(.focusOverlay) .bubble:not(.focusedBubble) {
+    opacity: 0.14;
   }
 
   .focusOverlayPanel {
