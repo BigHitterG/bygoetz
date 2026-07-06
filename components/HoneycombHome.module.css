@@ -71,7 +71,7 @@
   color: #111;
   text-align: center;
   text-decoration: none;
-  cursor: pointer;
+  pointer-events: none;
 }
 
 .explorersPreview {
