@@ -13,6 +13,7 @@ export type ExplorerProduct = {
 export type ExplorerDigitalBundle = {
   title: string;
   price: string;
+  compareAtPrice: string;
   image: string;
   description: string;
   includes: string[];
@@ -30,7 +31,8 @@ export const explorerFrameOptions = [
 
 export const explorerDigitalBundle: ExplorerDigitalBundle = {
   title: "Complete Digital Collection",
-  price: "$14.99",
+  price: "$9.99",
+  compareAtPrice: "$19.99",
   image: "/explorers/Explorer.png",
   description:
     "Get the full Explorers Series as high-resolution digital files for personal printing and creative projects.",
