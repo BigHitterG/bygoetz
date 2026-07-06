@@ -20,13 +20,13 @@
   position: absolute;
   left: 0;
   top: 0;
-  width: var(--base-size);
-  height: var(--base-size);
+  width: var(--bubble-size, var(--base-size));
+  height: var(--bubble-size, var(--base-size));
   border: 0.75px solid #9da1a4;
   border-radius: 50%;
   background: transparent;
   transform-origin: center;
-  will-change: transform;
+  will-change: transform, width, height;
   transition:
     border-color 180ms ease,
     border-width 180ms ease;
@@ -42,6 +42,7 @@
   max-height: 70%;
   object-fit: contain;
   object-position: center;
+  image-rendering: auto;
   pointer-events: none;
   transform: translate(-50%, -50%);
   user-select: none;
@@ -56,6 +57,7 @@
   height: 82%;
   object-fit: contain;
   object-position: center;
+  image-rendering: auto;
   pointer-events: none;
   transform: translate(-50%, -50%);
   user-select: none;
