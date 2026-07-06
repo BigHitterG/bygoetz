@@ -63,6 +63,36 @@
   user-select: none;
 }
 
+.explorersLink {
+  position: absolute;
+  inset: 9%;
+  display: grid;
+  place-items: center;
+  color: #111;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.explorersPreview {
+  display: block;
+  width: 74%;
+  height: 62%;
+  object-fit: contain;
+  object-position: center;
+  image-rendering: auto;
+  pointer-events: none;
+  user-select: none;
+}
+
+.explorersLink span {
+  max-width: 82%;
+  color: #111;
+  font-size: clamp(0.52rem, 7.5cqw, 0.88rem);
+  font-weight: 700;
+  line-height: 1.05;
+}
+
 .focusedBubble {
   border-color: #70757a;
   border-width: 1.25px;
