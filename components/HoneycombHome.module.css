@@ -113,17 +113,25 @@
 
 .focusOverlayPanel {
   position: absolute;
-  left: 50%;
-  top: calc(50% + min(18vw, 190px));
-  width: min(420px, calc(100vw - 40px));
-  padding: 22px 24px 24px;
+  inset: 0;
   color: #111;
   text-align: center;
+}
+
+.focusOverlayHeading,
+.focusOverlayDescription {
+  position: absolute;
+  left: 50%;
+  width: min(440px, calc(100vw - 40px));
   transform: translateX(-50%);
 }
 
+.focusOverlayHeading {
+  top: max(18px, calc(50% - min(24vw, 245px)));
+}
+
 .focusOverlayKicker {
-  margin: 0 0 10px;
+  margin: 0 0 8px;
   color: #2f3842;
   font-size: 0.78rem;
   font-weight: 800;
@@ -132,19 +140,21 @@
 }
 
 .focusOverlayPanel h2 {
-  margin: 0;
-  font-size: clamp(1.65rem, 3vw, 2.65rem);
+  margin: 0 auto;
+  max-width: 25rem;
+  font-size: clamp(1.35rem, 2.45vw, 2.15rem);
   font-weight: 850;
-  line-height: 0.96;
+  line-height: 0.98;
   letter-spacing: 0;
 }
 
-.focusOverlayPanel p:not(.focusOverlayKicker) {
-  margin: 14px auto 0;
-  max-width: 34rem;
+.focusOverlayDescription {
+  top: min(calc(100% - 104px), calc(50% + min(18vw, 190px)));
+  margin: 0;
+  max-width: min(35rem, calc(100vw - 44px));
   color: #303845;
-  font-size: clamp(0.98rem, 1.2vw, 1.12rem);
-  line-height: 1.55;
+  font-size: clamp(0.96rem, 1.12vw, 1.08rem);
+  line-height: 1.45;
 }
 
 @keyframes focusOverlayIn {
@@ -166,17 +176,25 @@
     opacity: 0.14;
   }
 
-  .focusOverlayPanel {
-    top: calc(50% + 34vw);
-    padding: 18px 18px 20px;
+  .focusOverlayHeading {
+    top: max(16px, calc(50% - 48vw));
+  }
+
+  .focusOverlayKicker {
+    margin-bottom: 7px;
+    font-size: 0.68rem;
+    letter-spacing: 0.14em;
   }
 
   .focusOverlayPanel h2 {
-    font-size: clamp(1.35rem, 8vw, 2rem);
+    max-width: 19rem;
+    font-size: clamp(1.15rem, 6.2vw, 1.75rem);
   }
 
-  .focusOverlayPanel p:not(.focusOverlayKicker) {
-    font-size: 0.95rem;
-    line-height: 1.45;
+  .focusOverlayDescription {
+    top: min(calc(100% - 112px), calc(50% + 42vw));
+    max-width: min(21rem, calc(100vw - 36px));
+    font-size: 0.92rem;
+    line-height: 1.42;
   }
 }
