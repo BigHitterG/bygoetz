@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import {
   useCallback,
   useEffect,
@@ -9,6 +8,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { withSiteBasePath } from "@/lib/sitePath";
 import conceptDrawing from "../public/concepts/images/551F39B2-861F-4C86-A128-FFDC16CEB303.png";
 import centerLogo from "../public/concepts/images/Logo-01.png";
 import styles from "./HoneycombHome.module.css";
@@ -55,7 +55,10 @@ const MOBILE_CENTER_BUBBLE_MAX_SIZE = 256;
 const MIN_ZOOM = 0.88;
 const MAX_ZOOM = 1;
 const WHEEL_ZOOM_SENSITIVITY = 0.0012;
+const CENTER_CLICK_DISTANCE = 8;
+const TAP_DRAG_THRESHOLD = 7;
 const EXPLORERS_SERIES_BUBBLE = { q: 1, r: 0 };
+const EXPLORERS_SERIES_BUBBLE_ID = `${EXPLORERS_SERIES_BUBBLE.q}:${EXPLORERS_SERIES_BUBBLE.r}`;
 
 function axialDistance(q: number, r: number) {
   return (Math.abs(q) + Math.abs(r) + Math.abs(q + r)) / 2;
@@ -168,6 +171,8 @@ export function HoneycombBubbles({
   const momentum = useRef<number | null>(null);
   const snap = useRef<number | null>(null);
   const focusedBubbleId = useRef<string | null>(null);
+  const focusedBubbleDistance = useRef(Number.POSITIVE_INFINITY);
+  const dragDistance = useRef(0);
 
   const resolvedBaseBubbleSize = baseBubbleSize ?? responsiveBaseBubbleSize;
   const centerScale = maxScale * centerBubbleScaleMultiplier;
@@ -224,6 +229,8 @@ export function HoneycombBubbles({
       element.style.transform = `translate(-50%, -50%) translate(${snappedScreenX}px, ${snappedScreenY}px)`;
       element.style.zIndex = String(Math.round((1 - normalized) * 1000));
     }
+
+    focusedBubbleDistance.current = nearestDistance;
 
     if (focusedBubbleId.current !== nearestId) {
       const previousFocused = focusedBubbleId.current
@@ -389,6 +396,7 @@ export function HoneycombBubbles({
     stopMomentum();
     stopSnap();
     velocity.current = { x: 0, y: 0 };
+    dragDistance.current = 0;
     pointers.current.set(event.pointerId, {
       x: event.clientX,
       y: event.clientY,
@@ -409,6 +417,10 @@ export function HoneycombBubbles({
     const current = { x: event.clientX, y: event.clientY, t: now };
     pointers.current.set(event.pointerId, current);
 
+    const dx = current.x - previous.x;
+    const dy = current.y - previous.y;
+    dragDistance.current += Math.hypot(dx, dy);
+
     if (pointers.current.size >= 2) {
       const distance = getPointerDistance(pointers.current);
       if (distance != null) {
@@ -422,8 +434,6 @@ export function HoneycombBubbles({
       return;
     }
 
-    const dx = current.x - previous.x;
-    const dy = current.y - previous.y;
     const dt = Math.max(16, current.t - previous.t);
     velocity.current = { x: (dx * 16) / dt, y: (dy * 16) / dt };
     moveBy(dx, dy);
@@ -434,6 +444,17 @@ export function HoneycombBubbles({
     pinch.current = null;
 
     if (pointers.current.size !== 0) return;
+
+    const isCenteredExplorersTap =
+      focusedBubbleId.current === EXPLORERS_SERIES_BUBBLE_ID &&
+      focusedBubbleDistance.current <= CENTER_CLICK_DISTANCE &&
+      dragDistance.current <= TAP_DRAG_THRESHOLD &&
+      Math.hypot(velocity.current.x, velocity.current.y) <= 0.5;
+
+    if (isCenteredExplorersTap) {
+      window.location.href = withSiteBasePath("/explorers");
+      return;
+    }
 
     if (Math.hypot(velocity.current.x, velocity.current.y) > 0.5) {
       startMomentum();
@@ -494,16 +515,13 @@ export function HoneycombBubbles({
               />
             ) : null}
             {isExplorersBubble ? (
-              <Link
+              <div
                 className={styles.explorersLink}
-                href="/explorers"
-                aria-label="Open The Explorers Series"
-                onPointerDown={(event) => event.stopPropagation()}
-                onWheel={(event) => event.stopPropagation()}
+                aria-label="Open The Explorers Series when centered"
               >
                 <img
                   className={styles.explorersPreview}
-                  src="/explorers/Monkey.png"
+                  src={withSiteBasePath("/explorers/Monkey.png")}
                   alt=""
                   draggable="false"
                   onError={(event) => {
@@ -513,7 +531,7 @@ export function HoneycombBubbles({
                   }}
                 />
                 <span>Explorers Series</span>
-              </Link>
+              </div>
             ) : null}
           </div>
         );
