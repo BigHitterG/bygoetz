@@ -614,9 +614,11 @@ export function HoneycombBubbles({
       {showExplorersOverlay ? (
         <div className={styles.focusOverlay} aria-hidden="true">
           <div className={styles.focusOverlayPanel}>
-            <p className={styles.focusOverlayKicker}>The Explorers Series</p>
-            <h2>Modern geometric animal illustrations</h2>
-            <p>
+            <div className={styles.focusOverlayHeading}>
+              <p className={styles.focusOverlayKicker}>The Explorers Series</p>
+              <h2>Modern geometric animal illustrations</h2>
+            </div>
+            <p className={styles.focusOverlayDescription}>
               A playful collection of print-ready artwork for nurseries,
               playrooms, reading corners, and creative homes.
             </p>
