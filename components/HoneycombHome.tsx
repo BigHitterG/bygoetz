@@ -56,7 +56,9 @@ const MIN_ZOOM = 0.88;
 const MAX_ZOOM = 1;
 const WHEEL_ZOOM_SENSITIVITY = 0.0012;
 const TAP_DRAG_THRESHOLD = 7;
+const FOCUS_OVERLAY_DELAY = 900;
 const EXPLORERS_SERIES_BUBBLE = { q: 1, r: 0 };
+const EXPLORERS_BUBBLE_ID = `${EXPLORERS_SERIES_BUBBLE.q}:${EXPLORERS_SERIES_BUBBLE.r}`;
 const EXPLORERS_LINK_ID = "explorers";
 
 function axialDistance(q: number, r: number) {
@@ -166,6 +168,7 @@ export function HoneycombBubbles({
       centerBubbleScaleMultiplier,
     );
   });
+  const [showExplorersOverlay, setShowExplorersOverlay] = useState(false);
   const surfaceRef = useRef<HTMLDivElement>(null);
   const bubbleRefs = useRef(new Map<string, HTMLDivElement>());
   const translate = useRef({ x: 0, y: 0 });
@@ -178,6 +181,7 @@ export function HoneycombBubbles({
   const momentum = useRef<number | null>(null);
   const snap = useRef<number | null>(null);
   const focusedBubbleId = useRef<string | null>(null);
+  const overlayTimer = useRef<number | null>(null);
   const dragDistance = useRef(0);
   const linkedBubbleTarget = useRef<string | null>(null);
 
@@ -188,6 +192,36 @@ export function HoneycombBubbles({
     () => generateBubbles(rings, spacing),
     [rings, spacing],
   );
+
+  const clearOverlayTimer = useCallback(() => {
+    if (overlayTimer.current != null) window.clearTimeout(overlayTimer.current);
+    overlayTimer.current = null;
+  }, []);
+
+  const hideExplorersOverlay = useCallback(() => {
+    clearOverlayTimer();
+    setShowExplorersOverlay(false);
+  }, [clearOverlayTimer]);
+
+  const scheduleExplorersOverlay = useCallback(() => {
+    clearOverlayTimer();
+
+    if (focusedBubbleId.current !== EXPLORERS_BUBBLE_ID || pointers.current.size !== 0) {
+      setShowExplorersOverlay(false);
+      return;
+    }
+
+    overlayTimer.current = window.setTimeout(() => {
+      const canShowOverlay =
+        focusedBubbleId.current === EXPLORERS_BUBBLE_ID &&
+        pointers.current.size === 0 &&
+        momentum.current == null &&
+        snap.current == null;
+
+      setShowExplorersOverlay(canShowOverlay);
+      overlayTimer.current = null;
+    }, FOCUS_OVERLAY_DELAY);
+  }, [clearOverlayTimer]);
 
   const stopMomentum = useCallback(() => {
     if (momentum.current != null) cancelAnimationFrame(momentum.current);
@@ -245,10 +279,24 @@ export function HoneycombBubbles({
       const nextFocused = nearestId ? bubbleRefs.current.get(nearestId) : null;
       nextFocused?.classList.add(styles.focusedBubble);
       focusedBubbleId.current = nearestId;
+
+      if (nearestId === EXPLORERS_BUBBLE_ID && pointers.current.size === 0) {
+        scheduleExplorersOverlay();
+      } else {
+        hideExplorersOverlay();
+      }
     }
 
     surfaceRef.current?.setAttribute("data-bubbles-ready", "true");
-  }, [bubbles, centerScale, maxInfluenceRadius, minScale, resolvedBaseBubbleSize]);
+  }, [
+    bubbles,
+    centerScale,
+    hideExplorersOverlay,
+    maxInfluenceRadius,
+    minScale,
+    resolvedBaseBubbleSize,
+    scheduleExplorersOverlay,
+  ]);
 
   const renderImmediately = useCallback(() => {
     if (raf.current != null) cancelAnimationFrame(raf.current);
@@ -299,7 +347,10 @@ export function HoneycombBubbles({
       }
     }
 
-    if (!nearestBubble || nearestDistance < 0.5) return;
+    if (!nearestBubble || nearestDistance < 0.5) {
+      scheduleExplorersOverlay();
+      return;
+    }
 
     const start = { ...translate.current };
     const delta = {
@@ -321,11 +372,12 @@ export function HoneycombBubbles({
         snap.current = requestAnimationFrame(tick);
       } else {
         snap.current = null;
+        scheduleExplorersOverlay();
       }
     };
 
     snap.current = requestAnimationFrame(tick);
-  }, [bubbles, scheduleRender, stopSnap]);
+  }, [bubbles, scheduleExplorersOverlay, scheduleRender, stopSnap]);
 
   const startMomentum = useCallback(() => {
     stopMomentum();
@@ -392,12 +444,14 @@ export function HoneycombBubbles({
       if (raf.current != null) cancelAnimationFrame(raf.current);
       if (momentum.current != null) cancelAnimationFrame(momentum.current);
       if (snap.current != null) cancelAnimationFrame(snap.current);
+      if (overlayTimer.current != null) window.clearTimeout(overlayTimer.current);
     },
     [],
   );
 
   function onPointerDown(event: React.PointerEvent<HTMLDivElement>) {
     event.preventDefault();
+    hideExplorersOverlay();
     stopMomentum();
     stopSnap();
     velocity.current = { x: 0, y: 0 };
@@ -426,6 +480,11 @@ export function HoneycombBubbles({
     const dx = current.x - previous.x;
     const dy = current.y - previous.y;
     dragDistance.current += Math.hypot(dx, dy);
+
+    if (dragDistance.current > TAP_DRAG_THRESHOLD) {
+      linkedBubbleTarget.current = null;
+      hideExplorersOverlay();
+    }
 
     if (pointers.current.size >= 2) {
       const distance = getPointerDistance(pointers.current);
@@ -475,12 +534,14 @@ export function HoneycombBubbles({
     pointers.current.delete(event.pointerId);
     pinch.current = null;
     linkedBubbleTarget.current = null;
+    hideExplorersOverlay();
   }
 
   function onWheel(event: React.WheelEvent<HTMLDivElement>) {
     if (!event.ctrlKey && !event.metaKey) return;
 
     event.preventDefault();
+    hideExplorersOverlay();
     stopMomentum();
     stopSnap();
     velocity.current = { x: 0, y: 0 };
@@ -537,7 +598,7 @@ export function HoneycombBubbles({
                 <img
                   className={styles.explorersPreview}
                   src={withSiteBasePath("/explorers/Monkey.png")}
-                  alt=""
+                  alt="The Explorers Series"
                   draggable="false"
                   onError={(event) => {
                     if (event.currentTarget.src !== conceptDrawing.src) {
@@ -545,12 +606,23 @@ export function HoneycombBubbles({
                     }
                   }}
                 />
-                <span>Explorers Series</span>
               </div>
             ) : null}
           </div>
         );
       })}
+      {showExplorersOverlay ? (
+        <div className={styles.focusOverlay} aria-hidden="true">
+          <div className={styles.focusOverlayPanel}>
+            <p className={styles.focusOverlayKicker}>The Explorers Series</p>
+            <h2>Modern geometric animal illustrations</h2>
+            <p>
+              A playful collection of print-ready artwork for nurseries,
+              playrooms, reading corners, and creative homes.
+            </p>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
