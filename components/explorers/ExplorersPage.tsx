@@ -1,5 +1,5 @@
-import Link from "next/link";
 import { explorerProducts } from "@/lib/explorers/products";
+import { withSiteBasePath } from "@/lib/sitePath";
 import { ArtworkImage } from "./ArtworkImage";
 import styles from "./Explorers.module.css";
 
@@ -52,12 +52,12 @@ export function ExplorersPage() {
         <div className={styles.productGrid}>
           {explorerProducts.map((product) => (
             <article className={styles.productCard} key={product.slug}>
-              <Link
+              <a
                 className={styles.productArtworkLink}
-                href={`/explorers/products/${product.slug}`}
+                href={withSiteBasePath(`/explorers/products/${product.slug}`)}
               >
                 <ArtworkImage src={product.image} title={product.title} />
-              </Link>
+              </a>
               <div className={styles.productCardBody}>
                 <div>
                   <h3>{product.title}</h3>
@@ -65,7 +65,9 @@ export function ExplorersPage() {
                 </div>
                 <div className={styles.productMeta}>
                   <span>From {product.priceFrom}</span>
-                  <Link href={`/explorers/products/${product.slug}`}>View Print</Link>
+                  <a href={withSiteBasePath(`/explorers/products/${product.slug}`)}>
+                    View Print
+                  </a>
                 </div>
               </div>
             </article>
