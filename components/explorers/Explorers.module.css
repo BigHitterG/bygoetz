@@ -486,7 +486,6 @@
 }
 
 .downloadArtworkPanel,
-.downloadPreviewPanel,
 .downloadFeaturedArtwork {
   aspect-ratio: 1 / 1;
 }
