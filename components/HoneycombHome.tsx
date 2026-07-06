@@ -83,6 +83,13 @@ function getViewportSize() {
   };
 }
 
+function snapToDevicePixel(value: number) {
+  if (typeof window === "undefined") return value;
+
+  const ratio = window.devicePixelRatio || 1;
+  return Math.round(value * ratio) / ratio;
+}
+
 function getResponsiveBaseBubbleSize(
   viewportWidth: number,
   maxScale: number,
@@ -181,13 +188,17 @@ export function HoneycombBubbles({
       const normalized = Math.min(distanceFromCenter / maxInfluenceRadius, 1);
       const scale =
         centerScale - (centerScale - minScale) * smoothstep(0, 1, normalized);
+      const renderedBubbleSize = snapToDevicePixel(resolvedBaseBubbleSize * scale);
+      const snappedScreenX = snapToDevicePixel(screenX);
+      const snappedScreenY = snapToDevicePixel(screenY);
 
       if (distanceFromCenter < nearestDistance) {
         nearestDistance = distanceFromCenter;
         nearestId = bubble.id;
       }
 
-      element.style.transform = `translate(-50%, -50%) translate3d(${screenX}px, ${screenY}px, 0) scale(${scale})`;
+      element.style.setProperty("--bubble-size", `${renderedBubbleSize}px`);
+      element.style.transform = `translate(-50%, -50%) translate(${snappedScreenX}px, ${snappedScreenY}px)`;
       element.style.zIndex = String(Math.round((1 - normalized) * 1000));
     }
 
@@ -202,7 +213,7 @@ export function HoneycombBubbles({
     }
 
     surfaceRef.current?.setAttribute("data-bubbles-ready", "true");
-  }, [bubbles, centerScale, maxInfluenceRadius, minScale]);
+  }, [bubbles, centerScale, maxInfluenceRadius, minScale, resolvedBaseBubbleSize]);
 
   const renderImmediately = useCallback(() => {
     if (raf.current != null) cancelAnimationFrame(raf.current);
@@ -400,6 +411,7 @@ export function HoneycombBubbles({
           style={
             {
               "--base-size": `${resolvedBaseBubbleSize}px`,
+              "--bubble-size": `${resolvedBaseBubbleSize}px`,
             } as React.CSSProperties
           }
           aria-hidden="true"
