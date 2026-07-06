@@ -88,7 +88,7 @@
 .explorersLink span {
   max-width: 82%;
   color: #111;
-  font-size: clamp(0.52rem, 7.5cqw, 0.88rem);
+  font-size: clamp(0.52rem, calc(var(--bubble-size) * 0.085), 0.88rem);
   font-weight: 700;
   line-height: 1.05;
 }
