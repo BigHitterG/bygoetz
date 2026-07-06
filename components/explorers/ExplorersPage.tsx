@@ -1,11 +1,13 @@
-import { explorerProducts } from "@/lib/explorers/products";
+import { explorerDigitalBundle, explorerProducts } from "@/lib/explorers/products";
 import { withSiteBasePath } from "@/lib/sitePath";
 import { ArtworkImage } from "./ArtworkImage";
 import styles from "./Explorers.module.css";
 
-const heroProducts = explorerProducts.slice(0, 5);
-
 export function ExplorersPage() {
+  const digitalBundleCta = explorerDigitalBundle.checkoutLink
+    ? "Download the Collection"
+    : "Digital Bundle Coming Soon";
+
   return (
     <main className={styles.page}>
       <section className={styles.hero}>
@@ -28,16 +30,31 @@ export function ExplorersPage() {
             </a>
           </div>
         </div>
-        <div className={styles.heroGallery} aria-label="Explorers Series artwork preview">
-          {heroProducts.map((product, index) => (
-            <div
-              className={`${styles.heroArtwork} ${index === 0 ? styles.heroArtworkFeature : ""}`}
-              key={product.slug}
-            >
-              <ArtworkImage src={product.image} title={product.title} />
-            </div>
-          ))}
-        </div>
+        <aside className={styles.digitalBundleCard} aria-label="Digital collection bundle">
+          <div className={styles.bundleArtworkFrame}>
+            <ArtworkImage src={explorerDigitalBundle.image} title="Explorer" />
+          </div>
+          <div className={styles.bundleCopy}>
+            <p className={styles.eyebrow}>Digital files</p>
+            <h2>{explorerDigitalBundle.title}</h2>
+            <p>{explorerDigitalBundle.description}</p>
+            <p className={styles.bundlePrice}>{explorerDigitalBundle.price}</p>
+            <ul className={styles.bundleList}>
+              {explorerDigitalBundle.includes.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
+            {explorerDigitalBundle.checkoutLink ? (
+              <a className={styles.primaryButton} href={explorerDigitalBundle.checkoutLink}>
+                {digitalBundleCta}
+              </a>
+            ) : (
+              <button className={styles.disabledButton} type="button" disabled>
+                {digitalBundleCta}
+              </button>
+            )}
+          </div>
+        </aside>
       </section>
 
       <section className={styles.collectionSection} id="collection">
