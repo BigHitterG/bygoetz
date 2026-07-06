@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import {
   useCallback,
   useEffect,
@@ -54,7 +55,7 @@ const MOBILE_CENTER_BUBBLE_MAX_SIZE = 256;
 const MIN_ZOOM = 0.88;
 const MAX_ZOOM = 1;
 const WHEEL_ZOOM_SENSITIVITY = 0.0012;
-const FEATURED_CONCEPT_BUBBLE = { q: 1, r: 0 };
+const EXPLORERS_SERIES_BUBBLE = { q: 1, r: 0 };
 
 function axialDistance(q: number, r: number) {
   return (Math.abs(q) + Math.abs(r) + Math.abs(q + r)) / 2;
@@ -462,41 +463,61 @@ export function HoneycombBubbles({
       onPointerCancel={onPointerUp}
       onWheel={onWheel}
     >
-      {bubbles.map((bubble) => (
-        <div
-          key={bubble.id}
-          ref={(element) => {
-            if (element) bubbleRefs.current.set(bubble.id, element);
-            else bubbleRefs.current.delete(bubble.id);
-          }}
-          className={styles.bubble}
-          style={
-            {
-              "--base-size": `${resolvedBaseBubbleSize}px`,
-              "--bubble-size": `${resolvedBaseBubbleSize}px`,
-            } as React.CSSProperties
-          }
-          aria-hidden="true"
-        >
-          {bubble.q === 0 && bubble.r === 0 ? (
-            <img
-              className={styles.centerLogo}
-              src={centerLogo.src}
-              alt=""
-              draggable="false"
-            />
-          ) : null}
-          {bubble.q === FEATURED_CONCEPT_BUBBLE.q &&
-          bubble.r === FEATURED_CONCEPT_BUBBLE.r ? (
-            <img
-              className={styles.conceptDrawing}
-              src={conceptDrawing.src}
-              alt=""
-              draggable="false"
-            />
-          ) : null}
-        </div>
-      ))}
+      {bubbles.map((bubble) => {
+        const isCenterBubble = bubble.q === 0 && bubble.r === 0;
+        const isExplorersBubble =
+          bubble.q === EXPLORERS_SERIES_BUBBLE.q &&
+          bubble.r === EXPLORERS_SERIES_BUBBLE.r;
+
+        return (
+          <div
+            key={bubble.id}
+            ref={(element) => {
+              if (element) bubbleRefs.current.set(bubble.id, element);
+              else bubbleRefs.current.delete(bubble.id);
+            }}
+            className={styles.bubble}
+            style={
+              {
+                "--base-size": `${resolvedBaseBubbleSize}px`,
+                "--bubble-size": `${resolvedBaseBubbleSize}px`,
+              } as React.CSSProperties
+            }
+            aria-hidden={isExplorersBubble ? undefined : true}
+          >
+            {isCenterBubble ? (
+              <img
+                className={styles.centerLogo}
+                src={centerLogo.src}
+                alt=""
+                draggable="false"
+              />
+            ) : null}
+            {isExplorersBubble ? (
+              <Link
+                className={styles.explorersLink}
+                href="/explorers"
+                aria-label="Open The Explorers Series"
+                onPointerDown={(event) => event.stopPropagation()}
+                onWheel={(event) => event.stopPropagation()}
+              >
+                <img
+                  className={styles.explorersPreview}
+                  src="/explorers/Monkey.png"
+                  alt=""
+                  draggable="false"
+                  onError={(event) => {
+                    if (event.currentTarget.src !== conceptDrawing.src) {
+                      event.currentTarget.src = conceptDrawing.src;
+                    }
+                  }}
+                />
+                <span>Explorers Series</span>
+              </Link>
+            ) : null}
+          </div>
+        );
+      })}
     </div>
   );
 }
