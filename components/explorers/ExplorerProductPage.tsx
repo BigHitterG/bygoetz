@@ -13,6 +13,9 @@ type ExplorerProductPageProps = {
 export function ExplorerProductPage({ product }: ExplorerProductPageProps) {
   const relatedProducts = getRelatedExplorerProducts(product.slug);
   const checkoutLabel = product.stripePaymentLink ? "Add to Cart" : "Available Soon";
+  const digitalCheckoutLabel = product.digitalPaymentLink
+    ? "Buy Digital File"
+    : "Digital File Coming Soon";
 
   return (
     <main className={styles.page}>
@@ -28,7 +31,7 @@ export function ExplorerProductPage({ product }: ExplorerProductPageProps) {
             <p className={styles.eyebrow}>The Explorers Series</p>
             <h1>{product.title}</h1>
             <p>{product.description}</p>
-            <p className={styles.detailPrice}>From {product.priceFrom}</p>
+            <p className={styles.detailPrice}>Prints from {product.priceFrom}</p>
 
             <div className={styles.optionGroup}>
               <h2>Sizes</h2>
@@ -57,6 +60,26 @@ export function ExplorerProductPage({ product }: ExplorerProductPageProps) {
                 {checkoutLabel}
               </button>
             )}
+
+            <div className={styles.singleDigitalOption}>
+              <div>
+                <p className={styles.eyebrow}>Digital file</p>
+                <h2>Download this artwork</h2>
+                <p>
+                  High-resolution PNG for personal printing and creative projects.
+                </p>
+              </div>
+              <strong className={styles.digitalOptionPrice}>{product.digitalPrice}</strong>
+              {product.digitalPaymentLink ? (
+                <a className={styles.secondaryButton} href={product.digitalPaymentLink}>
+                  {digitalCheckoutLabel}
+                </a>
+              ) : (
+                <button className={styles.disabledButton} type="button" disabled>
+                  {digitalCheckoutLabel}
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </section>
