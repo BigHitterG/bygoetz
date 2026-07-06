@@ -27,6 +27,9 @@ export function ArtworkImage({ src, title, className }: ArtworkImageProps) {
       src={withSiteBasePath(src)}
       alt={`${title} artwork from The Explorers Series`}
       loading="lazy"
+      draggable="false"
+      onContextMenu={(event) => event.preventDefault()}
+      onDragStart={(event) => event.preventDefault()}
       onError={() => setMissing(true)}
     />
   );
