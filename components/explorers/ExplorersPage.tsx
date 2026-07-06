@@ -41,7 +41,10 @@ export function ExplorersPage() {
             <p className={styles.eyebrow}>Digital files</p>
             <h2>{explorerDigitalBundle.title}</h2>
             <p>{explorerDigitalBundle.description}</p>
-            <p className={styles.bundlePrice}>{explorerDigitalBundle.price}</p>
+            <div className={styles.priceStack}>
+              <span>{explorerDigitalBundle.compareAtPrice} value</span>
+              <strong>{explorerDigitalBundle.price}</strong>
+            </div>
             <ul className={styles.bundleList}>
               {explorerDigitalBundle.includes.map((item) => (
                 <li key={item}>{item}</li>
