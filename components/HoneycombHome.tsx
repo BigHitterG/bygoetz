@@ -55,10 +55,9 @@ const MOBILE_CENTER_BUBBLE_MAX_SIZE = 256;
 const MIN_ZOOM = 0.88;
 const MAX_ZOOM = 1;
 const WHEEL_ZOOM_SENSITIVITY = 0.0012;
-const CENTER_CLICK_DISTANCE = 8;
 const TAP_DRAG_THRESHOLD = 7;
 const EXPLORERS_SERIES_BUBBLE = { q: 1, r: 0 };
-const EXPLORERS_SERIES_BUBBLE_ID = `${EXPLORERS_SERIES_BUBBLE.q}:${EXPLORERS_SERIES_BUBBLE.r}`;
+const EXPLORERS_LINK_ID = "explorers";
 
 function axialDistance(q: number, r: number) {
   return (Math.abs(q) + Math.abs(r) + Math.abs(q + r)) / 2;
@@ -107,6 +106,14 @@ function getPointerDistance(pointers: Map<number, PointerInfo>) {
 
   const [first, second] = Array.from(pointers.values());
   return Math.hypot(second.x - first.x, second.y - first.y);
+}
+
+function getLinkedBubbleTarget(target: EventTarget | null) {
+  if (!(target instanceof HTMLElement)) return null;
+
+  return target
+    .closest<HTMLElement>("[data-linked-bubble-id]")
+    ?.getAttribute("data-linked-bubble-id") ?? null;
 }
 
 function getResponsiveBaseBubbleSize(
@@ -171,8 +178,8 @@ export function HoneycombBubbles({
   const momentum = useRef<number | null>(null);
   const snap = useRef<number | null>(null);
   const focusedBubbleId = useRef<string | null>(null);
-  const focusedBubbleDistance = useRef(Number.POSITIVE_INFINITY);
   const dragDistance = useRef(0);
+  const linkedBubbleTarget = useRef<string | null>(null);
 
   const resolvedBaseBubbleSize = baseBubbleSize ?? responsiveBaseBubbleSize;
   const centerScale = maxScale * centerBubbleScaleMultiplier;
@@ -229,8 +236,6 @@ export function HoneycombBubbles({
       element.style.transform = `translate(-50%, -50%) translate(${snappedScreenX}px, ${snappedScreenY}px)`;
       element.style.zIndex = String(Math.round((1 - normalized) * 1000));
     }
-
-    focusedBubbleDistance.current = nearestDistance;
 
     if (focusedBubbleId.current !== nearestId) {
       const previousFocused = focusedBubbleId.current
@@ -397,6 +402,7 @@ export function HoneycombBubbles({
     stopSnap();
     velocity.current = { x: 0, y: 0 };
     dragDistance.current = 0;
+    linkedBubbleTarget.current = getLinkedBubbleTarget(event.target);
     pointers.current.set(event.pointerId, {
       x: event.clientX,
       y: event.clientY,
@@ -445,13 +451,15 @@ export function HoneycombBubbles({
 
     if (pointers.current.size !== 0) return;
 
-    const isCenteredExplorersTap =
-      focusedBubbleId.current === EXPLORERS_SERIES_BUBBLE_ID &&
-      focusedBubbleDistance.current <= CENTER_CLICK_DISTANCE &&
+    const targetLink = linkedBubbleTarget.current;
+    linkedBubbleTarget.current = null;
+
+    const shouldOpenLinkedBubble =
+      targetLink === EXPLORERS_LINK_ID &&
       dragDistance.current <= TAP_DRAG_THRESHOLD &&
       Math.hypot(velocity.current.x, velocity.current.y) <= 0.5;
 
-    if (isCenteredExplorersTap) {
+    if (shouldOpenLinkedBubble) {
       window.location.href = withSiteBasePath("/explorers");
       return;
     }
@@ -461,6 +469,12 @@ export function HoneycombBubbles({
     } else {
       snapNearestBubbleToCenter();
     }
+  }
+
+  function onPointerCancel(event: React.PointerEvent<HTMLDivElement>) {
+    pointers.current.delete(event.pointerId);
+    pinch.current = null;
+    linkedBubbleTarget.current = null;
   }
 
   function onWheel(event: React.WheelEvent<HTMLDivElement>) {
@@ -481,7 +495,7 @@ export function HoneycombBubbles({
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
-      onPointerCancel={onPointerUp}
+      onPointerCancel={onPointerCancel}
       onWheel={onWheel}
     >
       {bubbles.map((bubble) => {
@@ -517,7 +531,8 @@ export function HoneycombBubbles({
             {isExplorersBubble ? (
               <div
                 className={styles.explorersLink}
-                aria-label="Open The Explorers Series when centered"
+                data-linked-bubble-id={EXPLORERS_LINK_ID}
+                aria-label="Open The Explorers Series"
               >
                 <img
                   className={styles.explorersPreview}
