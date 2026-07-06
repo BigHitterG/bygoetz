@@ -19,7 +19,8 @@
 .storySection,
 .finalCta,
 .detailHero,
-.relatedSection {
+.relatedSection,
+.downloadHero {
   width: min(1180px, calc(100% - 32px));
   margin: 0 auto;
 }
@@ -40,7 +41,9 @@
 .finalCta h2,
 .detailCopy h1,
 .relatedSection h2,
-.bundleCopy h2 {
+.bundleCopy h2,
+.downloadCopy h1,
+.checkoutPreview h2 {
   margin: 0;
   color: #111;
   font-weight: 650;
@@ -73,7 +76,9 @@
 .sectionIntro p,
 .storySection p,
 .detailCopy p,
-.bundleCopy p {
+.bundleCopy p,
+.downloadCopy p,
+.checkoutPreview p {
   color: #4c4c4c;
   font-size: 1rem;
   line-height: 1.7;
@@ -95,6 +100,7 @@
 .secondaryButton,
 .disabledButton {
   display: inline-flex;
+  max-width: 100%;
   min-height: 48px;
   align-items: center;
   justify-content: center;
@@ -103,7 +109,10 @@
   color: #111;
   font-size: 0.9rem;
   font-weight: 700;
+  line-height: 1.2;
+  text-align: center;
   text-decoration: none;
+  white-space: normal;
   transition:
     background 180ms ease,
     color 180ms ease,
@@ -158,6 +167,11 @@
   padding: clamp(14px, 3vw, 28px);
 }
 
+.bundleCopy,
+.downloadCopy {
+  min-width: 0;
+}
+
 .bundleCopy h2 {
   max-width: 380px;
   font-size: clamp(2rem, 4vw, 4.4rem);
@@ -175,7 +189,8 @@
   line-height: 1 !important;
 }
 
-.bundleList {
+.bundleList,
+.cleanList {
   display: grid;
   gap: 10px;
   margin: 22px 0 28px;
@@ -183,24 +198,23 @@
   list-style: none;
 }
 
-.bundleList li {
+.bundleList li,
+.cleanList li {
   position: relative;
-  padding-left: 22px;
+  padding-left: 18px;
   color: #333;
   font-size: 0.95rem;
   line-height: 1.45;
 }
 
-.bundleList li::before {
+.bundleList li::before,
+.cleanList li::before {
   position: absolute;
   left: 0;
-  top: 0.48em;
-  width: 8px;
-  height: 8px;
-  background: #e9cf19;
-  box-shadow:
-    10px 0 0 #d8291f,
-    20px 0 0 #1f55b7;
+  top: 0.58em;
+  width: 7px;
+  height: 7px;
+  background: #1f55b7;
   content: "";
 }
 
@@ -422,7 +436,8 @@
   text-align: center;
 }
 
-.detailHero {
+.detailHero,
+.downloadHero {
   padding: 28px 0 clamp(58px, 8vw, 96px);
 }
 
@@ -431,19 +446,30 @@
   margin-bottom: 26px;
 }
 
-.detailGrid {
+.detailGrid,
+.downloadGrid {
   display: grid;
   grid-template-columns: minmax(300px, 1.08fr) minmax(280px, 0.92fr);
   gap: clamp(32px, 7vw, 92px);
   align-items: center;
 }
 
-.detailArtworkFrame {
+.detailArtworkFrame,
+.downloadArtworkPanel {
+  overflow: hidden;
+  border: 1px solid #e3ded5;
+  background: #fff;
+  box-shadow: 0 22px 60px rgba(20, 20, 20, 0.06);
   aspect-ratio: 4 / 5;
   padding: clamp(18px, 3vw, 34px);
 }
 
-.detailCopy h1 {
+.downloadArtworkPanel {
+  aspect-ratio: 1 / 1;
+}
+
+.detailCopy h1,
+.downloadCopy h1 {
   font-size: clamp(3rem, 7vw, 6.5rem);
   line-height: 0.92;
 }
@@ -461,6 +487,25 @@
 
 .optionGroup h2 {
   margin-bottom: 12px;
+}
+
+.checkoutPreview {
+  margin-top: 24px;
+  border: 1px solid #e3ded5;
+  background: #fff;
+  padding: clamp(18px, 3vw, 28px);
+}
+
+.checkoutPreview h2 {
+  font-size: clamp(1.2rem, 2vw, 1.6rem);
+}
+
+.checkoutRow {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  border-bottom: 1px solid #e6e0d7;
+  padding: 18px 0;
 }
 
 .relatedGrid {
@@ -492,19 +537,26 @@
   min-height: 0;
 }
 
+@media (max-width: 1120px) {
+  .digitalBundleCard {
+    grid-template-columns: 1fr;
+  }
+
+  .bundleArtworkFrame {
+    width: min(230px, 100%);
+  }
+}
+
 @media (max-width: 920px) {
   .hero,
   .spacesSection,
-  .detailGrid {
+  .detailGrid,
+  .downloadGrid {
     grid-template-columns: 1fr;
   }
 
   .hero {
     min-height: auto;
-  }
-
-  .digitalBundleCard {
-    grid-template-columns: minmax(150px, 0.52fr) minmax(0, 1fr);
   }
 
   .productGrid {
@@ -525,16 +577,13 @@
   .finalCta,
   .detailHero,
   .relatedSection,
-  .qualitySection {
+  .qualitySection,
+  .downloadHero {
     width: min(100% - 24px, 1180px);
   }
 
   .heroCopy h1 {
     font-size: clamp(3.2rem, 18vw, 5.2rem);
-  }
-
-  .digitalBundleCard {
-    grid-template-columns: 1fr;
   }
 
   .bundleArtworkFrame {
@@ -561,5 +610,9 @@
 
   .productMeta {
     justify-items: start;
+  }
+
+  .checkoutRow {
+    display: grid;
   }
 }
