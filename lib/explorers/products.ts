@@ -1,3 +1,12 @@
+export type ExplorerPrintOption = {
+  label: string;
+  format: string;
+  artworkSize: string;
+  finishedSize: string;
+  price: string;
+  note?: string;
+};
+
 export type ExplorerProduct = {
   title: string;
   slug: string;
@@ -5,8 +14,7 @@ export type ExplorerProduct = {
   description: string;
   priceFrom: string;
   digitalPrice: string;
-  availableSizes: string[];
-  frameOptions: string[];
+  printOptions: ExplorerPrintOption[];
   stripePaymentLink: string;
   digitalPaymentLink: string;
   featured?: boolean;
@@ -22,9 +30,38 @@ export type ExplorerDigitalBundle = {
   checkoutLink: string;
 };
 
-export const explorerSizes = ["8x10", "11x14"];
-
-export const explorerFrameOptions = ["Print", "Matted print"];
+export const explorerPrintOptions: ExplorerPrintOption[] = [
+  {
+    label: "8x10 print",
+    format: "Unmatted print",
+    artworkSize: "8 x 10 in artwork",
+    finishedSize: "Ships as an 8 x 10 in print",
+    price: "$35",
+  },
+  {
+    label: "8x10 print, matted",
+    format: "Matted print",
+    artworkSize: "8 x 10 in artwork",
+    finishedSize: "Matted to fit an 11 x 14 in frame",
+    price: "$50",
+  },
+  {
+    label: "11x14 print",
+    format: "Unmatted print",
+    artworkSize: "11 x 14 in artwork",
+    finishedSize: "Ships as an 11 x 14 in print",
+    price: "Coming soon",
+    note: "Larger wall-friendly size",
+  },
+  {
+    label: "11x14 print, matted",
+    format: "Matted print",
+    artworkSize: "11 x 14 in artwork",
+    finishedSize: "Matted to fit a 16 x 20 in frame",
+    price: "Coming soon",
+    note: "Standard larger frame-ready size",
+  },
+];
 
 export const explorerDigitalBundle: ExplorerDigitalBundle = {
   title: "Complete Digital Collection",
@@ -49,10 +86,9 @@ export const explorerProducts: ExplorerProduct[] = [
     image: "/explorers/Monkey.png",
     description:
       "A bright geometric companion with expressive linework and a curious, playful presence.",
-    priceFrom: "$28",
+    priceFrom: "$35",
     digitalPrice: "$2",
-    availableSizes: explorerSizes,
-    frameOptions: explorerFrameOptions,
+    printOptions: explorerPrintOptions,
     stripePaymentLink: "",
     digitalPaymentLink: "",
     featured: true,
@@ -63,10 +99,9 @@ export const explorerProducts: ExplorerProduct[] = [
     image: "/explorers/Dog.png",
     description:
       "A loyal study in bold color, simple form, and warm modern character.",
-    priceFrom: "$28",
+    priceFrom: "$35",
     digitalPrice: "$2",
-    availableSizes: explorerSizes,
-    frameOptions: explorerFrameOptions,
+    printOptions: explorerPrintOptions,
     stripePaymentLink: "",
     digitalPaymentLink: "",
   },
@@ -76,10 +111,9 @@ export const explorerProducts: ExplorerProduct[] = [
     image: "/explorers/Horse.png",
     description:
       "Architectural shapes and confident lines give this explorer a quiet sense of motion.",
-    priceFrom: "$28",
+    priceFrom: "$35",
     digitalPrice: "$2",
-    availableSizes: explorerSizes,
-    frameOptions: explorerFrameOptions,
+    printOptions: explorerPrintOptions,
     stripePaymentLink: "",
     digitalPaymentLink: "",
   },
@@ -89,10 +123,9 @@ export const explorerProducts: ExplorerProduct[] = [
     image: "/explorers/Cow.png",
     description:
       "A calm, graphic portrait made for bright rooms and thoughtful collections.",
-    priceFrom: "$28",
+    priceFrom: "$35",
     digitalPrice: "$2",
-    availableSizes: explorerSizes,
-    frameOptions: explorerFrameOptions,
+    printOptions: explorerPrintOptions,
     stripePaymentLink: "",
     digitalPaymentLink: "",
   },
@@ -102,10 +135,9 @@ export const explorerProducts: ExplorerProduct[] = [
     image: "/explorers/Turtle.png",
     description:
       "A steady little explorer built from clean geometry and cheerful primary color.",
-    priceFrom: "$28",
+    priceFrom: "$35",
     digitalPrice: "$2",
-    availableSizes: explorerSizes,
-    frameOptions: explorerFrameOptions,
+    printOptions: explorerPrintOptions,
     stripePaymentLink: "",
     digitalPaymentLink: "",
   },
@@ -115,10 +147,9 @@ export const explorerProducts: ExplorerProduct[] = [
     image: "/explorers/Owl.png",
     description:
       "A watchful modern owl with minimal forms, crisp contrast, and a wise gaze.",
-    priceFrom: "$28",
+    priceFrom: "$35",
     digitalPrice: "$2",
-    availableSizes: explorerSizes,
-    frameOptions: explorerFrameOptions,
+    printOptions: explorerPrintOptions,
     stripePaymentLink: "",
     digitalPaymentLink: "",
   },
@@ -128,10 +159,9 @@ export const explorerProducts: ExplorerProduct[] = [
     image: "/explorers/Explorer.png",
     description:
       "A character print for rooms where imagination, learning, and discovery meet.",
-    priceFrom: "$28",
+    priceFrom: "$35",
     digitalPrice: "$2",
-    availableSizes: explorerSizes,
-    frameOptions: explorerFrameOptions,
+    printOptions: explorerPrintOptions,
     stripePaymentLink: "",
     digitalPaymentLink: "",
   },
@@ -141,10 +171,9 @@ export const explorerProducts: ExplorerProduct[] = [
     image: "/explorers/Snorkeler.png",
     description:
       "An aquatic explorer with bright shapes, expressive details, and a sense of wonder.",
-    priceFrom: "$28",
+    priceFrom: "$35",
     digitalPrice: "$2",
-    availableSizes: explorerSizes,
-    frameOptions: explorerFrameOptions,
+    printOptions: explorerPrintOptions,
     stripePaymentLink: "",
     digitalPaymentLink: "",
   },
