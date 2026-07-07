@@ -593,6 +593,58 @@
   margin-bottom: 12px;
 }
 
+.printOptionList {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.printOptionCard {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+  border: 1px solid #e3ded5;
+  background: #fff;
+  padding: 14px;
+}
+
+.printOptionHeader {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.printOptionHeader strong,
+.printOptionHeader span {
+  color: #111;
+  font-size: 0.96rem;
+  line-height: 1.2;
+}
+
+.printOptionHeader span {
+  flex: 0 0 auto;
+  font-weight: 750;
+}
+
+.printOptionCard p {
+  margin: 0;
+  color: #4c4c4c;
+  font-size: 0.9rem;
+  line-height: 1.38;
+}
+
+.printOptionCard small,
+.optionNote {
+  color: #6b655d;
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.optionNote {
+  margin: 12px 0 0;
+}
+
 .checkoutPreview,
 .singleDigitalOption {
   margin-top: 24px;
@@ -734,7 +786,8 @@
     grid-row: span 1;
   }
 
-  .productGrid {
+  .productGrid,
+  .printOptionList {
     grid-template-columns: 1fr;
   }
 
@@ -746,6 +799,10 @@
   .productMeta {
     justify-items: start;
     white-space: normal;
+  }
+
+  .printOptionHeader {
+    display: grid;
   }
 
   .checkoutRow {
