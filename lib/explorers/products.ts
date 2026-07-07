@@ -38,7 +38,7 @@ export const explorerDigitalBundle: ExplorerDigitalBundle = {
     "High-resolution PNG files",
     "Ready for personal prints and decor projects",
   ],
-  checkoutLink: "",
+  checkoutLink: "https://buy.stripe.com/9B68wPbOh9mKgwv95Ggw000",
 };
 
 // TODO: Add final artwork files to public/explorers/ as they become available.
