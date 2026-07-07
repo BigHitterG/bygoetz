@@ -63,7 +63,8 @@ export function ExplorersPage() {
           <h2>Choose your explorer.</h2>
           <p>
             Collect one favorite or build a coordinated wall of curious animals and
-            characters, available as prints, matted prints, or individual digital files.
+            characters, available as 8x10 prints, 8x10 prints matted for 11x14 frames,
+            larger print options, or individual digital files.
           </p>
         </div>
         <div className={styles.productGrid}>
@@ -116,9 +117,9 @@ export function ExplorersPage() {
         {[
           "Museum-quality prints",
           "Archival paper",
-          "Print and matted print options",
-          "8x10 and 11x14 sizes",
-          "Digital files available individually",
+          "8x10 prints from $35",
+          "8x10 prints matted to 11x14 from $50",
+          "Larger 11x14 and 16x20 mat options planned",
           "Designed as a coordinated collection",
         ].map((point) => (
           <div className={styles.qualityItem} key={point}>
