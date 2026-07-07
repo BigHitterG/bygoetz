@@ -34,21 +34,24 @@ export function ExplorerProductPage({ product }: ExplorerProductPageProps) {
             <p className={styles.detailPrice}>Prints from {product.priceFrom}</p>
 
             <div className={styles.optionGroup}>
-              <h2>Sizes</h2>
-              <div className={styles.optionList}>
-                {product.availableSizes.map((size) => (
-                  <span key={size}>{size}</span>
+              <h2>Print options</h2>
+              <div className={styles.printOptionList}>
+                {product.printOptions.map((option) => (
+                  <div className={styles.printOptionCard} key={option.label}>
+                    <div className={styles.printOptionHeader}>
+                      <strong>{option.label}</strong>
+                      <span>{option.price}</span>
+                    </div>
+                    <p>{option.artworkSize}</p>
+                    <p>{option.finishedSize}</p>
+                    <small>{option.note ?? option.format}</small>
+                  </div>
                 ))}
               </div>
-            </div>
-
-            <div className={styles.optionGroup}>
-              <h2>Formats</h2>
-              <div className={styles.optionList}>
-                {product.frameOptions.map((option) => (
-                  <span key={option}>{option}</span>
-                ))}
-              </div>
+              <p className={styles.optionNote}>
+                Matted sizes describe the finished frame-ready mat size; the artwork
+                opening remains the listed print size.
+              </p>
             </div>
 
             {product.stripePaymentLink ? (
