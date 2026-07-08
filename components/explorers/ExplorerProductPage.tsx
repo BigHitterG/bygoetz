@@ -57,9 +57,9 @@ export function ExplorerProductPage({ product }: ExplorerProductPageProps) {
                 ))}
               </div>
               <p className={styles.optionNote}>
-                Matted sizes describe the finished frame-ready mat size; the artwork
-                opening remains the listed print size. Shipping and tax are shown in
-                Stripe checkout.
+                Artwork preview is shown in a 4:5 (8x10) ratio. Matted sizes describe
+                the finished frame-ready mat size; the artwork opening remains the
+                listed print size. Shipping and tax are shown in Stripe checkout.
               </p>
             </div>
 
