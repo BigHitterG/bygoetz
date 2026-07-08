@@ -12,7 +12,6 @@ type ExplorerProductPageProps = {
 
 export function ExplorerProductPage({ product }: ExplorerProductPageProps) {
   const relatedProducts = getRelatedExplorerProducts(product.slug);
-  const checkoutLabel = product.stripePaymentLink ? "Add to Cart" : "Available Soon";
   const digitalCheckoutLabel = product.digitalPaymentLink
     ? "Buy Digital File"
     : "Digital File Coming Soon";
@@ -45,24 +44,24 @@ export function ExplorerProductPage({ product }: ExplorerProductPageProps) {
                     <p>{option.artworkSize}</p>
                     <p>{option.finishedSize}</p>
                     <small>{option.note ?? option.format}</small>
+                    {option.checkoutLink ? (
+                      <a className={styles.printOptionButton} href={option.checkoutLink}>
+                        Buy this option
+                      </a>
+                    ) : (
+                      <button className={styles.disabledButton} type="button" disabled>
+                        Available Soon
+                      </button>
+                    )}
                   </div>
                 ))}
               </div>
               <p className={styles.optionNote}>
                 Matted sizes describe the finished frame-ready mat size; the artwork
-                opening remains the listed print size.
+                opening remains the listed print size. Shipping and tax are shown in
+                Stripe checkout.
               </p>
             </div>
-
-            {product.stripePaymentLink ? (
-              <a className={styles.primaryButton} href={product.stripePaymentLink}>
-                {checkoutLabel}
-              </a>
-            ) : (
-              <button className={styles.disabledButton} type="button" disabled>
-                {checkoutLabel}
-              </button>
-            )}
 
             <div className={styles.singleDigitalOption}>
               <div>
