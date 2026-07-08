@@ -45,7 +45,7 @@ export function ExplorerProductPage({ product }: ExplorerProductPageProps) {
                     <p>{option.finishedSize}</p>
                     <small>{option.note ?? option.format}</small>
                     {option.checkoutLink ? (
-                      <a className={styles.printOptionButton} href={option.checkoutLink}>
+                      <a className={styles.primaryButton} href={option.checkoutLink}>
                         Buy this option
                       </a>
                     ) : (
