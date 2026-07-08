@@ -119,7 +119,7 @@ export function ExplorersPage() {
           "Archival paper",
           "8x10 prints from $35",
           "8x10 prints matted to 11x14 from $50",
-          "Larger 11x14 and 16x20 mat options planned",
+          "11x14 prints and 16x20 mat options available",
           "Designed as a coordinated collection",
         ].map((point) => (
           <div className={styles.qualityItem} key={point}>
