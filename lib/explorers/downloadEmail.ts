@@ -20,8 +20,8 @@ function escapeHtml(value: string) {
 
 export function getDownloadEmailSubject(items: DownloadEmailItem[]) {
   return items.length > 1
-    ? "Your Goetz digital downloads are ready"
-    : "Your Goetz digital download is ready";
+    ? "Your Goetz download links are ready"
+    : "Your Goetz download link is ready";
 }
 
 export function renderDownloadEmailText({ items, expiresInDays, siteUrl }: DownloadEmailOptions) {
@@ -29,7 +29,11 @@ export function renderDownloadEmailText({ items, expiresInDays, siteUrl }: Downl
 
   return `Thank you for your purchase from Goetz.\n\nYour download link${
     items.length > 1 ? "s are" : " is"
-  } ready:\n\n${links}\n\nThe link${items.length > 1 ? "s" : ""} will expire in ${expiresInDays} days. These files are for personal use.\n\nGoetz\n${siteUrl}`;
+  } ready:\n\n${links}\n\nClick the link${
+    items.length > 1 ? "s" : ""
+  } above to download your file${items.length > 1 ? "s" : ""}. The download should save to your computer's Downloads folder unless your browser asks where to save it.\n\nThe link${
+    items.length > 1 ? "s" : ""
+  } will expire in ${expiresInDays} days. These files are for personal use.\n\nIf anything goes wrong, reply to this email and I will help.\n\nGoetz\n${siteUrl}`;
 }
 
 export function renderDownloadEmailHtml({ items, expiresInDays, siteUrl }: DownloadEmailOptions) {
@@ -81,13 +85,14 @@ export function renderDownloadEmailHtml({ items, expiresInDays, siteUrl }: Downl
               <p style="margin-top:0;margin-right:0;margin-bottom:18px;margin-left:0;font-size:16px;line-height:25px;color:#333333;">Thank you for your purchase. Use ${
                 items.length > 1 ? "the buttons below" : "the button below"
               } to download your Explorers Series file${items.length > 1 ? "s" : ""}.</p>
+              <p style="margin-top:0;margin-right:0;margin-bottom:4px;margin-left:0;font-size:14px;line-height:22px;color:#555555;">The download should save to your computer's Downloads folder unless your browser asks where to save it.</p>
               <p style="margin-top:0;margin-right:0;margin-bottom:4px;margin-left:0;font-size:14px;line-height:22px;color:#555555;">The download link${
                 items.length > 1 ? "s" : ""
               } will expire in ${expiresInDays} days.</p>
               <table width="100%" cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;">
                 ${itemRows}
               </table>
-              <p style="margin-top:24px;margin-right:0;margin-bottom:0;margin-left:0;font-size:13px;line-height:21px;color:#666666;">These files are for personal use. If you have any trouble downloading, reply to this email and I will help.</p>
+              <p style="margin-top:24px;margin-right:0;margin-bottom:0;margin-left:0;font-size:13px;line-height:21px;color:#666666;">These files are for personal use. If anything goes wrong, reply to this email and I will help.</p>
               <p style="margin-top:18px;margin-right:0;margin-bottom:0;margin-left:0;font-size:13px;line-height:21px;color:#666666;"><a href="${escapeHtml(
                 siteUrl,
               )}" style="color:#111111;text-decoration:underline;">${escapeHtml(siteUrl)}</a></p>
