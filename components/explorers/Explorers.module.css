@@ -47,7 +47,9 @@
 .finalCta,
 .detailHero,
 .relatedSection,
-.downloadHero {
+.downloadHero,
+.successHero,
+.moreFromGoetzSection {
   width: min(1180px, calc(100% - 32px));
   margin: 0 auto;
 }
@@ -70,7 +72,8 @@
 .relatedSection h2,
 .bundleCopy h2,
 .downloadCopy h1,
-.checkoutPreview h2 {
+.checkoutPreview h2,
+.successPanel h1 {
   margin: 0;
   color: #111;
   font-weight: 650;
@@ -105,7 +108,8 @@
 .detailCopy p,
 .bundleCopy p,
 .downloadCopy p,
-.checkoutPreview p {
+.checkoutPreview p,
+.successPanel p {
   color: #4c4c4c;
   font-size: 1rem;
   line-height: 1.7;
@@ -330,7 +334,8 @@
 .spacesSection,
 .qualitySection,
 .storySection,
-.relatedSection {
+.relatedSection,
+.moreFromGoetzSection {
   padding: clamp(60px, 9vw, 110px) 0;
 }
 
@@ -486,7 +491,8 @@
 }
 
 .detailHero,
-.downloadHero {
+.downloadHero,
+.successHero {
   padding: 28px 0 clamp(58px, 8vw, 96px);
 }
 
@@ -576,6 +582,34 @@
 
 .downloadCopy h1 {
   font-size: clamp(2.35rem, 5.2vw, 4.8rem);
+}
+
+.successPanel {
+  max-width: 760px;
+  border: 1px solid #e3ded5;
+  background: #fff;
+  padding: clamp(26px, 5vw, 56px);
+  box-shadow: 0 24px 70px rgba(20, 20, 20, 0.07);
+}
+
+.successPanel h1 {
+  max-width: 680px;
+  font-size: clamp(2.3rem, 6vw, 5.2rem);
+  line-height: 0.96;
+}
+
+.successPanel p {
+  max-width: 640px;
+  margin: 18px 0 0;
+}
+
+.deliveryNote {
+  border-left: 4px solid #1f55b7;
+  background: #f5f1e8;
+  padding: 12px 14px;
+  color: #333 !important;
+  font-size: 0.92rem !important;
+  line-height: 1.55 !important;
 }
 
 .detailPrice {
@@ -755,7 +789,9 @@
   .detailHero,
   .relatedSection,
   .qualitySection,
-  .downloadHero {
+  .downloadHero,
+  .successHero,
+  .moreFromGoetzSection {
     width: min(100% - 24px, 1180px);
   }
 
@@ -764,7 +800,8 @@
   }
 
   .bundleCopy h2,
-  .downloadCopy h1 {
+  .downloadCopy h1,
+  .successPanel h1 {
     font-size: clamp(2.15rem, 13vw, 3.4rem);
   }
 
