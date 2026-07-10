@@ -9,9 +9,12 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@supabase/supabase-js": "latest",
     "next": "latest",
     "react": "latest",
-    "react-dom": "latest"
+    "react-dom": "latest",
+    "resend": "latest",
+    "stripe": "latest"
   },
   "devDependencies": {
     "@types/node": "latest",
