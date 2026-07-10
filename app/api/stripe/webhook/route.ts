@@ -6,6 +6,11 @@ import { getStripe } from "@/lib/stripe";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+const checkoutSuccessEvents = new Set([
+  "checkout.session.completed",
+  "checkout.session.async_payment_succeeded",
+]);
+
 export async function POST(request: Request) {
   const stripe = getStripe();
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
@@ -34,7 +39,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    if (event.type === "checkout.session.completed") {
+    if (checkoutSuccessEvents.has(event.type)) {
       const session = event.data.object as Stripe.Checkout.Session;
       const result = await fulfillDigitalDownloadCheckout(session);
       return NextResponse.json({ received: true, fulfillment: result });
