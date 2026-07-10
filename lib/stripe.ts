@@ -11,7 +11,6 @@ export function getStripe() {
 
   if (!stripeClient) {
     stripeClient = new Stripe(secretKey, {
-      apiVersion: "2025-06-30.basil",
       typescript: true,
     });
   }
