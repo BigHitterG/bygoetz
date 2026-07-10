@@ -79,7 +79,7 @@ function createExplorerPrintOptions(links: ExplorerPrintLinks): ExplorerPrintOpt
 export const explorerDigitalBundle: ExplorerDigitalBundle = {
   title: "Complete Digital Collection",
   price: "$9.99",
-  compareAtPrice: "$19.99",
+  compareAtPrice: "$24",
   image: "/explorers/Explorer.png",
   description:
     "Get the full Explorers Series as high-resolution digital files for personal printing and creative projects.",
