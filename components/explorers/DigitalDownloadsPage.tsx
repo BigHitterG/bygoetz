@@ -45,6 +45,11 @@ export function DigitalDownloadsPage() {
             <p className={styles.eyebrow}>Digital files</p>
             <h1>{explorerDigitalBundle.title}</h1>
             <p>{explorerDigitalBundle.description}</p>
+            <p className={styles.deliveryNote}>
+              After checkout, your download link will be emailed to the address used in
+              Stripe from Goetz at downloads@send.bygoetz.com. Please check your spam
+              or junk folder if it does not arrive within a few minutes.
+            </p>
             <div className={styles.priceStack}>
               <span>{explorerDigitalBundle.compareAtPrice} value</span>
               <strong>{explorerDigitalBundle.price}</strong>
@@ -54,8 +59,8 @@ export function DigitalDownloadsPage() {
               <h2>What you will receive</h2>
               <ul className={styles.cleanList}>
                 <li>All eight Explorers Series artworks</li>
-                <li>High-resolution PNG files for crisp personal printing</li>
-                <li>One downloadable bundle delivered after checkout</li>
+                <li>High-resolution PNG and PDF files for crisp personal printing</li>
+                <li>One downloadable bundle delivered by email after checkout</li>
                 <li>Personal-use license for home decor and gifts</li>
               </ul>
             </div>
@@ -67,8 +72,8 @@ export function DigitalDownloadsPage() {
                 <strong>{explorerDigitalBundle.price}</strong>
               </div>
               <p>
-                When Stripe is connected, this button will send buyers to payment and
-                delivery for the download bundle.
+                Stripe will process payment securely, then Goetz will email your
+                download link to the email address used at checkout.
               </p>
               {explorerDigitalBundle.checkoutLink ? (
                 <a className={styles.primaryButton} href={explorerDigitalBundle.checkoutLink}>
