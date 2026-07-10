@@ -7,9 +7,8 @@ const basePath =
     : undefined;
 
 const nextConfig = {
-  ...(isGitHubPagesBuild ? { output: "export" } : {}),
+  ...(isGitHubPagesBuild ? { output: "export", trailingSlash: true } : {}),
   images: { unoptimized: true },
-  trailingSlash: true,
   basePath,
   assetPrefix: basePath,
 };
