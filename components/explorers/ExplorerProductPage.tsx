@@ -68,9 +68,13 @@ export function ExplorerProductPage({ product }: ExplorerProductPageProps) {
                 <p className={styles.eyebrow}>Digital file</p>
                 <h2>Download this artwork</h2>
                 <p>
-                  High-resolution PNG and PDF files for personal printing and creative
-                  projects.
+                  High-resolution files for personal printing and creative projects.
                 </p>
+                <ul className={styles.cleanList}>
+                  <li>4 files included for this artwork</li>
+                  <li>8x10 PNG and PDF</li>
+                  <li>11x14 PNG and PDF</li>
+                </ul>
                 <p className={styles.deliveryNote}>
                   After checkout, your download link will be emailed to the address used
                   in Stripe from Goetz at downloads@send.bygoetz.com. Please check your
