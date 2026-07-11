@@ -59,7 +59,9 @@ export function DigitalDownloadsPage() {
               <h2>What you will receive</h2>
               <ul className={styles.cleanList}>
                 <li>All eight Explorers Series artworks</li>
-                <li>High-resolution PNG and PDF files for crisp personal printing</li>
+                <li>32 total files: 4 files for each artwork</li>
+                <li>8x10 PNG and PDF for every artwork</li>
+                <li>11x14 PNG and PDF for every artwork</li>
                 <li>One downloadable bundle delivered by email after checkout</li>
                 <li>Personal-use license for home decor and gifts</li>
               </ul>
@@ -73,7 +75,8 @@ export function DigitalDownloadsPage() {
               </div>
               <p>
                 Stripe will process payment securely, then Goetz will email your
-                download link to the email address used at checkout.
+                download link for the 32-file bundle to the email address used at
+                checkout.
               </p>
               {explorerDigitalBundle.checkoutLink ? (
                 <a className={styles.primaryButton} href={explorerDigitalBundle.checkoutLink}>
