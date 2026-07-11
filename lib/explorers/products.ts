@@ -82,10 +82,12 @@ export const explorerDigitalBundle: ExplorerDigitalBundle = {
   compareAtPrice: "$24",
   image: "/explorers/Explorer.png",
   description:
-    "Get the full Explorers Series as high-resolution digital files for personal printing and creative projects.",
+    "Get all eight Explorers Series artworks as a 32-file digital bundle for personal printing and creative projects.",
   includes: [
     "All eight Explorers artworks",
-    "High-resolution PNG files",
+    "32 total files",
+    "8x10 PNG and PDF for each artwork",
+    "11x14 PNG and PDF for each artwork",
     "Ready for personal prints and decor projects",
   ],
   checkoutLink: "https://buy.stripe.com/9B68wPbOh9mKgwv95Ggw000",
