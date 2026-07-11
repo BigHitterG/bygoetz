@@ -18,6 +18,12 @@ function escapeHtml(value: string) {
     .replace(/'/g, "&#39;");
 }
 
+function getFileSummary(items: DownloadEmailItem[]) {
+  return items.length > 1
+    ? "The bundle includes all eight Explorers artworks as 32 total files: 8x10 PNG, 8x10 PDF, 11x14 PNG, and 11x14 PDF for each artwork."
+    : "This download includes 4 files for the artwork: 8x10 PNG, 8x10 PDF, 11x14 PNG, and 11x14 PDF.";
+}
+
 export function getDownloadEmailSubject(items: DownloadEmailItem[]) {
   return items.length > 1
     ? "Your Goetz download links are ready"
@@ -27,7 +33,7 @@ export function getDownloadEmailSubject(items: DownloadEmailItem[]) {
 export function renderDownloadEmailText({ items, expiresInDays, siteUrl }: DownloadEmailOptions) {
   const links = items.map((item) => `${item.title}: ${item.url}`).join("\n");
 
-  return `Thank you for your purchase from Goetz.\n\nYour download link${
+  return `Thank you for your purchase from Goetz.\n\n${getFileSummary(items)}\n\nYour download link${
     items.length > 1 ? "s are" : " is"
   } ready:\n\n${links}\n\nClick the link${
     items.length > 1 ? "s" : ""
@@ -85,6 +91,9 @@ export function renderDownloadEmailHtml({ items, expiresInDays, siteUrl }: Downl
               <p style="margin-top:0;margin-right:0;margin-bottom:18px;margin-left:0;font-size:16px;line-height:25px;color:#333333;">Thank you for your purchase. Use ${
                 items.length > 1 ? "the buttons below" : "the button below"
               } to download your Explorers Series file${items.length > 1 ? "s" : ""}.</p>
+              <p style="margin-top:0;margin-right:0;margin-bottom:14px;margin-left:0;font-size:14px;line-height:22px;color:#555555;">${escapeHtml(
+                getFileSummary(items),
+              )}</p>
               <p style="margin-top:0;margin-right:0;margin-bottom:4px;margin-left:0;font-size:14px;line-height:22px;color:#555555;">The download should save to your computer's Downloads folder unless your browser asks where to save it.</p>
               <p style="margin-top:0;margin-right:0;margin-bottom:4px;margin-left:0;font-size:14px;line-height:22px;color:#555555;">The download link${
                 items.length > 1 ? "s" : ""
