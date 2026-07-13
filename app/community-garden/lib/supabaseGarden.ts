@@ -2,6 +2,8 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { GardenBounds } from "./gardenConfig";
 import type { RoseRecord } from "./roseLifecycle";
 
+export type GardenMapRose = Pick<RoseRecord, "grid_x" | "grid_y">;
+
 let gardenClient: SupabaseClient | null = null;
 
 export function isGardenConfigured() {
@@ -49,6 +51,25 @@ export async function fetchGardenRoses(bounds: GardenBounds) {
 
   if (error) throw error;
   return (data ?? []) as RoseRecord[];
+}
+
+export async function fetchGardenRoseMap(bounds: GardenBounds) {
+  const client = getGardenClient();
+  if (!client) return [];
+
+  const { data, error } = await client
+    .from("community_garden_roses")
+    .select("grid_x,grid_y")
+    .gte("grid_x", bounds.minX)
+    .lte("grid_x", bounds.maxX)
+    .gte("grid_y", bounds.minY)
+    .lte("grid_y", bounds.maxY)
+    .order("grid_x")
+    .order("grid_y")
+    .limit(1000);
+
+  if (error) throw error;
+  return (data ?? []) as GardenMapRose[];
 }
 
 export async function plantGardenRose(gridX: number, gridY: number) {
