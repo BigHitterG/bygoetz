@@ -310,13 +310,18 @@ function drawRose(
     return;
   }
 
+  const plantVariant = Math.abs(rose.grid_x * 17 + rose.grid_y * 13) % 2;
+  const leftLeafY = plantVariant === 0 ? -7 : -6;
+  const rightLeafY = plantVariant === 0 ? -3 : -4;
   ctx.fillStyle = wilting ? "#677052" : "#45643f";
   ctx.fillRect(-1, -9, 2, 10);
-  ctx.fillRect(-5, -5, 5, 2);
-  ctx.fillRect(1, -4, 4, 2);
+  ctx.fillRect(-5, leftLeafY, 4, 2);
+  ctx.fillRect(-2, leftLeafY + 1, 2, 1);
+  ctx.fillRect(1, rightLeafY, 4, 2);
+  ctx.fillRect(0, rightLeafY + 1, 2, 1);
   if (visual.state === "young") {
     ctx.fillStyle = "#718054";
-    ctx.fillRect(-2, -10, 4, 3);
+    ctx.fillRect(-2 + plantVariant, -10, 4, 3);
     ctx.restore();
     return;
   }
