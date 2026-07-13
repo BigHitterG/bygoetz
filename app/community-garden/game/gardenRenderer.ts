@@ -1,8 +1,9 @@
-import { GARDEN_CONFIG } from "../lib/gardenConfig";
+import { GARDEN_CONFIG, isWithinGarden } from "../lib/gardenConfig";
 import { getRoseVisual, type RoseRecord } from "../lib/roseLifecycle";
 import { getTerrainTile, terrainNoise } from "./terrainGenerator";
 
 export type WorldPoint = { x: number; y: number };
+export type GardenViewport = { width: number; height: number };
 export type SelectedCell = { gridX: number; gridY: number; roseId?: string } | null;
 export type GardenEffect = {
   kind: "plant" | "water";
@@ -12,6 +13,7 @@ export type GardenEffect = {
 };
 
 export type RenderGardenState = {
+  viewport: GardenViewport;
   camera: WorldPoint;
   mary: WorldPoint;
   duck: WorldPoint;
@@ -22,15 +24,17 @@ export type RenderGardenState = {
   now: number;
 };
 
-let grayLayer: HTMLCanvasElement | null = null;
-let colorLayer: HTMLCanvasElement | null = null;
+type TerrainLayer = "base" | "soil" | "green";
+
+let baseLayer: HTMLCanvasElement | null = null;
+let soilLayer: HTMLCanvasElement | null = null;
+let greenLayer: HTMLCanvasElement | null = null;
 let maskLayer: HTMLCanvasElement | null = null;
 
-function ensureLayer(current: HTMLCanvasElement | null) {
-  if (current) return current;
-  const canvas = document.createElement("canvas");
-  canvas.width = GARDEN_CONFIG.logicalWidth;
-  canvas.height = GARDEN_CONFIG.logicalHeight;
+function ensureLayer(current: HTMLCanvasElement | null, viewport: GardenViewport) {
+  const canvas = current ?? document.createElement("canvas");
+  if (canvas.width !== viewport.width) canvas.width = viewport.width;
+  if (canvas.height !== viewport.height) canvas.height = viewport.height;
   return canvas;
 }
 
@@ -41,267 +45,381 @@ export function gridToWorld(gridX: number, gridY: number): WorldPoint {
   };
 }
 
-export function worldToScreen(point: WorldPoint, camera: WorldPoint): WorldPoint {
+function getMaryScreenY(viewport: GardenViewport) {
+  return viewport.height * GARDEN_CONFIG.maryScreenYRatio;
+}
+
+export function worldToScreen(
+  point: WorldPoint,
+  camera: WorldPoint,
+  viewport: GardenViewport,
+): WorldPoint {
   const yScale = GARDEN_CONFIG.tileScreenHeight / GARDEN_CONFIG.tileSize;
+  const zoom = GARDEN_CONFIG.cameraZoom;
   return {
-    x: GARDEN_CONFIG.logicalWidth / 2 + point.x - camera.x,
-    y: GARDEN_CONFIG.maryScreenY + (point.y - camera.y) * yScale,
+    x: viewport.width / 2 + (point.x - camera.x) * zoom,
+    y: getMaryScreenY(viewport) + (point.y - camera.y) * yScale * zoom,
   };
 }
 
-export function screenToGrid(screenX: number, screenY: number, camera: WorldPoint) {
+export function screenToGrid(
+  screenX: number,
+  screenY: number,
+  camera: WorldPoint,
+  viewport: GardenViewport,
+) {
   const yScale = GARDEN_CONFIG.tileScreenHeight / GARDEN_CONFIG.tileSize;
-  const worldX = camera.x + screenX - GARDEN_CONFIG.logicalWidth / 2;
-  const worldY = camera.y + (screenY - GARDEN_CONFIG.maryScreenY) / yScale;
+  const zoom = GARDEN_CONFIG.cameraZoom;
+  const worldX = camera.x + (screenX - viewport.width / 2) / zoom;
+  const worldY = camera.y + (screenY - getMaryScreenY(viewport)) / (yScale * zoom);
   return {
     gridX: Math.floor(worldX / GARDEN_CONFIG.tileSize),
     gridY: Math.floor(worldY / GARDEN_CONFIG.tileSize),
   };
 }
 
-function drawHorizon(ctx: CanvasRenderingContext2D, warmth: number) {
-  const { logicalWidth: width, horizonHeight: horizon } = GARDEN_CONFIG;
-  ctx.fillStyle = "#d7d1c5";
-  ctx.fillRect(0, 0, width, 28);
-  ctx.fillStyle = "#c8c2b8";
-  ctx.fillRect(0, 28, width, 28);
-  ctx.fillStyle = "#b6b1a8";
-  ctx.fillRect(0, 56, width, horizon - 56);
+function getVisibleGridBounds(camera: WorldPoint, viewport: GardenViewport) {
+  const { tileSize, tileScreenHeight, cameraZoom: zoom } = GARDEN_CONFIG;
+  const yScale = tileScreenHeight / tileSize;
+  const halfWorldWidth = viewport.width / (2 * zoom);
+  const minWorldY = camera.y - getMaryScreenY(viewport) / (yScale * zoom);
+  const maxWorldY = camera.y + (viewport.height - getMaryScreenY(viewport)) / (yScale * zoom);
+  return {
+    minGridX: Math.floor((camera.x - halfWorldWidth) / tileSize) - 2,
+    maxGridX: Math.ceil((camera.x + halfWorldWidth) / tileSize) + 2,
+    minGridY: Math.floor(minWorldY / tileSize) - 2,
+    maxGridY: Math.ceil(maxWorldY / tileSize) + 2,
+  };
+}
 
-  if (warmth > 0) {
-    ctx.fillStyle = `rgba(244, 166, 126, ${warmth * 0.52})`;
-    ctx.fillRect(0, 0, width, horizon);
-    ctx.fillStyle = `rgba(255, 214, 126, ${warmth * 0.38})`;
-    ctx.fillRect(0, 28, width, 30);
-  }
+function drawGrassMark(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  scale: number,
+  color: string,
+) {
+  ctx.fillStyle = color;
+  ctx.fillRect(x + 4 * scale, y + 7 * scale, scale, 3 * scale);
+  ctx.fillRect(x + 6 * scale, y + 5 * scale, scale, 5 * scale);
+  ctx.fillRect(x + 8 * scale, y + 7 * scale, scale, 3 * scale);
+}
 
-  ctx.fillStyle = warmth > 0.2 ? "#f7d16c" : "#d8d2bd";
-  ctx.fillRect(width / 2 - 14, 42, 28, 12);
-  ctx.fillRect(width / 2 - 18, 48, 36, 10);
-
-  ctx.fillStyle = "#7f7d78";
-  ctx.beginPath();
-  ctx.moveTo(0, 72);
-  ctx.lineTo(35, 53);
-  ctx.lineTo(67, 70);
-  ctx.lineTo(103, 48);
-  ctx.lineTo(142, 72);
-  ctx.lineTo(183, 50);
-  ctx.lineTo(225, 73);
-  ctx.lineTo(267, 54);
-  ctx.lineTo(width, 70);
-  ctx.lineTo(width, horizon);
-  ctx.lineTo(0, horizon);
-  ctx.closePath();
-  ctx.fill();
-
-  ctx.fillStyle = "#696b68";
-  for (let x = 4; x < width; x += 17) {
-    const height = 5 + (x % 13);
-    ctx.fillRect(x, horizon - height, 2, height);
-  }
+function drawBoundaryTree(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  scale: number,
+  gridX: number,
+  gridY: number,
+) {
+  if (terrainNoise(gridX, gridY, 31) < 0.38) return;
+  const offset = Math.round(terrainNoise(gridX, gridY, 37) * 5) * scale;
+  ctx.fillStyle = "#b6b9b1";
+  ctx.fillRect(x + 7 * scale, y + 7 * scale, 2 * scale, 6 * scale);
+  ctx.fillStyle = terrainNoise(gridX, gridY, 41) > 0.5 ? "#cbd0c7" : "#c1c6bd";
+  ctx.fillRect(x + 3 * scale + offset / 3, y + scale, 10 * scale, 7 * scale);
+  ctx.fillRect(x + 5 * scale + offset / 3, y - 2 * scale, 6 * scale, 5 * scale);
 }
 
 function drawTerrainLayer(
   ctx: CanvasRenderingContext2D,
   camera: WorldPoint,
-  colored: boolean,
+  viewport: GardenViewport,
+  layer: TerrainLayer,
 ) {
-  const { logicalWidth: width, logicalHeight: height, horizonHeight, tileSize } =
-    GARDEN_CONFIG;
-  const yScale = GARDEN_CONFIG.tileScreenHeight / tileSize;
-  ctx.clearRect(0, 0, width, height);
-  ctx.fillStyle = colored ? "#a7ad69" : "#b2afa6";
-  ctx.fillRect(0, horizonHeight, width, height - horizonHeight);
+  const { tileSize, tileScreenHeight, cameraZoom: zoom } = GARDEN_CONFIG;
+  const cellWidth = tileSize * zoom;
+  const cellHeight = tileScreenHeight * zoom;
+  const visible = getVisibleGridBounds(camera, viewport);
+  ctx.clearRect(0, 0, viewport.width, viewport.height);
 
-  const minGridX = Math.floor((camera.x - width / 2) / tileSize) - 1;
-  const maxGridX = Math.ceil((camera.x + width / 2) / tileSize) + 1;
-  const minWorldY = camera.y + (horizonHeight - GARDEN_CONFIG.maryScreenY) / yScale;
-  const maxWorldY = camera.y + (height - GARDEN_CONFIG.maryScreenY) / yScale;
-  const minGridY = Math.floor(minWorldY / tileSize) - 1;
-  const maxGridY = Math.ceil(maxWorldY / tileSize) + 1;
+  if (layer === "base") {
+    ctx.fillStyle = "#fafaf7";
+    ctx.fillRect(0, 0, viewport.width, viewport.height);
+  }
 
-  for (let gridY = minGridY; gridY <= maxGridY; gridY += 1) {
-    for (let gridX = minGridX; gridX <= maxGridX; gridX += 1) {
-      const tile = getTerrainTile(gridX, gridY);
+  for (let gridY = visible.minGridY; gridY <= visible.maxGridY; gridY += 1) {
+    for (let gridX = visible.minGridX; gridX <= visible.maxGridX; gridX += 1) {
       const topLeft = worldToScreen(
         { x: gridX * tileSize, y: gridY * tileSize },
         camera,
+        viewport,
       );
       const x = Math.floor(topLeft.x);
       const y = Math.floor(topLeft.y);
-      ctx.fillStyle = colored ? tile.color : tile.gray;
-      ctx.fillRect(x, y, tileSize + 1, GARDEN_CONFIG.tileScreenHeight + 1);
 
-      ctx.fillStyle = colored ? "rgba(71,82,45,.23)" : "rgba(72,72,70,.16)";
-      ctx.fillRect(x, y, tileSize, 1);
-      ctx.fillRect(x, y, 1, GARDEN_CONFIG.tileScreenHeight);
-
-      if (tile.detail <= 2) {
-        ctx.fillStyle = colored ? "#68733f" : "#88877f";
-        ctx.fillRect(x + 4, y + 7, 1, 3);
-        ctx.fillRect(x + 6, y + 6, 1, 4);
-        ctx.fillRect(x + 8, y + 8, 1, 2);
-      } else if (tile.detail === 5) {
-        ctx.fillStyle = colored ? "#8f8054" : "#929088";
-        ctx.fillRect(x + 3, y + 5, 5, 1);
-        ctx.fillRect(x + 7, y + 6, 4, 1);
+      if (!isWithinGarden(gridX, gridY)) {
+        if (layer === "base") {
+          ctx.fillStyle = "#eef0eb";
+          ctx.fillRect(x, y, cellWidth + 1, cellHeight + 1);
+          drawBoundaryTree(ctx, x, y, zoom, gridX, gridY);
+        }
+        continue;
       }
 
-      if (colored && tile.accent === 1) {
+      const tile = getTerrainTile(gridX, gridY);
+      if (layer === "soil") {
+        ctx.fillStyle = "#ad8b69";
+        ctx.fillRect(x, y, cellWidth + 1, cellHeight + 1);
+      } else if (layer === "green") {
+        ctx.fillStyle = "#9eac6c";
+        ctx.fillRect(x, y, cellWidth + 1, cellHeight + 1);
+      }
+
+      if (tile.detail <= 2) {
+        const detailColor =
+          layer === "base" ? "#d2d4cf" : layer === "soil" ? "#866c53" : "#667548";
+        drawGrassMark(ctx, x, y, zoom, detailColor);
+      } else if (tile.detail === 5) {
+        ctx.fillStyle =
+          layer === "base" ? "#d9dad6" : layer === "soil" ? "#94765b" : "#758453";
+        ctx.fillRect(x + 3 * zoom, y + 6 * zoom, 5 * zoom, zoom);
+        ctx.fillRect(x + 8 * zoom, y + 7 * zoom, 4 * zoom, zoom);
+      }
+
+      if (layer === "green" && tile.accent === 1) {
         ctx.fillStyle = terrainNoise(gridX, gridY, 19) > 0.5 ? "#f2d46f" : "#e98673";
-        ctx.fillRect(x + 11, y + 4, 2, 2);
+        ctx.fillRect(x + 11 * zoom, y + 4 * zoom, 2 * zoom, 2 * zoom);
         ctx.fillStyle = "#6e7845";
-        ctx.fillRect(x + 12, y + 6, 1, 2);
+        ctx.fillRect(x + 12 * zoom, y + 6 * zoom, zoom, 2 * zoom);
       }
     }
   }
+}
+
+function drawColorMask(
+  ctx: CanvasRenderingContext2D,
+  roses: RoseRecord[],
+  camera: WorldPoint,
+  viewport: GardenViewport,
+  now: number,
+  kind: "soil" | "green",
+) {
+  ctx.clearRect(0, 0, viewport.width, viewport.height);
+  for (const rose of roses) {
+    const visual = getRoseVisual(rose, now);
+    if (visual.colorRadius <= 0) continue;
+    const point = worldToScreen(gridToWorld(rose.grid_x, rose.grid_y), camera, viewport);
+    const radiusMultiplier = kind === "soil" ? 1.55 : 0.9;
+    const radius = visual.colorRadius * GARDEN_CONFIG.cameraZoom * radiusMultiplier;
+    const strength =
+      kind === "soil"
+        ? Math.min(0.84, 0.36 + visual.colorStrength * 0.48)
+        : visual.colorStrength;
+    const gradient = ctx.createRadialGradient(point.x, point.y, 4, point.x, point.y, radius);
+    gradient.addColorStop(0, `rgba(255,255,255,${strength})`);
+    gradient.addColorStop(kind === "soil" ? 0.58 : 0.7, `rgba(255,255,255,${strength * 0.68})`);
+    gradient.addColorStop(1, "rgba(255,255,255,0)");
+    ctx.fillStyle = gradient;
+    ctx.fillRect(point.x - radius, point.y - radius, radius * 2, radius * 2);
+  }
+}
+
+function applyMask(
+  layerContext: CanvasRenderingContext2D,
+  maskContext: CanvasRenderingContext2D,
+  maskCanvas: HTMLCanvasElement,
+) {
+  layerContext.globalCompositeOperation = "destination-in";
+  layerContext.drawImage(maskCanvas, 0, 0);
+  layerContext.globalCompositeOperation = "source-over";
+  maskContext.globalCompositeOperation = "source-over";
+}
+
+function drawDistantTrees(ctx: CanvasRenderingContext2D, viewport: GardenViewport, warmth: number) {
+  const height = GARDEN_CONFIG.treeLineHeight;
+  ctx.save();
+  ctx.globalAlpha = 0.72;
+  for (let x = -18; x < viewport.width + 20; x += 28) {
+    const shift = (x * 17) % 9;
+    ctx.fillStyle = warmth > 0.2 ? "#8d7655" : "#a5a6a0";
+    ctx.fillRect(x + 12, height - 15 + shift, 4, 18);
+    ctx.fillStyle = warmth > 0.2 ? "#798052" : "#c4c7c0";
+    ctx.fillRect(x + 3, height - 30 + shift, 22, 16);
+    ctx.fillRect(x + 7, height - 38 + shift, 14, 12);
+    ctx.fillStyle = warmth > 0.38 ? "#8f955b" : "#d0d2cd";
+    ctx.fillRect(x + 9, height - 33 + shift, 9, 8);
+  }
+  ctx.restore();
+}
+
+function isVisible(point: WorldPoint, viewport: GardenViewport, padding = 50) {
+  return (
+    point.x >= -padding &&
+    point.x <= viewport.width + padding &&
+    point.y >= -padding &&
+    point.y <= viewport.height + padding
+  );
 }
 
 function drawRose(
   ctx: CanvasRenderingContext2D,
   rose: RoseRecord,
   camera: WorldPoint,
+  viewport: GardenViewport,
   now: number,
 ) {
-  const point = worldToScreen(gridToWorld(rose.grid_x, rose.grid_y), camera);
-  if (point.x < -20 || point.x > 340 || point.y < 70 || point.y > 500) return;
-
+  const point = worldToScreen(gridToWorld(rose.grid_x, rose.grid_y), camera, viewport);
+  if (!isVisible(point, viewport)) return;
   const visual = getRoseVisual(rose, now);
-  const x = Math.round(point.x);
-  const y = Math.round(point.y);
+  const wilting = visual.state === "wilting";
+  ctx.save();
+  ctx.translate(Math.round(point.x), Math.round(point.y));
+  ctx.scale(GARDEN_CONFIG.cameraZoom, GARDEN_CONFIG.cameraZoom);
 
   if (visual.state === "dead") {
     ctx.fillStyle = "#6f573d";
-    ctx.fillRect(x - 1, y - 6, 2, 7);
-    ctx.fillRect(x - 5, y - 5, 5, 2);
-    ctx.fillRect(x, y - 3, 5, 2);
+    ctx.fillRect(-1, -6, 2, 7);
+    ctx.fillRect(-5, -5, 5, 2);
+    ctx.fillRect(0, -3, 5, 2);
+    ctx.restore();
     return;
   }
 
-  const wilting = visual.state === "wilting";
   ctx.fillStyle = wilting ? "#677052" : "#45643f";
-  ctx.fillRect(x - 1, y - 9, 2, 10);
-  ctx.fillRect(x - 5, y - 5, 5, 2);
-  ctx.fillRect(x + 1, y - 4, 4, 2);
-
+  ctx.fillRect(-1, -9, 2, 10);
+  ctx.fillRect(-5, -5, 5, 2);
+  ctx.fillRect(1, -4, 4, 2);
   if (visual.state === "sprout") {
     ctx.fillStyle = "#71854b";
-    ctx.fillRect(x - 3, y - 10, 6, 4);
+    ctx.fillRect(-3, -10, 6, 4);
+    ctx.restore();
     return;
   }
 
   ctx.fillStyle = wilting ? "#a76d62" : "#d94a4e";
-  ctx.fillRect(x - 4, y - 14, 8, 7);
-  ctx.fillRect(x - 6, y - 12, 12, 3);
+  ctx.fillRect(-4, -14, 8, 7);
+  ctx.fillRect(-6, -12, 12, 3);
   ctx.fillStyle = wilting ? "#845047" : "#a51f31";
-  ctx.fillRect(x - 2, y - 13, 4, 4);
+  ctx.fillRect(-2, -13, 4, 4);
   ctx.fillStyle = "#f2a36f";
-  ctx.fillRect(x - 1, y - 12, 2, 2);
+  ctx.fillRect(-1, -12, 2, 2);
+  ctx.restore();
 }
 
-function drawSelection(ctx: CanvasRenderingContext2D, selected: SelectedCell, camera: WorldPoint) {
+function drawSelection(
+  ctx: CanvasRenderingContext2D,
+  selected: SelectedCell,
+  camera: WorldPoint,
+  viewport: GardenViewport,
+) {
   if (!selected) return;
-  const point = worldToScreen(gridToWorld(selected.gridX, selected.gridY), camera);
-  const x = Math.round(point.x - 8);
-  const y = Math.round(point.y - 6);
-  ctx.fillStyle = "#fff5d8";
-  ctx.fillRect(x, y, 4, 2);
-  ctx.fillRect(x, y, 2, 4);
-  ctx.fillRect(x + 12, y, 4, 2);
-  ctx.fillRect(x + 14, y, 2, 4);
-  ctx.fillRect(x, y + 10, 4, 2);
-  ctx.fillRect(x, y + 8, 2, 4);
-  ctx.fillRect(x + 12, y + 10, 4, 2);
-  ctx.fillRect(x + 14, y + 8, 2, 4);
+  const point = worldToScreen(gridToWorld(selected.gridX, selected.gridY), camera, viewport);
+  if (!isVisible(point, viewport)) return;
+  ctx.save();
+  ctx.translate(Math.round(point.x), Math.round(point.y));
+  ctx.scale(GARDEN_CONFIG.cameraZoom, GARDEN_CONFIG.cameraZoom);
+  ctx.fillStyle = "#6f4c3e";
+  ctx.fillRect(-8, -6, 4, 2);
+  ctx.fillRect(-8, -6, 2, 4);
+  ctx.fillRect(4, -6, 4, 2);
+  ctx.fillRect(6, -6, 2, 4);
+  ctx.fillRect(-8, 4, 4, 2);
+  ctx.fillRect(-8, 2, 2, 4);
+  ctx.fillRect(4, 4, 4, 2);
+  ctx.fillRect(6, 2, 2, 4);
+  ctx.restore();
 }
 
 function drawMary(
   ctx: CanvasRenderingContext2D,
   point: WorldPoint,
   camera: WorldPoint,
+  viewport: GardenViewport,
   moving: boolean,
   now: number,
 ) {
-  const screen = worldToScreen(point, camera);
+  const screen = worldToScreen(point, camera, viewport);
   const step = moving && Math.floor(now / 170) % 2 === 0 ? 1 : 0;
-  const x = Math.round(screen.x);
-  const y = Math.round(screen.y) - step;
-
+  ctx.save();
+  ctx.translate(Math.round(screen.x), Math.round(screen.y) - step * GARDEN_CONFIG.cameraZoom);
+  ctx.scale(GARDEN_CONFIG.cameraZoom, GARDEN_CONFIG.cameraZoom);
   ctx.fillStyle = "#5e2f25";
-  ctx.fillRect(x - 6, y - 22, 12, 9);
-  ctx.fillRect(x - 8, y - 19, 16, 9);
+  ctx.fillRect(-6, -22, 12, 9);
+  ctx.fillRect(-8, -19, 16, 9);
   ctx.fillStyle = "#e5c4a1";
-  ctx.fillRect(x - 5, y - 12, 10, 5);
+  ctx.fillRect(-5, -12, 10, 5);
   ctx.fillStyle = "#f0e0c4";
-  ctx.fillRect(x - 7, y - 8, 14, 8);
+  ctx.fillRect(-7, -8, 14, 8);
   ctx.fillStyle = "#65704a";
-  ctx.fillRect(x - 6, y - 7, 4, 13);
-  ctx.fillRect(x + 2, y - 7, 4, 13);
-  ctx.fillRect(x - 2, y - 3, 4, 9);
+  ctx.fillRect(-6, -7, 4, 13);
+  ctx.fillRect(2, -7, 4, 13);
+  ctx.fillRect(-2, -3, 4, 9);
   ctx.fillStyle = "#49382e";
-  ctx.fillRect(x - 7, y + 5, 6, 4 + step);
-  ctx.fillRect(x + 1, y + 5, 6, 5 - step);
+  ctx.fillRect(-7, 5, 6, 4 + step);
+  ctx.fillRect(1, 5, 6, 5 - step);
   ctx.fillStyle = "#312a26";
-  ctx.fillRect(x - 7, y + 8 + step, 6, 2);
-  ctx.fillRect(x + 1, y + 9 - step, 6, 2);
+  ctx.fillRect(-7, 8 + step, 6, 2);
+  ctx.fillRect(1, 9 - step, 6, 2);
+  ctx.restore();
 }
 
 function drawDuck(
   ctx: CanvasRenderingContext2D,
   point: WorldPoint,
   camera: WorldPoint,
+  viewport: GardenViewport,
   moving: boolean,
   now: number,
 ) {
-  const screen = worldToScreen(point, camera);
+  const screen = worldToScreen(point, camera, viewport);
   const waddle = moving && Math.floor(now / 150) % 2 === 0 ? 1 : -1;
-  const x = Math.round(screen.x) + waddle;
-  const y = Math.round(screen.y);
+  ctx.save();
+  ctx.translate(Math.round(screen.x) + waddle * GARDEN_CONFIG.cameraZoom, Math.round(screen.y));
+  ctx.scale(GARDEN_CONFIG.cameraZoom, GARDEN_CONFIG.cameraZoom);
   ctx.fillStyle = "#f5f0df";
-  ctx.fillRect(x - 5, y - 8, 10, 8);
-  ctx.fillRect(x - 3, y - 12, 7, 6);
+  ctx.fillRect(-5, -8, 10, 8);
+  ctx.fillRect(-3, -12, 7, 6);
   ctx.fillStyle = "#2f3130";
-  ctx.fillRect(x + 2, y - 10, 1, 1);
+  ctx.fillRect(2, -10, 1, 1);
   ctx.fillStyle = "#d6a13b";
-  ctx.fillRect(x + 4, y - 9, 4, 2);
-  ctx.fillRect(x - 4, y, 3, 1);
-  ctx.fillRect(x + 2, y, 3, 1);
+  ctx.fillRect(4, -9, 4, 2);
+  ctx.fillRect(-4, 0, 3, 1);
+  ctx.fillRect(2, 0, 3, 1);
+  ctx.restore();
 }
 
-function drawEffects(ctx: CanvasRenderingContext2D, effects: GardenEffect[], camera: WorldPoint, now: number) {
+function drawEffects(
+  ctx: CanvasRenderingContext2D,
+  effects: GardenEffect[],
+  camera: WorldPoint,
+  viewport: GardenViewport,
+  now: number,
+) {
   for (const effect of effects) {
     const age = now - effect.startedAt;
     if (age < 0 || age > 900) continue;
     const progress = age / 900;
-    const point = worldToScreen(gridToWorld(effect.gridX, effect.gridY), camera);
+    const point = worldToScreen(gridToWorld(effect.gridX, effect.gridY), camera, viewport);
+    ctx.save();
+    ctx.translate(Math.round(point.x), Math.round(point.y));
+    ctx.scale(GARDEN_CONFIG.cameraZoom, GARDEN_CONFIG.cameraZoom);
     if (effect.kind === "water") {
       ctx.fillStyle = "#75b7cf";
       for (let index = 0; index < 4; index += 1) {
         const offset = index * 4 - 6;
-        ctx.fillRect(
-          Math.round(point.x + offset),
-          Math.round(point.y - 20 + progress * 16 + (index % 2) * 3),
-          2,
-          3,
-        );
+        ctx.fillRect(offset, -20 + progress * 16 + (index % 2) * 3, 2, 3);
       }
     } else {
       ctx.fillStyle = "#876444";
-      ctx.fillRect(Math.round(point.x - 7 - progress * 4), Math.round(point.y - 3), 3, 2);
-      ctx.fillRect(Math.round(point.x + 4 + progress * 4), Math.round(point.y - 5), 3, 2);
+      ctx.fillRect(-7 - progress * 4, -3, 3, 2);
+      ctx.fillRect(4 + progress * 4, -5, 3, 2);
     }
+    ctx.restore();
   }
 }
 
 export function renderGarden(ctx: CanvasRenderingContext2D, state: RenderGardenState) {
-  grayLayer = ensureLayer(grayLayer);
-  colorLayer = ensureLayer(colorLayer);
-  maskLayer = ensureLayer(maskLayer);
-  const grayCtx = grayLayer.getContext("2d");
-  const colorCtx = colorLayer.getContext("2d");
+  baseLayer = ensureLayer(baseLayer, state.viewport);
+  soilLayer = ensureLayer(soilLayer, state.viewport);
+  greenLayer = ensureLayer(greenLayer, state.viewport);
+  maskLayer = ensureLayer(maskLayer, state.viewport);
+  const baseCtx = baseLayer.getContext("2d");
+  const soilCtx = soilLayer.getContext("2d");
+  const greenCtx = greenLayer.getContext("2d");
   const maskCtx = maskLayer.getContext("2d");
-  if (!grayCtx || !colorCtx || !maskCtx) return;
+  if (!baseCtx || !soilCtx || !greenCtx || !maskCtx) return;
 
   const visibleRoses = state.roses.filter(
     (rose) => getRoseVisual(rose, state.now).state !== "expired",
@@ -312,46 +430,23 @@ export function renderGarden(ctx: CanvasRenderingContext2D, state: RenderGardenS
   }).length;
 
   ctx.imageSmoothingEnabled = false;
-  ctx.clearRect(0, 0, GARDEN_CONFIG.logicalWidth, GARDEN_CONFIG.logicalHeight);
-  drawHorizon(ctx, Math.min(0.65, warmRoses * 0.055));
-  drawTerrainLayer(grayCtx, state.camera, false);
-  drawTerrainLayer(colorCtx, state.camera, true);
-  maskCtx.clearRect(0, 0, GARDEN_CONFIG.logicalWidth, GARDEN_CONFIG.logicalHeight);
+  ctx.clearRect(0, 0, state.viewport.width, state.viewport.height);
+  drawTerrainLayer(baseCtx, state.camera, state.viewport, "base");
+  drawTerrainLayer(soilCtx, state.camera, state.viewport, "soil");
+  drawColorMask(maskCtx, visibleRoses, state.camera, state.viewport, state.now, "soil");
+  applyMask(soilCtx, maskCtx, maskLayer);
+  drawTerrainLayer(greenCtx, state.camera, state.viewport, "green");
+  drawColorMask(maskCtx, visibleRoses, state.camera, state.viewport, state.now, "green");
+  applyMask(greenCtx, maskCtx, maskLayer);
 
-  for (const rose of visibleRoses) {
-    const visual = getRoseVisual(rose, state.now);
-    if (visual.colorRadius <= 0) continue;
-    const point = worldToScreen(gridToWorld(rose.grid_x, rose.grid_y), state.camera);
-    const gradient = maskCtx.createRadialGradient(
-      point.x,
-      point.y,
-      3,
-      point.x,
-      point.y,
-      visual.colorRadius,
-    );
-    gradient.addColorStop(0, `rgba(255,255,255,${visual.colorStrength})`);
-    gradient.addColorStop(0.72, `rgba(255,255,255,${visual.colorStrength * 0.62})`);
-    gradient.addColorStop(1, "rgba(255,255,255,0)");
-    maskCtx.fillStyle = gradient;
-    maskCtx.fillRect(
-      point.x - visual.colorRadius,
-      point.y - visual.colorRadius,
-      visual.colorRadius * 2,
-      visual.colorRadius * 2,
-    );
-  }
-
-  colorCtx.globalCompositeOperation = "destination-in";
-  colorCtx.drawImage(maskLayer, 0, 0);
-  colorCtx.globalCompositeOperation = "source-over";
-  ctx.drawImage(grayLayer, 0, 0);
-  ctx.drawImage(colorLayer, 0, 0);
-
-  drawSelection(ctx, state.selected, state.camera);
-  visibleRoses.forEach((rose) => drawRose(ctx, rose, state.camera, state.now));
-  drawDuck(ctx, state.duck, state.camera, state.moving, state.now);
-  drawMary(ctx, state.mary, state.camera, state.moving, state.now);
-  drawEffects(ctx, state.effects, state.camera, state.now);
+  ctx.drawImage(baseLayer, 0, 0);
+  ctx.drawImage(soilLayer, 0, 0);
+  ctx.drawImage(greenLayer, 0, 0);
+  drawDistantTrees(ctx, state.viewport, Math.min(0.65, warmRoses * 0.055));
+  drawSelection(ctx, state.selected, state.camera, state.viewport);
+  visibleRoses.forEach((rose) => drawRose(ctx, rose, state.camera, state.viewport, state.now));
+  drawDuck(ctx, state.duck, state.camera, state.viewport, state.moving, state.now);
+  drawMary(ctx, state.mary, state.camera, state.viewport, state.moving, state.now);
+  drawEffects(ctx, state.effects, state.camera, state.viewport, state.now);
 }
 
