@@ -124,12 +124,19 @@ export function getPlantDefinition(type: PlantType) {
   return PLANT_CATALOG[type] ?? PLANT_CATALOG.rose;
 }
 
+export function getMoistureStrength(careAgeMs: number, wiltMs: number) {
+  if (careAgeMs >= wiltMs) return 0;
+
+  const halfLifeMs = wiltMs / 3;
+  return Math.pow(0.5, Math.max(0, careAgeMs) / halfLifeMs);
+}
+
 export function getPlantVisual(plant: PlantRecord, now = Date.now()): PlantVisual {
   const definition = getPlantDefinition(plant.plant_type);
   const lifecycle = definition.lifecycle;
   const plantedAge = Math.max(0, now - Date.parse(plant.planted_at));
   const careAge = Math.max(0, now - Date.parse(plant.last_watered_at));
-  const dampStrength = Math.max(0, 1 - careAge / lifecycle.wiltMs);
+  const dampStrength = getMoistureStrength(careAge, lifecycle.wiltMs);
 
   if (careAge >= lifecycle.removeMs) {
     return {
