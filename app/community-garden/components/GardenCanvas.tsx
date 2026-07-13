@@ -167,7 +167,7 @@ function getLocationLabel(gridX: number, gridY: number) {
 
   const horizontal = gridX === 0 ? "" : `${Math.abs(gridX)} ${gridX > 0 ? "E" : "W"}`;
   const vertical = gridY === 0 ? "" : `${Math.abs(gridY)} ${gridY > 0 ? "S" : "N"}`;
-  return [horizontal, vertical].filter(Boolean).join(" Â· ");
+  return [horizontal, vertical].filter(Boolean).join(" / ");
 }
 
 function makeLocalRose(gridX: number, gridY: number): RoseRecord {
