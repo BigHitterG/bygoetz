@@ -23,7 +23,9 @@ export function CommunityGardenApp() {
   const canvasRef = useRef<GardenCanvasHandle>(null);
   const [ui, setUi] = useState(INITIAL_UI);
   const [menuOpen, setMenuOpen] = useState(false);
-  const donationUrl = process.env.NEXT_PUBLIC_COMMUNITY_GARDEN_DONATION_URL;
+  const donationUrl =
+    process.env.NEXT_PUBLIC_COMMUNITY_GARDEN_DONATION_URL ??
+    "https://donate.stripe.com/9B614n2dH1Ui6VVdlWgw00F";
   const adLabel = process.env.NEXT_PUBLIC_COMMUNITY_GARDEN_AD_PLACEHOLDER;
 
   const onStateChange = useCallback((state: GardenUiState) => {
