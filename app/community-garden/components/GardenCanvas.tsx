@@ -151,15 +151,13 @@ function getActionState(runtime: Runtime) {
 
 function getAdjacentTarget(mary: WorldPoint, gridX: number, gridY: number) {
   const center = gridToWorld(gridX, gridY);
-  const dx = mary.x - center.x;
-  const dy = mary.y - center.y;
   const offset = GARDEN_CONFIG.tileSize;
+  const canStandLeft = gridX > GARDEN_CONFIG.worldMin;
+  const canStandRight = gridX < GARDEN_CONFIG.worldMax;
+  const approachFromLeft = mary.x <= center.x;
 
-  if (Math.abs(dx) > Math.abs(dy)) {
-    center.x += dx >= 0 ? offset : -offset;
-  } else {
-    center.y += dy >= 0 ? offset : -offset;
-  }
+  const standOnLeft = canStandLeft && (!canStandRight || approachFromLeft);
+  center.x += standOnLeft ? -offset : offset;
 
   return {
     x: clampWorldCoordinate(center.x),
