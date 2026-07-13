@@ -227,23 +227,6 @@ function applyMask(
   maskContext.globalCompositeOperation = "source-over";
 }
 
-function drawDistantTrees(ctx: CanvasRenderingContext2D, viewport: GardenViewport, warmth: number) {
-  const height = GARDEN_CONFIG.treeLineHeight;
-  ctx.save();
-  ctx.globalAlpha = 0.72;
-  for (let x = -18; x < viewport.width + 20; x += 28) {
-    const shift = (x * 17) % 9;
-    ctx.fillStyle = warmth > 0.2 ? "#8d7655" : "#a5a6a0";
-    ctx.fillRect(x + 12, height - 15 + shift, 4, 18);
-    ctx.fillStyle = warmth > 0.2 ? "#798052" : "#c4c7c0";
-    ctx.fillRect(x + 3, height - 30 + shift, 22, 16);
-    ctx.fillRect(x + 7, height - 38 + shift, 14, 12);
-    ctx.fillStyle = warmth > 0.38 ? "#8f955b" : "#d0d2cd";
-    ctx.fillRect(x + 9, height - 33 + shift, 9, 8);
-  }
-  ctx.restore();
-}
-
 function isVisible(point: WorldPoint, viewport: GardenViewport, padding = 50) {
   return (
     point.x >= -padding &&
@@ -424,11 +407,6 @@ export function renderGarden(ctx: CanvasRenderingContext2D, state: RenderGardenS
   const visibleRoses = state.roses.filter(
     (rose) => getRoseVisual(rose, state.now).state !== "expired",
   );
-  const warmRoses = visibleRoses.filter((rose) => {
-    const roseState = getRoseVisual(rose, state.now).state;
-    return roseState === "healthy" || roseState === "sprout";
-  }).length;
-
   ctx.imageSmoothingEnabled = false;
   ctx.clearRect(0, 0, state.viewport.width, state.viewport.height);
   drawTerrainLayer(baseCtx, state.camera, state.viewport, "base");
@@ -442,7 +420,6 @@ export function renderGarden(ctx: CanvasRenderingContext2D, state: RenderGardenS
   ctx.drawImage(baseLayer, 0, 0);
   ctx.drawImage(soilLayer, 0, 0);
   ctx.drawImage(greenLayer, 0, 0);
-  drawDistantTrees(ctx, state.viewport, Math.min(0.65, warmRoses * 0.055));
   drawSelection(ctx, state.selected, state.camera, state.viewport);
   visibleRoses.forEach((rose) => drawRose(ctx, rose, state.camera, state.viewport, state.now));
   drawDuck(ctx, state.duck, state.camera, state.viewport, state.moving, state.now);
