@@ -462,12 +462,18 @@ function drawDampSoil(
     ctx.save();
     ctx.translate(Math.round(point.x), Math.round(point.y));
     ctx.scale(zoom, zoom);
-    ctx.globalAlpha = 0.25 + visual.dampStrength * 0.38;
+    ctx.globalAlpha = 0.08 + Math.pow(visual.dampStrength, 0.7) * 0.58;
     ctx.fillStyle = "#66564d";
     ctx.fillRect(-7, -5, 14, 10);
     ctx.fillStyle = "#78675c";
     ctx.fillRect(-5, -4, 4, 2);
     ctx.fillRect(2, 2, 4, 2);
+    if (visual.dampStrength > 0.72) {
+      ctx.globalAlpha = (visual.dampStrength - 0.72) * 1.8;
+      ctx.fillStyle = "#93b7b0";
+      ctx.fillRect(-4, -3, 2, 1);
+      ctx.fillRect(3, 1, 2, 1);
+    }
     ctx.restore();
   }
 }

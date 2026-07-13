@@ -24,7 +24,10 @@ export function GardenGuide() {
         </div>
         <div>
           <dt>Care</dt>
-          <dd>Select an open spot, choose a seed, and plant. Select any living plant to water it.</dd>
+          <dd>
+            Select an open spot, choose a seed, and plant. Dark soil shows recent
+            shared watering and slowly dries as the plant approaches wilting.
+          </dd>
         </div>
         <div>
           <dt>Choose</dt>
@@ -44,7 +47,8 @@ export function GardenGuide() {
         </ol>
         <p>
           Water renews a plant&apos;s care clock. Without care it wilts, returns
-          to the soil, and leaves room for something new.
+          to the soil, and leaves room for something new. Everyone sees the same
+          care and drying cycle.
         </p>
       </div>
 
@@ -55,9 +59,8 @@ export function GardenGuide() {
       <div className="cg-play-notes">
         <h4>How this world decides</h4>
         <p>
-          Care is the vote. Plants that are watered remain. Future paths and
-          objects will follow the same rhythm, slowly returning to open ground
-          when the community stops maintaining them.
+          Care is the vote. Plants that are watered remain; plants the community
+          stops maintaining slowly return to open ground.
         </p>
       </div>
     </section>

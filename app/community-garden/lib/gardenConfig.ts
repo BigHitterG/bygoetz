@@ -17,7 +17,6 @@ export const GARDEN_CONFIG = {
   worldMax: 63,
   moveSpeed: 62,
   pollIntervalMs: 20_000,
-  dampSoilMs: 45 * 60 * 1000,
 } as const;
 
 export type GardenBounds = {

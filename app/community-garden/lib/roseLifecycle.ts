@@ -129,7 +129,7 @@ export function getPlantVisual(plant: PlantRecord, now = Date.now()): PlantVisua
   const lifecycle = definition.lifecycle;
   const plantedAge = Math.max(0, now - Date.parse(plant.planted_at));
   const careAge = Math.max(0, now - Date.parse(plant.last_watered_at));
-  const dampStrength = Math.max(0, 1 - careAge / GARDEN_CONFIG.dampSoilMs);
+  const dampStrength = Math.max(0, 1 - careAge / lifecycle.wiltMs);
 
   if (careAge >= lifecycle.removeMs) {
     return {

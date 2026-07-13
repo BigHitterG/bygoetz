@@ -693,6 +693,34 @@
   font-size: 1.12rem;
 }
 
+.cg-coming-soon {
+  display: grid;
+  min-height: 210px;
+  place-items: center;
+  align-content: center;
+  gap: 18px;
+  margin-top: 16px;
+  border: 2px dashed rgba(52, 35, 31, 0.42);
+  background: rgba(255, 244, 223, 0.48);
+  padding: 28px;
+  text-align: center;
+}
+
+.cg-coming-soon .cg-library-icon {
+  width: 34px;
+  height: 28px;
+  transform: scale(1.25);
+}
+
+.cg-coming-soon p {
+  max-width: 330px;
+  margin: 0;
+  color: #5b4238;
+  font-family: system-ui, sans-serif;
+  font-size: 0.86rem;
+  line-height: 1.5;
+}
+
 .cg-library-intro {
   margin: 10px 0 0;
   color: #5b4238;
