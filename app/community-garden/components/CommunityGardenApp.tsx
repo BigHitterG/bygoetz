@@ -8,7 +8,11 @@ import {
   type GardenUiState,
 } from "./GardenCanvas";
 import { GardenMapKey } from "./GardenMapKey";
-import { GardenMenu } from "./GardenMenu";
+import { GardenMenu, type LibrarySection } from "./GardenMenu";
+import {
+  getPlantDefinition,
+  PLANT_TYPES,
+} from "../lib/roseLifecycle";
 
 const INITIAL_UI: GardenUiState = {
   action: null,
@@ -18,16 +22,18 @@ const INITIAL_UI: GardenUiState = {
   message: "Connecting to the shared garden...",
   mapX: 60.38,
   mapY: 60.38,
-  zoom: 2,
-  canZoomIn: false,
-  canZoomOut: true,
-  roseMapPoints: [],
+  zoom: 1,
+  canZoomIn: true,
+  canZoomOut: false,
+  selectedPlantType: "rose",
+  plantMapPoints: [],
 };
 
 export function CommunityGardenApp() {
   const canvasRef = useRef<GardenCanvasHandle>(null);
   const [ui, setUi] = useState(INITIAL_UI);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [menuSection, setMenuSection] = useState<LibrarySection>("play");
   const donationUrl =
     process.env.NEXT_PUBLIC_COMMUNITY_GARDEN_DONATION_URL ??
     "https://donate.stripe.com/9B614n2dH1Ui6VVdlWgw00F";
@@ -54,7 +60,10 @@ export function CommunityGardenApp() {
             className="cg-icon-button"
             type="button"
             aria-label="Open garden menu"
-            onClick={() => setMenuOpen(true)}
+            onClick={() => {
+              setMenuSection("play");
+              setMenuOpen(true);
+            }}
           >
             <span className="cg-menu-icon" aria-hidden="true" />
           </button>
@@ -90,11 +99,33 @@ export function CommunityGardenApp() {
         <button
           className="cg-compact-support"
           type="button"
-          onClick={() => setMenuOpen(true)}
+          onClick={() => {
+            setMenuSection("support");
+            setMenuOpen(true);
+          }}
         >
           <span aria-hidden="true">+</span>
           Support
         </button>
+
+        <div className="cg-plant-picker" role="group" aria-label="Choose what to plant">
+          {PLANT_TYPES.map((plantType) => {
+            const plant = getPlantDefinition(plantType);
+            return (
+              <button
+                key={plantType}
+                type="button"
+                aria-label={`Select ${plant.name} seeds`}
+                aria-pressed={ui.selectedPlantType === plantType}
+                title={plant.name}
+                onClick={() => canvasRef.current?.selectPlant(plantType)}
+              >
+                <span className={`cg-plant-glyph is-${plantType}`} aria-hidden="true" />
+                <span>{plant.name}</span>
+              </button>
+            );
+          })}
+        </div>
 
         <button
           className="cg-action-button"
@@ -102,7 +133,14 @@ export function CommunityGardenApp() {
           disabled={!ui.actionEnabled}
           onClick={() => void canvasRef.current?.performAction()}
         >
-          <span className={ui.action === "water" ? "cg-water-icon" : "cg-action-rose"} aria-hidden="true" />
+          <span
+            className={
+              ui.action === "water"
+                ? "cg-water-icon"
+                : `cg-plant-glyph is-${ui.selectedPlantType}`
+            }
+            aria-hidden="true"
+          />
           <span>{ui.actionLabel}</span>
         </button>
 
@@ -113,8 +151,10 @@ export function CommunityGardenApp() {
 
       <GardenMenu
         open={menuOpen}
+        section={menuSection}
         donationUrl={donationUrl}
         onClose={() => setMenuOpen(false)}
+        onSectionChange={setMenuSection}
       />
     </main>
   );

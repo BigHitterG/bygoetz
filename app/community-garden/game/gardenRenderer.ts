@@ -1,10 +1,10 @@
 import { GARDEN_CONFIG, isWithinGarden } from "../lib/gardenConfig";
-import { getRoseVisual, type RoseRecord } from "../lib/roseLifecycle";
+import { getPlantVisual, type PlantRecord } from "../lib/roseLifecycle";
 import { getTerrainTile, terrainNoise } from "./terrainGenerator";
 
 export type WorldPoint = { x: number; y: number };
 export type GardenViewport = { width: number; height: number };
-export type SelectedCell = { gridX: number; gridY: number; roseId?: string } | null;
+export type SelectedCell = { gridX: number; gridY: number; plantId?: string } | null;
 export type GardenEffect = {
   kind: "plant" | "water";
   gridX: number;
@@ -18,7 +18,7 @@ export type RenderGardenState = {
   zoom: number;
   mary: WorldPoint;
   duck: WorldPoint;
-  roses: RoseRecord[];
+  plants: PlantRecord[];
   selected: SelectedCell;
   effects: GardenEffect[];
   moving: boolean;
@@ -220,7 +220,7 @@ function drawTerrainLayer(
 
 function drawColorMask(
   ctx: CanvasRenderingContext2D,
-  roses: RoseRecord[],
+  plants: PlantRecord[],
   camera: WorldPoint,
   viewport: GardenViewport,
   now: number,
@@ -228,10 +228,15 @@ function drawColorMask(
   zoom: number,
 ) {
   ctx.clearRect(0, 0, viewport.width, viewport.height);
-  for (const rose of roses) {
-    const visual = getRoseVisual(rose, now);
+  for (const plant of plants) {
+    const visual = getPlantVisual(plant, now);
     if (visual.colorRadius <= 0) continue;
-    const point = worldToScreen(gridToWorld(rose.grid_x, rose.grid_y), camera, viewport, zoom);
+    const point = worldToScreen(
+      gridToWorld(plant.grid_x, plant.grid_y),
+      camera,
+      viewport,
+      zoom,
+    );
     const radiusMultiplier = kind === "soil" ? 1.55 : 0.9;
     const radius = visual.colorRadius * zoom * radiusMultiplier;
     const strength =
@@ -267,52 +272,34 @@ function isVisible(point: WorldPoint, viewport: GardenViewport, padding = 50) {
   );
 }
 
-function drawRose(
+function drawSeedOrSprout(
   ctx: CanvasRenderingContext2D,
-  rose: RoseRecord,
-  camera: WorldPoint,
-  viewport: GardenViewport,
-  now: number,
-  zoom: number,
+  plant: PlantRecord,
+  state: "seed" | "sprout",
 ) {
-  const point = worldToScreen(gridToWorld(rose.grid_x, rose.grid_y), camera, viewport, zoom);
-  if (!isVisible(point, viewport)) return;
-  const visual = getRoseVisual(rose, now);
-  const wilting = visual.state === "wilting";
-  ctx.save();
-  ctx.translate(Math.round(point.x), Math.round(point.y));
-  ctx.scale(zoom, zoom);
-
-  if (visual.state === "dead") {
-    ctx.fillStyle = "#6f573d";
-    ctx.fillRect(-1, -6, 2, 7);
-    ctx.fillRect(-5, -5, 5, 2);
-    ctx.fillRect(0, -3, 5, 2);
-    ctx.restore();
-    return;
-  }
-
-  if (visual.state === "seed") {
-    ctx.fillStyle = "#705443";
+  if (state === "seed") {
+    ctx.fillStyle = plant.plant_type === "sunflower" ? "#4f4434" : "#705443";
     ctx.fillRect(-2, -2, 4, 2);
-    ctx.fillStyle = "#8f6b51";
+    ctx.fillStyle = plant.plant_type === "lavender" ? "#8f765b" : "#8f6b51";
     ctx.fillRect(-1, -4, 2, 2);
-    ctx.restore();
     return;
   }
 
-  if (visual.state === "sprout") {
-    ctx.fillStyle = "#68764f";
-    ctx.fillRect(-1, -5, 2, 6);
-    ctx.fillRect(-4, -4, 3, 2);
-    ctx.fillRect(1, -2, 2, 2);
-    ctx.restore();
-    return;
-  }
+  ctx.fillStyle = plant.plant_type === "lavender" ? "#69755e" : "#68764f";
+  ctx.fillRect(-1, -5, 2, 6);
+  ctx.fillRect(-4, -4, 3, 2);
+  ctx.fillRect(1, -2, 2, 2);
+}
 
-  const plantVariant = Math.abs(rose.grid_x * 17 + rose.grid_y * 13) % 2;
+function drawRosePlant(
+  ctx: CanvasRenderingContext2D,
+  plant: PlantRecord,
+  state: "young" | "mature" | "blooming" | "wilting",
+) {
+  const wilting = state === "wilting";
+  const plantVariant = Math.abs(plant.grid_x * 17 + plant.grid_y * 13) % 2;
   const stemLean = plantVariant === 0 ? -1 : 1;
-  if (visual.state === "young") {
+  if (state === "young") {
     ctx.fillStyle = "#45643f";
     ctx.fillRect(-1, -4, 2, 5);
     ctx.fillRect(-1 + stemLean, -9, 2, 5);
@@ -320,7 +307,6 @@ function drawRose(
     ctx.fillRect(1, -3, 3, 2);
     ctx.fillStyle = "#718054";
     ctx.fillRect(-2 + stemLean, -10, 4, 3);
-    ctx.restore();
     return;
   }
 
@@ -334,12 +320,11 @@ function drawRose(
   ctx.fillRect(1, rightLeafY, 3, 2);
   ctx.fillRect(0, rightLeafY + 1, 2, 1);
 
-  if (visual.state === "mature") {
+  if (state === "mature") {
     ctx.fillStyle = "#bc5f5f";
     ctx.fillRect(-3 + stemLean, -12, 6, 4);
     ctx.fillStyle = "#8f4548";
     ctx.fillRect(-1 + stemLean, -13, 3, 3);
-    ctx.restore();
     return;
   }
 
@@ -350,21 +335,128 @@ function drawRose(
   ctx.fillRect(-2, -13, 4, 4);
   ctx.fillStyle = "#f2a36f";
   ctx.fillRect(-1, -12, 2, 2);
+}
+
+function drawSunflowerPlant(
+  ctx: CanvasRenderingContext2D,
+  state: "young" | "mature" | "blooming" | "wilting",
+) {
+  const wilting = state === "wilting";
+  ctx.save();
+  if (wilting) ctx.rotate(0.16);
+  ctx.fillStyle = wilting ? "#6f7151" : "#42633e";
+  ctx.fillRect(-1, -12, 2, 13);
+  ctx.fillRect(-6, -7, 5, 3);
+  ctx.fillRect(1, -4, 6, 3);
+
+  if (state === "young") {
+    ctx.fillStyle = "#758454";
+    ctx.fillRect(-3, -14, 6, 3);
+    ctx.restore();
+    return;
+  }
+
+  const petal = wilting ? "#b78f4c" : "#e4b53f";
+  const center = wilting ? "#705243" : "#5b4335";
+  const headY = state === "mature" ? -14 : -16;
+  ctx.fillStyle = petal;
+  ctx.fillRect(-5, headY - 3, 10, 8);
+  ctx.fillRect(-7, headY - 1, 14, 4);
+  ctx.fillStyle = center;
+  ctx.fillRect(-3, headY - 1, 6, 5);
+  ctx.fillStyle = "#9c6e35";
+  ctx.fillRect(-1, headY, 2, 2);
   ctx.restore();
 }
 
-function drawDampSoil(
+function drawLavenderPlant(
   ctx: CanvasRenderingContext2D,
-  roses: RoseRecord[],
+  state: "young" | "mature" | "blooming" | "wilting",
+) {
+  const wilting = state === "wilting";
+  ctx.fillStyle = wilting ? "#73735d" : "#536a50";
+  ctx.fillRect(-7, -5, 14, 5);
+  ctx.fillRect(-5, -8, 3, 7);
+  ctx.fillRect(-1, -10, 2, 10);
+  ctx.fillRect(3, -7, 3, 7);
+
+  if (state === "young") return;
+
+  const flower = wilting ? "#827688" : "#7876a8";
+  const flowerLight = wilting ? "#9b8c92" : "#a39bc4";
+  const topOffset = state === "mature" ? 2 : 0;
+  ctx.fillStyle = flower;
+  ctx.fillRect(-6, -13 + topOffset, 3, 6);
+  ctx.fillRect(-1, -16 + topOffset, 3, 7);
+  ctx.fillRect(4, -12 + topOffset, 3, 6);
+  ctx.fillStyle = flowerLight;
+  ctx.fillRect(-5, -13 + topOffset, 2, 2);
+  ctx.fillRect(0, -16 + topOffset, 2, 2);
+  ctx.fillRect(5, -12 + topOffset, 2, 2);
+}
+
+function drawPlant(
+  ctx: CanvasRenderingContext2D,
+  plant: PlantRecord,
   camera: WorldPoint,
   viewport: GardenViewport,
   now: number,
   zoom: number,
 ) {
-  for (const rose of roses) {
-    const visual = getRoseVisual(rose, now);
+  const point = worldToScreen(
+    gridToWorld(plant.grid_x, plant.grid_y),
+    camera,
+    viewport,
+    zoom,
+  );
+  if (!isVisible(point, viewport)) return;
+  const visual = getPlantVisual(plant, now);
+  ctx.save();
+  ctx.translate(Math.round(point.x), Math.round(point.y));
+  ctx.scale(zoom, zoom);
+
+  if (visual.state === "dead") {
+    ctx.fillStyle = plant.plant_type === "lavender" ? "#706756" : "#6f573d";
+    ctx.fillRect(-1, -6, 2, 7);
+    ctx.fillRect(-5, -5, 5, 2);
+    ctx.fillRect(0, -3, 5, 2);
+    ctx.restore();
+    return;
+  }
+
+  if (visual.state === "seed" || visual.state === "sprout") {
+    drawSeedOrSprout(ctx, plant, visual.state);
+    ctx.restore();
+    return;
+  }
+
+  if (plant.plant_type === "sunflower") {
+    drawSunflowerPlant(ctx, visual.state);
+  } else if (plant.plant_type === "lavender") {
+    drawLavenderPlant(ctx, visual.state);
+  } else {
+    drawRosePlant(ctx, plant, visual.state);
+  }
+  ctx.restore();
+}
+
+function drawDampSoil(
+  ctx: CanvasRenderingContext2D,
+  plants: PlantRecord[],
+  camera: WorldPoint,
+  viewport: GardenViewport,
+  now: number,
+  zoom: number,
+) {
+  for (const plant of plants) {
+    const visual = getPlantVisual(plant, now);
     if (visual.dampStrength <= 0) continue;
-    const point = worldToScreen(gridToWorld(rose.grid_x, rose.grid_y), camera, viewport, zoom);
+    const point = worldToScreen(
+      gridToWorld(plant.grid_x, plant.grid_y),
+      camera,
+      viewport,
+      zoom,
+    );
     if (!isVisible(point, viewport)) continue;
     ctx.save();
     ctx.translate(Math.round(point.x), Math.round(point.y));
@@ -516,11 +608,11 @@ export function renderGarden(ctx: CanvasRenderingContext2D, state: RenderGardenS
   const maskCtx = maskLayer.getContext("2d");
   if (!baseCtx || !soilCtx || !greenCtx || !maskCtx) return;
 
-  const visibleRoses = state.roses.filter(
-    (rose) => getRoseVisual(rose, state.now).state !== "expired",
+  const visiblePlants = state.plants.filter(
+    (plant) => getPlantVisual(plant, state.now).state !== "expired",
   );
   const occupiedCells = new Set(
-    visibleRoses.map((rose) => terrainCellKey(rose.grid_x, rose.grid_y)),
+    visiblePlants.map((plant) => terrainCellKey(plant.grid_x, plant.grid_y)),
   );
   ctx.imageSmoothingEnabled = false;
   ctx.clearRect(0, 0, state.viewport.width, state.viewport.height);
@@ -528,7 +620,7 @@ export function renderGarden(ctx: CanvasRenderingContext2D, state: RenderGardenS
   drawTerrainLayer(soilCtx, state.camera, state.viewport, "soil", state.zoom, occupiedCells);
   drawColorMask(
     maskCtx,
-    visibleRoses,
+    visiblePlants,
     state.camera,
     state.viewport,
     state.now,
@@ -539,7 +631,7 @@ export function renderGarden(ctx: CanvasRenderingContext2D, state: RenderGardenS
   drawTerrainLayer(greenCtx, state.camera, state.viewport, "green", state.zoom, occupiedCells);
   drawColorMask(
     maskCtx,
-    visibleRoses,
+    visiblePlants,
     state.camera,
     state.viewport,
     state.now,
@@ -551,10 +643,10 @@ export function renderGarden(ctx: CanvasRenderingContext2D, state: RenderGardenS
   ctx.drawImage(baseLayer, 0, 0);
   ctx.drawImage(soilLayer, 0, 0);
   ctx.drawImage(greenLayer, 0, 0);
-  drawDampSoil(ctx, visibleRoses, state.camera, state.viewport, state.now, state.zoom);
+  drawDampSoil(ctx, visiblePlants, state.camera, state.viewport, state.now, state.zoom);
   drawSelection(ctx, state.selected, state.camera, state.viewport, state.zoom);
-  visibleRoses.forEach((rose) =>
-    drawRose(ctx, rose, state.camera, state.viewport, state.now, state.zoom),
+  visiblePlants.forEach((plant) =>
+    drawPlant(ctx, plant, state.camera, state.viewport, state.now, state.zoom),
   );
   drawDuck(ctx, state.duck, state.camera, state.viewport, state.moving, state.now, state.zoom);
   drawMary(ctx, state.mary, state.camera, state.viewport, state.moving, state.now, state.zoom);

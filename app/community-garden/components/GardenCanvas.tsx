@@ -29,18 +29,20 @@ import {
   type GardenBounds,
 } from "../lib/gardenConfig";
 import {
-  getRoseVisual,
-  isRosePlantable,
-  type RoseRecord,
+  getPlantDefinition,
+  getPlantVisual,
+  isPlantable,
+  type PlantRecord,
+  type PlantType,
 } from "../lib/roseLifecycle";
 import {
-  cleanupExpiredGardenRoses,
-  fetchGardenRoseMap,
-  fetchGardenRoses,
-  type GardenMapRose,
+  cleanupExpiredGardenPlants,
+  fetchGardenPlantMap,
+  fetchGardenPlants,
+  type GardenMapPlant,
   isGardenConfigured,
-  plantGardenRose,
-  waterGardenRose,
+  plantGardenPlant,
+  waterGardenPlant,
 } from "../lib/supabaseGarden";
 
 export type GardenConnection = "connecting" | "online" | "offline" | "error";
@@ -57,12 +59,14 @@ export type GardenUiState = {
   zoom: number;
   canZoomIn: boolean;
   canZoomOut: boolean;
-  roseMapPoints: Array<{ x: number; y: number }>;
+  selectedPlantType: PlantType;
+  plantMapPoints: Array<{ x: number; y: number; plantType: PlantType }>;
 };
 
 export type GardenCanvasHandle = {
   performAction: () => Promise<void>;
   goToMapPosition: (mapX: number, mapY: number) => void;
+  selectPlant: (plantType: PlantType) => void;
   zoomIn: () => void;
   zoomOut: () => void;
 };
@@ -74,13 +78,14 @@ type Runtime = {
   zoom: number;
   target: WorldPoint | null;
   selected: SelectedCell;
-  roses: Map<string, RoseRecord>;
-  mapRoses: Map<string, GardenMapRose>;
+  selectedPlantType: PlantType;
+  plants: Map<string, PlantRecord>;
+  mapPlants: Map<string, GardenMapPlant>;
   effects: GardenEffect[];
   path: WorldPoint[];
   lastFrame: number;
   loadedChunkKey: string;
-  chunkCache: Map<string, RoseRecord[]>;
+  chunkCache: Map<string, PlantRecord[]>;
   cacheOrder: string[];
   requestId: number;
   actionBusy: boolean;
@@ -96,7 +101,7 @@ type GardenCanvasProps = {
   onStateChange: (state: GardenUiState) => void;
 };
 
-function roseKey(gridX: number, gridY: number) {
+function plantKey(gridX: number, gridY: number) {
   return `${gridX}:${gridY}`;
 }
 
@@ -107,8 +112,8 @@ function clampZoom(value: number) {
   );
 }
 
-function getRoseAt(runtime: Runtime, gridX: number, gridY: number) {
-  return runtime.roses.get(roseKey(gridX, gridY));
+function getPlantAt(runtime: Runtime, gridX: number, gridY: number) {
+  return runtime.plants.get(plantKey(gridX, gridY));
 }
 
 function getDistanceToCell(runtime: Runtime, selected: NonNullable<SelectedCell>) {
@@ -121,24 +126,25 @@ function getActionState(runtime: Runtime) {
     return { action: null as GardenAction, label: "Choose a spot", enabled: false };
   }
 
-  const rose = getRoseAt(runtime, runtime.selected.gridX, runtime.selected.gridY);
-  const visual = rose ? getRoseVisual(rose) : null;
+  const plant = getPlantAt(runtime, runtime.selected.gridX, runtime.selected.gridY);
+  const visual = plant ? getPlantVisual(plant) : null;
   const nearby = getDistanceToCell(runtime, runtime.selected) <= GARDEN_CONFIG.tileSize * 1.8;
 
-  if (rose && visual && visual.state !== "expired") {
+  if (plant && visual && visual.state !== "expired") {
+    const definition = getPlantDefinition(plant.plant_type);
     if (visual.state === "dead") {
       return { action: null as GardenAction, label: "This spot is resting", enabled: false };
     }
     return {
       action: "water" as GardenAction,
-      label: "Water Rose",
+      label: `Water ${definition.name}`,
       enabled: nearby && !runtime.actionBusy,
     };
   }
 
   return {
     action: "plant" as GardenAction,
-    label: "Plant Rose",
+    label: `Plant ${getPlantDefinition(runtime.selectedPlantType).name}`,
     enabled: nearby && !runtime.actionBusy,
   };
 }
@@ -161,33 +167,45 @@ function getAdjacentTarget(mary: WorldPoint, gridX: number, gridY: number) {
   };
 }
 
-function makeLocalRose(gridX: number, gridY: number): RoseRecord {
+function makeLocalPlant(
+  gridX: number,
+  gridY: number,
+  plantType: PlantType,
+): PlantRecord {
   const now = new Date().toISOString();
   return {
-    id: `local-${gridX}-${gridY}-${Date.now()}`,
+    id: `local-${plantType}-${gridX}-${gridY}-${Date.now()}`,
     grid_x: gridX,
     grid_y: gridY,
+    plant_type: plantType,
     planted_at: now,
     last_watered_at: now,
     created_at: now,
   };
 }
 
-function seedLocalRoses() {
+function seedLocalPlants() {
   const now = Date.now();
-  const create = (id: string, gridX: number, gridY: number, ageHours: number): RoseRecord => ({
+  const create = (
+    id: string,
+    gridX: number,
+    gridY: number,
+    ageHours: number,
+    plantType: PlantType,
+  ): PlantRecord => ({
     id,
     grid_x: gridX,
     grid_y: gridY,
+    plant_type: plantType,
     planted_at: new Date(now - ageHours * 60 * 60 * 1000).toISOString(),
     last_watered_at: new Date(now - ageHours * 60 * 60 * 1000).toISOString(),
     created_at: new Date(now - ageHours * 60 * 60 * 1000).toISOString(),
   });
 
   return [
-    create("local-welcome-1", 2, -1, 32),
-    create("local-welcome-2", -2, 1, 8),
-    create("local-welcome-3", 3, 2, 76),
+    create("local-welcome-1", 2, -1, 32, "rose"),
+    create("local-welcome-2", -2, 1, 18, "sunflower"),
+    create("local-welcome-3", 3, 2, 52, "lavender"),
   ];
 }
 
@@ -195,7 +213,7 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
   function GardenCanvas({ onStateChange }, ref) {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const onStateChangeRef = useRef(onStateChange);
-    const loadRosesRef = useRef<() => Promise<void>>(async () => undefined);
+    const loadPlantsRef = useRef<() => Promise<void>>(async () => undefined);
     const lastUiKeyRef = useRef("");
     const start = gridToWorld(0, 0);
     const runtimeRef = useRef<Runtime>({
@@ -205,8 +223,9 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
       zoom: GARDEN_CONFIG.defaultCameraZoom,
       target: null,
       selected: null,
-      roses: new Map(),
-      mapRoses: new Map(),
+      selectedPlantType: "rose",
+      plants: new Map(),
+      mapPlants: new Map(),
       effects: [],
       path: [{ ...start }],
       lastFrame: 0,
@@ -234,9 +253,10 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
       const action = getActionState(runtime);
       const gridX = Math.floor(runtime.mary.x / GARDEN_CONFIG.tileSize);
       const gridY = Math.floor(runtime.mary.y / GARDEN_CONFIG.tileSize);
-      const roseMapPoints = Array.from(runtime.mapRoses.values()).map((rose) => ({
-        x: getMapPercentage(rose.grid_x),
-        y: getMapPercentage(rose.grid_y),
+      const plantMapPoints = Array.from(runtime.mapPlants.values()).map((plant) => ({
+        x: getMapPercentage(plant.grid_x),
+        y: getMapPercentage(plant.grid_y),
+        plantType: plant.plant_type,
       }));
       const state: GardenUiState = {
         action: action.action,
@@ -249,7 +269,8 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
         zoom: runtime.zoom,
         canZoomIn: runtime.zoom < GARDEN_CONFIG.maxCameraZoom,
         canZoomOut: runtime.zoom > GARDEN_CONFIG.minCameraZoom,
-        roseMapPoints,
+        selectedPlantType: runtime.selectedPlantType,
+        plantMapPoints,
       };
       const key = JSON.stringify(state);
       if (key === lastUiKeyRef.current) return;
@@ -257,7 +278,7 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
       onStateChangeRef.current(state);
     }, []);
 
-    const loadRoses = useCallback(async () => {
+    const loadPlants = useCallback(async () => {
       const runtime = runtimeRef.current;
       const gridX = Math.floor(runtime.mary.x / GARDEN_CONFIG.tileSize);
       const gridY = Math.floor(runtime.mary.y / GARDEN_CONFIG.tileSize);
@@ -270,17 +291,19 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
       );
       const cached = runtime.chunkCache.get(chunkKey);
       if (cached) {
-        runtime.roses = new Map(cached.map((rose) => [roseKey(rose.grid_x, rose.grid_y), rose]));
+        runtime.plants = new Map(
+          cached.map((plant) => [plantKey(plant.grid_x, plant.grid_y), plant]),
+        );
       }
 
       if (!runtime.configured) {
-        if (runtime.roses.size === 0) {
-          const localRoses = seedLocalRoses();
-          runtime.roses = new Map(
-            localRoses.map((rose) => [roseKey(rose.grid_x, rose.grid_y), rose]),
+        if (runtime.plants.size === 0) {
+          const localPlants = seedLocalPlants();
+          runtime.plants = new Map(
+            localPlants.map((plant) => [plantKey(plant.grid_x, plant.grid_y), plant]),
           );
-          runtime.mapRoses = new Map(
-            localRoses.map((rose) => [roseKey(rose.grid_x, rose.grid_y), rose]),
+          runtime.mapPlants = new Map(
+            localPlants.map((plant) => [plantKey(plant.grid_x, plant.grid_y), plant]),
           );
         }
         publishUi();
@@ -289,22 +312,22 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
 
       const requestId = ++runtime.requestId;
       try {
-        await cleanupExpiredGardenRoses(cleanupBounds);
-        const [roses, mapRoses] = await Promise.all([
-          fetchGardenRoses(bounds),
-          fetchGardenRoseMap(getGardenBounds()),
+        await cleanupExpiredGardenPlants(cleanupBounds);
+        const [plants, mapPlants] = await Promise.all([
+          fetchGardenPlants(bounds),
+          fetchGardenPlantMap(getGardenBounds()),
         ]);
         if (requestId !== runtime.requestId) return;
 
-        runtime.roses = new Map(
-          roses
-            .filter((rose) => getRoseVisual(rose).state !== "expired")
-            .map((rose) => [roseKey(rose.grid_x, rose.grid_y), rose]),
+        runtime.plants = new Map(
+          plants
+            .filter((plant) => getPlantVisual(plant).state !== "expired")
+            .map((plant) => [plantKey(plant.grid_x, plant.grid_y), plant]),
         );
-        runtime.mapRoses = new Map(
-          mapRoses.map((rose) => [roseKey(rose.grid_x, rose.grid_y), rose]),
+        runtime.mapPlants = new Map(
+          mapPlants.map((plant) => [plantKey(plant.grid_x, plant.grid_y), plant]),
         );
-        runtime.chunkCache.set(chunkKey, roses);
+        runtime.chunkCache.set(chunkKey, plants);
         runtime.cacheOrder = runtime.cacheOrder.filter((key) => key !== chunkKey);
         runtime.cacheOrder.push(chunkKey);
         while (runtime.cacheOrder.length > 6) {
@@ -322,8 +345,8 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
     }, [publishUi]);
 
     useEffect(() => {
-      loadRosesRef.current = loadRoses;
-    }, [loadRoses]);
+      loadPlantsRef.current = loadPlants;
+    }, [loadPlants]);
 
     useImperativeHandle(
       ref,
@@ -338,6 +361,12 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
           const runtime = runtimeRef.current;
           runtime.zoom = clampZoom(runtime.zoom - GARDEN_CONFIG.cameraZoomStep);
           runtime.statusMessage = "Zoomed out to see more of the garden.";
+          publishUi();
+        },
+        selectPlant(plantType) {
+          const runtime = runtimeRef.current;
+          runtime.selectedPlantType = plantType;
+          runtime.statusMessage = `${getPlantDefinition(plantType).name} seeds selected.`;
           publishUi();
         },
         goToMapPosition(mapX, mapY) {
@@ -367,41 +396,52 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
 
           runtime.actionBusy = true;
           runtime.requestId += 1;
+          const selectedDefinition = getPlantDefinition(runtime.selectedPlantType);
           runtime.statusMessage =
-            actionState.action === "plant" ? "Planting a rose..." : "Watering the rose...";
+            actionState.action === "plant"
+              ? `Planting ${selectedDefinition.name.toLowerCase()}...`
+              : "Watering the plant...";
           publishUi();
 
           try {
             if (actionState.action === "plant") {
-              const existing = getRoseAt(runtime, selected.gridX, selected.gridY);
-              if (!isRosePlantable(existing)) throw new Error("Another rose is already here.");
-              const rose = runtime.configured
-                ? await plantGardenRose(selected.gridX, selected.gridY)
-                : makeLocalRose(selected.gridX, selected.gridY);
-              runtime.roses.set(roseKey(rose.grid_x, rose.grid_y), rose);
-              runtime.mapRoses.set(roseKey(rose.grid_x, rose.grid_y), rose);
-              runtime.selected = { ...selected, roseId: rose.id };
+              const existing = getPlantAt(runtime, selected.gridX, selected.gridY);
+              if (!isPlantable(existing)) throw new Error("Another plant is already here.");
+              const plant = runtime.configured
+                ? await plantGardenPlant(
+                    selected.gridX,
+                    selected.gridY,
+                    runtime.selectedPlantType,
+                  )
+                : makeLocalPlant(
+                    selected.gridX,
+                    selected.gridY,
+                    runtime.selectedPlantType,
+                  );
+              runtime.plants.set(plantKey(plant.grid_x, plant.grid_y), plant);
+              runtime.mapPlants.set(plantKey(plant.grid_x, plant.grid_y), plant);
+              runtime.selected = { ...selected, plantId: plant.id };
               runtime.effects.push({
                 kind: "plant",
-                gridX: rose.grid_x,
-                gridY: rose.grid_y,
+                gridX: plant.grid_x,
+                gridY: plant.grid_y,
                 startedAt: performance.now(),
               });
-              runtime.statusMessage = "A new rose has taken root.";
+              runtime.statusMessage = `A new ${selectedDefinition.name.toLowerCase()} has taken root.`;
             } else {
-              const current = getRoseAt(runtime, selected.gridX, selected.gridY);
-              if (!current) throw new Error("That rose is no longer here.");
-              const rose = runtime.configured
-                ? await waterGardenRose(current.id)
+              const current = getPlantAt(runtime, selected.gridX, selected.gridY);
+              if (!current) throw new Error("That plant is no longer here.");
+              const plant = runtime.configured
+                ? await waterGardenPlant(current.id)
                 : { ...current, last_watered_at: new Date().toISOString() };
-              runtime.roses.set(roseKey(rose.grid_x, rose.grid_y), rose);
+              runtime.plants.set(plantKey(plant.grid_x, plant.grid_y), plant);
               runtime.effects.push({
                 kind: "water",
-                gridX: rose.grid_x,
-                gridY: rose.grid_y,
+                gridX: plant.grid_x,
+                gridY: plant.grid_y,
                 startedAt: performance.now(),
               });
-              runtime.statusMessage = "The rose looks brighter already.";
+              runtime.statusMessage = `The ${getPlantDefinition(plant.plant_type).name.toLowerCase()} looks brighter already.`;
             }
             runtime.connection = runtime.configured ? "online" : "offline";
           } catch (error) {
@@ -500,7 +540,7 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
         const chunkKey = getChunkKey(gridX, gridY);
         if (chunkKey !== runtime.loadedChunkKey) {
           runtime.loadedChunkKey = chunkKey;
-          void loadRosesRef.current();
+          void loadPlantsRef.current();
         }
 
         renderGarden(ctx, {
@@ -509,7 +549,7 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
           zoom: runtime.zoom,
           mary: runtime.mary,
           duck: runtime.duck,
-          roses: Array.from(runtime.roses.values()),
+          plants: Array.from(runtime.plants.values()),
           selected: runtime.selected,
           effects: runtime.reducedMotion ? [] : runtime.effects,
           moving: runtime.reducedMotion ? false : runtime.moving,
@@ -521,7 +561,7 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
 
       frameId = requestAnimationFrame(tick);
       const pollId = window.setInterval(() => {
-        void loadRosesRef.current();
+        void loadPlantsRef.current();
       }, GARDEN_CONFIG.pollIntervalMs);
 
       return () => {
@@ -547,10 +587,12 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
         return;
       }
 
-      const rose = getRoseAt(runtime, gridX, gridY);
-      runtime.selected = { gridX, gridY, roseId: rose?.id };
+      const plant = getPlantAt(runtime, gridX, gridY);
+      runtime.selected = { gridX, gridY, plantId: plant?.id };
       runtime.target = getAdjacentTarget(runtime.mary, gridX, gridY);
-      runtime.statusMessage = rose ? "Walking over to the rose..." : "Walking to that spot...";
+      runtime.statusMessage = plant
+        ? `Walking over to the ${getPlantDefinition(plant.plant_type).name.toLowerCase()}...`
+        : "Walking to that spot...";
       publishUi();
     }
 
@@ -612,7 +654,7 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
         ref={canvasRef}
         className="cg-canvas"
         role="application"
-        aria-label="Community Garden. Tap a location to walk, plant, or water a rose."
+        aria-label="Community Garden. Tap a location to walk, plant, or water a flower."
         tabIndex={0}
         onPointerDown={onPointerDown}
         onKeyDown={onKeyDown}

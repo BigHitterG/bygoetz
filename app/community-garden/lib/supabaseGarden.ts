@@ -1,8 +1,12 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { GardenBounds } from "./gardenConfig";
-import type { RoseRecord } from "./roseLifecycle";
+import {
+  PLANT_TYPES,
+  type PlantRecord,
+  type PlantType,
+} from "./roseLifecycle";
 
-export type GardenMapRose = Pick<RoseRecord, "grid_x" | "grid_y">;
+export type GardenMapPlant = Pick<PlantRecord, "grid_x" | "grid_y" | "plant_type">;
 
 let gardenClient: SupabaseClient | null = null;
 
@@ -27,21 +31,28 @@ function getGardenClient() {
   return gardenClient;
 }
 
-function normalizeRpcRose(data: unknown): RoseRecord {
-  const value = Array.isArray(data) ? data[0] : data;
-  if (!value || typeof value !== "object") {
-    throw new Error("The garden did not return a rose.");
-  }
-  return value as RoseRecord;
+function normalizePlant(value: Record<string, unknown>): PlantRecord {
+  const plantType = PLANT_TYPES.includes(value.plant_type as PlantType)
+    ? (value.plant_type as PlantType)
+    : "rose";
+  return { ...value, plant_type: plantType } as PlantRecord;
 }
 
-export async function fetchGardenRoses(bounds: GardenBounds) {
+function normalizeRpcPlant(data: unknown): PlantRecord {
+  const value = Array.isArray(data) ? data[0] : data;
+  if (!value || typeof value !== "object") {
+    throw new Error("The garden did not return a plant.");
+  }
+  return normalizePlant(value as Record<string, unknown>);
+}
+
+export async function fetchGardenPlants(bounds: GardenBounds) {
   const client = getGardenClient();
   if (!client) return [];
 
   const { data, error } = await client
     .from("community_garden_roses")
-    .select("id,grid_x,grid_y,planted_at,last_watered_at,created_at")
+    .select("id,grid_x,grid_y,plant_type,planted_at,last_watered_at,created_at")
     .gte("grid_x", bounds.minX)
     .lte("grid_x", bounds.maxX)
     .gte("grid_y", bounds.minY)
@@ -50,16 +61,16 @@ export async function fetchGardenRoses(bounds: GardenBounds) {
     .order("grid_y");
 
   if (error) throw error;
-  return (data ?? []) as RoseRecord[];
+  return (data ?? []).map((plant) => normalizePlant(plant));
 }
 
-export async function fetchGardenRoseMap(bounds: GardenBounds) {
+export async function fetchGardenPlantMap(bounds: GardenBounds) {
   const client = getGardenClient();
   if (!client) return [];
 
   const { data, error } = await client
     .from("community_garden_roses")
-    .select("grid_x,grid_y")
+    .select("grid_x,grid_y,plant_type")
     .gte("grid_x", bounds.minX)
     .lte("grid_x", bounds.maxX)
     .gte("grid_y", bounds.minY)
@@ -69,39 +80,44 @@ export async function fetchGardenRoseMap(bounds: GardenBounds) {
     .limit(1000);
 
   if (error) throw error;
-  return (data ?? []) as GardenMapRose[];
+  return (data ?? []).map((plant) => normalizePlant(plant)) as GardenMapPlant[];
 }
 
-export async function plantGardenRose(gridX: number, gridY: number) {
+export async function plantGardenPlant(
+  gridX: number,
+  gridY: number,
+  plantType: PlantType,
+) {
   const client = getGardenClient();
   if (!client) throw new Error("The shared garden is not connected yet.");
 
-  const { data, error } = await client.rpc("plant_community_garden_rose", {
+  const { data, error } = await client.rpc("plant_community_garden_plant", {
     p_grid_x: gridX,
     p_grid_y: gridY,
+    p_plant_type: plantType,
   });
 
   if (error) throw error;
-  return normalizeRpcRose(data);
+  return normalizeRpcPlant(data);
 }
 
-export async function waterGardenRose(roseId: string) {
+export async function waterGardenPlant(plantId: string) {
   const client = getGardenClient();
   if (!client) throw new Error("The shared garden is not connected yet.");
 
-  const { data, error } = await client.rpc("water_community_garden_rose", {
-    p_rose_id: roseId,
+  const { data, error } = await client.rpc("water_community_garden_plant", {
+    p_plant_id: plantId,
   });
 
   if (error) throw error;
-  return normalizeRpcRose(data);
+  return normalizeRpcPlant(data);
 }
 
-export async function cleanupExpiredGardenRoses(bounds: GardenBounds) {
+export async function cleanupExpiredGardenPlants(bounds: GardenBounds) {
   const client = getGardenClient();
   if (!client) return;
 
-  const { error } = await client.rpc("cleanup_community_garden_roses", {
+  const { error } = await client.rpc("cleanup_community_garden_plants", {
     p_min_x: bounds.minX,
     p_max_x: bounds.maxX,
     p_min_y: bounds.minY,

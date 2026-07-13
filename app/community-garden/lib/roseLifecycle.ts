@@ -1,6 +1,10 @@
 import { GARDEN_CONFIG } from "./gardenConfig";
 
-export type RoseState =
+const HOUR_MS = 60 * 60 * 1000;
+
+export type PlantType = "rose" | "sunflower" | "lavender";
+
+export type PlantState =
   | "seed"
   | "sprout"
   | "young"
@@ -10,29 +14,124 @@ export type RoseState =
   | "dead"
   | "expired";
 
-export type RoseRecord = {
+export type PlantLifecycle = {
+  seedMs: number;
+  sproutMs: number;
+  youngMs: number;
+  matureMs: number;
+  wiltMs: number;
+  deadMs: number;
+  removeMs: number;
+};
+
+export type PlantDefinition = {
+  type: PlantType;
+  name: string;
+  pluralName: string;
+  scientificName: string;
+  character: string;
+  realWorldLifespan: string;
+  gameLifespan: string;
+  careNote: string;
+  colorRadius: number;
+  lifecycle: PlantLifecycle;
+};
+
+export const PLANT_TYPES: PlantType[] = ["rose", "sunflower", "lavender"];
+
+export const PLANT_CATALOG: Record<PlantType, PlantDefinition> = {
+  rose: {
+    type: "rose",
+    name: "Rose",
+    pluralName: "Roses",
+    scientificName: "Rosa",
+    character: "A steady source of color with a balanced care rhythm.",
+    realWorldLifespan: "Usually 6-10 years; some types live 50+ years",
+    gameLifespan: "102 hours without care",
+    careNote: "Blooms near hour 24 and begins wilting after 72 hours without water.",
+    colorRadius: 58,
+    lifecycle: {
+      seedMs: 0.5 * HOUR_MS,
+      sproutMs: 6 * HOUR_MS,
+      youngMs: 14 * HOUR_MS,
+      matureMs: 24 * HOUR_MS,
+      wiltMs: 72 * HOUR_MS,
+      deadMs: 96 * HOUR_MS,
+      removeMs: 102 * HOUR_MS,
+    },
+  },
+  sunflower: {
+    type: "sunflower",
+    name: "Sunflower",
+    pluralName: "Sunflowers",
+    scientificName: "Helianthus annuus",
+    character: "A bright annual that grows quickly and asks for frequent care.",
+    realWorldLifespan: "One growing season, commonly 70-120 days",
+    gameLifespan: "66 hours without care",
+    careNote: "Blooms near hour 14 and begins wilting after 42 hours without water.",
+    colorRadius: 52,
+    lifecycle: {
+      seedMs: (1 / 3) * HOUR_MS,
+      sproutMs: 3 * HOUR_MS,
+      youngMs: 8 * HOUR_MS,
+      matureMs: 14 * HOUR_MS,
+      wiltMs: 42 * HOUR_MS,
+      deadMs: 58 * HOUR_MS,
+      removeMs: 66 * HOUR_MS,
+    },
+  },
+  lavender: {
+    type: "lavender",
+    name: "Lavender",
+    pluralName: "Lavender",
+    scientificName: "Lavandula angustifolia",
+    character: "A slow-growing perennial that rewards patient, lasting care.",
+    realWorldLifespan: "About 10-15 years with good care",
+    gameLifespan: "168 hours without care",
+    careNote: "Blooms near hour 36 and begins wilting after 120 hours without water.",
+    colorRadius: 48,
+    lifecycle: {
+      seedMs: 0.75 * HOUR_MS,
+      sproutMs: 10 * HOUR_MS,
+      youngMs: 22 * HOUR_MS,
+      matureMs: 36 * HOUR_MS,
+      wiltMs: 120 * HOUR_MS,
+      deadMs: 156 * HOUR_MS,
+      removeMs: 168 * HOUR_MS,
+    },
+  },
+};
+
+export type PlantRecord = {
   id: string;
   grid_x: number;
   grid_y: number;
+  plant_type: PlantType;
   planted_at: string;
   last_watered_at: string;
   created_at: string;
 };
 
-export type RoseVisual = {
-  state: RoseState;
+export type PlantVisual = {
+  state: PlantState;
   ageMs: number;
   colorStrength: number;
   colorRadius: number;
   dampStrength: number;
 };
 
-export function getRoseVisual(rose: RoseRecord, now = Date.now()): RoseVisual {
-  const plantedAge = Math.max(0, now - Date.parse(rose.planted_at));
-  const careAge = Math.max(0, now - Date.parse(rose.last_watered_at));
+export function getPlantDefinition(type: PlantType) {
+  return PLANT_CATALOG[type] ?? PLANT_CATALOG.rose;
+}
+
+export function getPlantVisual(plant: PlantRecord, now = Date.now()): PlantVisual {
+  const definition = getPlantDefinition(plant.plant_type);
+  const lifecycle = definition.lifecycle;
+  const plantedAge = Math.max(0, now - Date.parse(plant.planted_at));
+  const careAge = Math.max(0, now - Date.parse(plant.last_watered_at));
   const dampStrength = Math.max(0, 1 - careAge / GARDEN_CONFIG.dampSoilMs);
 
-  if (careAge >= GARDEN_CONFIG.removeMs) {
+  if (careAge >= lifecycle.removeMs) {
     return {
       state: "expired",
       ageMs: careAge,
@@ -42,7 +141,7 @@ export function getRoseVisual(rose: RoseRecord, now = Date.now()): RoseVisual {
     };
   }
 
-  if (careAge >= GARDEN_CONFIG.deadMs) {
+  if (careAge >= lifecycle.deadMs) {
     return {
       state: "dead",
       ageMs: careAge,
@@ -52,21 +151,21 @@ export function getRoseVisual(rose: RoseRecord, now = Date.now()): RoseVisual {
     };
   }
 
-  if (careAge >= GARDEN_CONFIG.wiltMs) {
+  if (careAge >= lifecycle.wiltMs) {
     const wiltProgress =
-      (careAge - GARDEN_CONFIG.wiltMs) /
-      (GARDEN_CONFIG.deadMs - GARDEN_CONFIG.wiltMs);
+      (careAge - lifecycle.wiltMs) /
+      (lifecycle.deadMs - lifecycle.wiltMs);
     return {
       state: "wilting",
       ageMs: careAge,
       colorStrength: 0.48 - wiltProgress * 0.34,
-      colorRadius: 46 - wiltProgress * 22,
+      colorRadius: definition.colorRadius * (0.8 - wiltProgress * 0.42),
       dampStrength,
     };
   }
 
-  if (plantedAge < GARDEN_CONFIG.seedMs) {
-    const growth = plantedAge / GARDEN_CONFIG.seedMs;
+  if (plantedAge < lifecycle.seedMs) {
+    const growth = plantedAge / lifecycle.seedMs;
     return {
       state: "seed",
       ageMs: plantedAge,
@@ -76,10 +175,10 @@ export function getRoseVisual(rose: RoseRecord, now = Date.now()): RoseVisual {
     };
   }
 
-  if (plantedAge < GARDEN_CONFIG.sproutMs) {
+  if (plantedAge < lifecycle.sproutMs) {
     const growth =
-      (plantedAge - GARDEN_CONFIG.seedMs) /
-      (GARDEN_CONFIG.sproutMs - GARDEN_CONFIG.seedMs);
+      (plantedAge - lifecycle.seedMs) /
+      (lifecycle.sproutMs - lifecycle.seedMs);
     return {
       state: "sprout",
       ageMs: plantedAge,
@@ -89,10 +188,10 @@ export function getRoseVisual(rose: RoseRecord, now = Date.now()): RoseVisual {
     };
   }
 
-  if (plantedAge < GARDEN_CONFIG.youngMs) {
+  if (plantedAge < lifecycle.youngMs) {
     const growth =
-      (plantedAge - GARDEN_CONFIG.sproutMs) /
-      (GARDEN_CONFIG.youngMs - GARDEN_CONFIG.sproutMs);
+      (plantedAge - lifecycle.sproutMs) /
+      (lifecycle.youngMs - lifecycle.sproutMs);
     return {
       state: "young",
       ageMs: plantedAge,
@@ -102,10 +201,10 @@ export function getRoseVisual(rose: RoseRecord, now = Date.now()): RoseVisual {
     };
   }
 
-  if (plantedAge < GARDEN_CONFIG.matureMs) {
+  if (plantedAge < lifecycle.matureMs) {
     const growth =
-      (plantedAge - GARDEN_CONFIG.youngMs) /
-      (GARDEN_CONFIG.matureMs - GARDEN_CONFIG.youngMs);
+      (plantedAge - lifecycle.youngMs) /
+      (lifecycle.matureMs - lifecycle.youngMs);
     return {
       state: "mature",
       ageMs: plantedAge,
@@ -120,12 +219,12 @@ export function getRoseVisual(rose: RoseRecord, now = Date.now()): RoseVisual {
     state: "blooming",
     ageMs: careAge,
     colorStrength: Math.min(1, 0.82 + justWateredBoost),
-    colorRadius: 58 + justWateredBoost * 18,
+    colorRadius: definition.colorRadius + justWateredBoost * 18,
     dampStrength,
   };
 }
 
-export function isRosePlantable(rose: RoseRecord | undefined, now = Date.now()) {
-  return !rose || getRoseVisual(rose, now).state === "expired";
+export function isPlantable(plant: PlantRecord | undefined, now = Date.now()) {
+  return !plant || getPlantVisual(plant, now).state === "expired";
 }
 

@@ -3,7 +3,7 @@ export const GARDEN_CONFIG = {
   logicalHeight: 480,
   minLogicalWidth: 220,
   maxLogicalWidth: 900,
-  defaultCameraZoom: 2,
+  defaultCameraZoom: 1,
   minCameraZoom: 1,
   maxCameraZoom: 2,
   cameraZoomStep: 0.5,
@@ -17,14 +17,7 @@ export const GARDEN_CONFIG = {
   worldMax: 63,
   moveSpeed: 62,
   pollIntervalMs: 20_000,
-  seedMs: 30 * 60 * 1000,
-  sproutMs: 6 * 60 * 60 * 1000,
-  youngMs: 14 * 60 * 60 * 1000,
-  matureMs: 24 * 60 * 60 * 1000,
   dampSoilMs: 45 * 60 * 1000,
-  wiltMs: 72 * 60 * 60 * 1000,
-  deadMs: 96 * 60 * 60 * 1000,
-  removeMs: 102 * 60 * 60 * 1000,
 } as const;
 
 export type GardenBounds = {

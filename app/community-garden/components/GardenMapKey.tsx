@@ -32,14 +32,14 @@ export function GardenMapKey({ ui, onNavigate }: GardenMapKeyProps) {
         type="button"
         style={mapStyle}
         onClick={navigate}
-        aria-label="Garden overview. Select a point to travel there. Red marks show planted roses."
+        aria-label="Garden overview. Select a point to travel there. Colored marks show planted flowers."
       >
         <span className="cg-map-north" aria-hidden="true">N</span>
-        {ui.roseMapPoints.map((rose) => (
+        {ui.plantMapPoints.map((plant) => (
           <span
-            className="cg-map-rose"
-            key={`${rose.x}-${rose.y}`}
-            style={{ left: `${rose.x}%`, top: `${rose.y}%` }}
+            className={`cg-map-plant is-${plant.plantType}`}
+            key={`${plant.x}-${plant.y}`}
+            style={{ left: `${plant.x}%`, top: `${plant.y}%` }}
             aria-hidden="true"
           />
         ))}
