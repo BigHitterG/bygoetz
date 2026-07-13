@@ -20,7 +20,7 @@ export function GardenGuide() {
         </div>
         <div>
           <dt>Travel</dt>
-          <dd>The red dots on the map are roses. Tap anywhere on the map to visit.</dd>
+          <dd>Colored dots on the map show planted flowers. Tap anywhere on the map to visit.</dd>
         </div>
         <div>
           <dt>Care</dt>
