@@ -411,6 +411,7 @@ function drawPlant(
   );
   if (!isVisible(point, viewport)) return;
   const visual = getPlantVisual(plant, now);
+  if (visual.state === "expired") return;
   ctx.save();
   ctx.translate(Math.round(point.x), Math.round(point.y));
   ctx.scale(zoom, zoom);
