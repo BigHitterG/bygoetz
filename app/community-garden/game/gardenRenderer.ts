@@ -160,10 +160,10 @@ function drawTerrainLayer(
 
       const tile = getTerrainTile(gridX, gridY);
       if (layer === "soil") {
-        ctx.fillStyle = tile.soil;
+        ctx.fillStyle = "#ad8b69";
         ctx.fillRect(x, y, cellWidth + 1, cellHeight + 1);
       } else if (layer === "green") {
-        ctx.fillStyle = tile.green;
+        ctx.fillStyle = "#9eac6c";
         ctx.fillRect(x, y, cellWidth + 1, cellHeight + 1);
       }
 
