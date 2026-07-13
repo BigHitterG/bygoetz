@@ -37,7 +37,7 @@ export type GardenBounds = {
 export function getLoadedBounds(
   gridX: number,
   gridY: number,
-  loadRadius = GARDEN_CONFIG.chunkLoadRadius,
+  loadRadius: number = GARDEN_CONFIG.chunkLoadRadius,
 ): GardenBounds {
   const { chunkSize, worldMin, worldMax } = GARDEN_CONFIG;
   const chunkX = Math.floor(gridX / chunkSize);
