@@ -467,8 +467,8 @@ function drawDampSoil(
     const patchInset = Math.min(2, Math.floor(elapsedHalfLives));
     const patchHalfWidth = 5 - patchInset;
     const patchHeight = 6 - patchInset;
-    ctx.globalAlpha = 0.76 * visual.dampStrength;
-    ctx.fillStyle = "#4f3d33";
+    ctx.globalAlpha = 0.42 * visual.dampStrength;
+    ctx.fillStyle = "#6f5947";
     ctx.fillRect(
       -patchHalfWidth,
       -Math.ceil(patchHeight / 2),
@@ -488,14 +488,14 @@ function drawDampSoil(
       }
     }
     if (elapsedHalfLives < 2) {
-      ctx.globalAlpha = 0.5 * visual.dampStrength;
+      ctx.globalAlpha = 0.28 * visual.dampStrength;
       ctx.fillStyle = "#a18a70";
       ctx.fillRect(-3, -2, 3, 1);
       ctx.fillRect(2, 1, 3, 1);
     }
     if (elapsedHalfLives < 1) {
       const sheenStrength = 1 - elapsedHalfLives;
-      ctx.globalAlpha = 0.58 * visual.dampStrength * sheenStrength;
+      ctx.globalAlpha = 0.32 * visual.dampStrength * sheenStrength;
       ctx.fillStyle = "#93b7b0";
       ctx.fillRect(-4, -3, 2, 1);
       ctx.fillRect(3, 1, 2, 1);
@@ -522,7 +522,17 @@ function drawSelection(
   ctx.save();
   ctx.translate(Math.round(point.x), Math.round(point.y));
   ctx.scale(zoom, zoom);
-  ctx.fillStyle = "#6f4c3e";
+  ctx.globalAlpha = 0.95;
+  ctx.fillStyle = "#fff4dc";
+  ctx.fillRect(-9, -7, 5, 2);
+  ctx.fillRect(-9, -7, 2, 5);
+  ctx.fillRect(4, -7, 5, 2);
+  ctx.fillRect(7, -7, 2, 5);
+  ctx.fillRect(-9, 5, 5, 2);
+  ctx.fillRect(-9, 2, 2, 5);
+  ctx.fillRect(4, 5, 5, 2);
+  ctx.fillRect(7, 2, 2, 5);
+  ctx.fillStyle = "#a84f4b";
   ctx.fillRect(-8, -6, 4, 2);
   ctx.fillRect(-8, -6, 2, 4);
   ctx.fillRect(4, -6, 4, 2);
@@ -677,12 +687,12 @@ export function renderGarden(ctx: CanvasRenderingContext2D, state: RenderGardenS
   ctx.drawImage(soilLayer, 0, 0);
   ctx.drawImage(greenLayer, 0, 0);
   drawDampSoil(ctx, visiblePlants, state.camera, state.viewport, state.now, state.zoom);
-  drawSelection(ctx, state.selected, state.camera, state.viewport, state.zoom);
   visiblePlants.forEach((plant) =>
     drawPlant(ctx, plant, state.camera, state.viewport, state.now, state.zoom),
   );
   drawDuck(ctx, state.duck, state.camera, state.viewport, state.moving, state.now, state.zoom);
   drawMary(ctx, state.mary, state.camera, state.viewport, state.moving, state.now, state.zoom);
   drawEffects(ctx, state.effects, state.camera, state.viewport, state.now, state.zoom);
+  drawSelection(ctx, state.selected, state.camera, state.viewport, state.zoom);
 }
 
