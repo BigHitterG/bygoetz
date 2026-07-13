@@ -441,27 +441,6 @@ function drawPlant(
   ctx.restore();
 }
 
-const MOISTURE_BANDS = [
-  { color: "#4f3d33", alpha: 0.76 },
-  { color: "#614b3d", alpha: 0.66 },
-  { color: "#755b49", alpha: 0.56 },
-  { color: "#876d58", alpha: 0.46 },
-  { color: "#97816a", alpha: 0.35 },
-  { color: "#a7967e", alpha: 0.24 },
-  { color: "#b6aa94", alpha: 0.14 },
-] as const;
-
-function getMoistureBand(dampStrength: number) {
-  const dryingProgress = 1 - dampStrength;
-  if (dryingProgress < 1 / 12) return 0;
-  if (dryingProgress < 1 / 6) return 1;
-  if (dryingProgress < 1 / 3) return 2;
-  if (dryingProgress < 1 / 2) return 3;
-  if (dryingProgress < 2 / 3) return 4;
-  if (dryingProgress < 5 / 6) return 5;
-  return 6;
-}
-
 function drawDampSoil(
   ctx: CanvasRenderingContext2D,
   plants: PlantRecord[],
@@ -483,21 +462,20 @@ function drawDampSoil(
     ctx.save();
     ctx.translate(Math.round(point.x), Math.round(point.y));
     ctx.scale(zoom, zoom);
-    const moistureBand = getMoistureBand(visual.dampStrength);
-    const moistureStyle = MOISTURE_BANDS[moistureBand];
+    const elapsedHalfLives = -Math.log2(visual.dampStrength);
     const soilVariant = Math.abs(plant.grid_x * 17 + plant.grid_y * 13) % 3;
-    const patchInset = Math.floor(moistureBand / 2);
+    const patchInset = Math.min(2, Math.floor(elapsedHalfLives));
     const patchHalfWidth = 5 - patchInset;
     const patchHeight = 6 - patchInset;
-    ctx.globalAlpha = moistureStyle.alpha;
-    ctx.fillStyle = moistureStyle.color;
+    ctx.globalAlpha = 0.76 * visual.dampStrength;
+    ctx.fillStyle = "#4f3d33";
     ctx.fillRect(
       -patchHalfWidth,
       -Math.ceil(patchHeight / 2),
       patchHalfWidth * 2,
       patchHeight,
     );
-    if (moistureBand < 5) {
+    if (elapsedHalfLives < 2.7) {
       if (soilVariant === 0) {
         ctx.fillRect(-3 + patchInset, -5 + patchInset, 7 - patchInset, 2);
         ctx.fillRect(-6 + patchInset, -1, 2, 3 - Math.min(1, patchInset));
@@ -509,17 +487,18 @@ function drawDampSoil(
         ctx.fillRect(-6 + patchInset, 0, 3 - Math.min(1, patchInset), 2);
       }
     }
-    if (moistureBand < 4) {
-      ctx.globalAlpha = moistureStyle.alpha * 0.75;
+    if (elapsedHalfLives < 2) {
+      ctx.globalAlpha = 0.5 * visual.dampStrength;
       ctx.fillStyle = "#a18a70";
       ctx.fillRect(-3, -2, 3, 1);
       ctx.fillRect(2, 1, 3, 1);
     }
-    if (moistureBand < 2) {
-      ctx.globalAlpha = moistureBand === 0 ? 0.58 : 0.3;
+    if (elapsedHalfLives < 1) {
+      const sheenStrength = 1 - elapsedHalfLives;
+      ctx.globalAlpha = 0.58 * visual.dampStrength * sheenStrength;
       ctx.fillStyle = "#93b7b0";
       ctx.fillRect(-4, -3, 2, 1);
-      if (moistureBand === 0) ctx.fillRect(3, 1, 2, 1);
+      ctx.fillRect(3, 1, 2, 1);
     }
     ctx.restore();
   }
