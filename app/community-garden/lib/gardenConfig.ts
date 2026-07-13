@@ -5,7 +5,6 @@ export const GARDEN_CONFIG = {
   maxLogicalWidth: 900,
   cameraZoom: 2,
   maryScreenYRatio: 0.56,
-  treeLineHeight: 48,
   tileSize: 16,
   tileScreenHeight: 13,
   chunkSize: 16,
@@ -66,5 +65,20 @@ export function getMapPercentage(gridCoordinate: number) {
     100,
     Math.max(0, ((gridCoordinate - GARDEN_CONFIG.worldMin) / range) * 100),
   );
+}
+
+export function getGridFromMapPercentage(percentage: number) {
+  const range = GARDEN_CONFIG.worldMax - GARDEN_CONFIG.worldMin;
+  const normalized = Math.min(100, Math.max(0, percentage)) / 100;
+  return Math.round(GARDEN_CONFIG.worldMin + normalized * range);
+}
+
+export function getGardenBounds(): GardenBounds {
+  return {
+    minX: GARDEN_CONFIG.worldMin,
+    maxX: GARDEN_CONFIG.worldMax,
+    minY: GARDEN_CONFIG.worldMin,
+    maxY: GARDEN_CONFIG.worldMax,
+  };
 }
 

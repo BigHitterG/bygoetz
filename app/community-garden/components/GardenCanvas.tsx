@@ -21,6 +21,8 @@ import {
   clampWorldCoordinate,
   GARDEN_CONFIG,
   getChunkKey,
+  getGardenBounds,
+  getGridFromMapPercentage,
   getLoadedBounds,
   getMapPercentage,
   isWithinGarden,
@@ -33,7 +35,9 @@ import {
 } from "../lib/roseLifecycle";
 import {
   cleanupExpiredGardenRoses,
+  fetchGardenRoseMap,
   fetchGardenRoses,
+  type GardenMapRose,
   isGardenConfigured,
   plantGardenRose,
   waterGardenRose,
@@ -48,18 +52,14 @@ export type GardenUiState = {
   actionEnabled: boolean;
   connection: GardenConnection;
   message: string;
-  condition: string;
-  hasMoved: boolean;
-  gridX: number;
-  gridY: number;
   mapX: number;
   mapY: number;
-  locationLabel: string;
+  roseMapPoints: Array<{ x: number; y: number }>;
 };
 
 export type GardenCanvasHandle = {
   performAction: () => Promise<void>;
-  goToGardenCenter: () => void;
+  goToMapPosition: (mapX: number, mapY: number) => void;
 };
 
 type Runtime = {
@@ -69,6 +69,7 @@ type Runtime = {
   target: WorldPoint | null;
   selected: SelectedCell;
   roses: Map<string, RoseRecord>;
+  mapRoses: Map<string, GardenMapRose>;
   effects: GardenEffect[];
   path: WorldPoint[];
   lastFrame: number;
@@ -129,21 +130,6 @@ function getActionState(runtime: Runtime) {
   };
 }
 
-function getCondition(runtime: Runtime) {
-  let healthy = 0;
-  let wilting = 0;
-  for (const rose of runtime.roses.values()) {
-    const state = getRoseVisual(rose).state;
-    if (state === "healthy" || state === "sprout") healthy += 1;
-    if (state === "wilting") wilting += 1;
-  }
-
-  if (wilting > 0) return "A nearby rose is wilting.";
-  if (healthy >= 8) return "Color is returning.";
-  if (healthy > 0) return "The garden is waking up.";
-  return "The garden is quiet today.";
-}
-
 function getAdjacentTarget(mary: WorldPoint, gridX: number, gridY: number) {
   const center = gridToWorld(gridX, gridY);
   const dx = mary.x - center.x;
@@ -160,14 +146,6 @@ function getAdjacentTarget(mary: WorldPoint, gridX: number, gridY: number) {
     x: clampWorldCoordinate(center.x),
     y: clampWorldCoordinate(center.y),
   };
-}
-
-function getLocationLabel(gridX: number, gridY: number) {
-  if (gridX === 0 && gridY === 0) return "Garden center";
-
-  const horizontal = gridX === 0 ? "" : `${Math.abs(gridX)} ${gridX > 0 ? "E" : "W"}`;
-  const vertical = gridY === 0 ? "" : `${Math.abs(gridY)} ${gridY > 0 ? "S" : "N"}`;
-  return [horizontal, vertical].filter(Boolean).join(" / ");
 }
 
 function makeLocalRose(gridX: number, gridY: number): RoseRecord {
@@ -214,6 +192,7 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
       target: null,
       selected: null,
       roses: new Map(),
+      mapRoses: new Map(),
       effects: [],
       path: [{ ...start }],
       lastFrame: 0,
@@ -241,19 +220,19 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
       const action = getActionState(runtime);
       const gridX = Math.floor(runtime.mary.x / GARDEN_CONFIG.tileSize);
       const gridY = Math.floor(runtime.mary.y / GARDEN_CONFIG.tileSize);
+      const roseMapPoints = Array.from(runtime.mapRoses.values()).map((rose) => ({
+        x: getMapPercentage(rose.grid_x),
+        y: getMapPercentage(rose.grid_y),
+      }));
       const state: GardenUiState = {
         action: action.action,
         actionLabel: action.label,
         actionEnabled: action.enabled,
         connection: runtime.connection,
         message: runtime.statusMessage,
-        condition: getCondition(runtime),
-        hasMoved: runtime.hasMoved,
-        gridX,
-        gridY,
         mapX: getMapPercentage(gridX),
         mapY: getMapPercentage(gridY),
-        locationLabel: getLocationLabel(gridX, gridY),
+        roseMapPoints,
       };
       const key = JSON.stringify(state);
       if (key === lastUiKeyRef.current) return;
@@ -278,6 +257,9 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
           runtime.roses = new Map(
             localRoses.map((rose) => [roseKey(rose.grid_x, rose.grid_y), rose]),
           );
+          runtime.mapRoses = new Map(
+            localRoses.map((rose) => [roseKey(rose.grid_x, rose.grid_y), rose]),
+          );
         }
         publishUi();
         return;
@@ -286,13 +268,19 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
       const requestId = ++runtime.requestId;
       try {
         await cleanupExpiredGardenRoses(bounds);
-        const roses = await fetchGardenRoses(bounds);
+        const [roses, mapRoses] = await Promise.all([
+          fetchGardenRoses(bounds),
+          fetchGardenRoseMap(getGardenBounds()),
+        ]);
         if (requestId !== runtime.requestId) return;
 
         runtime.roses = new Map(
           roses
             .filter((rose) => getRoseVisual(rose).state !== "expired")
             .map((rose) => [roseKey(rose.grid_x, rose.grid_y), rose]),
+        );
+        runtime.mapRoses = new Map(
+          mapRoses.map((rose) => [roseKey(rose.grid_x, rose.grid_y), rose]),
         );
         runtime.chunkCache.set(chunkKey, roses);
         runtime.cacheOrder = runtime.cacheOrder.filter((key) => key !== chunkKey);
@@ -318,11 +306,23 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
     useImperativeHandle(
       ref,
       () => ({
-        goToGardenCenter() {
+        goToMapPosition(mapX, mapY) {
           const runtime = runtimeRef.current;
+          const gridX = getGridFromMapPercentage(mapX);
+          const gridY = getGridFromMapPercentage(mapY);
+          const destination = gridToWorld(gridX, gridY);
           runtime.selected = null;
-          runtime.target = gridToWorld(0, 0);
-          runtime.statusMessage = "Walking toward the garden center...";
+          runtime.target = null;
+          runtime.mary = { ...destination };
+          runtime.camera = { ...destination };
+          runtime.duck = {
+            x: clampWorldCoordinate(destination.x - 18),
+            y: clampWorldCoordinate(destination.y + 10),
+          };
+          runtime.path = [{ ...destination }];
+          runtime.loadedChunkKey = "";
+          runtime.hasMoved = true;
+          runtime.statusMessage = "Exploring a new part of the garden.";
           publishUi();
         },
         async performAction() {
@@ -345,6 +345,7 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
                 ? await plantGardenRose(selected.gridX, selected.gridY)
                 : makeLocalRose(selected.gridX, selected.gridY);
               runtime.roses.set(roseKey(rose.grid_x, rose.grid_y), rose);
+              runtime.mapRoses.set(roseKey(rose.grid_x, rose.grid_y), rose);
               runtime.selected = { ...selected, roseId: rose.id };
               runtime.effects.push({
                 kind: "plant",
@@ -498,7 +499,7 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
     function selectCell(gridX: number, gridY: number) {
       const runtime = runtimeRef.current;
       if (!isWithinGarden(gridX, gridY)) {
-        runtime.statusMessage = "You have reached the garden edge. The trees mark the boundary.";
+        runtime.statusMessage = "You have reached the garden edge.";
         publishUi();
         return;
       }
@@ -560,7 +561,7 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
       const nextGridY = currentGridY + direction[1];
       if (!isWithinGarden(nextGridX, nextGridY)) {
         runtime.target = null;
-        runtime.statusMessage = "You have reached the garden edge. The trees mark the boundary.";
+        runtime.statusMessage = "You have reached the garden edge.";
         publishUi();
         return;
       }
@@ -576,7 +577,6 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
         className="cg-canvas"
         role="application"
         aria-label="Community Garden. Tap a location to walk, plant, or water a rose."
-        aria-describedby="community-garden-instructions"
         tabIndex={0}
         onPointerDown={onPointerDown}
         onKeyDown={onKeyDown}
