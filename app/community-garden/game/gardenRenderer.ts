@@ -462,12 +462,23 @@ function drawDampSoil(
     ctx.save();
     ctx.translate(Math.round(point.x), Math.round(point.y));
     ctx.scale(zoom, zoom);
-    ctx.globalAlpha = 0.08 + Math.pow(visual.dampStrength, 0.7) * 0.58;
-    ctx.fillStyle = "#66564d";
-    ctx.fillRect(-7, -5, 14, 10);
-    ctx.fillStyle = "#78675c";
-    ctx.fillRect(-5, -4, 4, 2);
-    ctx.fillRect(2, 2, 4, 2);
+    const soilVariant = Math.abs(plant.grid_x * 17 + plant.grid_y * 13) % 3;
+    ctx.globalAlpha = 0.06 + Math.pow(visual.dampStrength, 1.2) * 0.46;
+    ctx.fillStyle = "#725c49";
+    ctx.fillRect(-5, -3, 10, 6);
+    if (soilVariant === 0) {
+      ctx.fillRect(-3, -5, 7, 2);
+      ctx.fillRect(-6, -1, 2, 3);
+    } else if (soilVariant === 1) {
+      ctx.fillRect(-4, -4, 8, 2);
+      ctx.fillRect(4, -1, 2, 3);
+    } else {
+      ctx.fillRect(-2, -5, 7, 2);
+      ctx.fillRect(-6, 0, 3, 2);
+    }
+    ctx.fillStyle = "#8a725b";
+    ctx.fillRect(-3, -2, 3, 1);
+    ctx.fillRect(2, 1, 3, 1);
     if (visual.dampStrength > 0.72) {
       ctx.globalAlpha = (visual.dampStrength - 0.72) * 1.8;
       ctx.fillStyle = "#93b7b0";
