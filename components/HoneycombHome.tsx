@@ -60,6 +60,12 @@ const FOCUS_OVERLAY_DELAY = 900;
 const EXPLORERS_SERIES_BUBBLE = { q: 1, r: 0 };
 const EXPLORERS_BUBBLE_ID = `${EXPLORERS_SERIES_BUBBLE.q}:${EXPLORERS_SERIES_BUBBLE.r}`;
 const EXPLORERS_LINK_ID = "explorers";
+const COMMUNITY_GARDEN_BUBBLE = { q: -1, r: 0 };
+const COMMUNITY_GARDEN_LINK_ID = "community-garden";
+const LINKED_BUBBLE_ROUTES: Record<string, string> = {
+  [EXPLORERS_LINK_ID]: "/explorers",
+  [COMMUNITY_GARDEN_LINK_ID]: "/community-garden",
+};
 
 function axialDistance(q: number, r: number) {
   return (Math.abs(q) + Math.abs(r) + Math.abs(q + r)) / 2;
@@ -512,14 +518,15 @@ export function HoneycombBubbles({
 
     const targetLink = linkedBubbleTarget.current;
     linkedBubbleTarget.current = null;
+    const linkedRoute = targetLink ? LINKED_BUBBLE_ROUTES[targetLink] : null;
 
     const shouldOpenLinkedBubble =
-      targetLink === EXPLORERS_LINK_ID &&
+      linkedRoute != null &&
       dragDistance.current <= TAP_DRAG_THRESHOLD &&
       Math.hypot(velocity.current.x, velocity.current.y) <= 0.5;
 
-    if (shouldOpenLinkedBubble) {
-      window.location.href = withSiteBasePath("/explorers");
+    if (shouldOpenLinkedBubble && linkedRoute) {
+      window.location.href = withSiteBasePath(linkedRoute);
       return;
     }
 
@@ -564,6 +571,9 @@ export function HoneycombBubbles({
         const isExplorersBubble =
           bubble.q === EXPLORERS_SERIES_BUBBLE.q &&
           bubble.r === EXPLORERS_SERIES_BUBBLE.r;
+        const isCommunityGardenBubble =
+          bubble.q === COMMUNITY_GARDEN_BUBBLE.q &&
+          bubble.r === COMMUNITY_GARDEN_BUBBLE.r;
 
         return (
           <div
@@ -579,7 +589,7 @@ export function HoneycombBubbles({
                 "--bubble-size": `${resolvedBaseBubbleSize}px`,
               } as React.CSSProperties
             }
-            aria-hidden={isExplorersBubble ? undefined : true}
+            aria-hidden={isExplorersBubble || isCommunityGardenBubble ? undefined : true}
           >
             {isCenterBubble ? (
               <img
@@ -608,6 +618,17 @@ export function HoneycombBubbles({
                 />
               </div>
             ) : null}
+            {isCommunityGardenBubble ? (
+              <div
+                className={styles.gardenLink}
+                data-linked-bubble-id={COMMUNITY_GARDEN_LINK_ID}
+                aria-label="Open Community Garden"
+              >
+                <span className={styles.gardenPreview} aria-hidden="true">
+                  <span />
+                </span>
+              </div>
+            ) : null}
           </div>
         );
       })}
@@ -632,3 +653,4 @@ export function HoneycombBubbles({
 export function HoneycombHome() {
   return <HoneycombBubbles />;
 }
+
