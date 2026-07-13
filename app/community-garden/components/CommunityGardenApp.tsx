@@ -18,6 +18,9 @@ const INITIAL_UI: GardenUiState = {
   message: "Connecting to the shared garden...",
   mapX: 60.38,
   mapY: 60.38,
+  zoom: 2,
+  canZoomIn: false,
+  canZoomOut: true,
   roseMapPoints: [],
 };
 
@@ -61,6 +64,28 @@ export function CommunityGardenApp() {
           ui={ui}
           onNavigate={(mapX, mapY) => canvasRef.current?.goToMapPosition(mapX, mapY)}
         />
+
+        <div className="cg-zoom-control" role="group" aria-label="Garden zoom">
+          <button
+            type="button"
+            title="Zoom out"
+            aria-label="Zoom out to see more of the garden"
+            disabled={!ui.canZoomOut}
+            onClick={() => canvasRef.current?.zoomOut()}
+          >
+            -
+          </button>
+          <output aria-label={`Current zoom ${ui.zoom} times`}>{ui.zoom}x</output>
+          <button
+            type="button"
+            title="Zoom in"
+            aria-label="Zoom in for a closer garden view"
+            disabled={!ui.canZoomIn}
+            onClick={() => canvasRef.current?.zoomIn()}
+          >
+            +
+          </button>
+        </div>
 
         <button
           className="cg-compact-support"
