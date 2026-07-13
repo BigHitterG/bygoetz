@@ -185,9 +185,16 @@ function drawTerrainLayer(
       }
 
       if (!occupied && tile.detail <= 2) {
-        const detailColor =
-          layer === "base" ? "#b9b3a8" : layer === "soil" ? "#8e6b53" : "#65714e";
-        drawGroundMark(ctx, x, y, zoom, detailColor);
+        if (layer === "green") {
+          if (tile.detail === 0) {
+            ctx.fillStyle = "#65714e";
+            ctx.fillRect(x + 4 * zoom, y + 8 * zoom, 3 * zoom, zoom);
+            ctx.fillRect(x + 11 * zoom, y + 6 * zoom, zoom, zoom);
+          }
+        } else {
+          const detailColor = layer === "base" ? "#b9b3a8" : "#8e6b53";
+          drawGroundMark(ctx, x, y, zoom, detailColor);
+        }
       } else if (!occupied && tile.detail === 5) {
         ctx.fillStyle =
           layer === "base" ? "#c4bdb1" : layer === "soil" ? "#9b765b" : "#74805e";
