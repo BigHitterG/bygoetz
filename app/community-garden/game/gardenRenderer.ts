@@ -303,34 +303,42 @@ function drawRose(
 
   if (visual.state === "sprout") {
     ctx.fillStyle = "#68764f";
-    ctx.fillRect(-1, -6, 2, 7);
-    ctx.fillRect(-4, -5, 4, 2);
-    ctx.fillRect(1, -4, 4, 2);
+    ctx.fillRect(-1, -5, 2, 6);
+    ctx.fillRect(-4, -4, 3, 2);
+    ctx.fillRect(1, -2, 2, 2);
     ctx.restore();
     return;
   }
 
   const plantVariant = Math.abs(rose.grid_x * 17 + rose.grid_y * 13) % 2;
-  const leftLeafY = plantVariant === 0 ? -7 : -6;
-  const rightLeafY = plantVariant === 0 ? -3 : -4;
-  ctx.fillStyle = wilting ? "#677052" : "#45643f";
-  ctx.fillRect(-1, -9, 2, 10);
-  ctx.fillRect(-5, leftLeafY, 4, 2);
-  ctx.fillRect(-2, leftLeafY + 1, 2, 1);
-  ctx.fillRect(1, rightLeafY, 4, 2);
-  ctx.fillRect(0, rightLeafY + 1, 2, 1);
+  const stemLean = plantVariant === 0 ? -1 : 1;
   if (visual.state === "young") {
+    ctx.fillStyle = "#45643f";
+    ctx.fillRect(-1, -4, 2, 5);
+    ctx.fillRect(-1 + stemLean, -9, 2, 5);
+    ctx.fillRect(-4 + stemLean, -7, 3, 2);
+    ctx.fillRect(1, -3, 3, 2);
     ctx.fillStyle = "#718054";
-    ctx.fillRect(-2 + plantVariant, -10, 4, 3);
+    ctx.fillRect(-2 + stemLean, -10, 4, 3);
     ctx.restore();
     return;
   }
 
+  const leftLeafY = plantVariant === 0 ? -7 : -6;
+  const rightLeafY = plantVariant === 0 ? -2 : -3;
+  ctx.fillStyle = wilting ? "#677052" : "#45643f";
+  ctx.fillRect(-1, -4, 2, 5);
+  ctx.fillRect(-1 + stemLean, -9, 2, 5);
+  ctx.fillRect(-5 + stemLean, leftLeafY, 4, 2);
+  ctx.fillRect(-2, leftLeafY + 1, 2, 1);
+  ctx.fillRect(1, rightLeafY, 3, 2);
+  ctx.fillRect(0, rightLeafY + 1, 2, 1);
+
   if (visual.state === "mature") {
     ctx.fillStyle = "#bc5f5f";
-    ctx.fillRect(-3, -12, 6, 4);
+    ctx.fillRect(-3 + stemLean, -12, 6, 4);
     ctx.fillStyle = "#8f4548";
-    ctx.fillRect(-1, -13, 3, 3);
+    ctx.fillRect(-1 + stemLean, -13, 3, 3);
     ctx.restore();
     return;
   }
