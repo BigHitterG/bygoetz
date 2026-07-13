@@ -54,18 +54,24 @@ export type GardenUiState = {
   message: string;
   mapX: number;
   mapY: number;
+  zoom: number;
+  canZoomIn: boolean;
+  canZoomOut: boolean;
   roseMapPoints: Array<{ x: number; y: number }>;
 };
 
 export type GardenCanvasHandle = {
   performAction: () => Promise<void>;
   goToMapPosition: (mapX: number, mapY: number) => void;
+  zoomIn: () => void;
+  zoomOut: () => void;
 };
 
 type Runtime = {
   mary: WorldPoint;
   duck: WorldPoint;
   camera: WorldPoint;
+  zoom: number;
   target: WorldPoint | null;
   selected: SelectedCell;
   roses: Map<string, RoseRecord>;
@@ -92,6 +98,13 @@ type GardenCanvasProps = {
 
 function roseKey(gridX: number, gridY: number) {
   return `${gridX}:${gridY}`;
+}
+
+function clampZoom(value: number) {
+  return Math.min(
+    GARDEN_CONFIG.maxCameraZoom,
+    Math.max(GARDEN_CONFIG.minCameraZoom, value),
+  );
 }
 
 function getRoseAt(runtime: Runtime, gridX: number, gridY: number) {
@@ -189,6 +202,7 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
       mary: { ...start },
       duck: { x: start.x - 18, y: start.y + 10 },
       camera: { ...start },
+      zoom: GARDEN_CONFIG.defaultCameraZoom,
       target: null,
       selected: null,
       roses: new Map(),
@@ -232,6 +246,9 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
         message: runtime.statusMessage,
         mapX: getMapPercentage(gridX),
         mapY: getMapPercentage(gridY),
+        zoom: runtime.zoom,
+        canZoomIn: runtime.zoom < GARDEN_CONFIG.maxCameraZoom,
+        canZoomOut: runtime.zoom > GARDEN_CONFIG.minCameraZoom,
         roseMapPoints,
       };
       const key = JSON.stringify(state);
@@ -246,6 +263,11 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
       const gridY = Math.floor(runtime.mary.y / GARDEN_CONFIG.tileSize);
       const chunkKey = getChunkKey(gridX, gridY);
       const bounds = getLoadedBounds(gridX, gridY);
+      const cleanupBounds = getLoadedBounds(
+        gridX,
+        gridY,
+        GARDEN_CONFIG.cleanupChunkLoadRadius,
+      );
       const cached = runtime.chunkCache.get(chunkKey);
       if (cached) {
         runtime.roses = new Map(cached.map((rose) => [roseKey(rose.grid_x, rose.grid_y), rose]));
@@ -267,7 +289,7 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
 
       const requestId = ++runtime.requestId;
       try {
-        await cleanupExpiredGardenRoses(bounds);
+        await cleanupExpiredGardenRoses(cleanupBounds);
         const [roses, mapRoses] = await Promise.all([
           fetchGardenRoses(bounds),
           fetchGardenRoseMap(getGardenBounds()),
@@ -306,6 +328,18 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
     useImperativeHandle(
       ref,
       () => ({
+        zoomIn() {
+          const runtime = runtimeRef.current;
+          runtime.zoom = clampZoom(runtime.zoom + GARDEN_CONFIG.cameraZoomStep);
+          runtime.statusMessage = "Zoomed in for a closer garden view.";
+          publishUi();
+        },
+        zoomOut() {
+          const runtime = runtimeRef.current;
+          runtime.zoom = clampZoom(runtime.zoom - GARDEN_CONFIG.cameraZoomStep);
+          runtime.statusMessage = "Zoomed out to see more of the garden.";
+          publishUi();
+        },
         goToMapPosition(mapX, mapY) {
           const runtime = runtimeRef.current;
           const gridX = getGridFromMapPercentage(mapX);
@@ -472,6 +506,7 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
         renderGarden(ctx, {
           viewport: { width: canvas.width, height: canvas.height },
           camera: runtime.camera,
+          zoom: runtime.zoom,
           mary: runtime.mary,
           duck: runtime.duck,
           roses: Array.from(runtime.roses.values()),
@@ -531,6 +566,7 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
         screenY,
         runtimeRef.current.camera,
         { width: canvas.width, height: canvas.height },
+        runtimeRef.current.zoom,
       );
       selectCell(cell.gridX, cell.gridY);
       canvas.focus({ preventScroll: true });
