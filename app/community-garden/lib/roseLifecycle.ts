@@ -1,6 +1,7 @@
 import { GARDEN_CONFIG } from "./gardenConfig";
 
 const HOUR_MS = 60 * 60 * 1000;
+const MOISTURE_HALF_LIFE_MS = 8 * HOUR_MS;
 
 export type PlantType = "rose" | "sunflower" | "lavender";
 
@@ -127,8 +128,7 @@ export function getPlantDefinition(type: PlantType) {
 export function getMoistureStrength(careAgeMs: number, wiltMs: number) {
   if (careAgeMs >= wiltMs) return 0;
 
-  const halfLifeMs = wiltMs / 3;
-  return Math.pow(0.5, Math.max(0, careAgeMs) / halfLifeMs);
+  return Math.pow(0.5, Math.max(0, careAgeMs) / MOISTURE_HALF_LIFE_MS);
 }
 
 export function getPlantVisual(plant: PlantRecord, now = Date.now()): PlantVisual {
