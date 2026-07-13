@@ -6,20 +6,12 @@ function hashCoordinate(x: number, y: number, seed = 0) {
 }
 
 export type TerrainTile = {
-  soil: string;
-  green: string;
   detail: number;
   accent: number;
 };
 
-const SOILS = ["#aa8968", "#b08f6d", "#a68363", "#b49473"];
-const GREENS = ["#9dac6c", "#a5b476", "#93a263", "#a9b77a"];
-
 export function getTerrainTile(gridX: number, gridY: number): TerrainTile {
-  const base = hashCoordinate(gridX, gridY);
   return {
-    soil: SOILS[base % SOILS.length],
-    green: GREENS[base % GREENS.length],
     detail: hashCoordinate(gridX, gridY, 7) % 11,
     accent: hashCoordinate(gridX, gridY, 13) % 9,
   };
