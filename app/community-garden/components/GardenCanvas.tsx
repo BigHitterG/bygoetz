@@ -18,9 +18,12 @@ import {
   type WorldPoint,
 } from "../game/gardenRenderer";
 import {
+  clampWorldCoordinate,
   GARDEN_CONFIG,
   getChunkKey,
   getLoadedBounds,
+  getMapPercentage,
+  isWithinGarden,
   type GardenBounds,
 } from "../lib/gardenConfig";
 import {
@@ -47,10 +50,16 @@ export type GardenUiState = {
   message: string;
   condition: string;
   hasMoved: boolean;
+  gridX: number;
+  gridY: number;
+  mapX: number;
+  mapY: number;
+  locationLabel: string;
 };
 
 export type GardenCanvasHandle = {
   performAction: () => Promise<void>;
+  goToGardenCenter: () => void;
 };
 
 type Runtime = {
@@ -147,7 +156,18 @@ function getAdjacentTarget(mary: WorldPoint, gridX: number, gridY: number) {
     center.y += dy >= 0 ? offset : -offset;
   }
 
-  return center;
+  return {
+    x: clampWorldCoordinate(center.x),
+    y: clampWorldCoordinate(center.y),
+  };
+}
+
+function getLocationLabel(gridX: number, gridY: number) {
+  if (gridX === 0 && gridY === 0) return "Garden center";
+
+  const horizontal = gridX === 0 ? "" : `${Math.abs(gridX)} ${gridX > 0 ? "E" : "W"}`;
+  const vertical = gridY === 0 ? "" : `${Math.abs(gridY)} ${gridY > 0 ? "S" : "N"}`;
+  return [horizontal, vertical].filter(Boolean).join(" Â· ");
 }
 
 function makeLocalRose(gridX: number, gridY: number): RoseRecord {
@@ -219,6 +239,8 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
     const publishUi = useCallback(() => {
       const runtime = runtimeRef.current;
       const action = getActionState(runtime);
+      const gridX = Math.floor(runtime.mary.x / GARDEN_CONFIG.tileSize);
+      const gridY = Math.floor(runtime.mary.y / GARDEN_CONFIG.tileSize);
       const state: GardenUiState = {
         action: action.action,
         actionLabel: action.label,
@@ -227,6 +249,11 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
         message: runtime.statusMessage,
         condition: getCondition(runtime),
         hasMoved: runtime.hasMoved,
+        gridX,
+        gridY,
+        mapX: getMapPercentage(gridX),
+        mapY: getMapPercentage(gridY),
+        locationLabel: getLocationLabel(gridX, gridY),
       };
       const key = JSON.stringify(state);
       if (key === lastUiKeyRef.current) return;
@@ -291,6 +318,13 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
     useImperativeHandle(
       ref,
       () => ({
+        goToGardenCenter() {
+          const runtime = runtimeRef.current;
+          runtime.selected = null;
+          runtime.target = gridToWorld(0, 0);
+          runtime.statusMessage = "Walking toward the garden center...";
+          publishUi();
+        },
         async performAction() {
           const runtime = runtimeRef.current;
           const selected = runtime.selected;
@@ -353,8 +387,21 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
       const ctx = canvas.getContext("2d");
       if (!ctx) return;
 
-      canvas.width = GARDEN_CONFIG.logicalWidth;
-      canvas.height = GARDEN_CONFIG.logicalHeight;
+      const resizeCanvas = () => {
+        const bounds = canvas.getBoundingClientRect();
+        if (bounds.width <= 0 || bounds.height <= 0) return;
+        const responsiveWidth = Math.round(
+          GARDEN_CONFIG.logicalHeight * (bounds.width / bounds.height),
+        );
+        canvas.width = Math.min(
+          GARDEN_CONFIG.maxLogicalWidth,
+          Math.max(GARDEN_CONFIG.minLogicalWidth, responsiveWidth),
+        );
+        canvas.height = GARDEN_CONFIG.logicalHeight;
+      };
+      resizeCanvas();
+      const resizeObserver = new ResizeObserver(resizeCanvas);
+      resizeObserver.observe(canvas);
       runtimeRef.current.reducedMotion = window.matchMedia(
         "(prefers-reduced-motion: reduce)",
       ).matches;
@@ -376,11 +423,14 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
           const distance = Math.hypot(dx, dy);
           const step = GARDEN_CONFIG.moveSpeed * deltaSeconds;
           if (distance <= Math.max(1, step)) {
-            runtime.mary = { ...runtime.target };
+            runtime.mary = {
+              x: clampWorldCoordinate(runtime.target.x),
+              y: clampWorldCoordinate(runtime.target.y),
+            };
             runtime.target = null;
           } else {
-            runtime.mary.x += (dx / distance) * step;
-            runtime.mary.y += (dy / distance) * step;
+            runtime.mary.x = clampWorldCoordinate(runtime.mary.x + (dx / distance) * step);
+            runtime.mary.y = clampWorldCoordinate(runtime.mary.y + (dy / distance) * step);
             runtime.moving = true;
             runtime.hasMoved = true;
           }
@@ -419,6 +469,7 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
         }
 
         renderGarden(ctx, {
+          viewport: { width: canvas.width, height: canvas.height },
           camera: runtime.camera,
           mary: runtime.mary,
           duck: runtime.duck,
@@ -440,18 +491,14 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
       return () => {
         cancelAnimationFrame(frameId);
         window.clearInterval(pollId);
+        resizeObserver.disconnect();
       };
     }, [publishUi]);
 
     function selectCell(gridX: number, gridY: number) {
       const runtime = runtimeRef.current;
-      if (
-        gridX < GARDEN_CONFIG.worldMin ||
-        gridX > GARDEN_CONFIG.worldMax ||
-        gridY < GARDEN_CONFIG.worldMin ||
-        gridY > GARDEN_CONFIG.worldMax
-      ) {
-        runtime.statusMessage = "That place is beyond the garden path.";
+      if (!isWithinGarden(gridX, gridY)) {
+        runtime.statusMessage = "You have reached the garden edge. The trees mark the boundary.";
         publishUi();
         return;
       }
@@ -476,9 +523,14 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
       const canvas = canvasRef.current;
       if (!canvas) return;
       const bounds = canvas.getBoundingClientRect();
-      const screenX = ((event.clientX - bounds.left) / bounds.width) * GARDEN_CONFIG.logicalWidth;
-      const screenY = ((event.clientY - bounds.top) / bounds.height) * GARDEN_CONFIG.logicalHeight;
-      const cell = screenToGrid(screenX, screenY, runtimeRef.current.camera);
+      const screenX = ((event.clientX - bounds.left) / bounds.width) * canvas.width;
+      const screenY = ((event.clientY - bounds.top) / bounds.height) * canvas.height;
+      const cell = screenToGrid(
+        screenX,
+        screenY,
+        runtimeRef.current.camera,
+        { width: canvas.width, height: canvas.height },
+      );
       selectCell(cell.gridX, cell.gridY);
       canvas.focus({ preventScroll: true });
     }
@@ -502,11 +554,18 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
       if (!direction) return;
       event.preventDefault();
       const runtime = runtimeRef.current;
+      const currentGridX = Math.floor(runtime.mary.x / GARDEN_CONFIG.tileSize);
+      const currentGridY = Math.floor(runtime.mary.y / GARDEN_CONFIG.tileSize);
+      const nextGridX = currentGridX + direction[0];
+      const nextGridY = currentGridY + direction[1];
+      if (!isWithinGarden(nextGridX, nextGridY)) {
+        runtime.target = null;
+        runtime.statusMessage = "You have reached the garden edge. The trees mark the boundary.";
+        publishUi();
+        return;
+      }
       runtime.selected = null;
-      runtime.target = {
-        x: runtime.mary.x + direction[0] * GARDEN_CONFIG.tileSize,
-        y: runtime.mary.y + direction[1] * GARDEN_CONFIG.tileSize,
-      };
+      runtime.target = gridToWorld(nextGridX, nextGridY);
       runtime.statusMessage = "Exploring the garden...";
       publishUi();
     }
