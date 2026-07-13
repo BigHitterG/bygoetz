@@ -7,6 +7,7 @@ import {
   type GardenCanvasHandle,
   type GardenUiState,
 } from "./GardenCanvas";
+import { GardenMapKey } from "./GardenMapKey";
 import { GardenMenu } from "./GardenMenu";
 
 const INITIAL_UI: GardenUiState = {
@@ -17,6 +18,11 @@ const INITIAL_UI: GardenUiState = {
   message: "Connecting to the shared garden...",
   condition: "The garden is waking up.",
   hasMoved: false,
+  gridX: 0,
+  gridY: 0,
+  mapX: 60.38,
+  mapY: 60.38,
+  locationLabel: "Garden center",
 };
 
 export function CommunityGardenApp() {
@@ -34,9 +40,9 @@ export function CommunityGardenApp() {
 
   return (
     <main className="cg-root">
-      <FutureAdSlot label={adLabel} />
+      <section className="cg-game-frame" aria-label="Community Garden game">
+        <GardenCanvas ref={canvasRef} onStateChange={onStateChange} />
 
-      <div className="cg-shell">
         <header className="cg-titlebar">
           <div className="cg-pixel-rose" aria-hidden="true">
             <span />
@@ -55,28 +61,10 @@ export function CommunityGardenApp() {
           </button>
         </header>
 
-        <section className="cg-game-frame" aria-label="Community Garden game">
-          <GardenCanvas ref={canvasRef} onStateChange={onStateChange} />
-
-          <div
-            id="community-garden-instructions"
-            className={`cg-instructions${ui.hasMoved ? " cg-instructions-muted" : ""}`}
-          >
-            <span className="cg-spark" aria-hidden="true">+</span>
-            <p><strong>Tap anywhere</strong> to walk</p>
-            <p><strong>Tap a rose</strong> to care for it</p>
-          </div>
-
-          <button
-            className="cg-action-button"
-            type="button"
-            disabled={!ui.actionEnabled}
-            onClick={() => void canvasRef.current?.performAction()}
-          >
-            <span className={ui.action === "water" ? "cg-water-icon" : "cg-action-rose"} aria-hidden="true" />
-            <span>{ui.actionLabel}</span>
-          </button>
-        </section>
+        <GardenMapKey
+          ui={ui}
+          onReturnToCenter={() => canvasRef.current?.goToGardenCenter()}
+        />
 
         <div className="cg-condition-row">
           <span className={`cg-status-dot cg-status-${ui.connection}`} aria-hidden="true" />
@@ -84,8 +72,29 @@ export function CommunityGardenApp() {
           <button type="button" onClick={() => setMenuOpen(true)}>Support</button>
         </div>
 
+        <div
+          id="community-garden-instructions"
+          className={`cg-instructions${ui.hasMoved ? " cg-instructions-muted" : ""}`}
+        >
+          <span className="cg-spark" aria-hidden="true">+</span>
+          <p><strong>Tap anywhere</strong> to walk</p>
+          <p><strong>Tap a rose</strong> to care for it</p>
+        </div>
+
+        <button
+          className="cg-action-button"
+          type="button"
+          disabled={!ui.actionEnabled}
+          onClick={() => void canvasRef.current?.performAction()}
+        >
+          <span className={ui.action === "water" ? "cg-water-icon" : "cg-action-rose"} aria-hidden="true" />
+          <span>{ui.actionLabel}</span>
+        </button>
+
         <p className="cg-live-status" aria-live="polite">{ui.message}</p>
-      </div>
+      </section>
+
+      <FutureAdSlot label={adLabel} />
 
       <GardenMenu
         open={menuOpen}
