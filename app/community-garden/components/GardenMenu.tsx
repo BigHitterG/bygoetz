@@ -1,4 +1,5 @@
 import { withSiteBasePath } from "@/lib/sitePath";
+import { GardenGuide } from "./GardenGuide";
 import { SupportGarden } from "./SupportGarden";
 
 type GardenMenuProps = {
@@ -29,11 +30,7 @@ export function GardenMenu({ open, donationUrl, onClose }: GardenMenuProps) {
           </button>
         </div>
 
-        <div className="cg-menu-copy">
-          <h3>How it works</h3>
-          <p>Tap a place to walk. Plant in an empty spot or water any living rose.</p>
-          <p>Roses need care at least once every four days. No accounts, scores, or owners.</p>
-        </div>
+        <GardenGuide />
 
         <SupportGarden donationUrl={donationUrl} />
 

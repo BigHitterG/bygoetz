@@ -3,17 +3,25 @@ export const GARDEN_CONFIG = {
   logicalHeight: 480,
   minLogicalWidth: 220,
   maxLogicalWidth: 900,
-  cameraZoom: 2,
+  defaultCameraZoom: 2,
+  minCameraZoom: 1,
+  maxCameraZoom: 2,
+  cameraZoomStep: 0.5,
   maryScreenYRatio: 0.56,
   tileSize: 16,
   tileScreenHeight: 13,
   chunkSize: 16,
-  chunkLoadRadius: 1,
+  chunkLoadRadius: 2,
+  cleanupChunkLoadRadius: 1,
   worldMin: -96,
   worldMax: 63,
   moveSpeed: 62,
   pollIntervalMs: 20_000,
-  sproutMs: 24 * 60 * 60 * 1000,
+  seedMs: 30 * 60 * 1000,
+  sproutMs: 6 * 60 * 60 * 1000,
+  youngMs: 14 * 60 * 60 * 1000,
+  matureMs: 24 * 60 * 60 * 1000,
+  dampSoilMs: 45 * 60 * 1000,
   wiltMs: 72 * 60 * 60 * 1000,
   deadMs: 96 * 60 * 60 * 1000,
   removeMs: 102 * 60 * 60 * 1000,
@@ -26,16 +34,20 @@ export type GardenBounds = {
   maxY: number;
 };
 
-export function getLoadedBounds(gridX: number, gridY: number): GardenBounds {
-  const { chunkSize, chunkLoadRadius, worldMin, worldMax } = GARDEN_CONFIG;
+export function getLoadedBounds(
+  gridX: number,
+  gridY: number,
+  loadRadius: number = GARDEN_CONFIG.chunkLoadRadius,
+): GardenBounds {
+  const { chunkSize, worldMin, worldMax } = GARDEN_CONFIG;
   const chunkX = Math.floor(gridX / chunkSize);
   const chunkY = Math.floor(gridY / chunkSize);
 
   return {
-    minX: Math.max(worldMin, (chunkX - chunkLoadRadius) * chunkSize),
-    maxX: Math.min(worldMax, (chunkX + chunkLoadRadius + 1) * chunkSize - 1),
-    minY: Math.max(worldMin, (chunkY - chunkLoadRadius) * chunkSize),
-    maxY: Math.min(worldMax, (chunkY + chunkLoadRadius + 1) * chunkSize - 1),
+    minX: Math.max(worldMin, (chunkX - loadRadius) * chunkSize),
+    maxX: Math.min(worldMax, (chunkX + loadRadius + 1) * chunkSize - 1),
+    minY: Math.max(worldMin, (chunkY - loadRadius) * chunkSize),
+    maxY: Math.min(worldMax, (chunkY + loadRadius + 1) * chunkSize - 1),
   };
 }
 

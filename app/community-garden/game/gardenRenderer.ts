@@ -15,6 +15,7 @@ export type GardenEffect = {
 export type RenderGardenState = {
   viewport: GardenViewport;
   camera: WorldPoint;
+  zoom: number;
   mary: WorldPoint;
   duck: WorldPoint;
   roses: RoseRecord[];
@@ -30,6 +31,14 @@ let baseLayer: HTMLCanvasElement | null = null;
 let soilLayer: HTMLCanvasElement | null = null;
 let greenLayer: HTMLCanvasElement | null = null;
 let maskLayer: HTMLCanvasElement | null = null;
+
+function terrainCellKey(gridX: number, gridY: number) {
+  const worldSize = GARDEN_CONFIG.worldMax - GARDEN_CONFIG.worldMin + 1;
+  return (
+    (gridY - GARDEN_CONFIG.worldMin) * worldSize +
+    (gridX - GARDEN_CONFIG.worldMin)
+  );
+}
 
 function ensureLayer(current: HTMLCanvasElement | null, viewport: GardenViewport) {
   const canvas = current ?? document.createElement("canvas");
@@ -53,9 +62,9 @@ export function worldToScreen(
   point: WorldPoint,
   camera: WorldPoint,
   viewport: GardenViewport,
+  zoom: number = GARDEN_CONFIG.defaultCameraZoom,
 ): WorldPoint {
   const yScale = GARDEN_CONFIG.tileScreenHeight / GARDEN_CONFIG.tileSize;
-  const zoom = GARDEN_CONFIG.cameraZoom;
   return {
     x: viewport.width / 2 + (point.x - camera.x) * zoom,
     y: getMaryScreenY(viewport) + (point.y - camera.y) * yScale * zoom,
@@ -67,9 +76,9 @@ export function screenToGrid(
   screenY: number,
   camera: WorldPoint,
   viewport: GardenViewport,
+  zoom: number = GARDEN_CONFIG.defaultCameraZoom,
 ) {
   const yScale = GARDEN_CONFIG.tileScreenHeight / GARDEN_CONFIG.tileSize;
-  const zoom = GARDEN_CONFIG.cameraZoom;
   const worldX = camera.x + (screenX - viewport.width / 2) / zoom;
   const worldY = camera.y + (screenY - getMaryScreenY(viewport)) / (yScale * zoom);
   return {
@@ -78,8 +87,12 @@ export function screenToGrid(
   };
 }
 
-function getVisibleGridBounds(camera: WorldPoint, viewport: GardenViewport) {
-  const { tileSize, tileScreenHeight, cameraZoom: zoom } = GARDEN_CONFIG;
+function getVisibleGridBounds(
+  camera: WorldPoint,
+  viewport: GardenViewport,
+  zoom: number,
+) {
+  const { tileSize, tileScreenHeight } = GARDEN_CONFIG;
   const yScale = tileScreenHeight / tileSize;
   const halfWorldWidth = viewport.width / (2 * zoom);
   const minWorldY = camera.y - getMaryScreenY(viewport) / (yScale * zoom);
@@ -92,7 +105,7 @@ function getVisibleGridBounds(camera: WorldPoint, viewport: GardenViewport) {
   };
 }
 
-function drawGrassMark(
+function drawGroundMark(
   ctx: CanvasRenderingContext2D,
   x: number,
   y: number,
@@ -100,9 +113,9 @@ function drawGrassMark(
   color: string,
 ) {
   ctx.fillStyle = color;
-  ctx.fillRect(x + 4 * scale, y + 7 * scale, scale, 3 * scale);
-  ctx.fillRect(x + 6 * scale, y + 5 * scale, scale, 5 * scale);
-  ctx.fillRect(x + 8 * scale, y + 7 * scale, scale, 3 * scale);
+  ctx.fillRect(x + 3 * scale, y + 7 * scale, 3 * scale, scale);
+  ctx.fillRect(x + 7 * scale, y + 6 * scale, 2 * scale, scale);
+  ctx.fillRect(x + 10 * scale, y + 8 * scale, 3 * scale, scale);
 }
 
 function drawBoundaryTree(
@@ -127,15 +140,17 @@ function drawTerrainLayer(
   camera: WorldPoint,
   viewport: GardenViewport,
   layer: TerrainLayer,
+  zoom: number,
+  occupiedCells: Set<number>,
 ) {
-  const { tileSize, tileScreenHeight, cameraZoom: zoom } = GARDEN_CONFIG;
+  const { tileSize, tileScreenHeight } = GARDEN_CONFIG;
   const cellWidth = tileSize * zoom;
   const cellHeight = tileScreenHeight * zoom;
-  const visible = getVisibleGridBounds(camera, viewport);
+  const visible = getVisibleGridBounds(camera, viewport, zoom);
   ctx.clearRect(0, 0, viewport.width, viewport.height);
 
   if (layer === "base") {
-    ctx.fillStyle = "#fafaf7";
+    ctx.fillStyle = "#e8e1d3";
     ctx.fillRect(0, 0, viewport.width, viewport.height);
   }
 
@@ -144,14 +159,15 @@ function drawTerrainLayer(
       const topLeft = worldToScreen(
         { x: gridX * tileSize, y: gridY * tileSize },
         camera,
-        viewport,
+          viewport,
+          zoom,
       );
       const x = Math.floor(topLeft.x);
       const y = Math.floor(topLeft.y);
 
       if (!isWithinGarden(gridX, gridY)) {
         if (layer === "base") {
-          ctx.fillStyle = "#eef0eb";
+          ctx.fillStyle = "#d9d5ca";
           ctx.fillRect(x, y, cellWidth + 1, cellHeight + 1);
           drawBoundaryTree(ctx, x, y, zoom, gridX, gridY);
         }
@@ -159,30 +175,44 @@ function drawTerrainLayer(
       }
 
       const tile = getTerrainTile(gridX, gridY);
+      const occupied = occupiedCells.has(terrainCellKey(gridX, gridY));
       if (layer === "soil") {
-        ctx.fillStyle = "#ad8b69";
+        ctx.fillStyle = "#bd936e";
         ctx.fillRect(x, y, cellWidth + 1, cellHeight + 1);
       } else if (layer === "green") {
-        ctx.fillStyle = "#9eac6c";
+        ctx.fillStyle = "#9ca67a";
         ctx.fillRect(x, y, cellWidth + 1, cellHeight + 1);
       }
 
-      if (tile.detail <= 2) {
-        const detailColor =
-          layer === "base" ? "#d2d4cf" : layer === "soil" ? "#866c53" : "#667548";
-        drawGrassMark(ctx, x, y, zoom, detailColor);
-      } else if (tile.detail === 5) {
+      if (!occupied && tile.detail <= 2) {
+        if (layer === "green") {
+          if (tile.detail === 0) {
+            ctx.fillStyle = "#65714e";
+            ctx.fillRect(x + 4 * zoom, y + 8 * zoom, 3 * zoom, zoom);
+            ctx.fillRect(x + 11 * zoom, y + 6 * zoom, zoom, zoom);
+          }
+        } else {
+          const detailColor = layer === "base" ? "#b9b3a8" : "#8e6b53";
+          drawGroundMark(ctx, x, y, zoom, detailColor);
+        }
+      } else if (!occupied && tile.detail === 5) {
         ctx.fillStyle =
-          layer === "base" ? "#d9dad6" : layer === "soil" ? "#94765b" : "#758453";
+          layer === "base" ? "#c4bdb1" : layer === "soil" ? "#9b765b" : "#74805e";
         ctx.fillRect(x + 3 * zoom, y + 6 * zoom, 5 * zoom, zoom);
         ctx.fillRect(x + 8 * zoom, y + 7 * zoom, 4 * zoom, zoom);
       }
 
-      if (layer === "green" && tile.accent === 1) {
-        ctx.fillStyle = terrainNoise(gridX, gridY, 19) > 0.5 ? "#f2d46f" : "#e98673";
+      if (layer === "green" && !occupied && (tile.accent === 1 || tile.accent === 4)) {
+        const warmBloom = terrainNoise(gridX, gridY, 19) > 0.5;
+        ctx.fillStyle =
+          tile.accent === 4 ? "#6f9995" : warmBloom ? "#dfb85f" : "#df7b70";
         ctx.fillRect(x + 11 * zoom, y + 4 * zoom, 2 * zoom, 2 * zoom);
-        ctx.fillStyle = "#6e7845";
+        ctx.fillStyle = "#5d6d49";
         ctx.fillRect(x + 12 * zoom, y + 6 * zoom, zoom, 2 * zoom);
+        if (tile.accent === 4) {
+          ctx.fillStyle = "#dca08b";
+          ctx.fillRect(x + 4 * zoom, y + 8 * zoom, 2 * zoom, 2 * zoom);
+        }
       }
     }
   }
@@ -195,14 +225,15 @@ function drawColorMask(
   viewport: GardenViewport,
   now: number,
   kind: "soil" | "green",
+  zoom: number,
 ) {
   ctx.clearRect(0, 0, viewport.width, viewport.height);
   for (const rose of roses) {
     const visual = getRoseVisual(rose, now);
     if (visual.colorRadius <= 0) continue;
-    const point = worldToScreen(gridToWorld(rose.grid_x, rose.grid_y), camera, viewport);
+    const point = worldToScreen(gridToWorld(rose.grid_x, rose.grid_y), camera, viewport, zoom);
     const radiusMultiplier = kind === "soil" ? 1.55 : 0.9;
-    const radius = visual.colorRadius * GARDEN_CONFIG.cameraZoom * radiusMultiplier;
+    const radius = visual.colorRadius * zoom * radiusMultiplier;
     const strength =
       kind === "soil"
         ? Math.min(0.84, 0.36 + visual.colorStrength * 0.48)
@@ -242,14 +273,15 @@ function drawRose(
   camera: WorldPoint,
   viewport: GardenViewport,
   now: number,
+  zoom: number,
 ) {
-  const point = worldToScreen(gridToWorld(rose.grid_x, rose.grid_y), camera, viewport);
+  const point = worldToScreen(gridToWorld(rose.grid_x, rose.grid_y), camera, viewport, zoom);
   if (!isVisible(point, viewport)) return;
   const visual = getRoseVisual(rose, now);
   const wilting = visual.state === "wilting";
   ctx.save();
   ctx.translate(Math.round(point.x), Math.round(point.y));
-  ctx.scale(GARDEN_CONFIG.cameraZoom, GARDEN_CONFIG.cameraZoom);
+  ctx.scale(zoom, zoom);
 
   if (visual.state === "dead") {
     ctx.fillStyle = "#6f573d";
@@ -260,13 +292,53 @@ function drawRose(
     return;
   }
 
-  ctx.fillStyle = wilting ? "#677052" : "#45643f";
-  ctx.fillRect(-1, -9, 2, 10);
-  ctx.fillRect(-5, -5, 5, 2);
-  ctx.fillRect(1, -4, 4, 2);
+  if (visual.state === "seed") {
+    ctx.fillStyle = "#705443";
+    ctx.fillRect(-2, -2, 4, 2);
+    ctx.fillStyle = "#8f6b51";
+    ctx.fillRect(-1, -4, 2, 2);
+    ctx.restore();
+    return;
+  }
+
   if (visual.state === "sprout") {
-    ctx.fillStyle = "#71854b";
-    ctx.fillRect(-3, -10, 6, 4);
+    ctx.fillStyle = "#68764f";
+    ctx.fillRect(-1, -5, 2, 6);
+    ctx.fillRect(-4, -4, 3, 2);
+    ctx.fillRect(1, -2, 2, 2);
+    ctx.restore();
+    return;
+  }
+
+  const plantVariant = Math.abs(rose.grid_x * 17 + rose.grid_y * 13) % 2;
+  const stemLean = plantVariant === 0 ? -1 : 1;
+  if (visual.state === "young") {
+    ctx.fillStyle = "#45643f";
+    ctx.fillRect(-1, -4, 2, 5);
+    ctx.fillRect(-1 + stemLean, -9, 2, 5);
+    ctx.fillRect(-4 + stemLean, -7, 3, 2);
+    ctx.fillRect(1, -3, 3, 2);
+    ctx.fillStyle = "#718054";
+    ctx.fillRect(-2 + stemLean, -10, 4, 3);
+    ctx.restore();
+    return;
+  }
+
+  const leftLeafY = plantVariant === 0 ? -7 : -6;
+  const rightLeafY = plantVariant === 0 ? -2 : -3;
+  ctx.fillStyle = wilting ? "#677052" : "#45643f";
+  ctx.fillRect(-1, -4, 2, 5);
+  ctx.fillRect(-1 + stemLean, -9, 2, 5);
+  ctx.fillRect(-5 + stemLean, leftLeafY, 4, 2);
+  ctx.fillRect(-2, leftLeafY + 1, 2, 1);
+  ctx.fillRect(1, rightLeafY, 3, 2);
+  ctx.fillRect(0, rightLeafY + 1, 2, 1);
+
+  if (visual.state === "mature") {
+    ctx.fillStyle = "#bc5f5f";
+    ctx.fillRect(-3 + stemLean, -12, 6, 4);
+    ctx.fillStyle = "#8f4548";
+    ctx.fillRect(-1 + stemLean, -13, 3, 3);
     ctx.restore();
     return;
   }
@@ -281,18 +353,50 @@ function drawRose(
   ctx.restore();
 }
 
+function drawDampSoil(
+  ctx: CanvasRenderingContext2D,
+  roses: RoseRecord[],
+  camera: WorldPoint,
+  viewport: GardenViewport,
+  now: number,
+  zoom: number,
+) {
+  for (const rose of roses) {
+    const visual = getRoseVisual(rose, now);
+    if (visual.dampStrength <= 0) continue;
+    const point = worldToScreen(gridToWorld(rose.grid_x, rose.grid_y), camera, viewport, zoom);
+    if (!isVisible(point, viewport)) continue;
+    ctx.save();
+    ctx.translate(Math.round(point.x), Math.round(point.y));
+    ctx.scale(zoom, zoom);
+    ctx.globalAlpha = 0.25 + visual.dampStrength * 0.38;
+    ctx.fillStyle = "#66564d";
+    ctx.fillRect(-7, -5, 14, 10);
+    ctx.fillStyle = "#78675c";
+    ctx.fillRect(-5, -4, 4, 2);
+    ctx.fillRect(2, 2, 4, 2);
+    ctx.restore();
+  }
+}
+
 function drawSelection(
   ctx: CanvasRenderingContext2D,
   selected: SelectedCell,
   camera: WorldPoint,
   viewport: GardenViewport,
+  zoom: number,
 ) {
   if (!selected) return;
-  const point = worldToScreen(gridToWorld(selected.gridX, selected.gridY), camera, viewport);
+  const point = worldToScreen(
+    gridToWorld(selected.gridX, selected.gridY),
+    camera,
+    viewport,
+    zoom,
+  );
   if (!isVisible(point, viewport)) return;
   ctx.save();
   ctx.translate(Math.round(point.x), Math.round(point.y));
-  ctx.scale(GARDEN_CONFIG.cameraZoom, GARDEN_CONFIG.cameraZoom);
+  ctx.scale(zoom, zoom);
   ctx.fillStyle = "#6f4c3e";
   ctx.fillRect(-8, -6, 4, 2);
   ctx.fillRect(-8, -6, 2, 4);
@@ -312,12 +416,13 @@ function drawMary(
   viewport: GardenViewport,
   moving: boolean,
   now: number,
+  zoom: number,
 ) {
-  const screen = worldToScreen(point, camera, viewport);
+  const screen = worldToScreen(point, camera, viewport, zoom);
   const step = moving && Math.floor(now / 170) % 2 === 0 ? 1 : 0;
   ctx.save();
-  ctx.translate(Math.round(screen.x), Math.round(screen.y) - step * GARDEN_CONFIG.cameraZoom);
-  ctx.scale(GARDEN_CONFIG.cameraZoom, GARDEN_CONFIG.cameraZoom);
+  ctx.translate(Math.round(screen.x), Math.round(screen.y) - step * zoom);
+  ctx.scale(zoom, zoom);
   ctx.fillStyle = "#5e2f25";
   ctx.fillRect(-6, -22, 12, 9);
   ctx.fillRect(-8, -19, 16, 9);
@@ -345,12 +450,13 @@ function drawDuck(
   viewport: GardenViewport,
   moving: boolean,
   now: number,
+  zoom: number,
 ) {
-  const screen = worldToScreen(point, camera, viewport);
+  const screen = worldToScreen(point, camera, viewport, zoom);
   const waddle = moving && Math.floor(now / 150) % 2 === 0 ? 1 : -1;
   ctx.save();
-  ctx.translate(Math.round(screen.x) + waddle * GARDEN_CONFIG.cameraZoom, Math.round(screen.y));
-  ctx.scale(GARDEN_CONFIG.cameraZoom, GARDEN_CONFIG.cameraZoom);
+  ctx.translate(Math.round(screen.x) + waddle * zoom, Math.round(screen.y));
+  ctx.scale(zoom, zoom);
   ctx.fillStyle = "#f5f0df";
   ctx.fillRect(-5, -8, 10, 8);
   ctx.fillRect(-3, -12, 7, 6);
@@ -369,15 +475,21 @@ function drawEffects(
   camera: WorldPoint,
   viewport: GardenViewport,
   now: number,
+  zoom: number,
 ) {
   for (const effect of effects) {
     const age = now - effect.startedAt;
     if (age < 0 || age > 900) continue;
     const progress = age / 900;
-    const point = worldToScreen(gridToWorld(effect.gridX, effect.gridY), camera, viewport);
+    const point = worldToScreen(
+      gridToWorld(effect.gridX, effect.gridY),
+      camera,
+      viewport,
+      zoom,
+    );
     ctx.save();
     ctx.translate(Math.round(point.x), Math.round(point.y));
-    ctx.scale(GARDEN_CONFIG.cameraZoom, GARDEN_CONFIG.cameraZoom);
+    ctx.scale(zoom, zoom);
     if (effect.kind === "water") {
       ctx.fillStyle = "#75b7cf";
       for (let index = 0; index < 4; index += 1) {
@@ -407,23 +519,45 @@ export function renderGarden(ctx: CanvasRenderingContext2D, state: RenderGardenS
   const visibleRoses = state.roses.filter(
     (rose) => getRoseVisual(rose, state.now).state !== "expired",
   );
+  const occupiedCells = new Set(
+    visibleRoses.map((rose) => terrainCellKey(rose.grid_x, rose.grid_y)),
+  );
   ctx.imageSmoothingEnabled = false;
   ctx.clearRect(0, 0, state.viewport.width, state.viewport.height);
-  drawTerrainLayer(baseCtx, state.camera, state.viewport, "base");
-  drawTerrainLayer(soilCtx, state.camera, state.viewport, "soil");
-  drawColorMask(maskCtx, visibleRoses, state.camera, state.viewport, state.now, "soil");
+  drawTerrainLayer(baseCtx, state.camera, state.viewport, "base", state.zoom, occupiedCells);
+  drawTerrainLayer(soilCtx, state.camera, state.viewport, "soil", state.zoom, occupiedCells);
+  drawColorMask(
+    maskCtx,
+    visibleRoses,
+    state.camera,
+    state.viewport,
+    state.now,
+    "soil",
+    state.zoom,
+  );
   applyMask(soilCtx, maskCtx, maskLayer);
-  drawTerrainLayer(greenCtx, state.camera, state.viewport, "green");
-  drawColorMask(maskCtx, visibleRoses, state.camera, state.viewport, state.now, "green");
+  drawTerrainLayer(greenCtx, state.camera, state.viewport, "green", state.zoom, occupiedCells);
+  drawColorMask(
+    maskCtx,
+    visibleRoses,
+    state.camera,
+    state.viewport,
+    state.now,
+    "green",
+    state.zoom,
+  );
   applyMask(greenCtx, maskCtx, maskLayer);
 
   ctx.drawImage(baseLayer, 0, 0);
   ctx.drawImage(soilLayer, 0, 0);
   ctx.drawImage(greenLayer, 0, 0);
-  drawSelection(ctx, state.selected, state.camera, state.viewport);
-  visibleRoses.forEach((rose) => drawRose(ctx, rose, state.camera, state.viewport, state.now));
-  drawDuck(ctx, state.duck, state.camera, state.viewport, state.moving, state.now);
-  drawMary(ctx, state.mary, state.camera, state.viewport, state.moving, state.now);
-  drawEffects(ctx, state.effects, state.camera, state.viewport, state.now);
+  drawDampSoil(ctx, visibleRoses, state.camera, state.viewport, state.now, state.zoom);
+  drawSelection(ctx, state.selected, state.camera, state.viewport, state.zoom);
+  visibleRoses.forEach((rose) =>
+    drawRose(ctx, rose, state.camera, state.viewport, state.now, state.zoom),
+  );
+  drawDuck(ctx, state.duck, state.camera, state.viewport, state.moving, state.now, state.zoom);
+  drawMary(ctx, state.mary, state.camera, state.viewport, state.moving, state.now, state.zoom);
+  drawEffects(ctx, state.effects, state.camera, state.viewport, state.now, state.zoom);
 }
 
