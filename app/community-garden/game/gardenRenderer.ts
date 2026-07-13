@@ -62,7 +62,7 @@ export function worldToScreen(
   point: WorldPoint,
   camera: WorldPoint,
   viewport: GardenViewport,
-  zoom = GARDEN_CONFIG.defaultCameraZoom,
+  zoom: number = GARDEN_CONFIG.defaultCameraZoom,
 ): WorldPoint {
   const yScale = GARDEN_CONFIG.tileScreenHeight / GARDEN_CONFIG.tileSize;
   return {
@@ -76,7 +76,7 @@ export function screenToGrid(
   screenY: number,
   camera: WorldPoint,
   viewport: GardenViewport,
-  zoom = GARDEN_CONFIG.defaultCameraZoom,
+  zoom: number = GARDEN_CONFIG.defaultCameraZoom,
 ) {
   const yScale = GARDEN_CONFIG.tileScreenHeight / GARDEN_CONFIG.tileSize;
   const worldX = camera.x + (screenX - viewport.width / 2) / zoom;
