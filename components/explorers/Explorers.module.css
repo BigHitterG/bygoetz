@@ -41,6 +41,7 @@
 }
 
 .hero,
+.buildSetFeature,
 .collectionSection,
 .spacesSection,
 .storySection,
@@ -52,6 +53,66 @@
 .moreFromGoetzSection {
   width: min(1180px, calc(100% - 32px));
   margin: 0 auto;
+}
+
+.buildSetFeature {
+  display: grid;
+  grid-template-columns: minmax(0, 0.82fr) minmax(360px, 1.18fr);
+  gap: clamp(32px, 7vw, 90px);
+  align-items: center;
+  border-top: 1px solid #111;
+  border-bottom: 1px solid #111;
+  padding: clamp(52px, 8vw, 96px) 0;
+}
+
+.buildSetFeatureCopy h2 {
+  max-width: 560px;
+  margin: 0;
+  font-size: 4.5rem;
+  font-weight: 650;
+  line-height: 0.94;
+  letter-spacing: 0;
+}
+
+.buildSetFeatureCopy > p:not(.eyebrow) {
+  max-width: 500px;
+  margin: 22px 0 30px;
+  color: #4c4c4c;
+  font-size: 1.08rem;
+  line-height: 1.6;
+}
+
+.buildSetFeatureArt {
+  display: flex;
+  min-height: 360px;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(10px, 2vw, 22px);
+  background: #dce7df;
+  padding: clamp(24px, 4vw, 52px);
+}
+
+.buildSetFeatureArt span {
+  display: grid;
+  width: 29%;
+  aspect-ratio: 4 / 5;
+  place-items: center;
+  border: 1px solid #d6d0c8;
+  background: #fff;
+  padding: clamp(10px, 1.6vw, 22px);
+  box-shadow: 0 14px 28px rgba(20, 20, 20, 0.1);
+}
+
+.buildSetFeatureArt span:nth-child(2) {
+  transform: translateY(-16px);
+}
+
+.buildSetFeatureArt .artworkImage,
+.buildSetFeatureArt .artworkPlaceholder {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  object-fit: contain;
 }
 
 .hero {
@@ -760,6 +821,7 @@
 
 @media (max-width: 920px) {
   .hero,
+  .buildSetFeature,
   .spacesSection,
   .detailGrid,
   .downloadGrid {
@@ -768,6 +830,14 @@
 
   .hero {
     min-height: auto;
+  }
+
+  .buildSetFeature {
+    grid-template-columns: 1fr;
+  }
+
+  .buildSetFeatureCopy h2 {
+    font-size: 3.5rem;
   }
 
   .productGrid {
@@ -782,6 +852,7 @@
 
 @media (max-width: 620px) {
   .hero,
+  .buildSetFeature,
   .collectionSection,
   .spacesSection,
   .storySection,
@@ -807,6 +878,15 @@
 
   .bundleArtworkFrame {
     max-width: 260px;
+  }
+
+  .buildSetFeatureArt {
+    min-height: 270px;
+    padding: 24px 14px;
+  }
+
+  .buildSetFeatureCopy h2 {
+    font-size: 2.8rem;
   }
 
   .downloadPreviewGrid {
@@ -846,3 +926,4 @@
     display: grid;
   }
 }
+
