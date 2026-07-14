@@ -22,7 +22,7 @@ export function DigitalDownloadSuccessPage() {
           <p>
             If you do not see it in a minute or two, please check your spam or junk
             folder. After you click the download button in the email, the file should
-            save to your computer's Downloads folder unless your browser asks where to
+            save to your computer&apos;s Downloads folder unless your browser asks where to
             save it.
           </p>
           <p>
@@ -61,3 +61,4 @@ export function DigitalDownloadSuccessPage() {
     </main>
   );
 }
+
