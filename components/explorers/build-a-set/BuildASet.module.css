@@ -397,6 +397,29 @@
   font-size: 1.08rem;
 }
 
+.optionPrice {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+}
+
+.optionPrice s {
+  color: #817a71;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.heroOffer {
+  margin-top: 14px !important;
+  font-size: 0.95rem !important;
+  font-weight: 750;
+}
+
+.savingsNote {
+  color: #2466c8 !important;
+  font-weight: 750;
+}
+
 .optionCard > span:not(.optionCardHeader) {
   color: #4c4c4c;
   line-height: 1.4;
