@@ -57,6 +57,27 @@ export function ExplorersPage() {
         </aside>
       </section>
 
+      <section className={styles.buildSetFeature} aria-labelledby="build-set-feature-title">
+        <div className={styles.buildSetFeatureCopy}>
+          <p className={styles.eyebrow}>Physical print set</p>
+          <h2 id="build-set-feature-title">Build Your Own Gallery Wall</h2>
+          <p>Choose any three Explorers to create a coordinated print collection.</p>
+          <a
+            className={styles.primaryButton}
+            href={withSiteBasePath("/explorers/build-a-set")}
+          >
+            Build Your Set
+          </a>
+        </div>
+        <div className={styles.buildSetFeatureArt} aria-hidden="true">
+          {[explorerProducts[0], explorerProducts[6], explorerProducts[4]].map((product) => (
+            <span key={product.slug}>
+              <ArtworkImage src={product.image} title={product.title} />
+            </span>
+          ))}
+        </div>
+      </section>
+
       <section className={styles.collectionSection} id="collection">
         <div className={styles.sectionIntro}>
           <p className={styles.eyebrow}>The collection</p>
@@ -150,3 +171,4 @@ export function ExplorersPage() {
     </main>
   );
 }
+
