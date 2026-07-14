@@ -22,7 +22,6 @@
         "name": "next"
       }
     ],
-    "baseUrl": ".",
     "paths": {
       "@/*": [
         "./*"
@@ -40,3 +39,4 @@
     "node_modules"
   ]
 }
+
