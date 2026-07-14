@@ -38,11 +38,14 @@ export function ProductOptionSelector({
             />
             <span className={styles.optionCardHeader}>
               <strong>{option.label}</strong>
-              <strong>{formatUsd(option.totalPriceCents)}</strong>
+              <span className={styles.optionPrice}>
+                <s>{formatUsd(option.retailTotalCents)}</s>
+                <strong>{formatUsd(option.totalPriceCents)}</strong>
+              </span>
             </span>
             <span>{option.finishedSize}</span>
             <small>
-              {formatUsd(option.unitPriceCents)} each · three prints total
+              Save {formatUsd(option.savingsCents)} on three prints
             </small>
           </label>
         ))}

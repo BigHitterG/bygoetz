@@ -25,15 +25,39 @@ export function ExplorersPage() {
             playrooms, reading corners, and creative homes.
           </p>
           <div className={styles.heroActions}>
-            <a href="#collection" className={styles.primaryButton}>
-              Shop the Collection
+            <a
+              href={withSiteBasePath("/explorers/build-a-set")}
+              className={styles.primaryButton}
+            >
+              Build a Three-Print Set
             </a>
-            <a href="#story" className={styles.secondaryButton}>
-              View the Story
+            <a href="#collection" className={styles.secondaryButton}>
+              Browse Individual Prints
             </a>
           </div>
         </div>
-        <aside className={styles.digitalBundleCard} aria-label="Digital collection bundle">
+        <aside className={styles.buildSetHeroCard} aria-label="Build a physical print set">
+          <div className={styles.buildSetFeatureArt} aria-hidden="true">
+            {[explorerProducts[0], explorerProducts[6], explorerProducts[4]].map((product) => (
+              <span key={product.slug}>
+                <ArtworkImage src={product.image} title={product.title} />
+              </span>
+            ))}
+          </div>
+          <div className={styles.buildSetHeroCopy}>
+            <p className={styles.eyebrow}>Physical print set</p>
+            <h2>Build Your Own Three-Print Gallery</h2>
+            <p>Choose any three Explorers for a nursery, playroom, or curious space.</p>
+            <p className={styles.buildSetPrice}>Sets from $89 <span>$105 value</span></p>
+            <a className={styles.primaryButton} href={withSiteBasePath("/explorers/build-a-set")}>
+              Build Your Set
+            </a>
+          </div>
+        </aside>
+      </section>
+
+      <section className={styles.digitalBundleSection} aria-label="Digital collection bundle">
+        <aside className={styles.digitalBundleCard}>
           <div className={styles.bundleArtworkFrame}>
             <ArtworkImage src={explorerDigitalBundle.image} title="Explorer" />
           </div>
@@ -46,36 +70,11 @@ export function ExplorersPage() {
               <strong>{explorerDigitalBundle.price}</strong>
             </div>
             <ul className={styles.bundleList}>
-              {explorerDigitalBundle.includes.map((item) => (
-                <li key={item}>{item}</li>
-              ))}
+              {explorerDigitalBundle.includes.map((item) => <li key={item}>{item}</li>)}
             </ul>
-            <a className={styles.primaryButton} href={digitalBundleHref}>
-              {digitalBundleCta}
-            </a>
+            <a className={styles.primaryButton} href={digitalBundleHref}>{digitalBundleCta}</a>
           </div>
         </aside>
-      </section>
-
-      <section className={styles.buildSetFeature} aria-labelledby="build-set-feature-title">
-        <div className={styles.buildSetFeatureCopy}>
-          <p className={styles.eyebrow}>Physical print set</p>
-          <h2 id="build-set-feature-title">Build Your Own Gallery Wall</h2>
-          <p>Choose any three Explorers to create a coordinated print collection.</p>
-          <a
-            className={styles.primaryButton}
-            href={withSiteBasePath("/explorers/build-a-set")}
-          >
-            Build Your Set
-          </a>
-        </div>
-        <div className={styles.buildSetFeatureArt} aria-hidden="true">
-          {[explorerProducts[0], explorerProducts[6], explorerProducts[4]].map((product) => (
-            <span key={product.slug}>
-              <ArtworkImage src={product.image} title={product.title} />
-            </span>
-          ))}
-        </div>
       </section>
 
       <section className={styles.collectionSection} id="collection">
@@ -83,10 +82,12 @@ export function ExplorersPage() {
           <p className={styles.eyebrow}>The collection</p>
           <h2>Choose your explorer.</h2>
           <p>
-            Collect one favorite or build a coordinated wall of curious animals and
-            characters, available as 8x10 prints, 8x10 prints matted for 11x14 frames,
-            larger print options, or individual digital files.
+            Choose one favorite, build a three-print gallery, or download the complete
+            digital collection.
           </p>
+          <a className={styles.collectionBundleLink} href={withSiteBasePath("/explorers/build-a-set")}>
+            Want more than one? Build a three-print set {"\u2192"}
+          </a>
         </div>
         <div className={styles.productGrid}>
           {explorerProducts.map((product) => (

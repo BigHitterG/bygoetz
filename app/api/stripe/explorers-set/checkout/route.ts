@@ -40,8 +40,7 @@ export async function POST(request: Request) {
   const configuration = getExplorerSetStripeConfiguration(option.id);
   if (
     !configuration.optionConfigured ||
-    !configuration.priceId ||
-    !configuration.shippingRateId
+    !configuration.priceId
   ) {
     return NextResponse.json(
       { error: "The physical set checkout is not configured yet." },
@@ -70,7 +69,19 @@ export async function POST(request: Request) {
     shipping_address_collection: {
       allowed_countries: configuration.allowedCountries,
     },
-    shipping_options: [{ shipping_rate: configuration.shippingRateId }],
+    shipping_options: configuration.shippingRateId
+      ? [{ shipping_rate: configuration.shippingRateId }]
+      : [{
+          shipping_rate_data: {
+            type: "fixed_amount",
+            fixed_amount: { amount: configuration.shippingAmountCents, currency: "usd" },
+            display_name: "Standard shipping",
+            delivery_estimate: {
+              minimum: { unit: "business_day", value: 3 },
+              maximum: { unit: "business_day", value: 8 },
+            },
+          },
+        }],
     success_url: `${origin}/explorers/build-a-set/success?session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${origin}/explorers/build-a-set?checkout=cancelled#builder`,
   });

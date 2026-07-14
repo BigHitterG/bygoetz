@@ -150,12 +150,13 @@ export function BuildASetPage({ checkoutConfigured }: BuildASetPageProps) {
           <span className={styles.heroTable} />
         </div>
         <div className={styles.heroCopy}>
-          <p className={styles.eyebrow}>Three prints · chosen by you</p>
+          <p className={styles.eyebrow}>Three prints {"\u00b7"} chosen by you</p>
           <h1 id="build-a-set-title">Build Your Own Explorers Print Set</h1>
           <p>
             Choose your favorite Explorers and build a gallery wall that grows with
             imagination.
           </p>
+          <p className={styles.heroOffer}>Sets from $89 {"\u00b7"} save $16 or more</p>
           <a className={styles.primaryButton} href="#builder">
             Build My Set
           </a>
@@ -197,7 +198,12 @@ export function BuildASetPage({ checkoutConfigured }: BuildASetPageProps) {
                 <p className={styles.eyebrow}>Your set</p>
                 <h2>{selectedProducts.map((product) => product.title).join(" · ")}</h2>
                 <p>
-                  Three {selectedOption.label.toLowerCase()} · {formatUsd(selectedOption.totalPriceCents)} total
+                  Three {selectedOption.label.toLowerCase()} {"\u00b7"}{" "}
+                  <s>{formatUsd(selectedOption.retailTotalCents)}</s>{" "}
+                  <strong>{formatUsd(selectedOption.totalPriceCents)}</strong> total
+                </p>
+                <p className={styles.savingsNote}>
+                  Bundle savings: {formatUsd(selectedOption.savingsCents)}
                 </p>
               </div>
               <div className={styles.checkoutAction}>
