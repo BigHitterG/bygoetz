@@ -4,7 +4,7 @@ import styles from "./BuildASet.module.css";
 
 type ArtworkSelectorProps = {
   products: ExplorerProduct[];
-  selectedSlugs: string[];
+  selectedSlugs: Array<string | null>;
   onToggle: (product: ExplorerProduct) => void;
 };
 

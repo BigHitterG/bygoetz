@@ -35,7 +35,7 @@ export function BuildASetPage({
   const [quantity, setQuantity] = useState<ExplorerOrderQuantity>(
     validInitialArtwork ? 1 : 3,
   );
-  const [selectedSlugs, setSelectedSlugs] = useState<string[]>(
+  const [selectedSlots, setSelectedSlots] = useState<Array<string | null>>(
     validInitialArtwork
       ? [validInitialArtwork]
       : ["monkey", "explorer", "turtle"],
@@ -52,13 +52,21 @@ export function BuildASetPage({
   const [checkoutError, setCheckoutError] = useState("");
   const [busy, setBusy] = useState(false);
 
+  const selectedSlotProducts = useMemo(
+    () =>
+      selectedSlots
+        .map((slug) => explorerProducts.find((product) => product.slug === slug))
+        .map((product) => product ?? null),
+    [selectedSlots],
+  );
   const selectedProducts = useMemo(
     () =>
-      selectedSlugs
-        .map((slug) => explorerProducts.find((product) => product.slug === slug))
-        .filter((product): product is ExplorerProduct => Boolean(product)),
-    [selectedSlugs],
+      selectedSlotProducts.filter(
+        (product): product is ExplorerProduct => Boolean(product),
+      ),
+    [selectedSlotProducts],
   );
+  const selectedSlugs = selectedProducts.map((product) => product.slug);
   const selectedOption =
     explorerSetOptions.find((option) => option.id === selectedOptionId) ??
     explorerSetOptions[0];
@@ -79,24 +87,28 @@ export function BuildASetPage({
 
   function handleToggle(product: ExplorerProduct) {
     setCheckoutError("");
-    setSelectedSlugs((current) => {
+    setSelectedSlots((current) => {
       const existingIndex = current.indexOf(product.slug);
-      let next: string[];
+      let next: Array<string | null>;
       let action: "select" | "deselect" | "replace";
 
       if (existingIndex >= 0) {
-        next = current.filter((slug) => slug !== product.slug);
+        next = current.map((slug, index) => (index === existingIndex ? null : slug));
         action = "deselect";
         setAnnouncement(
-          `${product.title} removed. ${next.length} of ${quantity} selected.`,
+          `${product.title} removed. ${next.filter(Boolean).length} of ${quantity} selected.`,
         );
-      } else if (current.length < quantity) {
-        next = [...current, product.slug];
+      } else if (current.some((slug) => slug === null)) {
+        const emptyIndex = current.findIndex((slug) => slug === null);
+        next = current.map((slug, index) =>
+          index === emptyIndex ? product.slug : slug,
+        );
         action = "select";
+        const selectedCount = next.filter(Boolean).length;
         setAnnouncement(
-          next.length === quantity
+          selectedCount === quantity
             ? `${product.title} selected. Your order is ready to customize.`
-            : `${product.title} selected. ${next.length} of ${quantity} selected.`,
+            : `${product.title} selected. ${selectedCount} of ${quantity} selected.`,
         );
       } else {
         const replaced = explorerProducts.find((item) => item.slug === current[0]);
@@ -109,8 +121,8 @@ export function BuildASetPage({
         artwork: product.title,
         artwork_slug: product.slug,
         action,
-        selected_count: next.length,
-        content_ids: next,
+        selected_count: next.filter(Boolean).length,
+        content_ids: next.filter((slug): slug is string => Boolean(slug)),
       });
       return next;
     });
@@ -119,14 +131,15 @@ export function BuildASetPage({
   function handleQuantityChange(nextQuantity: ExplorerOrderQuantity) {
     setQuantity(nextQuantity);
     setCheckoutError("");
-    setSelectedSlugs((current) => {
+    setSelectedSlots((current) => {
       if (nextQuantity === 1) {
-        const next = current.slice(0, 1);
+        const firstSelected = current.find((slug): slug is string => Boolean(slug));
+        const next = [firstSelected ?? explorerProducts[0].slug];
         setAnnouncement("One artwork selected.");
-        return next.length ? next : [explorerProducts[0].slug];
+        return next;
       }
 
-      const next = [...current];
+      const next = current.filter((slug): slug is string => Boolean(slug));
       for (const product of explorerProducts) {
         if (next.length === 3) break;
         if (!next.includes(product.slug)) next.push(product.slug);
@@ -137,14 +150,17 @@ export function BuildASetPage({
   }
 
   function handleMove(index: number, direction: -1 | 1) {
-    setSelectedSlugs((current) => {
+    setSelectedSlots((current) => {
       const destination = index + direction;
       if (destination < 0 || destination >= current.length) return current;
 
       const next = [...current];
+      const movingProduct = explorerProducts.find(
+        (product) => product.slug === current[index],
+      );
       [next[index], next[destination]] = [next[destination], next[index]];
       setAnnouncement(
-        `${selectedProducts[index]?.title ?? "Artwork"} moved to position ${destination + 1}.`,
+        `${movingProduct?.title ?? "Artwork"} moved to position ${destination + 1}.`,
       );
       return next;
     });
@@ -200,16 +216,10 @@ export function BuildASetPage({
     <main className={styles.page}>
       <header className={styles.productHero} aria-labelledby="build-a-set-title">
         <p className={styles.eyebrow}>The Explorers Series</p>
-        <h1 id="build-a-set-title">Design Your Own Explorers Gallery Wall</h1>
+        <h1 id="build-a-set-title">Build Your Explorers Gallery</h1>
         <p>
-          Choose one favorite or create a set of three. See the exact arrangement,
-          finish, and scale before you buy.
+          Choose one favorite or a set of three. Start designing on the wall below.
         </p>
-        <div className={styles.productHeroFacts}>
-          <span>Archival art prints</span>
-          <span>Ready-to-hang frame options</span>
-          <span>15% off sets of three</span>
-        </div>
       </header>
 
       <section className={styles.builder} id="builder" aria-labelledby="builder-title">
@@ -217,16 +227,16 @@ export function BuildASetPage({
           {announcement}
         </p>
 
-        {ready ? (
-          <div className={styles.readyArea}>
+        <div className={styles.readyArea}>
             <GalleryPreview
-              products={selectedProducts}
+              products={selectedSlotProducts}
               option={selectedOption}
               quantity={quantity}
               frameColor={frameColor}
               onMove={handleMove}
             />
 
+            <div className={styles.configurationColumn}>
             <div className={styles.configurationGrid}>
               <section className={styles.artworkConfiguration} aria-labelledby="builder-title">
                 <div className={styles.configurationHeading}>
@@ -272,7 +282,7 @@ export function BuildASetPage({
                 <div id="artwork-choices">
                   <ArtworkSelector
                     products={explorerProducts}
-                    selectedSlugs={selectedSlugs}
+                    selectedSlugs={selectedSlots}
                     onToggle={handleToggle}
                   />
                 </div>
@@ -327,13 +337,14 @@ export function BuildASetPage({
                 ) : null}
               </div>
             </section>
+            {!ready ? (
+              <div className={styles.selectionPrompt}>
+                <strong>{quantity - selectedProducts.length} more to choose</strong>
+                <p>Your empty frame is waiting above.</p>
+              </div>
+            ) : null}
           </div>
-        ) : (
-          <div className={styles.selectionPrompt}>
-            <strong>{quantity - selectedProducts.length} more to choose</strong>
-            <p>Select your artwork to continue.</p>
-          </div>
-        )}
+        </div>
         {checkoutError ? (
           <p className={styles.checkoutError} role="alert">
             {checkoutError} <a href={withSiteBasePath("/explorers#collection")}>Shop individual prints.</a>
