@@ -1,35 +1,43 @@
 "use client";
 
 import { useState, type CSSProperties } from "react";
+import Image from "next/image";
 import type { ExplorerProduct } from "@/lib/explorers/products";
-import type { ExplorerSetOption } from "@/lib/explorers/buildASet";
+import type {
+  ExplorerFrameColor,
+  ExplorerOrderQuantity,
+  ExplorerSetOption,
+} from "@/lib/explorers/buildASet";
 import { withSiteBasePath } from "@/lib/sitePath";
 import { ArtworkImage } from "../ArtworkImage";
 import styles from "./BuildASet.module.css";
 
-type RoomId = "crib" | "twin-bed" | "dresser" | "reading-nook";
+type RoomId = "wall" | "crib" | "twin-bed" | "dresser" | "reading-nook";
 type LayoutId = "row" | "arc" | "staggered";
 
 type GalleryPreviewProps = {
   products: ExplorerProduct[];
   option: ExplorerSetOption;
+  quantity: ExplorerOrderQuantity;
+  frameColor: ExplorerFrameColor;
   onMove: (index: number, direction: -1 | 1) => void;
 };
 
 type RoomReference = {
   id: RoomId;
   label: string;
-  image: string;
-  referenceLabel: string;
-  referenceWidthInches: number;
-  referenceWidthPercent: number;
+  image?: string;
+  referenceLabel?: string;
+  referenceWidthInches?: number;
+  referenceWidthPercent?: number;
   artCenterYPercent: number;
 };
 
 const rooms: RoomReference[] = [
+  { id: "wall", label: "On wall", artCenterYPercent: 46 },
   {
     id: "crib",
-    label: "Crib",
+    label: "Above crib",
     image: "/explorers/rooms/crib.jpg",
     referenceLabel: "standard crib",
     referenceWidthInches: 54,
@@ -65,103 +73,150 @@ const rooms: RoomReference[] = [
   },
 ];
 
-const layouts: { id: LayoutId; label: string; description: string }[] = [
-  { id: "row", label: "Classic row", description: "Even and timeless" },
-  { id: "arc", label: "Soft arc", description: "A gentle focal point" },
-  { id: "staggered", label: "Staggered", description: "Playful and relaxed" },
+const layouts: { id: LayoutId; label: string }[] = [
+  { id: "row", label: "Classic row" },
+  { id: "arc", label: "Soft arc" },
+  { id: "staggered", label: "Staggered" },
 ];
 
-function getFinishedDimensions(option: ExplorerSetOption) {
-  switch (option.id) {
-    case "8x10-print":
-      return { width: 8, height: 10 };
-    case "8x10-matted":
-      return { width: 11, height: 14 };
-    case "11x14-print":
-      return { width: 11, height: 14 };
-    case "11x14-matted":
-      return { width: 16, height: 20 };
-  }
-}
-
 function formatInches(value: number) {
-  return Number.isInteger(value) ? `${value}` : value.toFixed(1);
+  return Number.isInteger(value) ? String(value) : value.toFixed(1);
 }
 
-export function GalleryPreview({ products, option, onMove }: GalleryPreviewProps) {
-  const [roomId, setRoomId] = useState<RoomId>("crib");
+export function GalleryPreview({
+  products,
+  option,
+  quantity,
+  frameColor,
+  onMove,
+}: GalleryPreviewProps) {
+  const [roomId, setRoomId] = useState<RoomId>("wall");
   const [layoutId, setLayoutId] = useState<LayoutId>("row");
   const room = rooms.find((item) => item.id === roomId) ?? rooms[0];
-  const finished = getFinishedDimensions(option);
-  const scalePercentPerInch = room.referenceWidthPercent / room.referenceWidthInches;
+  const isCloseup = room.id === "wall";
   const gapInches = 2;
-  const wallSpreadInches = finished.width * 3 + gapInches * 2;
-  const wallHeightInches = finished.height + (layoutId === "row" ? 0 : 3);
-  const frameWidthPercent = finished.width * scalePercentPerInch;
-  const frameHeightPercent = finished.height * scalePercentPerInch * 1.5;
-  const spreadPercent = wallSpreadInches * scalePercentPerInch;
-  const dimensionTopPercent = room.artCenterYPercent + frameHeightPercent / 2 + 5;
-  const isMatted = option.format === "Matted print";
-  const referenceText = `${room.referenceWidthInches} in ${room.referenceLabel}`;
+  const wallSpreadInches =
+    option.finishedWidth * quantity + gapInches * Math.max(0, quantity - 1);
+  const wallHeightInches =
+    option.finishedHeight + (quantity === 3 && layoutId !== "row" ? 3 : 0);
+  const scalePercentPerInch = isCloseup
+    ? quantity === 1
+      ? 2.75
+      : 1.78
+    : (room.referenceWidthPercent ?? 48) / (room.referenceWidthInches ?? 54);
+  const spreadPercent = Math.min(
+    isCloseup ? 78 : 66,
+    wallSpreadInches * scalePercentPerInch,
+  );
+  const frameHeightPercent = Math.min(
+    isCloseup ? 58 : 42,
+    option.finishedHeight * scalePercentPerInch * (isCloseup ? 1.18 : 1.5),
+  );
+  const dimensionTopPercent =
+    room.artCenterYPercent + frameHeightPercent / 2 + (isCloseup ? 6 : 5);
+  const referenceText =
+    room.referenceWidthInches && room.referenceLabel
+      ? room.referenceWidthInches + " in " + room.referenceLabel
+      : "close-up finish view";
 
   const visualizerStyle = {
-    "--frame-width": `${(frameWidthPercent / spreadPercent) * 100}%`,
-    "--frame-height": `${frameHeightPercent}%`,
-    "--wall-spread": `${spreadPercent}%`,
-    "--art-center-y": `${room.artCenterYPercent}%`,
-    "--dimension-top": `${dimensionTopPercent}%`,
+    "--frame-width": String((option.finishedWidth / wallSpreadInches) * 100) + "%",
+    "--frame-height": String(frameHeightPercent) + "%",
+    "--frame-aspect-ratio": String(option.finishedWidth / option.finishedHeight),
+    "--wall-spread": String(spreadPercent) + "%",
+    "--art-center-y": String(room.artCenterYPercent) + "%",
+    "--dimension-top": String(dimensionTopPercent) + "%",
   } as CSSProperties;
+
+  const frameColorClass =
+    frameColor === "natural"
+      ? styles.wallFrameNatural
+      : frameColor === "black"
+        ? styles.wallFrameBlack
+        : styles.wallFrameWhite;
+  const pieceClassName = [
+    styles.wallFrame,
+    option.format === "Framed" ? styles.wallFrameFramed : styles.wallFramePrint,
+    option.isMatted ? styles.wallFrameMatted : "",
+    option.format === "Framed" ? frameColorClass : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+  const layoutClass =
+    quantity === 1
+      ? styles.wallLayoutSingle
+      : layoutId === "row"
+        ? styles.wallLayoutRow
+        : layoutId === "arc"
+          ? styles.wallLayoutArc
+          : styles.wallLayoutStaggered;
 
   return (
     <section className={styles.galleryPreview} aria-labelledby="gallery-preview-title">
       <div className={styles.previewHeading}>
         <div>
-          <p className={styles.eyebrow}>See it on your wall</p>
-          <h2 id="gallery-preview-title">Find the right scale.</h2>
+          <p className={styles.eyebrow}>Live gallery preview</p>
+          <h2 id="gallery-preview-title">See your Explorers come together.</h2>
         </div>
         <p>
-          Compare your set against familiar furniture, try a layout, and arrange the
-          Explorers before checkout.
+          Start close to inspect the paper, mat, and frame. Then switch to a room to
+          compare true proportions against familiar furniture.
         </p>
       </div>
 
       <div className={styles.wallStudio}>
-        <div className={styles.wallScene} style={visualizerStyle}>
-          <img
-            className={styles.roomBackground}
-            src={withSiteBasePath(room.image)}
-            alt={`${room.label} room scale reference`}
-            loading="lazy"
-          />
+        <div
+          className={
+            styles.wallScene + (isCloseup ? " " + styles.wallSceneCloseup : "")
+          }
+          style={visualizerStyle}
+        >
+          {room.image ? (
+            <Image
+              className={styles.roomBackground}
+              src={withSiteBasePath(room.image)}
+              alt={room.label + " scale reference"}
+              loading="eager"
+              fill
+              sizes="(max-width: 900px) 100vw, 68vw"
+            />
+          ) : (
+            <div className={styles.closeupWallTexture} aria-hidden="true" />
+          )}
+
           <div
-            className={`${styles.wallArtGroup} ${styles[`wallLayout${layoutId === "row" ? "Row" : layoutId === "arc" ? "Arc" : "Staggered"}`]}`}
-            aria-label={`Three ${option.label.toLowerCase()} shown above a ${room.label.toLowerCase()}`}
+            className={styles.wallArtGroup + " " + layoutClass}
+            aria-label={
+              String(quantity) +
+              " " +
+              option.label.toLowerCase() +
+              (isCloseup ? " shown close up" : " shown " + room.label.toLowerCase())
+            }
           >
             {products.map((product, index) => (
-              <div
-                className={`${styles.wallFrame} ${isMatted ? styles.wallFrameMatted : ""}`}
-                key={product.slug}
-              >
+              <div className={pieceClassName} key={product.slug}>
                 <ArtworkImage src={product.image} title={product.title} />
+                <span className={styles.acrylicGlint} aria-hidden="true" />
                 <span className={styles.frameNumber} aria-hidden="true">
                   {index + 1}
                 </span>
               </div>
             ))}
           </div>
-          <div className={styles.wallDimension} aria-hidden="true">
-            <span />
-            <strong>{formatInches(wallSpreadInches)} in total</strong>
-            <span />
-          </div>
-          <span className={styles.scaleReference}>
-            {referenceText}
-          </span>
+
+          {!isCloseup ? (
+            <div className={styles.wallDimension} aria-hidden="true">
+              <span />
+              <strong>{formatInches(wallSpreadInches)} in total</strong>
+              <span />
+            </div>
+          ) : null}
+          <span className={styles.scaleReference}>{referenceText}</span>
         </div>
 
         <div className={styles.wallControls}>
           <fieldset className={styles.wallControlGroup}>
-            <legend>Above</legend>
+            <legend>View</legend>
             <div className={styles.segmentedChoices}>
               {rooms.map((item) => (
                 <button
@@ -177,28 +232,42 @@ export function GalleryPreview({ products, option, onMove }: GalleryPreviewProps
             </div>
           </fieldset>
 
-          <fieldset className={styles.wallControlGroup}>
-            <legend>Layout</legend>
-            <div className={styles.layoutChoices}>
-              {layouts.map((layout) => (
-                <button
-                  className={layout.id === layoutId ? styles.layoutChoiceActive : ""}
-                  type="button"
-                  key={layout.id}
-                  aria-pressed={layout.id === layoutId}
-                  onClick={() => setLayoutId(layout.id)}
-                >
-                  <span className={`${styles.layoutIcon} ${styles[`layoutIcon${layout.id === "row" ? "Row" : layout.id === "arc" ? "Arc" : "Staggered"}`]}`} aria-hidden="true">
-                    <i />
-                    <i />
-                    <i />
-                  </span>
-                  <strong>{layout.label}</strong>
-                  <small>{layout.description}</small>
-                </button>
-              ))}
-            </div>
-          </fieldset>
+          {quantity === 3 ? (
+            <fieldset className={styles.wallControlGroup}>
+              <legend>Layout</legend>
+              <div className={styles.layoutChoices}>
+                {layouts.map((layout) => {
+                  const iconClass =
+                    layout.id === "row"
+                      ? styles.layoutIconRow
+                      : layout.id === "arc"
+                        ? styles.layoutIconArc
+                        : styles.layoutIconStaggered;
+                  return (
+                    <button
+                      className={
+                        layout.id === layoutId ? styles.layoutChoiceActive : ""
+                      }
+                      type="button"
+                      key={layout.id}
+                      aria-pressed={layout.id === layoutId}
+                      onClick={() => setLayoutId(layout.id)}
+                    >
+                      <span
+                        className={styles.layoutIcon + " " + iconClass}
+                        aria-hidden="true"
+                      >
+                        <i />
+                        <i />
+                        <i />
+                      </span>
+                      <strong>{layout.label}</strong>
+                    </button>
+                  );
+                })}
+              </div>
+            </fieldset>
+          ) : null}
 
           <div className={styles.wallOrder}>
             <p className={styles.wallControlLabel}>Artwork order</p>
@@ -209,29 +278,33 @@ export function GalleryPreview({ products, option, onMove }: GalleryPreviewProps
                     <ArtworkImage src={product.image} title={product.title} />
                   </span>
                   <span>
-                    <small>Position {index + 1}</small>
+                    <small>
+                      {quantity === 1 ? "Selected artwork" : "Position " + (index + 1)}
+                    </small>
                     <strong>{product.title}</strong>
                   </span>
-                  <span className={styles.orderButtons}>
-                    <button
-                      type="button"
-                      title={`Move ${product.title} left`}
-                      aria-label={`Move ${product.title} left`}
-                      disabled={index === 0}
-                      onClick={() => onMove(index, -1)}
-                    >
-                      {"\u2190"}
-                    </button>
-                    <button
-                      type="button"
-                      title={`Move ${product.title} right`}
-                      aria-label={`Move ${product.title} right`}
-                      disabled={index === products.length - 1}
-                      onClick={() => onMove(index, 1)}
-                    >
-                      {"\u2192"}
-                    </button>
-                  </span>
+                  {quantity === 3 ? (
+                    <span className={styles.orderButtons}>
+                      <button
+                        type="button"
+                        title={"Move " + product.title + " left"}
+                        aria-label={"Move " + product.title + " left"}
+                        disabled={index === 0}
+                        onClick={() => onMove(index, -1)}
+                      >
+                        {"\u2190"}
+                      </button>
+                      <button
+                        type="button"
+                        title={"Move " + product.title + " right"}
+                        aria-label={"Move " + product.title + " right"}
+                        disabled={index === products.length - 1}
+                        onClick={() => onMove(index, 1)}
+                      >
+                        {"\u2192"}
+                      </button>
+                    </span>
+                  ) : null}
                 </div>
               ))}
             </div>
@@ -240,27 +313,36 @@ export function GalleryPreview({ products, option, onMove }: GalleryPreviewProps
           <dl className={styles.wallMeasurements}>
             <div>
               <dt>Each piece</dt>
-              <dd>{finished.width} x {finished.height} in</dd>
+              <dd>{option.finishedWidth} x {option.finishedHeight} in</dd>
             </div>
             <div>
               <dt>Wall spread</dt>
-              <dd>{formatInches(wallSpreadInches)} x {formatInches(wallHeightInches)} in</dd>
+              <dd>
+                {formatInches(wallSpreadInches)} x {formatInches(wallHeightInches)} in
+              </dd>
             </div>
+            {quantity === 3 ? (
+              <div>
+                <dt>Suggested gap</dt>
+                <dd>{gapInches} in</dd>
+              </div>
+            ) : null}
             <div>
-              <dt>Gap</dt>
-              <dd>{gapInches} in</dd>
-            </div>
-            <div>
-              <dt>Shown above</dt>
-              <dd>{referenceText}</dd>
+              <dt>Finish</dt>
+              <dd>
+                {option.format === "Print only"
+                  ? "Print only"
+                  : frameColor + (option.isMatted ? ", matted" : ", no mat")}
+              </dd>
             </div>
           </dl>
         </div>
       </div>
 
       <p className={styles.visualizerNote}>
-        Proportional guide based on standard furniture dimensions. Styled frames and
-        furniture are shown for scale only and are not included.
+        Room views are proportional guides based on standard furniture dimensions.
+        Frame appearance is a close representation; furniture and decor are not
+        included.
       </p>
     </section>
   );
