@@ -37,41 +37,60 @@ type ExplorerPrintLinks = {
   matted11x14: string;
 };
 
-function createExplorerPrintOptions(links: ExplorerPrintLinks): ExplorerPrintOption[] {
+function createExplorerPrintOptions(_links: ExplorerPrintLinks): ExplorerPrintOption[] {
+  void _links;
   return [
     {
       label: "8x10 print",
-      format: "Unmatted print",
+      format: "Print only",
       artworkSize: "8 x 10 in artwork",
       finishedSize: "Ships as an 8 x 10 in print",
-      price: "$35",
-      checkoutLink: links.print8x10,
+      price: "$29",
+      checkoutLink: "",
     },
     {
-      label: "8x10 print, matted",
-      format: "Matted print",
+      label: "8x10 framed print",
+      format: "Framed, no mat",
       artworkSize: "8 x 10 in artwork",
-      finishedSize: "Matted to fit an 11 x 14 in frame",
-      price: "$50",
-      checkoutLink: links.matted8x10,
+      finishedSize: "Ships in an 8 x 10 in frame",
+      price: "$65",
+      checkoutLink: "",
+      note: "Natural, black, or white frame",
+    },
+    {
+      label: "8x10 framed print with mat",
+      format: "Framed with mat",
+      artworkSize: "8 x 10 in artwork",
+      finishedSize: "Ships in an 11 x 14 in frame",
+      price: "$79",
+      checkoutLink: "",
+      note: "White mat; natural, black, or white frame",
     },
     {
       label: "11x14 print",
-      format: "Unmatted print",
+      format: "Print only",
       artworkSize: "11 x 14 in artwork",
       finishedSize: "Ships as an 11 x 14 in print",
-      price: "$65",
-      checkoutLink: links.print11x14,
-      note: "Larger wall-friendly size",
+      price: "$39",
+      checkoutLink: "",
     },
     {
-      label: "11x14 print, matted",
-      format: "Matted print",
+      label: "11x14 framed print",
+      format: "Framed, no mat",
       artworkSize: "11 x 14 in artwork",
-      finishedSize: "Matted to fit a 16 x 20 in frame",
-      price: "$95",
-      checkoutLink: links.matted11x14,
-      note: "Standard larger frame-ready size",
+      finishedSize: "Ships in an 11 x 14 in frame",
+      price: "$89",
+      checkoutLink: "",
+      note: "Natural, black, or white frame",
+    },
+    {
+      label: "11x14 framed print with mat",
+      format: "Framed with mat",
+      artworkSize: "11 x 14 in artwork",
+      finishedSize: "Ships in a 16 x 20 in frame",
+      price: "$119",
+      checkoutLink: "",
+      note: "White mat; natural, black, or white frame",
     },
   ];
 }
@@ -101,7 +120,7 @@ export const explorerProducts: ExplorerProduct[] = [
     image: "/explorers/Monkey.png",
     description:
       "A bright geometric companion with expressive linework and a curious, playful presence.",
-    priceFrom: "$35",
+    priceFrom: "$29",
     digitalPrice: "$3",
     printOptions: createExplorerPrintOptions({
       print8x10: "https://buy.stripe.com/eVqaEX9G956u4NNgy8gw001",
@@ -118,7 +137,7 @@ export const explorerProducts: ExplorerProduct[] = [
     image: "/explorers/Dog.png",
     description:
       "A loyal study in bold color, simple form, and warm modern character.",
-    priceFrom: "$35",
+    priceFrom: "$29",
     digitalPrice: "$3",
     printOptions: createExplorerPrintOptions({
       print8x10: "https://buy.stripe.com/28E5kDg4xcyW943gy8gw005",
@@ -134,7 +153,7 @@ export const explorerProducts: ExplorerProduct[] = [
     image: "/explorers/Horse.png",
     description:
       "Architectural shapes and confident lines give this explorer a quiet sense of motion.",
-    priceFrom: "$35",
+    priceFrom: "$29",
     digitalPrice: "$3",
     printOptions: createExplorerPrintOptions({
       print8x10: "https://buy.stripe.com/aFabJ12dHbuS5RRchSgw009",
@@ -150,7 +169,7 @@ export const explorerProducts: ExplorerProduct[] = [
     image: "/explorers/Cow.png",
     description:
       "A calm, graphic portrait made for bright rooms and thoughtful collections.",
-    priceFrom: "$35",
+    priceFrom: "$29",
     digitalPrice: "$3",
     printOptions: createExplorerPrintOptions({
       print8x10: "https://buy.stripe.com/4gM4gz7y1gPc943chSgw00d",
@@ -166,7 +185,7 @@ export const explorerProducts: ExplorerProduct[] = [
     image: "/explorers/Turtle.png",
     description:
       "A steady little explorer built from clean geometry and cheerful primary color.",
-    priceFrom: "$35",
+    priceFrom: "$29",
     digitalPrice: "$3",
     printOptions: createExplorerPrintOptions({
       print8x10: "https://buy.stripe.com/cNifZh9G9dD00xxdlWgw00h",
@@ -182,7 +201,7 @@ export const explorerProducts: ExplorerProduct[] = [
     image: "/explorers/Owl.png",
     description:
       "A watchful modern owl with minimal forms, crisp contrast, and a wise gaze.",
-    priceFrom: "$35",
+    priceFrom: "$29",
     digitalPrice: "$3",
     printOptions: createExplorerPrintOptions({
       print8x10: "https://buy.stripe.com/28EbJ105z7eCcgfeq0gw00l",
@@ -198,7 +217,7 @@ export const explorerProducts: ExplorerProduct[] = [
     image: "/explorers/Explorer.png",
     description:
       "A character print for rooms where imagination, learning, and discovery meet.",
-    priceFrom: "$35",
+    priceFrom: "$29",
     digitalPrice: "$3",
     printOptions: createExplorerPrintOptions({
       print8x10: "https://buy.stripe.com/6oU6oH05zgPc94381Cgw00p",
@@ -214,7 +233,7 @@ export const explorerProducts: ExplorerProduct[] = [
     image: "/explorers/Snorkeler.png",
     description:
       "An aquatic explorer with bright shapes, expressive details, and a sense of wonder.",
-    priceFrom: "$35",
+    priceFrom: "$29",
     digitalPrice: "$3",
     printOptions: createExplorerPrintOptions({
       print8x10: "https://buy.stripe.com/cNi00j7y142q5RR2Higw00t",
@@ -233,3 +252,4 @@ export function getExplorerProduct(slug: string) {
 export function getRelatedExplorerProducts(slug: string, limit = 3) {
   return explorerProducts.filter((product) => product.slug !== slug).slice(0, limit);
 }
+
