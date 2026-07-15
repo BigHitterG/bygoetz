@@ -29,14 +29,14 @@ export function ExplorersPage() {
               href={withSiteBasePath("/explorers/build-a-set")}
               className={styles.primaryButton}
             >
-              Build a Three-Print Set
+              Design Your Gallery Wall
             </a>
             <a href="#collection" className={styles.secondaryButton}>
               Browse Individual Prints
             </a>
           </div>
         </div>
-        <aside className={styles.buildSetHeroCard} aria-label="Build a physical print set">
+        <aside className={styles.buildSetHeroCard} aria-label="Design a physical art order">
           <div className={styles.buildSetFeatureArt} aria-hidden="true">
             {[explorerProducts[0], explorerProducts[6], explorerProducts[4]].map((product) => (
               <span key={product.slug}>
@@ -45,12 +45,15 @@ export function ExplorersPage() {
             ))}
           </div>
           <div className={styles.buildSetHeroCopy}>
-            <p className={styles.eyebrow}>Physical print set</p>
-            <h2>Build Your Own Three-Print Gallery</h2>
-            <p>Choose any three Explorers for a nursery, playroom, or curious space.</p>
-            <p className={styles.buildSetPrice}>Sets from $89 <span>$105 value</span></p>
+            <p className={styles.eyebrow}>Interactive wall designer</p>
+            <h2>Choose One Favorite or Build a Set of Three</h2>
+            <p>
+              Preview every artwork, size, mat, and frame color on the wall before
+              you buy.
+            </p>
+            <p className={styles.buildSetPrice}>Prints from $29 <span>sets save 15%</span></p>
             <a className={styles.primaryButton} href={withSiteBasePath("/explorers/build-a-set")}>
-              Build Your Set
+              Design Your Wall
             </a>
           </div>
         </aside>
@@ -86,7 +89,7 @@ export function ExplorersPage() {
             digital collection.
           </p>
           <a className={styles.collectionBundleLink} href={withSiteBasePath("/explorers/build-a-set")}>
-            Want more than one? Build a three-print set {"\u2192"}
+            Preview prints and frames on your wall {"\u2192"}
           </a>
         </div>
         <div className={styles.productGrid}>
@@ -101,7 +104,7 @@ export function ExplorersPage() {
               <div className={styles.productCardBody}>
                 <div>
                   <h3>{product.title}</h3>
-                  <p>Prints, matted prints &amp; digital files</p>
+                  <p>Prints, framed artwork &amp; digital files</p>
                 </div>
                 <div className={styles.productMeta}>
                   <span>Prints from {product.priceFrom}</span>
@@ -139,9 +142,9 @@ export function ExplorersPage() {
         {[
           "Museum-quality prints",
           "Archival paper",
-          "8x10 prints from $35",
-          "8x10 prints matted to 11x14 from $50",
-          "11x14 prints and 16x20 mat options available",
+          "8x10 prints from $29",
+          "Natural, black, and white frames",
+          "White mat options and optical-grade clear acrylic",
           "Designed as a coordinated collection",
         ].map((point) => (
           <div className={styles.qualityItem} key={point}>
