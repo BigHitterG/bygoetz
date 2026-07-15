@@ -46,7 +46,7 @@ export function ProductOptionSelector({
   return (
     <section className={styles.optionPanel} aria-labelledby="finish-title">
       <div className={styles.optionPanelHeading}>
-        <p className={styles.eyebrow}>Finish your order</p>
+        <p className={styles.eyebrow}>Step 2: Finish your order</p>
         <h2 id="finish-title">Choose size and finish</h2>
       </div>
 
