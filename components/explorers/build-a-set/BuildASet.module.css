@@ -1459,15 +1459,14 @@
 }
 
 .readyArea {
-  grid-template-columns: minmax(0, 1.35fr) minmax(390px, 0.65fr);
-  gap: 32px;
+  grid-template-columns: 1fr;
+  gap: 64px;
   align-items: start;
   margin-top: 0;
 }
 
 .galleryPreview {
-  position: sticky;
-  top: 14px;
+  position: static;
   min-width: 0;
 }
 
@@ -1706,8 +1705,9 @@
 
 .configurationColumn {
   display: grid;
+  width: 100%;
   min-width: 0;
-  gap: 22px;
+  gap: 34px;
 }
 
 .segmentedChoices button {
@@ -1717,8 +1717,8 @@
 
 .configurationGrid {
   display: grid;
-  grid-template-columns: 1fr;
-  gap: 18px;
+  grid-template-columns: minmax(0, 1.12fr) minmax(350px, 0.88fr);
+  gap: 42px;
   align-items: start;
 }
 
@@ -1833,7 +1833,8 @@
 }
 
 .optionPanel {
-  position: static;
+  position: sticky;
+  top: 18px;
 }
 
 .configurationColumn .checkoutSummary {
@@ -1982,17 +1983,8 @@
 }
 
 @media (max-width: 1100px) {
-  .readyArea {
-    grid-template-columns: 1fr;
-  }
-
-  .galleryPreview {
-    position: static;
-  }
-
   .configurationColumn {
-    width: min(760px, 100%);
-    margin: 0 auto;
+    width: 100%;
   }
 }
 
