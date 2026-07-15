@@ -6,8 +6,8 @@ export const metadata: Metadata = {
   description:
     "Basil is a free shared online garden where every visitor can plant, water, and help a living landscape grow.",
   icons: {
-    icon: [{ url: "/community-garden/basil-icon.png", type: "image/png" }],
-    apple: [{ url: "/community-garden/basil-icon.png", type: "image/png" }],
+    icon: [{ url: "/community-garden/basil-icon-256.png", type: "image/png" }],
+    apple: [{ url: "/community-garden/basil-icon-256.png", type: "image/png" }],
   },
   openGraph: {
     title: "Basil | Community Garden",
@@ -17,9 +17,9 @@ export const metadata: Metadata = {
     url: "https://www.bygoetz.com/community-garden",
     images: [
       {
-        url: "https://www.bygoetz.com/community-garden/basil-social.png",
-        width: 1732,
-        height: 917,
+        url: "https://www.bygoetz.com/community-garden/basil-social-1200.jpg",
+        width: 1200,
+        height: 630,
         alt: "Basil Community Garden with Mary, a duck, herbs, and flowers",
       },
     ],
@@ -28,7 +28,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Basil | Community Garden",
     description: "Plant, water, and care for a living garden shared by everyone.",
-    images: ["https://www.bygoetz.com/community-garden/basil-social.png"],
+    images: ["https://www.bygoetz.com/community-garden/basil-social-1200.jpg"],
   },
 };
 
