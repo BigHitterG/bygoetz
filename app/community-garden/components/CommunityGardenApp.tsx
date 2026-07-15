@@ -45,7 +45,7 @@ export function CommunityGardenApp() {
 
   return (
     <main className="cg-root">
-      <section className="cg-game-frame" aria-label="Community Garden game">
+      <section className="cg-game-frame" aria-label="Basil Community Garden game">
         <GardenCanvas ref={canvasRef} onStateChange={onStateChange} />
 
         <header className="cg-titlebar">
@@ -53,8 +53,8 @@ export function CommunityGardenApp() {
             <span />
           </div>
           <div className="cg-title-copy">
-            <h1>Community Garden</h1>
-            <p>Water. Care. Grow together.</p>
+            <h1>Basil</h1>
+            <p>Community Garden</p>
           </div>
           <button
             className="cg-icon-button"
