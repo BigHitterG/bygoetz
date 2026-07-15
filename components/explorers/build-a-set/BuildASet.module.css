@@ -2041,6 +2041,15 @@
     padding-top: 6px;
   }
 
+  .readyArea {
+    gap: 18px;
+  }
+
+  .galleryPreview,
+  .wallStudio {
+    display: contents;
+  }
+
   .previewHeading {
     margin-bottom: 8px;
   }
@@ -2061,11 +2070,17 @@
   }
 
   .wallScene {
+    position: sticky;
+    z-index: 12;
+    top: 0;
     width: 100%;
     min-width: 0;
     max-width: 100%;
     min-height: 0;
     aspect-ratio: 3 / 2;
+    border: 1px solid #cfc7bc;
+    background: #f7f4ed;
+    box-shadow: 0 10px 28px rgba(42, 34, 27, 0.16);
   }
 
   .wallSceneCloseup {
@@ -2083,6 +2098,11 @@
 
   .wallControls {
     grid-template-columns: 1fr;
+    border: 1px solid #d8d2c9;
+  }
+
+  .visualizerNote {
+    margin: 0 0 8px;
   }
 
   .wallFrameFramed {
