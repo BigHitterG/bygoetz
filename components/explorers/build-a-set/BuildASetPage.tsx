@@ -5,11 +5,13 @@ import { trackMetaCustomEvent, trackMetaEvent } from "@/lib/analytics/metaPixel"
 import {
   explorerSetOptions,
   formatUsd,
+  getExplorerOrderPrice,
+  type ExplorerFrameColor,
+  type ExplorerOrderQuantity,
   type ExplorerSetOptionId,
 } from "@/lib/explorers/buildASet";
 import { explorerProducts, type ExplorerProduct } from "@/lib/explorers/products";
 import { withSiteBasePath } from "@/lib/sitePath";
-import { ArtworkImage } from "../ArtworkImage";
 import { ArtworkSelector } from "./ArtworkSelector";
 import { GalleryPreview } from "./GalleryPreview";
 import { MobileSetSummary } from "./MobileSetSummary";
@@ -18,14 +20,35 @@ import styles from "./BuildASet.module.css";
 
 type BuildASetPageProps = {
   checkoutConfigured: boolean;
+  initialArtworkSlug?: string;
 };
 
-export function BuildASetPage({ checkoutConfigured }: BuildASetPageProps) {
-  const [selectedSlugs, setSelectedSlugs] = useState<string[]>([]);
-  const [selectedOptionId, setSelectedOptionId] = useState<ExplorerSetOptionId>(
-    explorerSetOptions[0].id,
+export function BuildASetPage({
+  checkoutConfigured,
+  initialArtworkSlug,
+}: BuildASetPageProps) {
+  const validInitialArtwork = explorerProducts.some(
+    (product) => product.slug === initialArtworkSlug,
+  )
+    ? initialArtworkSlug
+    : undefined;
+  const [quantity, setQuantity] = useState<ExplorerOrderQuantity>(
+    validInitialArtwork ? 1 : 3,
   );
-  const [announcement, setAnnouncement] = useState("Choose three Explorers.");
+  const [selectedSlugs, setSelectedSlugs] = useState<string[]>(
+    validInitialArtwork
+      ? [validInitialArtwork]
+      : ["monkey", "explorer", "turtle"],
+  );
+  const [selectedOptionId, setSelectedOptionId] = useState<ExplorerSetOptionId>(
+    "8x10-framed-mat",
+  );
+  const [frameColor, setFrameColor] = useState<ExplorerFrameColor>("natural");
+  const [announcement, setAnnouncement] = useState(
+    validInitialArtwork
+      ? "Your selected Explorer is ready to customize."
+      : "Three Explorers selected.",
+  );
   const [checkoutError, setCheckoutError] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -39,8 +62,11 @@ export function BuildASetPage({ checkoutConfigured }: BuildASetPageProps) {
   const selectedOption =
     explorerSetOptions.find((option) => option.id === selectedOptionId) ??
     explorerSetOptions[0];
-  const ready = selectedProducts.length === 3;
-  const progressLabel = ready ? "Ready to Checkout" : `${selectedProducts.length} of 3 Selected`;
+  const price = getExplorerOrderPrice(selectedOption, quantity);
+  const ready = selectedProducts.length === quantity;
+  const progressLabel = ready
+    ? "Ready to customize"
+    : `${selectedProducts.length} of ${quantity} selected`;
 
   useEffect(() => {
     trackMetaEvent("ViewContent", {
@@ -48,6 +74,7 @@ export function BuildASetPage({ checkoutConfigured }: BuildASetPageProps) {
       content_category: "Physical Print Set",
       content_type: "product_group",
     });
+
   }, []);
 
   function handleToggle(product: ExplorerProduct) {
@@ -60,14 +87,16 @@ export function BuildASetPage({ checkoutConfigured }: BuildASetPageProps) {
       if (existingIndex >= 0) {
         next = current.filter((slug) => slug !== product.slug);
         action = "deselect";
-        setAnnouncement(`${product.title} removed. ${next.length} of 3 selected.`);
-      } else if (current.length < 3) {
+        setAnnouncement(
+          `${product.title} removed. ${next.length} of ${quantity} selected.`,
+        );
+      } else if (current.length < quantity) {
         next = [...current, product.slug];
         action = "select";
         setAnnouncement(
-          next.length === 3
-            ? `${product.title} selected. Your set is ready to review.`
-            : `${product.title} selected. ${next.length} of 3 selected.`,
+          next.length === quantity
+            ? `${product.title} selected. Your order is ready to customize.`
+            : `${product.title} selected. ${next.length} of ${quantity} selected.`,
         );
       } else {
         const replaced = explorerProducts.find((item) => item.slug === current[0]);
@@ -84,6 +113,26 @@ export function BuildASetPage({ checkoutConfigured }: BuildASetPageProps) {
         content_ids: next,
       });
       return next;
+    });
+  }
+
+  function handleQuantityChange(nextQuantity: ExplorerOrderQuantity) {
+    setQuantity(nextQuantity);
+    setCheckoutError("");
+    setSelectedSlugs((current) => {
+      if (nextQuantity === 1) {
+        const next = current.slice(0, 1);
+        setAnnouncement("One artwork selected.");
+        return next.length ? next : [explorerProducts[0].slug];
+      }
+
+      const next = [...current];
+      for (const product of explorerProducts) {
+        if (next.length === 3) break;
+        if (!next.includes(product.slug)) next.push(product.slug);
+      }
+      setAnnouncement("Three artworks selected. Your set includes 15% savings.");
+      return next.slice(0, 3);
     });
   }
 
@@ -110,7 +159,7 @@ export function BuildASetPage({ checkoutConfigured }: BuildASetPageProps) {
     if (!checkoutConfigured) {
       document.getElementById("set-checkout")?.scrollIntoView({ behavior: "smooth" });
       setCheckoutError(
-        "Checkout is being prepared for this new three-print set. Individual physical prints remain available now.",
+        "Checkout is being prepared for these new print and frame options.",
       );
       return;
     }
@@ -118,19 +167,25 @@ export function BuildASetPage({ checkoutConfigured }: BuildASetPageProps) {
     setBusy(true);
     setCheckoutError("");
     trackMetaEvent("InitiateCheckout", {
-      value: selectedOption.totalPriceCents / 100,
+      value: price.totalPriceCents / 100,
       currency: "USD",
       content_type: "product_group",
       content_ids: selectedSlugs,
-      num_items: 3,
+      num_items: quantity,
       print_option: selectedOption.id,
+      frame_color: selectedOption.format === "Framed" ? frameColor : "none",
     });
 
     try {
       const response = await fetch("/api/stripe/explorers-set/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ selectedSlugs, optionId: selectedOption.id }),
+        body: JSON.stringify({
+          selectedSlugs,
+          optionId: selectedOption.id,
+          quantity,
+          frameColor,
+        }),
       });
       const result = (await response.json()) as { url?: string; error?: string };
       if (!response.ok || !result.url) throw new Error(result.error ?? "Checkout could not open.");
@@ -143,86 +198,114 @@ export function BuildASetPage({ checkoutConfigured }: BuildASetPageProps) {
 
   return (
     <main className={styles.page}>
-      <section className={styles.hero} aria-labelledby="build-a-set-title">
-        <div className={styles.heroRoom} aria-hidden="true">
-          <div className={styles.heroPrints}>
-            {[explorerProducts[0], explorerProducts[6], explorerProducts[4]].map(
-              (product, index) => (
-                <span className={styles.heroPrint} key={product.slug}>
-                  <ArtworkImage
-                    src={product.image}
-                    title={product.title}
-                    loading={index === 1 ? "eager" : "lazy"}
-                    fetchPriority={index === 1 ? "high" : "auto"}
-                  />
-                </span>
-              ),
-            )}
-          </div>
-          <span className={styles.heroShelf} />
-          <span className={styles.heroRug} />
-          <span className={styles.heroTable} />
+      <header className={styles.productHero} aria-labelledby="build-a-set-title">
+        <p className={styles.eyebrow}>The Explorers Series</p>
+        <h1 id="build-a-set-title">Design Your Own Explorers Gallery Wall</h1>
+        <p>
+          Choose one favorite or create a set of three. See the exact arrangement,
+          finish, and scale before you buy.
+        </p>
+        <div className={styles.productHeroFacts}>
+          <span>Archival art prints</span>
+          <span>Ready-to-hang frame options</span>
+          <span>15% off sets of three</span>
         </div>
-        <div className={styles.heroCopy}>
-          <p className={styles.eyebrow}>Three prints {"\u00b7"} chosen by you</p>
-          <h1 id="build-a-set-title">Build Your Own Explorers Print Set</h1>
-          <p>
-            Choose your favorite Explorers and build a gallery wall that grows with
-            imagination.
-          </p>
-          <p className={styles.heroOffer}>Sets from $89 {"\u00b7"} save $16 or more</p>
-          <a className={styles.primaryButton} href="#builder">
-            Build My Set
-          </a>
-        </div>
-      </section>
+      </header>
 
       <section className={styles.builder} id="builder" aria-labelledby="builder-title">
-        <div className={styles.builderHeader}>
-          <div>
-            <p className={styles.eyebrow}>Step 1</p>
-            <h2 id="builder-title">Choose 3 Prints</h2>
-            <p>Tap any artwork to add it. Tap a selected artwork to remove it.</p>
-          </div>
-          <div className={styles.progress} aria-live="polite">
-            <span>{selectedProducts.length}</span>
-            <strong>{progressLabel}</strong>
-          </div>
-        </div>
         <p className={styles.srOnly} role="status" aria-live="polite">
           {announcement}
         </p>
-        <div id="artwork-choices">
-          <ArtworkSelector
-            products={explorerProducts}
-            selectedSlugs={selectedSlugs}
-            onToggle={handleToggle}
-          />
-        </div>
 
         {ready ? (
           <div className={styles.readyArea}>
-            <ProductOptionSelector
-              selectedOptionId={selectedOptionId}
-              onChange={setSelectedOptionId}
-            />
             <GalleryPreview
               products={selectedProducts}
               option={selectedOption}
+              quantity={quantity}
+              frameColor={frameColor}
               onMove={handleMove}
             />
+
+            <div className={styles.configurationGrid}>
+              <section className={styles.artworkConfiguration} aria-labelledby="builder-title">
+                <div className={styles.configurationHeading}>
+                  <div>
+                    <p className={styles.eyebrow}>Choose your gallery</p>
+                    <h2 id="builder-title">Select one or three</h2>
+                  </div>
+                  <div className={styles.progress} aria-live="polite">
+                    <span>{selectedProducts.length}</span>
+                    <strong>{progressLabel}</strong>
+                  </div>
+                </div>
+
+                <fieldset className={styles.quantityFieldset}>
+                  <legend>Number of artworks</legend>
+                  <div className={styles.quantityChoices}>
+                    <button
+                      type="button"
+                      className={quantity === 1 ? styles.quantityChoiceActive : ""}
+                      aria-pressed={quantity === 1}
+                      onClick={() => handleQuantityChange(1)}
+                    >
+                      <strong>1 print</strong>
+                      <small>One favorite</small>
+                    </button>
+                    <button
+                      type="button"
+                      className={quantity === 3 ? styles.quantityChoiceActive : ""}
+                      aria-pressed={quantity === 3}
+                      onClick={() => handleQuantityChange(3)}
+                    >
+                      <strong>Set of 3</strong>
+                      <small>Save 15%</small>
+                    </button>
+                  </div>
+                </fieldset>
+
+                <p className={styles.artworkInstruction}>
+                  Tap an Explorer to{" "}
+                  {quantity === 1 ? "replace your artwork" : "add or remove it"}.
+                  Your wall preview updates instantly.
+                </p>
+                <div id="artwork-choices">
+                  <ArtworkSelector
+                    products={explorerProducts}
+                    selectedSlugs={selectedSlugs}
+                    onToggle={handleToggle}
+                  />
+                </div>
+              </section>
+
+              <ProductOptionSelector
+                quantity={quantity}
+                option={selectedOption}
+                selectedOptionId={selectedOptionId}
+                frameColor={frameColor}
+                onChange={setSelectedOptionId}
+                onFrameColorChange={setFrameColor}
+              />
+            </div>
             <section className={styles.checkoutSummary} id="set-checkout">
               <div>
-                <p className={styles.eyebrow}>Your set</p>
+                <p className={styles.eyebrow}>Your order</p>
                 <h2>{selectedProducts.map((product) => product.title).join(" \u00b7 ")}</h2>
                 <p>
-                  Three {selectedOption.label.toLowerCase()} {"\u00b7"}{" "}
-                  <s>{formatUsd(selectedOption.retailTotalCents)}</s>{" "}
-                  <strong>{formatUsd(selectedOption.totalPriceCents)}</strong> total
+                  {quantity === 3 ? "Three" : "One"}{" "}
+                  {selectedOption.label.toLowerCase()}
+                  {selectedOption.format === "Framed"
+                    ? " \u00b7 " + frameColor + " frame"
+                    : ""}
+                  {" \u00b7 "}
+                  {quantity === 3 ? <s>{formatUsd(price.retailTotalCents)}</s> : null}{" "}
+                  <strong>{formatUsd(price.totalPriceCents)}</strong> total
                 </p>
-                <p className={styles.savingsNote}>
-                  Bundle savings: {formatUsd(selectedOption.savingsCents)}
-                </p>
+                {quantity === 3 ? (
+                  <p className={styles.savingsNote}>
+                    Set savings: {formatUsd(price.savingsCents)}
+                  </p>
+                ) : null}
               </div>
               <div className={styles.checkoutAction}>
                 <button
@@ -234,13 +317,12 @@ export function BuildASetPage({ checkoutConfigured }: BuildASetPageProps) {
                   {busy
                     ? "Opening Checkout..."
                     : checkoutConfigured
-                      ? `Checkout \u00b7 ${formatUsd(selectedOption.totalPriceCents)}`
-                      : "Set Checkout Coming Soon"}
+                      ? "Checkout \u00b7 " + formatUsd(price.totalPriceCents)
+                      : "Checkout Coming Soon"}
                 </button>
                 {!checkoutConfigured ? (
                   <p>
-                    Dedicated set checkout is not live yet. You can still buy each
-                    artwork individually from the collection.
+                    Checkout is being prepared for the new framed options.
                   </p>
                 ) : null}
               </div>
@@ -248,8 +330,8 @@ export function BuildASetPage({ checkoutConfigured }: BuildASetPageProps) {
           </div>
         ) : (
           <div className={styles.selectionPrompt}>
-            <strong>{3 - selectedProducts.length} more to choose</strong>
-            <p>Your print options and gallery preview will appear here.</p>
+            <strong>{quantity - selectedProducts.length} more to choose</strong>
+            <p>Select your artwork to continue.</p>
           </div>
         )}
         {checkoutError ? (
@@ -263,7 +345,7 @@ export function BuildASetPage({ checkoutConfigured }: BuildASetPageProps) {
         {[
           ["One coordinated series", "Created by Goetz as a collection"],
           ["Museum-quality printing", "Made for lasting display"],
-          ["Archival paper", "Available unmatted or professionally matted"],
+          ["Ready to display", "Print only or framed with clear acrylic"],
         ].map(([title, detail]) => (
           <div key={title}>
             <span aria-hidden="true" />
@@ -314,15 +396,22 @@ export function BuildASetPage({ checkoutConfigured }: BuildASetPageProps) {
           <details>
             <summary>Do frames come included?</summary>
             <p>
-              No. Choose unmatted prints or matted prints. The 8x10 matted option fits
-              an 11x14 frame, and the 11x14 matted option fits a 16x20 frame.
+              Yes, when you select a framed option. Choose natural, black, or white,
+              with or without a white mat. Print-only orders arrive unframed.
             </p>
           </details>
           <details>
             <summary>What print sizes exist?</summary>
             <p>
-              The existing physical options are 8x10 prints and 11x14 prints, each
-              available unmatted or matted.
+              Choose 8x10 or 11x14 artwork. A matted 8x10 arrives in an 11x14 frame,
+              while a matted 11x14 arrives in a 16x20 frame.
+            </p>
+          </details>
+          <details>
+            <summary>Is framed artwork made with glass?</summary>
+            <p>
+              Framed pieces use optical-grade clear acrylic instead of traditional
+              glass for safer, lighter, and more durable display.
             </p>
           </details>
           <details>
@@ -343,6 +432,8 @@ export function BuildASetPage({ checkoutConfigured }: BuildASetPageProps) {
       <MobileSetSummary
         products={selectedProducts}
         option={selectedOption}
+        quantity={quantity}
+        frameColor={frameColor}
         busy={busy}
         checkoutConfigured={checkoutConfigured}
         onAction={beginCheckout}
