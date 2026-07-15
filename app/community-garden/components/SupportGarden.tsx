@@ -8,7 +8,7 @@ export function SupportGarden({ donationUrl }: SupportGardenProps) {
       <p className="cg-kicker">Keep it growing</p>
       <h2 id="support-garden-title">Support the Garden</h2>
       <p>
-        Community Garden is free. Contributions help keep the garden online and
+        Basil is free. Contributions help keep the garden online and
         growing.
       </p>
       {donationUrl ? (
