@@ -1,38 +1,49 @@
-# Explorers Build-a-Set checkout configuration
+# Explorers gallery-wall checkout
 
-The `/explorers/build-a-set` experience intentionally remains in preview mode until dedicated Stripe configuration exists. It must never reuse an individual artwork Price ID because fulfillment needs one set product and the selected artwork metadata.
+The /explorers/build-a-set page supports one artwork or a discounted set of three.
+All amounts are calculated from the server-owned catalog in
+lib/explorers/buildASet.ts; browser-supplied prices are never trusted.
 
-## Stripe setup
+## Current catalog
 
-Create one Stripe product for each of the four existing three-print options. Keep the existing per-print pricing and product details:
+| Option | One | Set of 3 |
+| --- | ---: | ---: |
+| 8x10 print | $29 | $73.95 |
+| 8x10 framed, no mat | $65 | $165.75 |
+| 8x10 framed with mat | $79 | $201.45 |
+| 11x14 print | $39 | $99.45 |
+| 11x14 framed, no mat | $89 | $226.95 |
+| 11x14 framed with mat | $119 | $303.45 |
 
-- Three 8x10 unmatted prints: $105 total
-- Three 8x10 matted prints: $150 total
-- Three 11x14 unmatted prints: $195 total
-- Three 11x14 matted prints: $285 total
+Sets of three receive 15% off. Framed orders offer natural, black, or white frames
+and use optical-grade clear acrylic instead of glass.
 
-Add these Vercel environment variables:
+## Stripe
 
-```text
-STRIPE_EXPLORERS_SET_8X10_PRINT_PRICE_ID
-STRIPE_EXPLORERS_SET_8X10_MATTED_PRICE_ID
-STRIPE_EXPLORERS_SET_11X14_PRINT_PRICE_ID
-STRIPE_EXPLORERS_SET_11X14_MATTED_PRICE_ID
-STRIPE_EXPLORERS_SET_SHIPPING_RATE_ID
-STRIPE_EXPLORERS_SET_ALLOWED_COUNTRIES
-```
+Checkout uses Stripe-hosted Checkout and creates server-side price_data from the
+catalog above. Dedicated Price IDs are not required. The Checkout Session and Payment
+Intent metadata include:
 
-`STRIPE_EXPLORERS_SET_ALLOWED_COUNTRIES` is a comma-separated list of countries the business already ships to, such as `US`. Do not add countries until the shipping policy is confirmed. The shipping rate must likewise reflect the real policy.
+- artwork names and slugs
+- quantity
+- artwork and finished dimensions
+- print or framed format
+- mat choice
+- frame color
+- acrylic specification
 
-The only code-level Stripe mapping is in `lib/explorers/buildASetStripe.ts`. After adding the variables, redeploy Vercel. Checkout sessions will include the selected artwork names and slugs in both Checkout Session and Payment Intent metadata.
+Required environment variables:
 
-## Meta Pixel setup
+    STRIPE_SECRET_KEY
+    STRIPE_EXPLORERS_SET_SHIPPING_RATE_ID
+    STRIPE_EXPLORERS_SET_ALLOWED_COUNTRIES
 
-Add the existing Meta Pixel ID as:
+If no shipping-rate ID is supplied, checkout uses
+STRIPE_EXPLORERS_SET_SHIPPING_CENTS or defaults to $12 standard shipping.
+Allowed countries default to US.
 
-```text
-NEXT_PUBLIC_META_PIXEL_ID
-```
+## Meta Pixel
 
-The implementation tracks PageView, ViewContent, ArtworkSelection, InitiateCheckout, and verified Purchase. Purchase only fires on the success page after the server retrieves a paid Stripe Checkout Session.
+Set NEXT_PUBLIC_META_PIXEL_ID to activate PageView, ViewContent, ArtworkSelection,
+InitiateCheckout, and verified Purchase tracking.
 
