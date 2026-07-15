@@ -622,7 +622,7 @@ export function HoneycombBubbles({
               <div
                 className={styles.gardenLink}
                 data-linked-bubble-id={COMMUNITY_GARDEN_LINK_ID}
-                aria-label="Open Community Garden"
+                aria-label="Open Basil Community Garden"
               >
                 <span className={styles.gardenPreview} aria-hidden="true">
                   <span />
