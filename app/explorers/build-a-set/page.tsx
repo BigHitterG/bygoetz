@@ -3,12 +3,25 @@ import { BuildASetPage } from "@/components/explorers/build-a-set/BuildASetPage"
 import { isExplorerSetCheckoutConfigured } from "@/lib/explorers/buildASetStripe";
 
 export const metadata: Metadata = {
-  title: "Build Your Own Explorers Print Set | Goetz",
+  title: "Design Your Own Explorers Gallery Wall | Goetz",
   description:
-    "Choose any three Explorers artworks and build a coordinated physical print set for a nursery, playroom, reading nook, or creative room.",
+    "Choose one Explorer or build a set of three. Preview print size, mat, frame color, and true room scale before checkout.",
 };
 
-export default function Page() {
-  return <BuildASetPage checkoutConfigured={isExplorerSetCheckoutConfigured()} />;
+type PageProps = {
+  searchParams: Promise<{ artwork?: string; quantity?: string }>;
+};
+
+export default async function Page({ searchParams }: PageProps) {
+  const params = await searchParams;
+  const initialArtworkSlug =
+    params.quantity === "1" ? params.artwork : undefined;
+
+  return (
+    <BuildASetPage
+      checkoutConfigured={isExplorerSetCheckoutConfigured()}
+      initialArtworkSlug={initialArtworkSlug}
+    />
+  );
 }
 

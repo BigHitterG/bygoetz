@@ -33,7 +33,11 @@ export function ExplorerProductPage({ product }: ExplorerProductPageProps) {
             <p className={styles.detailPrice}>Prints from {product.priceFrom}</p>
 
             <div className={styles.optionGroup}>
-              <h2>Print options</h2>
+              <h2>Choose your finish</h2>
+              <p>
+                Available as an archival print or ready-to-hang framed artwork in
+                natural, black, or white. Add a white mat for a larger finished piece.
+              </p>
               <div className={styles.printOptionList}>
                 {product.printOptions.map((option) => (
                   <div className={styles.printOptionCard} key={option.label}>
@@ -44,23 +48,21 @@ export function ExplorerProductPage({ product }: ExplorerProductPageProps) {
                     <p>{option.artworkSize}</p>
                     <p>{option.finishedSize}</p>
                     <small>{option.note ?? option.format}</small>
-                    {option.checkoutLink ? (
-                      <a className={styles.primaryButton} href={option.checkoutLink}>
-                        Buy this option
-                      </a>
-                    ) : (
-                      <button className={styles.disabledButton} type="button" disabled>
-                        Available Soon
-                      </button>
-                    )}
                   </div>
                 ))}
               </div>
               <p className={styles.optionNote}>
-                Artwork preview is shown in a 4:5 (8x10) ratio. Matted sizes describe
-                the finished frame-ready mat size; the artwork opening remains the
-                listed print size. Shipping and tax are shown in Stripe checkout.
+                Framed artwork uses optical-grade clear acrylic instead of traditional
+                glass. Shipping and tax are shown in Stripe checkout.
               </p>
+              <a
+                className={styles.primaryButton}
+                href={withSiteBasePath(
+                  "/explorers/build-a-set?quantity=1&artwork=" + product.slug,
+                )}
+              >
+                Customize and Buy
+              </a>
             </div>
 
             <div className={styles.singleDigitalOption}>
@@ -117,3 +119,4 @@ export function ExplorerProductPage({ product }: ExplorerProductPageProps) {
     </main>
   );
 }
+
