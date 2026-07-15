@@ -228,122 +228,122 @@ export function BuildASetPage({
         </p>
 
         <div className={styles.readyArea}>
-            <GalleryPreview
-              products={selectedSlotProducts}
-              option={selectedOption}
-              quantity={quantity}
-              frameColor={frameColor}
-              onMove={handleMove}
-            />
-
+          <GalleryPreview
+            products={selectedSlotProducts}
+            option={selectedOption}
+            quantity={quantity}
+            frameColor={frameColor}
+            onMove={handleMove}
+          >
             <div className={styles.configurationColumn}>
-            <div className={styles.configurationGrid}>
-              <section className={styles.artworkConfiguration} aria-labelledby="builder-title">
-                <div className={styles.configurationHeading}>
-                  <div>
-                    <p className={styles.eyebrow}>Choose your gallery</p>
-                    <h2 id="builder-title">Select one or three</h2>
+              <div className={styles.configurationGrid}>
+                <section className={styles.artworkConfiguration} aria-labelledby="builder-title">
+                  <div className={styles.configurationHeading}>
+                    <div>
+                      <p className={styles.eyebrow}>Step 1: Choose your gallery</p>
+                      <h2 id="builder-title">Select one or three</h2>
+                    </div>
+                    <div className={styles.progress} aria-live="polite">
+                      <span>{selectedProducts.length}</span>
+                      <strong>{progressLabel}</strong>
+                    </div>
                   </div>
-                  <div className={styles.progress} aria-live="polite">
-                    <span>{selectedProducts.length}</span>
-                    <strong>{progressLabel}</strong>
+
+                  <fieldset className={styles.quantityFieldset}>
+                    <legend>Number of artworks</legend>
+                    <div className={styles.quantityChoices}>
+                      <button
+                        type="button"
+                        className={quantity === 1 ? styles.quantityChoiceActive : ""}
+                        aria-pressed={quantity === 1}
+                        onClick={() => handleQuantityChange(1)}
+                      >
+                        <strong>1 print</strong>
+                        <small>One favorite</small>
+                      </button>
+                      <button
+                        type="button"
+                        className={quantity === 3 ? styles.quantityChoiceActive : ""}
+                        aria-pressed={quantity === 3}
+                        onClick={() => handleQuantityChange(3)}
+                      >
+                        <strong>Set of 3</strong>
+                        <small>Save 15%</small>
+                      </button>
+                    </div>
+                  </fieldset>
+
+                  <p className={styles.artworkInstruction}>
+                    Tap an Explorer to{" "}
+                    {quantity === 1 ? "replace your artwork" : "add or remove it"}.
+                    Your wall preview updates instantly.
+                  </p>
+                  <div id="artwork-choices">
+                    <ArtworkSelector
+                      products={explorerProducts}
+                      selectedSlugs={selectedSlots}
+                      onToggle={handleToggle}
+                    />
                   </div>
+                </section>
+
+                <ProductOptionSelector
+                  quantity={quantity}
+                  option={selectedOption}
+                  selectedOptionId={selectedOptionId}
+                  frameColor={frameColor}
+                  onChange={setSelectedOptionId}
+                  onFrameColorChange={setFrameColor}
+                />
+              </div>
+              <section className={styles.checkoutSummary} id="set-checkout">
+                <div>
+                  <p className={styles.eyebrow}>Step 3: Review your order</p>
+                  <h2>{selectedProducts.map((product) => product.title).join(" \u00b7 ")}</h2>
+                  <p>
+                    {quantity === 3 ? "Three" : "One"}{" "}
+                    {selectedOption.label.toLowerCase()}
+                    {selectedOption.format === "Framed"
+                      ? " \u00b7 " + frameColor + " frame"
+                      : ""}
+                    {" \u00b7 "}
+                    {quantity === 3 ? <s>{formatUsd(price.retailTotalCents)}</s> : null}{" "}
+                    <strong>{formatUsd(price.totalPriceCents)}</strong> total
+                  </p>
+                  {quantity === 3 ? (
+                    <p className={styles.savingsNote}>
+                      Set savings: {formatUsd(price.savingsCents)}
+                    </p>
+                  ) : null}
                 </div>
-
-                <fieldset className={styles.quantityFieldset}>
-                  <legend>Number of artworks</legend>
-                  <div className={styles.quantityChoices}>
-                    <button
-                      type="button"
-                      className={quantity === 1 ? styles.quantityChoiceActive : ""}
-                      aria-pressed={quantity === 1}
-                      onClick={() => handleQuantityChange(1)}
-                    >
-                      <strong>1 print</strong>
-                      <small>One favorite</small>
-                    </button>
-                    <button
-                      type="button"
-                      className={quantity === 3 ? styles.quantityChoiceActive : ""}
-                      aria-pressed={quantity === 3}
-                      onClick={() => handleQuantityChange(3)}
-                    >
-                      <strong>Set of 3</strong>
-                      <small>Save 15%</small>
-                    </button>
-                  </div>
-                </fieldset>
-
-                <p className={styles.artworkInstruction}>
-                  Tap an Explorer to{" "}
-                  {quantity === 1 ? "replace your artwork" : "add or remove it"}.
-                  Your wall preview updates instantly.
-                </p>
-                <div id="artwork-choices">
-                  <ArtworkSelector
-                    products={explorerProducts}
-                    selectedSlugs={selectedSlots}
-                    onToggle={handleToggle}
-                  />
+                <div className={styles.checkoutAction}>
+                  <button
+                    className={styles.primaryButton}
+                    type="button"
+                    onClick={beginCheckout}
+                    disabled={busy || !checkoutConfigured}
+                  >
+                    {busy
+                      ? "Opening Checkout..."
+                      : checkoutConfigured
+                        ? "Checkout \u00b7 " + formatUsd(price.totalPriceCents)
+                        : "Checkout Coming Soon"}
+                  </button>
+                  {!checkoutConfigured ? (
+                    <p>
+                      Checkout is being prepared for the new framed options.
+                    </p>
+                  ) : null}
                 </div>
               </section>
-
-              <ProductOptionSelector
-                quantity={quantity}
-                option={selectedOption}
-                selectedOptionId={selectedOptionId}
-                frameColor={frameColor}
-                onChange={setSelectedOptionId}
-                onFrameColorChange={setFrameColor}
-              />
+              {!ready ? (
+                <div className={styles.selectionPrompt}>
+                  <strong>{quantity - selectedProducts.length} more to choose</strong>
+                  <p>Your empty frame is waiting above.</p>
+                </div>
+              ) : null}
             </div>
-            <section className={styles.checkoutSummary} id="set-checkout">
-              <div>
-                <p className={styles.eyebrow}>Your order</p>
-                <h2>{selectedProducts.map((product) => product.title).join(" \u00b7 ")}</h2>
-                <p>
-                  {quantity === 3 ? "Three" : "One"}{" "}
-                  {selectedOption.label.toLowerCase()}
-                  {selectedOption.format === "Framed"
-                    ? " \u00b7 " + frameColor + " frame"
-                    : ""}
-                  {" \u00b7 "}
-                  {quantity === 3 ? <s>{formatUsd(price.retailTotalCents)}</s> : null}{" "}
-                  <strong>{formatUsd(price.totalPriceCents)}</strong> total
-                </p>
-                {quantity === 3 ? (
-                  <p className={styles.savingsNote}>
-                    Set savings: {formatUsd(price.savingsCents)}
-                  </p>
-                ) : null}
-              </div>
-              <div className={styles.checkoutAction}>
-                <button
-                  className={styles.primaryButton}
-                  type="button"
-                  onClick={beginCheckout}
-                  disabled={busy || !checkoutConfigured}
-                >
-                  {busy
-                    ? "Opening Checkout..."
-                    : checkoutConfigured
-                      ? "Checkout \u00b7 " + formatUsd(price.totalPriceCents)
-                      : "Checkout Coming Soon"}
-                </button>
-                {!checkoutConfigured ? (
-                  <p>
-                    Checkout is being prepared for the new framed options.
-                  </p>
-                ) : null}
-              </div>
-            </section>
-            {!ready ? (
-              <div className={styles.selectionPrompt}>
-                <strong>{quantity - selectedProducts.length} more to choose</strong>
-                <p>Your empty frame is waiting above.</p>
-              </div>
-            ) : null}
-          </div>
+          </GalleryPreview>
         </div>
         {checkoutError ? (
           <p className={styles.checkoutError} role="alert">

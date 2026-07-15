@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type CSSProperties } from "react";
+import { useState, type CSSProperties, type ReactNode } from "react";
 import Image from "next/image";
 import type { ExplorerProduct } from "@/lib/explorers/products";
 import type {
@@ -21,6 +21,7 @@ type GalleryPreviewProps = {
   quantity: ExplorerOrderQuantity;
   frameColor: ExplorerFrameColor;
   onMove: (index: number, direction: -1 | 1) => void;
+  children: ReactNode;
 };
 
 type RoomReference = {
@@ -89,6 +90,7 @@ export function GalleryPreview({
   quantity,
   frameColor,
   onMove,
+  children,
 }: GalleryPreviewProps) {
   const [roomId, setRoomId] = useState<RoomId>("wall");
   const [layoutId, setLayoutId] = useState<LayoutId>("row");
@@ -229,7 +231,7 @@ export function GalleryPreview({
 
         <div className={styles.wallControls}>
           <fieldset className={styles.wallControlGroup}>
-            <legend>View</legend>
+            <legend>Preview room</legend>
             <div className={styles.segmentedChoices}>
               {rooms.map((item) => (
                 <button
@@ -247,7 +249,7 @@ export function GalleryPreview({
 
           {quantity === 3 ? (
             <fieldset className={styles.wallControlGroup}>
-              <legend>Layout</legend>
+              <legend>Preview arrangement</legend>
               <div className={styles.layoutChoices}>
                 {layouts.map((layout) => {
                   const iconClass =
@@ -363,6 +365,7 @@ export function GalleryPreview({
         Frame appearance is a close representation; furniture and decor are not
         included.
       </p>
+      {children}
     </section>
   );
 }

@@ -1,6 +1,6 @@
 .page {
   min-height: 100vh;
-  overflow-x: hidden;
+  overflow-x: clip;
   background: #fffdf8;
   color: #111;
   padding-bottom: 0;
@@ -1460,7 +1460,7 @@
 
 .readyArea {
   grid-template-columns: 1fr;
-  gap: 64px;
+  gap: 0;
   align-items: start;
   margin-top: 0;
 }
@@ -1707,6 +1707,7 @@
   display: grid;
   width: 100%;
   min-width: 0;
+  margin-top: 64px;
   gap: 34px;
 }
 
@@ -2042,10 +2043,14 @@
   }
 
   .readyArea {
+    gap: 0;
+  }
+
+  .galleryPreview {
+    display: grid;
     gap: 18px;
   }
 
-  .galleryPreview,
   .wallStudio {
     display: contents;
   }
@@ -2103,6 +2108,10 @@
 
   .visualizerNote {
     margin: 0 0 8px;
+  }
+
+  .configurationColumn {
+    margin-top: 0;
   }
 
   .wallFrameFramed {
