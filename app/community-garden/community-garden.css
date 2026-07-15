@@ -69,18 +69,21 @@
 .cg-title-copy h1 {
   margin: 0;
   overflow-wrap: anywhere;
-  font-size: 1.25rem;
-  line-height: 1.1;
+  font-family: "Courier New", ui-monospace, monospace;
+  font-size: 1.55rem;
+  font-weight: 900;
+  line-height: 0.95;
   letter-spacing: 0;
   text-transform: uppercase;
 }
 
 .cg-title-copy p {
-  margin: 3px 0 0;
+  margin: 5px 0 0;
   color: #6f4c3e;
-  font-size: 0.7rem;
-  font-weight: 700;
+  font-size: 0.62rem;
+  font-weight: 800;
   line-height: 1.2;
+  text-transform: uppercase;
 }
 
 .cg-icon-button {
