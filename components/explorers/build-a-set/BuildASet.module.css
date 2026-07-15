@@ -1541,10 +1541,10 @@
   inset: 0;
   padding: 5px;
   background-image:
-    linear-gradient(rgba(226, 199, 151, 0.08), rgba(104, 68, 34, 0.08)),
+    linear-gradient(rgba(236, 215, 177, 0.18), rgba(118, 79, 40, 0.06)),
     url("/explorers/rooms/dresser.jpg");
-  background-position: center, 50% 78%;
-  background-size: cover, 240%;
+  background-position: center, 35% 69%;
+  background-size: cover, 900%;
   content: "";
   pointer-events: none;
   -webkit-mask:
