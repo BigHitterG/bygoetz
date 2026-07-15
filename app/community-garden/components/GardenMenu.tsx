@@ -43,7 +43,7 @@ export function GardenMenu({
       >
         <div className="cg-menu-heading">
           <div>
-            <p className="cg-kicker">Community Garden</p>
+            <p className="cg-kicker">Basil Community Garden</p>
             <h2 id="garden-menu-title">Garden Library</h2>
           </div>
           <button className="cg-icon-button" type="button" onClick={onClose} aria-label="Close menu">
