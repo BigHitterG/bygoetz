@@ -1414,26 +1414,26 @@
 
 /* Unified wall designer */
 .productHero {
-  width: min(1040px, calc(100% - 32px));
+  width: min(1180px, calc(100% - 32px));
   margin: 0 auto;
-  padding: 36px 0 22px;
-  text-align: center;
+  padding: 18px 0 12px;
+  text-align: left;
 }
 
 .productHero h1 {
-  max-width: 900px;
-  margin: 8px auto 0;
-  font-size: 3.35rem;
+  max-width: 760px;
+  margin: 4px 0 0;
+  font-size: 2.25rem;
   font-weight: 650;
-  line-height: 1.02;
+  line-height: 1;
 }
 
 .productHero > p:not(.eyebrow) {
-  max-width: 690px;
-  margin: 14px auto 0;
+  max-width: 620px;
+  margin: 8px 0 0;
   color: #4d4943;
-  font-size: 1.14rem;
-  line-height: 1.6;
+  font-size: 0.88rem;
+  line-height: 1.45;
 }
 
 .productHeroFacts {
@@ -1459,25 +1459,49 @@
 }
 
 .readyArea {
-  gap: 72px;
+  grid-template-columns: minmax(0, 1.35fr) minmax(390px, 0.65fr);
+  gap: 32px;
+  align-items: start;
   margin-top: 0;
 }
 
+.galleryPreview {
+  position: sticky;
+  top: 14px;
+  min-width: 0;
+}
+
 .previewHeading {
-  margin-bottom: 22px;
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 12px;
 }
 
 .previewHeading h2 {
-  font-size: 2.6rem;
+  font-size: 1.8rem;
+}
+
+.previewHeading > p {
+  max-width: 330px;
+  font-size: 0.76rem;
+  line-height: 1.45;
 }
 
 .wallStudio {
   grid-template-columns: minmax(0, 1.45fr) minmax(310px, 0.72fr);
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
   border-color: #cfc7bc;
   box-shadow: 0 20px 54px rgba(50, 42, 34, 0.08);
 }
 
 .wallScene {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
   min-height: 500px;
 }
 
@@ -1524,55 +1548,48 @@
 }
 
 .wallFrameFramed {
-  border: 5px solid #c9a96f;
+  --frame-rail: clamp(1px, 2.3%, 5px);
+  border: 0;
+  background: #c9a96f;
   box-shadow:
     12px 16px 22px rgba(65, 52, 39, 0.24),
     inset 0 0 0 1px rgba(255, 255, 255, 0.45);
 }
 
-.wallFrameNatural {
-  border-color: transparent;
-  border-image: none;
-}
-
-.wallFrameNatural::before {
+.wallFrameFramed::before {
   position: absolute;
   z-index: 1;
-  inset: 0;
-  padding: 5px;
-  background-image:
-    repeating-linear-gradient(
-      2deg,
-      rgba(255, 247, 226, 0.18) 0 1px,
-      rgba(106, 69, 34, 0.07) 1px 2px,
-      transparent 2px 5px
-    ),
-    linear-gradient(
-      102deg,
-      #a97843 0%,
-      #d8b67d 20%,
-      #b68a53 42%,
-      #e3c58f 66%,
-      #a8753f 100%
-    );
-  background-size: 100% 8px, cover;
+  inset: var(--frame-rail);
+  background: #fff;
   content: "";
   pointer-events: none;
-  -webkit-mask:
-    linear-gradient(#000 0 0) content-box,
-    linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
+}
+
+.wallFrameNatural {
+  background-image:
+    repeating-linear-gradient(
+      92deg,
+      rgba(255, 247, 226, 0.16) 0 2px,
+      rgba(92, 58, 28, 0.08) 2px 3px,
+      transparent 3px 7px
+    ),
+    linear-gradient(
+      96deg,
+      #c7975d 0%,
+      #e0bd82 27%,
+      #b98750 52%,
+      #d9b477 76%,
+      #ac7844 100%
+    );
+  background-size: 9px 100%, cover;
 }
 
 .wallFrameBlack {
-  border-color: #171615;
-  border-image: linear-gradient(110deg, #0d0d0d, #373330 46%, #111) 1;
+  background-image: linear-gradient(110deg, #0d0d0d, #373330 46%, #111);
 }
 
 .wallFrameWhite {
-  border-color: #f4f2ed;
-  border-image: linear-gradient(110deg, #d8d6d0, #fff 42%, #e6e2da) 1;
+  background-image: linear-gradient(110deg, #d8d6d0, #fff 42%, #e6e2da);
 }
 
 .wallFrame img,
@@ -1588,14 +1605,14 @@
 
 .wallFrameFramed img,
 .wallFrameFramed > div {
-  top: 3%;
-  left: 3%;
-  width: 94%;
-  height: 94%;
+  top: var(--frame-rail);
+  left: var(--frame-rail);
+  width: calc(100% - var(--frame-rail) - var(--frame-rail));
+  height: calc(100% - var(--frame-rail) - var(--frame-rail));
 }
 
 .wallFrameMatted {
-  background: #fbfaf6;
+  background-color: #fbfaf6;
 }
 
 .wallFrameMatted img,
@@ -1605,6 +1622,40 @@
   width: 70%;
   height: 70%;
   box-shadow: 0 0 0 1px rgba(83, 73, 62, 0.1);
+}
+
+.wallFrameEmpty .emptyArtwork {
+  position: absolute;
+  z-index: 2;
+  top: 15%;
+  left: 15%;
+  display: grid;
+  width: 70%;
+  height: 70%;
+  place-content: center;
+  justify-items: center;
+  gap: 5px;
+  border: 1px dashed #c8c0b5;
+  background: #fffdfa;
+  color: #756d64;
+  text-align: center;
+}
+
+.wallFrameEmpty:not(.wallFrameMatted) .emptyArtwork {
+  top: 7%;
+  left: 7%;
+  width: 86%;
+  height: 86%;
+}
+
+.emptyArtwork i {
+  font-size: clamp(0.9rem, 2vw, 1.4rem);
+  font-style: normal;
+}
+
+.emptyArtwork small {
+  font-size: clamp(0.42rem, 0.8vw, 0.62rem);
+  font-weight: 700;
 }
 
 .acrylicGlint {
@@ -1645,6 +1696,20 @@
   background: #fffefa;
 }
 
+.orderThumbnailEmpty {
+  display: grid;
+  place-items: center;
+  border: 1px dashed #c8c0b5;
+  color: #756d64;
+  font-size: 1rem;
+}
+
+.configurationColumn {
+  display: grid;
+  min-width: 0;
+  gap: 22px;
+}
+
 .segmentedChoices button {
   min-height: 38px;
   border-radius: 6px;
@@ -1652,8 +1717,8 @@
 
 .configurationGrid {
   display: grid;
-  grid-template-columns: minmax(0, 1.12fr) minmax(350px, 0.88fr);
-  gap: 42px;
+  grid-template-columns: 1fr;
+  gap: 18px;
   align-items: start;
 }
 
@@ -1768,8 +1833,31 @@
 }
 
 .optionPanel {
-  position: sticky;
-  top: 18px;
+  position: static;
+}
+
+.configurationColumn .checkoutSummary {
+  grid-template-columns: 1fr;
+  gap: 20px;
+  padding: 26px 0;
+}
+
+.configurationColumn .selectionPrompt {
+  min-height: 0;
+  margin-top: -10px;
+  padding: 18px;
+  border: 1px solid #d8d2c9;
+  background: #fffaf1;
+}
+
+.configurationColumn .selectionPrompt strong,
+.configurationColumn .selectionPrompt p {
+  align-self: auto;
+  margin: 0;
+}
+
+.configurationColumn .selectionPrompt p {
+  margin-top: 4px;
 }
 
 .optionPanelHeading {
@@ -1893,9 +1981,24 @@
   }
 }
 
+@media (max-width: 1100px) {
+  .readyArea {
+    grid-template-columns: 1fr;
+  }
+
+  .galleryPreview {
+    position: static;
+  }
+
+  .configurationColumn {
+    width: min(760px, 100%);
+    margin: 0 auto;
+  }
+}
+
 @media (max-width: 900px) {
   .productHero h1 {
-    font-size: 3.6rem;
+    font-size: 2.15rem;
   }
 
   .configurationGrid {
@@ -1912,6 +2015,7 @@
 
   .wallStudio {
     grid-template-columns: 1fr;
+    overflow: hidden;
   }
 
   .wallControls {
@@ -1929,42 +2033,47 @@
 @media (max-width: 620px) {
   .productHero {
     width: calc(100% - 24px);
-    padding: 42px 0 24px;
+    padding: 14px 0 8px;
   }
 
   .productHero h1 {
-    font-size: 2.65rem;
+    font-size: 1.85rem;
   }
 
   .productHero > p:not(.eyebrow) {
-    font-size: 1rem;
-  }
-
-  .productHeroFacts {
-    display: grid;
-    justify-items: center;
-    gap: 8px;
-  }
-
-  .productHeroFacts span {
-    padding: 0;
-  }
-
-  .productHeroFacts span + span {
-    border-left: 0;
+    margin-top: 6px;
+    font-size: 0.78rem;
   }
 
   .builder {
-    padding-top: 16px;
+    padding-top: 6px;
+  }
+
+  .previewHeading {
+    margin-bottom: 8px;
   }
 
   .previewHeading h2 {
-    font-size: 2.35rem;
+    font-size: 1.45rem;
+  }
+
+  .previewHeading > p {
+    display: none;
+  }
+
+  .wallStudio {
+    width: 100%;
+    max-width: 100%;
+    margin-right: 0;
+    margin-left: 0;
   }
 
   .wallScene {
-    min-height: 330px;
-    aspect-ratio: 4 / 3;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    min-height: 0;
+    aspect-ratio: 3 / 2;
   }
 
   .wallSceneCloseup {
@@ -1976,16 +2085,16 @@
     width: 92%;
   }
 
+  .wallSceneCloseup .wallLayoutSingle {
+    width: 68%;
+  }
+
   .wallControls {
     grid-template-columns: 1fr;
   }
 
   .wallFrameFramed {
-    border-width: 4px;
-  }
-
-  .wallFrameNatural::before {
-    padding: 4px;
+    --frame-rail: clamp(1px, 2.3%, 4px);
   }
 
   .configurationGrid {
