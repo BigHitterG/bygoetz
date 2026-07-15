@@ -155,23 +155,16 @@ export function GalleryPreview({
 
   return (
     <section className={styles.galleryPreview} aria-labelledby="gallery-preview-title">
-      <div className={styles.previewHeading}>
-        <div>
-          <p className={styles.eyebrow}>Live gallery preview</p>
-          <h2 id="gallery-preview-title">See your Explorers come together.</h2>
-        </div>
-        <p>
-          Start close to inspect the paper, mat, and frame. Then switch to a room to
-          compare true proportions against familiar furniture.
-        </p>
-      </div>
+      <h2 className={styles.srOnly} id="gallery-preview-title">
+        Live gallery preview
+      </h2>
 
       <div className={styles.wallStudio}>
         <div
           className={
             styles.wallScene + (isCloseup ? " " + styles.wallSceneCloseup : "")
           }
-          style={visualizerStyle}
+          style={{ ...visualizerStyle, gridColumn: "1 / -1" }}
         >
           {room.image ? (
             <Image
@@ -228,136 +221,142 @@ export function GalleryPreview({
           ) : null}
           <span className={styles.scaleReference}>{referenceText}</span>
         </div>
+      </div>
 
-        <div className={styles.wallControls}>
+      <div
+        className={styles.wallControls}
+        style={{
+          borderLeft: 0,
+          borderTop: "1px solid #d8d2c9",
+        }}
+      >
+        <fieldset className={styles.wallControlGroup}>
+          <legend>Preview room</legend>
+          <div className={styles.segmentedChoices}>
+            {rooms.map((item) => (
+              <button
+                className={item.id === roomId ? styles.segmentChoiceActive : ""}
+                type="button"
+                key={item.id}
+                aria-pressed={item.id === roomId}
+                onClick={() => setRoomId(item.id)}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
+        </fieldset>
+
+        {quantity === 3 ? (
           <fieldset className={styles.wallControlGroup}>
-            <legend>Preview room</legend>
-            <div className={styles.segmentedChoices}>
-              {rooms.map((item) => (
-                <button
-                  className={item.id === roomId ? styles.segmentChoiceActive : ""}
-                  type="button"
-                  key={item.id}
-                  aria-pressed={item.id === roomId}
-                  onClick={() => setRoomId(item.id)}
-                >
-                  {item.label}
-                </button>
-              ))}
+            <legend>Preview arrangement</legend>
+            <div className={styles.layoutChoices}>
+              {layouts.map((layout) => {
+                const iconClass =
+                  layout.id === "row"
+                    ? styles.layoutIconRow
+                    : layout.id === "arc"
+                      ? styles.layoutIconArc
+                      : styles.layoutIconStaggered;
+                return (
+                  <button
+                    className={
+                      layout.id === layoutId ? styles.layoutChoiceActive : ""
+                    }
+                    type="button"
+                    key={layout.id}
+                    aria-pressed={layout.id === layoutId}
+                    onClick={() => setLayoutId(layout.id)}
+                  >
+                    <span
+                      className={styles.layoutIcon + " " + iconClass}
+                      aria-hidden="true"
+                    >
+                      <i />
+                      <i />
+                      <i />
+                    </span>
+                    <strong>{layout.label}</strong>
+                  </button>
+                );
+              })}
             </div>
           </fieldset>
+        ) : null}
 
-          {quantity === 3 ? (
-            <fieldset className={styles.wallControlGroup}>
-              <legend>Preview arrangement</legend>
-              <div className={styles.layoutChoices}>
-                {layouts.map((layout) => {
-                  const iconClass =
-                    layout.id === "row"
-                      ? styles.layoutIconRow
-                      : layout.id === "arc"
-                        ? styles.layoutIconArc
-                        : styles.layoutIconStaggered;
-                  return (
+        <div className={styles.wallOrder}>
+          <p className={styles.wallControlLabel}>Artwork order</p>
+          <div>
+            {products.map((product, index) => (
+              <div className={styles.orderItem} key={product?.slug ?? `empty-${index}`}>
+                <span
+                  className={`${styles.orderThumbnail} ${product ? "" : styles.orderThumbnailEmpty}`}
+                >
+                  {product ? (
+                    <ArtworkImage src={product.image} title={product.title} />
+                  ) : (
+                    <span aria-hidden="true">+</span>
+                  )}
+                </span>
+                <span>
+                  <small>
+                    {quantity === 1 ? "Selected artwork" : "Position " + (index + 1)}
+                  </small>
+                  <strong>{product?.title ?? "Choose artwork"}</strong>
+                </span>
+                {quantity === 3 && product ? (
+                  <span className={styles.orderButtons}>
                     <button
-                      className={
-                        layout.id === layoutId ? styles.layoutChoiceActive : ""
-                      }
                       type="button"
-                      key={layout.id}
-                      aria-pressed={layout.id === layoutId}
-                      onClick={() => setLayoutId(layout.id)}
+                      title={"Move " + product.title + " left"}
+                      aria-label={"Move " + product.title + " left"}
+                      disabled={index === 0}
+                      onClick={() => onMove(index, -1)}
                     >
-                      <span
-                        className={styles.layoutIcon + " " + iconClass}
-                        aria-hidden="true"
-                      >
-                        <i />
-                        <i />
-                        <i />
-                      </span>
-                      <strong>{layout.label}</strong>
+                      {"\u2190"}
                     </button>
-                  );
-                })}
+                    <button
+                      type="button"
+                      title={"Move " + product.title + " right"}
+                      aria-label={"Move " + product.title + " right"}
+                      disabled={index === products.length - 1}
+                      onClick={() => onMove(index, 1)}
+                    >
+                      {"\u2192"}
+                    </button>
+                  </span>
+                ) : null}
               </div>
-            </fieldset>
-          ) : null}
-
-          <div className={styles.wallOrder}>
-            <p className={styles.wallControlLabel}>Artwork order</p>
-            <div>
-              {products.map((product, index) => (
-                <div className={styles.orderItem} key={product?.slug ?? `empty-${index}`}>
-                  <span
-                    className={`${styles.orderThumbnail} ${product ? "" : styles.orderThumbnailEmpty}`}
-                  >
-                    {product ? (
-                      <ArtworkImage src={product.image} title={product.title} />
-                    ) : (
-                      <span aria-hidden="true">+</span>
-                    )}
-                  </span>
-                  <span>
-                    <small>
-                      {quantity === 1 ? "Selected artwork" : "Position " + (index + 1)}
-                    </small>
-                    <strong>{product?.title ?? "Choose artwork"}</strong>
-                  </span>
-                  {quantity === 3 && product ? (
-                    <span className={styles.orderButtons}>
-                      <button
-                        type="button"
-                        title={"Move " + product.title + " left"}
-                        aria-label={"Move " + product.title + " left"}
-                        disabled={index === 0}
-                        onClick={() => onMove(index, -1)}
-                      >
-                        {"\u2190"}
-                      </button>
-                      <button
-                        type="button"
-                        title={"Move " + product.title + " right"}
-                        aria-label={"Move " + product.title + " right"}
-                        disabled={index === products.length - 1}
-                        onClick={() => onMove(index, 1)}
-                      >
-                        {"\u2192"}
-                      </button>
-                    </span>
-                  ) : null}
-                </div>
-              ))}
-            </div>
+            ))}
           </div>
-
-          <dl className={styles.wallMeasurements}>
-            <div>
-              <dt>Each piece</dt>
-              <dd>{option.finishedWidth} x {option.finishedHeight} in</dd>
-            </div>
-            <div>
-              <dt>Wall spread</dt>
-              <dd>
-                {formatInches(wallSpreadInches)} x {formatInches(wallHeightInches)} in
-              </dd>
-            </div>
-            {quantity === 3 ? (
-              <div>
-                <dt>Suggested gap</dt>
-                <dd>{gapInches} in</dd>
-              </div>
-            ) : null}
-            <div>
-              <dt>Finish</dt>
-              <dd>
-                {option.format === "Print only"
-                  ? "Print only"
-                  : frameColor + (option.isMatted ? ", matted" : ", no mat")}
-              </dd>
-            </div>
-          </dl>
         </div>
+
+        <dl className={styles.wallMeasurements}>
+          <div>
+            <dt>Each piece</dt>
+            <dd>{option.finishedWidth} x {option.finishedHeight} in</dd>
+          </div>
+          <div>
+            <dt>Wall spread</dt>
+            <dd>
+              {formatInches(wallSpreadInches)} x {formatInches(wallHeightInches)} in
+            </dd>
+          </div>
+          {quantity === 3 ? (
+            <div>
+              <dt>Suggested gap</dt>
+              <dd>{gapInches} in</dd>
+            </div>
+          ) : null}
+          <div>
+            <dt>Finish</dt>
+            <dd>
+              {option.format === "Print only"
+                ? "Print only"
+                : frameColor + (option.isMatted ? ", matted" : ", no mat")}
+            </dd>
+          </div>
+        </dl>
       </div>
 
       <p className={styles.visualizerNote}>
@@ -369,4 +368,3 @@ export function GalleryPreview({
     </section>
   );
 }
-
