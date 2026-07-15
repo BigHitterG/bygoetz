@@ -106,7 +106,7 @@ export function GalleryPreview({
     : (room.referenceWidthPercent ?? 48) / (room.referenceWidthInches ?? 54);
   const spreadPercent =
     isCloseup && quantity === 1
-      ? 58
+      ? 44
       : Math.min(isCloseup ? 78 : 66, wallSpreadInches * scalePercentPerInch);
   const frameHeightPercent = Math.min(
     isCloseup ? 58 : 42,
