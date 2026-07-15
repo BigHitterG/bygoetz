@@ -87,6 +87,20 @@ export function BuildASetPage({ checkoutConfigured }: BuildASetPageProps) {
     });
   }
 
+  function handleMove(index: number, direction: -1 | 1) {
+    setSelectedSlugs((current) => {
+      const destination = index + direction;
+      if (destination < 0 || destination >= current.length) return current;
+
+      const next = [...current];
+      [next[index], next[destination]] = [next[destination], next[index]];
+      setAnnouncement(
+        `${selectedProducts[index]?.title ?? "Artwork"} moved to position ${destination + 1}.`,
+      );
+      return next;
+    });
+  }
+
   async function beginCheckout() {
     if (!ready) {
       document.getElementById("artwork-choices")?.scrollIntoView({ behavior: "smooth" });
@@ -192,11 +206,15 @@ export function BuildASetPage({ checkoutConfigured }: BuildASetPageProps) {
               selectedOptionId={selectedOptionId}
               onChange={setSelectedOptionId}
             />
-            <GalleryPreview products={selectedProducts} option={selectedOption} />
+            <GalleryPreview
+              products={selectedProducts}
+              option={selectedOption}
+              onMove={handleMove}
+            />
             <section className={styles.checkoutSummary} id="set-checkout">
               <div>
                 <p className={styles.eyebrow}>Your set</p>
-                <h2>{selectedProducts.map((product) => product.title).join(" · ")}</h2>
+                <h2>{selectedProducts.map((product) => product.title).join(" Â· ")}</h2>
                 <p>
                   Three {selectedOption.label.toLowerCase()} {"\u00b7"}{" "}
                   <s>{formatUsd(selectedOption.retailTotalCents)}</s>{" "}
@@ -216,7 +234,7 @@ export function BuildASetPage({ checkoutConfigured }: BuildASetPageProps) {
                   {busy
                     ? "Opening Checkout..."
                     : checkoutConfigured
-                      ? `Checkout · ${formatUsd(selectedOption.totalPriceCents)}`
+                      ? `Checkout Â· ${formatUsd(selectedOption.totalPriceCents)}`
                       : "Set Checkout Coming Soon"}
                 </button>
                 {!checkoutConfigured ? (

@@ -51,6 +51,9 @@
 .primaryButton:focus-visible,
 .artworkCard:focus-visible,
 .optionCard:has(input:focus-visible),
+.segmentedChoices button:focus-visible,
+.layoutChoices button:focus-visible,
+.orderButtons button:focus-visible,
 .mobileSummary button:focus-visible,
 .faq summary:focus-visible {
   outline: 3px solid #2466c8;
@@ -430,100 +433,396 @@
 }
 
 .galleryPreview {
-  display: grid;
-  grid-template-columns: minmax(220px, 0.62fr) minmax(0, 1.38fr);
-  gap: clamp(34px, 6vw, 84px);
-  align-items: center;
+  display: block;
 }
 
-.previewCopy h2 {
+.previewHeading {
+  display: grid;
+  grid-template-columns: minmax(280px, 0.8fr) minmax(300px, 1.2fr);
+  gap: clamp(30px, 7vw, 100px);
+  align-items: end;
+  margin-bottom: 30px;
+}
+
+.previewHeading h2 {
   font-size: 3.5rem;
 }
 
-.previewCopy p:not(.eyebrow) {
-  margin: 20px 0 0;
+.previewHeading > p {
+  max-width: 650px;
+  margin: 0;
+  color: #4c4c4c;
+  line-height: 1.65;
 }
 
-.previewRoom {
-  position: relative;
+.wallStudio {
   display: grid;
-  min-height: 440px;
-  place-items: center;
+  grid-template-columns: minmax(0, 1.52fr) minmax(300px, 0.7fr);
   overflow: hidden;
   border: 1px solid #d8d2c9;
-  background: #d9e5e1;
+  background: #fff;
 }
 
-.previewRoom::before {
-  position: absolute;
-  inset: 72% 0 0;
-  border-top: 8px solid #fff;
-  background: #efb969;
-  content: "";
-}
-
-.previewPrints {
+.wallScene {
   position: relative;
-  z-index: 1;
+  aspect-ratio: 3 / 2;
+  overflow: hidden;
+  background: #eee9e0;
+}
+
+.roomBackground {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.wallArtGroup {
+  position: absolute;
+  z-index: 2;
+  top: var(--art-center-y);
+  left: 50%;
   display: flex;
-  width: 88%;
+  width: var(--wall-spread);
+  height: var(--frame-height);
+  align-items: center;
+  justify-content: space-between;
+  transform: translate(-50%, -50%);
+}
+
+.wallFrame {
+  position: relative;
+  display: grid;
+  box-sizing: border-box;
+  width: var(--frame-width);
+  height: 100%;
+  flex: 0 0 var(--frame-width);
+  place-items: center;
+  border: clamp(2px, 0.34vw, 5px) solid #7f7369;
+  background: #fff;
+  padding: 0;
+  box-shadow: 0 5px 12px rgba(47, 39, 30, 0.18);
+  transition: transform 220ms ease;
+}
+
+.wallFrame img,
+.wallFrame > div {
+  position: absolute;
+  top: 3%;
+  left: 3%;
+  width: 94%;
+  height: 94%;
+  object-fit: contain;
+}
+
+.wallFrameMatted img,
+.wallFrameMatted > div {
+  top: 15%;
+  left: 15%;
+  width: 70%;
+  height: 70%;
+}
+
+.wallLayoutArc .wallFrame:first-child,
+.wallLayoutArc .wallFrame:last-child {
+  transform: translateY(9%);
+}
+
+.wallLayoutArc .wallFrame:nth-child(2) {
+  transform: translateY(-8%);
+}
+
+.wallLayoutStaggered .wallFrame:first-child {
+  transform: translateY(-9%);
+}
+
+.wallLayoutStaggered .wallFrame:nth-child(2) {
+  transform: translateY(8%);
+}
+
+.wallLayoutStaggered .wallFrame:last-child {
+  transform: translateY(-2%);
+}
+
+.frameNumber {
+  position: absolute;
+  right: -8px;
+  bottom: -8px;
+  display: grid;
+  width: 18px;
+  height: 18px;
+  place-items: center;
+  border-radius: 50%;
+  background: #111;
+  color: #fff;
+  font-size: 0.6rem;
+  font-weight: 800;
+}
+
+.wallDimension {
+  position: absolute;
+  z-index: 3;
+  top: var(--dimension-top);
+  left: 50%;
+  display: grid;
+  width: var(--wall-spread);
+  grid-template-columns: minmax(10px, 1fr) auto minmax(10px, 1fr);
+  align-items: center;
+  gap: 7px;
+  transform: translateX(-50%);
+  color: #594f47;
+  font-size: clamp(0.55rem, 1vw, 0.74rem);
+}
+
+.wallDimension span {
+  height: 1px;
+  background: #76695e;
+}
+
+.wallDimension span:first-child::before,
+.wallDimension span:last-child::after {
+  display: block;
+  width: 1px;
+  height: 7px;
+  background: #76695e;
+  content: "";
+  transform: translateY(-3px);
+}
+
+.wallDimension span:last-child::after {
+  margin-left: auto;
+}
+
+.scaleReference {
+  position: absolute;
+  z-index: 2;
+  right: 14px;
+  bottom: 12px;
+  border: 1px solid rgba(17, 17, 17, 0.4);
+  background: rgba(255, 253, 248, 0.9);
+  padding: 5px 8px;
+  color: #3f3832;
+  font-size: 0.65rem;
+  font-weight: 700;
+}
+
+.wallControls {
+  display: grid;
+  align-content: start;
+  gap: 24px;
+  border-left: 1px solid #d8d2c9;
+  padding: clamp(20px, 3vw, 34px);
+}
+
+.wallControlGroup {
+  min-width: 0;
+  margin: 0;
+  border: 0;
+  padding: 0;
+}
+
+.wallControlGroup legend,
+.wallControlLabel {
+  margin: 0 0 10px;
+  padding: 0;
+  color: #6a6259;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.segmentedChoices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.segmentedChoices button {
+  min-height: 36px;
+  border: 1px solid #cfc7bc;
+  border-radius: 999px;
+  background: #fff;
+  padding: 0 13px;
+  color: #26221f;
+  cursor: pointer;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.segmentedChoices .segmentChoiceActive {
+  border-color: #111;
+  background: #111;
+  color: #fff;
+}
+
+.layoutChoices {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.layoutChoices button {
+  display: grid;
+  min-width: 0;
+  min-height: 84px;
+  justify-items: center;
+  border: 1px solid #cfc7bc;
+  background: #fff;
+  padding: 9px 5px;
+  color: #26221f;
+  cursor: pointer;
+}
+
+.layoutChoices .layoutChoiceActive {
+  border-color: #111;
+  box-shadow: inset 0 -4px 0 #f2c94c;
+}
+
+.layoutChoices strong {
+  overflow-wrap: anywhere;
+  font-size: 0.68rem;
+}
+
+.layoutChoices small {
+  display: none;
+}
+
+.layoutIcon {
+  position: relative;
+  display: flex;
+  width: 46px;
+  height: 26px;
   align-items: center;
   justify-content: center;
-  gap: clamp(10px, 2.2vw, 26px);
-  transform: translateY(-28px);
+  gap: 3px;
 }
 
-.previewSheet {
+.layoutIcon i {
+  display: block;
+  width: 10px;
+  height: 14px;
+  border: 1px solid #5b524b;
+  background: #fffdf8;
+}
+
+.layoutIconArc i:first-child,
+.layoutIconArc i:last-child {
+  transform: translateY(3px);
+}
+
+.layoutIconArc i:nth-child(2) {
+  transform: translateY(-2px);
+}
+
+.layoutIconStaggered i:first-child {
+  transform: translateY(-2px);
+}
+
+.layoutIconStaggered i:nth-child(2) {
+  transform: translateY(3px);
+}
+
+.wallOrder > div {
+  border-top: 1px solid #ddd6cc;
+}
+
+.orderItem {
   display: grid;
-  width: min(27%, 180px);
+  grid-template-columns: 38px minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  border-bottom: 1px solid #ddd6cc;
+  padding: 8px 0;
+}
+
+.orderThumbnail {
+  display: grid;
+  width: 38px;
+  height: 42px;
   place-items: center;
-  border: 1px solid #d8d2c9;
-  background: #fff;
-  padding: clamp(9px, 1.5vw, 18px);
-  box-shadow: 0 14px 28px rgba(34, 38, 35, 0.14);
+  background: #fffdf8;
+  padding: 3px;
 }
 
-.previewEightByTen {
-  aspect-ratio: 4 / 5;
-}
-
-.previewElevenByFourteen {
-  aspect-ratio: 11 / 14;
-}
-
-.previewMatted {
-  padding: clamp(19px, 2.8vw, 38px);
-}
-
-.previewSheet img {
+.orderThumbnail img,
+.orderThumbnail > div {
   width: 100%;
   height: 100%;
   object-fit: contain;
 }
 
-.previewBench {
-  position: absolute;
-  right: 11%;
-  bottom: 11%;
-  width: 40%;
-  height: 11%;
-  border-top: 14px solid #223f48;
+.orderItem > span:nth-child(2) {
+  display: grid;
+  min-width: 0;
 }
 
-.previewBench span {
-  position: absolute;
-  top: 0;
-  width: 12px;
-  height: 75px;
-  background: #223f48;
+.orderItem small {
+  color: #776f67;
+  font-size: 0.62rem;
 }
 
-.previewBench span:first-child {
-  left: 12%;
+.orderItem strong {
+  overflow: hidden;
+  font-size: 0.78rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.previewBench span:last-child {
-  right: 12%;
+.orderButtons {
+  display: flex;
+  gap: 4px;
+}
+
+.orderButtons button {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  border: 1px solid #bfb6ab;
+  background: #fff;
+  color: #111;
+  cursor: pointer;
+  font-size: 1rem;
+}
+
+.orderButtons button:disabled {
+  cursor: default;
+  opacity: 0.25;
+}
+
+.wallMeasurements {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  border-top: 2px solid #111;
+  padding-top: 13px;
+}
+
+.wallMeasurements > div {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 18px;
+}
+
+.wallMeasurements dt {
+  color: #71685f;
+  font-size: 0.75rem;
+}
+
+.wallMeasurements dd {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 750;
+  text-align: right;
+}
+
+.visualizerNote {
+  margin: 11px 0 0;
+  color: #736b63;
+  font-size: 0.72rem;
+  line-height: 1.5;
 }
 
 .checkoutSummary {
@@ -800,7 +1099,7 @@
     font-size: 3rem;
   }
 
-  .previewCopy h2,
+  .previewHeading h2,
   .perfectFor h2,
   .artistSection h2,
   .faq h2 {
@@ -837,10 +1136,24 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .galleryPreview,
   .perfectFor,
   .artistSection {
     grid-template-columns: 1fr;
+  }
+
+  .wallStudio {
+    grid-template-columns: 1fr;
+  }
+
+  .wallControls {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    border-top: 1px solid #d8d2c9;
+    border-left: 0;
+  }
+
+  .wallOrder,
+  .wallMeasurements {
+    grid-column: 1 / -1;
   }
 
   .qualityBand {
@@ -908,7 +1221,7 @@
   }
 
   .optionFieldset legend,
-  .previewCopy h2,
+  .previewHeading h2,
   .perfectFor h2,
   .artistSection h2,
   .faq h2 {
@@ -981,22 +1294,48 @@
     display: grid;
   }
 
-  .previewRoom {
-    min-height: 330px;
+  .previewHeading {
+    grid-template-columns: 1fr;
+    gap: 18px;
   }
 
-  .previewPrints {
-    width: 94%;
-    gap: 8px;
+  .wallStudio {
+    margin-right: -12px;
+    margin-left: -12px;
   }
 
-  .previewSheet {
-    width: 30%;
-    padding: 7px;
+  .wallControls {
+    grid-template-columns: 1fr;
+    gap: 22px;
+    padding: 22px 16px;
   }
 
-  .previewMatted {
-    padding: 14px;
+  .wallOrder,
+  .wallMeasurements {
+    grid-column: auto;
+  }
+
+  .wallFrame {
+    border-width: 2px;
+  }
+
+  .frameNumber {
+    right: -6px;
+    bottom: -6px;
+    width: 14px;
+    height: 14px;
+    font-size: 0.5rem;
+  }
+
+  .scaleReference {
+    right: 7px;
+    bottom: 6px;
+    padding: 3px 5px;
+    font-size: 0.55rem;
+  }
+
+  .layoutChoices button {
+    min-height: 78px;
   }
 
   .checkoutSummary {
