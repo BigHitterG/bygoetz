@@ -1541,10 +1541,21 @@
   inset: 0;
   padding: 5px;
   background-image:
-    linear-gradient(rgba(236, 215, 177, 0.18), rgba(118, 79, 40, 0.06)),
-    url("/explorers/rooms/dresser.jpg");
-  background-position: center, 35% 69%;
-  background-size: cover, 900%;
+    repeating-linear-gradient(
+      2deg,
+      rgba(255, 247, 226, 0.18) 0 1px,
+      rgba(106, 69, 34, 0.07) 1px 2px,
+      transparent 2px 5px
+    ),
+    linear-gradient(
+      102deg,
+      #a97843 0%,
+      #d8b67d 20%,
+      #b68a53 42%,
+      #e3c58f 66%,
+      #a8753f 100%
+    );
+  background-size: 100% 8px, cover;
   content: "";
   pointer-events: none;
   -webkit-mask:
