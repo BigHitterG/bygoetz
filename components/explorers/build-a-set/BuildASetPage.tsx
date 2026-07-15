@@ -214,7 +214,7 @@ export function BuildASetPage({ checkoutConfigured }: BuildASetPageProps) {
             <section className={styles.checkoutSummary} id="set-checkout">
               <div>
                 <p className={styles.eyebrow}>Your set</p>
-                <h2>{selectedProducts.map((product) => product.title).join(" Â· ")}</h2>
+                <h2>{selectedProducts.map((product) => product.title).join(" \u00b7 ")}</h2>
                 <p>
                   Three {selectedOption.label.toLowerCase()} {"\u00b7"}{" "}
                   <s>{formatUsd(selectedOption.retailTotalCents)}</s>{" "}
@@ -234,7 +234,7 @@ export function BuildASetPage({ checkoutConfigured }: BuildASetPageProps) {
                   {busy
                     ? "Opening Checkout..."
                     : checkoutConfigured
-                      ? `Checkout Â· ${formatUsd(selectedOption.totalPriceCents)}`
+                      ? `Checkout \u00b7 ${formatUsd(selectedOption.totalPriceCents)}`
                       : "Set Checkout Coming Soon"}
                 </button>
                 {!checkoutConfigured ? (
