@@ -16,7 +16,7 @@ type RoomId = "wall" | "crib" | "twin-bed" | "dresser" | "reading-nook";
 type LayoutId = "row" | "arc" | "staggered";
 
 type GalleryPreviewProps = {
-  products: ExplorerProduct[];
+  products: Array<ExplorerProduct | null>;
   option: ExplorerSetOption;
   quantity: ExplorerOrderQuantity;
   frameColor: ExplorerFrameColor;
@@ -101,13 +101,13 @@ export function GalleryPreview({
     option.finishedHeight + (quantity === 3 && layoutId !== "row" ? 3 : 0);
   const scalePercentPerInch = isCloseup
     ? quantity === 1
-      ? 2.75
+      ? 5
       : 1.78
     : (room.referenceWidthPercent ?? 48) / (room.referenceWidthInches ?? 54);
-  const spreadPercent = Math.min(
-    isCloseup ? 78 : 66,
-    wallSpreadInches * scalePercentPerInch,
-  );
+  const spreadPercent =
+    isCloseup && quantity === 1
+      ? 58
+      : Math.min(isCloseup ? 78 : 66, wallSpreadInches * scalePercentPerInch);
   const frameHeightPercent = Math.min(
     isCloseup ? 58 : 42,
     option.finishedHeight * scalePercentPerInch * (isCloseup ? 1.18 : 1.5),
@@ -190,12 +190,25 @@ export function GalleryPreview({
               String(quantity) +
               " " +
               option.label.toLowerCase() +
+              ", " +
+              products.filter(Boolean).length +
+              " selected" +
               (isCloseup ? " shown close up" : " shown " + room.label.toLowerCase())
             }
           >
             {products.map((product, index) => (
-              <div className={pieceClassName} key={product.slug}>
-                <ArtworkImage src={product.image} title={product.title} />
+              <div
+                className={`${pieceClassName} ${product ? "" : styles.wallFrameEmpty}`}
+                key={product?.slug ?? `empty-${index}`}
+              >
+                {product ? (
+                  <ArtworkImage src={product.image} title={product.title} />
+                ) : (
+                  <span className={styles.emptyArtwork} aria-hidden="true">
+                    <i>+</i>
+                    <small>Choose artwork</small>
+                  </span>
+                )}
                 <span className={styles.acrylicGlint} aria-hidden="true" />
                 <span className={styles.frameNumber} aria-hidden="true">
                   {index + 1}
@@ -273,17 +286,23 @@ export function GalleryPreview({
             <p className={styles.wallControlLabel}>Artwork order</p>
             <div>
               {products.map((product, index) => (
-                <div className={styles.orderItem} key={product.slug}>
-                  <span className={styles.orderThumbnail}>
-                    <ArtworkImage src={product.image} title={product.title} />
+                <div className={styles.orderItem} key={product?.slug ?? `empty-${index}`}>
+                  <span
+                    className={`${styles.orderThumbnail} ${product ? "" : styles.orderThumbnailEmpty}`}
+                  >
+                    {product ? (
+                      <ArtworkImage src={product.image} title={product.title} />
+                    ) : (
+                      <span aria-hidden="true">+</span>
+                    )}
                   </span>
                   <span>
                     <small>
                       {quantity === 1 ? "Selected artwork" : "Position " + (index + 1)}
                     </small>
-                    <strong>{product.title}</strong>
+                    <strong>{product?.title ?? "Choose artwork"}</strong>
                   </span>
-                  {quantity === 3 ? (
+                  {quantity === 3 && product ? (
                     <span className={styles.orderButtons}>
                       <button
                         type="button"
