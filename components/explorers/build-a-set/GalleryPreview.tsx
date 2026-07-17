@@ -21,6 +21,8 @@ type GalleryPreviewProps = {
   quantity: ExplorerOrderQuantity;
   frameColor: ExplorerFrameColor;
   onMove: (index: number, direction: -1 | 1) => void;
+  initialLayoutId?: string;
+  initialRoomId?: string;
   children: ReactNode;
 };
 
@@ -70,7 +72,7 @@ const rooms: RoomReference[] = [
     referenceLabel: "reading bench",
     referenceWidthInches: 60,
     referenceWidthPercent: 66,
-    artCenterYPercent: 35,
+    artCenterYPercent: 34,
   },
 ];
 
@@ -90,10 +92,18 @@ export function GalleryPreview({
   quantity,
   frameColor,
   onMove,
+  initialLayoutId,
+  initialRoomId,
   children,
 }: GalleryPreviewProps) {
-  const [roomId, setRoomId] = useState<RoomId>("wall");
-  const [layoutId, setLayoutId] = useState<LayoutId>("row");
+  const initialRoom = rooms.some((room) => room.id === initialRoomId)
+    ? (initialRoomId as RoomId)
+    : "wall";
+  const initialLayout = layouts.some((layout) => layout.id === initialLayoutId)
+    ? (initialLayoutId as LayoutId)
+    : "row";
+  const [roomId, setRoomId] = useState<RoomId>(initialRoom);
+  const [layoutId, setLayoutId] = useState<LayoutId>(initialLayout);
   const room = rooms.find((item) => item.id === roomId) ?? rooms[0];
   const isCloseup = room.id === "wall";
   const gapInches = 2;
@@ -161,9 +171,9 @@ export function GalleryPreview({
 
       <div className={styles.wallStudio}>
         <div
-          className={
-            styles.wallScene + (isCloseup ? " " + styles.wallSceneCloseup : "")
-          }
+          className={[styles.wallScene, isCloseup ? styles.wallSceneCloseup : ""]
+            .filter(Boolean)
+            .join(" ")}
           style={{ ...visualizerStyle, gridColumn: "1 / -1" }}
         >
           {room.image ? (
@@ -174,10 +184,52 @@ export function GalleryPreview({
               loading="eager"
               fill
               sizes="(max-width: 900px) 100vw, 68vw"
+              style={
+                room.id === "reading-nook"
+                  ? {
+                      filter:
+                        "saturate(.78) sepia(.08) contrast(1.02) brightness(1.01)",
+                    }
+                  : undefined
+              }
             />
           ) : (
             <div className={styles.closeupWallTexture} aria-hidden="true" />
           )}
+
+          {room.id === "reading-nook" ? (
+            <>
+              <span
+                aria-hidden="true"
+                style={{
+                  position: "absolute",
+                  zIndex: 1,
+                  inset: "0 auto 0 0",
+                  width: "4.5%",
+                  background:
+                    "repeating-linear-gradient(92deg,#b98651 0 4px,#d1a56f 4px 11px,#b27b46 11px 14px)",
+                  boxShadow: "5px 0 13px rgba(63,43,27,.15)",
+                  opacity: 0.78,
+                  pointerEvents: "none",
+                }}
+              />
+              <span
+                aria-hidden="true"
+                style={{
+                  position: "absolute",
+                  zIndex: 1,
+                  inset: "0 0 0 auto",
+                  width: "8%",
+                  borderLeft: "4px solid #a87442",
+                  background:
+                    "repeating-linear-gradient(0deg,rgba(78,48,25,.62) 0 3px,transparent 3px 23%,rgba(78,48,25,.54) 23% calc(23% + 4px),transparent calc(23% + 4px) 48%),linear-gradient(90deg,#bd8b57,#d3ab76 38%,#9d6c3e)",
+                  boxShadow: "-7px 0 18px rgba(63,43,27,.2)",
+                  opacity: 0.88,
+                  pointerEvents: "none",
+                }}
+              />
+            </>
+          ) : null}
 
           <div
             className={styles.wallArtGroup + " " + layoutClass}
