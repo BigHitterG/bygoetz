@@ -35,19 +35,41 @@ export const metadata: Metadata = {
 };
 
 type PageProps = {
-  searchParams: Promise<{ artwork?: string; quantity?: string }>;
+  searchParams: Promise<{
+    artwork?: string;
+    artworks?: string;
+    frame?: string;
+    landing?: string;
+    layout?: string;
+    option?: string;
+    quantity?: string;
+    room?: string;
+  }>;
 };
 
 export default async function Page({ searchParams }: PageProps) {
   const params = await searchParams;
   const initialArtworkSlug =
     params.quantity === "1" ? params.artwork : undefined;
+  const initialArtworkSlugs =
+    params.quantity === "3"
+      ? params.artworks
+          ?.split(",")
+          .map((slug) => slug.trim())
+          .filter(Boolean)
+          .slice(0, 3)
+      : undefined;
 
   return (
     <BuildASetPage
       checkoutConfigured={isExplorerSetCheckoutConfigured()}
       initialArtworkSlug={initialArtworkSlug}
+      initialArtworkSlugs={initialArtworkSlugs}
+      initialFrameColor={params.frame}
+      initialLandingMode={params.landing}
+      initialLayoutId={params.layout}
+      initialOptionId={params.option}
+      initialRoomId={params.room}
     />
   );
 }
-
