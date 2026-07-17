@@ -10,6 +10,7 @@ import type {
 } from "@/lib/explorers/buildASet";
 import { withSiteBasePath } from "@/lib/sitePath";
 import { ArtworkImage } from "../ArtworkImage";
+import { readingNookBackground } from "./readingNookBackground";
 import styles from "./BuildASet.module.css";
 
 type RoomId = "wall" | "crib" | "twin-bed" | "dresser" | "reading-nook";
@@ -68,7 +69,7 @@ const rooms: RoomReference[] = [
   {
     id: "reading-nook",
     label: "Reading nook",
-    image: "/explorers/rooms/reading-nook.jpg",
+    image: readingNookBackground,
     referenceLabel: "reading bench",
     referenceWidthInches: 60,
     referenceWidthPercent: 66,
@@ -179,57 +180,16 @@ export function GalleryPreview({
           {room.image ? (
             <Image
               className={styles.roomBackground}
-              src={withSiteBasePath(room.image)}
+              src={room.image.startsWith("data:") ? room.image : withSiteBasePath(room.image)}
               alt={room.label + " scale reference"}
               loading="eager"
+              unoptimized={room.image.startsWith("data:")}
               fill
               sizes="(max-width: 900px) 100vw, 68vw"
-              style={
-                room.id === "reading-nook"
-                  ? {
-                      filter:
-                        "saturate(.78) sepia(.08) contrast(1.02) brightness(1.01)",
-                    }
-                  : undefined
-              }
             />
           ) : (
             <div className={styles.closeupWallTexture} aria-hidden="true" />
           )}
-
-          {room.id === "reading-nook" ? (
-            <>
-              <span
-                aria-hidden="true"
-                style={{
-                  position: "absolute",
-                  zIndex: 1,
-                  inset: "0 auto 0 0",
-                  width: "4.5%",
-                  background:
-                    "repeating-linear-gradient(92deg,#b98651 0 4px,#d1a56f 4px 11px,#b27b46 11px 14px)",
-                  boxShadow: "5px 0 13px rgba(63,43,27,.15)",
-                  opacity: 0.78,
-                  pointerEvents: "none",
-                }}
-              />
-              <span
-                aria-hidden="true"
-                style={{
-                  position: "absolute",
-                  zIndex: 1,
-                  inset: "0 0 0 auto",
-                  width: "8%",
-                  borderLeft: "4px solid #a87442",
-                  background:
-                    "repeating-linear-gradient(0deg,rgba(78,48,25,.62) 0 3px,transparent 3px 23%,rgba(78,48,25,.54) 23% calc(23% + 4px),transparent calc(23% + 4px) 48%),linear-gradient(90deg,#bd8b57,#d3ab76 38%,#9d6c3e)",
-                  boxShadow: "-7px 0 18px rgba(63,43,27,.2)",
-                  opacity: 0.88,
-                  pointerEvents: "none",
-                }}
-              />
-            </>
-          ) : null}
 
           <div
             className={styles.wallArtGroup + " " + layoutClass}
