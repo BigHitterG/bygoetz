@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { trackMetaCustomEvent, trackMetaEvent } from "@/lib/analytics/metaPixel";
 import {
   explorerSetOptions,
@@ -72,8 +72,8 @@ export function BuildASetPage({
     startsWithSet
       ? validInitialArtworks
       : validInitialArtwork
-        ? [validInitialArtwork]
-        : ["monkey", "explorer", "turtle"],
+      ? [validInitialArtwork]
+      : ["monkey", "explorer", "turtle"],
   );
   const [selectedOptionId, setSelectedOptionId] = useState<ExplorerSetOptionId>(
     validInitialOptionId,
@@ -84,8 +84,8 @@ export function BuildASetPage({
     startsWithSet
       ? "Your reading nook gallery is ready to customize."
       : validInitialArtwork
-        ? "Your selected Explorer is ready to customize."
-        : "Three Explorers selected.",
+      ? "Your selected Explorer is ready to customize."
+      : "Three Explorers selected.",
   );
   const [checkoutError, setCheckoutError] = useState("");
   const [busy, setBusy] = useState(false);
@@ -113,8 +113,12 @@ export function BuildASetPage({
   const progressLabel = ready
     ? "Ready to customize"
     : `${selectedProducts.length} of ${quantity} selected`;
+  const hasTrackedLanding = useRef(false);
 
   useEffect(() => {
+    if (hasTrackedLanding.current) return;
+    hasTrackedLanding.current = true;
+
     trackMetaEvent("ViewContent", {
       content_name: "Build Your Own Explorers Print Set",
       content_category: "Physical Print Set",
