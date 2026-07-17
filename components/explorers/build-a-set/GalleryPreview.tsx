@@ -69,7 +69,7 @@ const rooms: RoomReference[] = [
   {
     id: "reading-nook",
     label: "Reading nook",
-    image: readingNookBackground,
+    image: readingNookBackground.replace("WPxRGE2ax", "WPxRGE2axZ"),
     referenceLabel: "reading bench",
     referenceWidthInches: 60,
     referenceWidthPercent: 66,
