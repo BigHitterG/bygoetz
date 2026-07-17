@@ -21,33 +21,71 @@ import styles from "./BuildASet.module.css";
 type BuildASetPageProps = {
   checkoutConfigured: boolean;
   initialArtworkSlug?: string;
+  initialArtworkSlugs?: string[];
+  initialFrameColor?: string;
+  initialLandingMode?: string;
+  initialLayoutId?: string;
+  initialOptionId?: string;
+  initialRoomId?: string;
 };
 
 export function BuildASetPage({
   checkoutConfigured,
   initialArtworkSlug,
+  initialArtworkSlugs,
+  initialFrameColor,
+  initialLandingMode,
+  initialLayoutId,
+  initialOptionId,
+  initialRoomId,
 }: BuildASetPageProps) {
   const validInitialArtwork = explorerProducts.some(
     (product) => product.slug === initialArtworkSlug,
   )
     ? initialArtworkSlug
     : undefined;
+  const validInitialArtworks = Array.from(
+    new Set(
+      (initialArtworkSlugs ?? []).filter((slug) =>
+        explorerProducts.some((product) => product.slug === slug),
+      ),
+    ),
+  ).slice(0, 3);
+  const startsWithSet = validInitialArtworks.length === 3;
+  const validInitialOptionId = explorerSetOptions.some(
+    (option) => option.id === initialOptionId,
+  )
+    ? (initialOptionId as ExplorerSetOptionId)
+    : "8x10-framed-mat";
+  const validInitialFrameColor: ExplorerFrameColor =
+    initialFrameColor === "black" || initialFrameColor === "white"
+      ? initialFrameColor
+      : "natural";
+  const landingMode =
+    initialLandingMode === "nook-set" || initialLandingMode === "explorer-single"
+      ? initialLandingMode
+      : undefined;
   const [quantity, setQuantity] = useState<ExplorerOrderQuantity>(
-    validInitialArtwork ? 1 : 3,
+    validInitialArtwork && !startsWithSet ? 1 : 3,
   );
   const [selectedSlots, setSelectedSlots] = useState<Array<string | null>>(
-    validInitialArtwork
-      ? [validInitialArtwork]
-      : ["monkey", "explorer", "turtle"],
+    startsWithSet
+      ? validInitialArtworks
+      : validInitialArtwork
+        ? [validInitialArtwork]
+        : ["monkey", "explorer", "turtle"],
   );
   const [selectedOptionId, setSelectedOptionId] = useState<ExplorerSetOptionId>(
-    "8x10-framed-mat",
+    validInitialOptionId,
   );
-  const [frameColor, setFrameColor] = useState<ExplorerFrameColor>("natural");
+  const [frameColor, setFrameColor] =
+    useState<ExplorerFrameColor>(validInitialFrameColor);
   const [announcement, setAnnouncement] = useState(
-    validInitialArtwork
-      ? "Your selected Explorer is ready to customize."
-      : "Three Explorers selected.",
+    startsWithSet
+      ? "Your reading nook gallery is ready to customize."
+      : validInitialArtwork
+        ? "Your selected Explorer is ready to customize."
+        : "Three Explorers selected.",
   );
   const [checkoutError, setCheckoutError] = useState("");
   const [busy, setBusy] = useState(false);
@@ -81,9 +119,25 @@ export function BuildASetPage({
       content_name: "Build Your Own Explorers Print Set",
       content_category: "Physical Print Set",
       content_type: "product_group",
+      landing_experience: landingMode ?? "default",
     });
 
-  }, []);
+    if (landingMode) {
+      trackMetaCustomEvent("AdLandingExperienceView", {
+        landing_experience: landingMode,
+        room: initialRoomId ?? "wall",
+        quantity,
+        print_option: validInitialOptionId,
+        frame_color: validInitialFrameColor,
+      });
+    }
+  }, [
+    initialRoomId,
+    landingMode,
+    quantity,
+    validInitialFrameColor,
+    validInitialOptionId,
+  ]);
 
   function handleToggle(product: ExplorerProduct) {
     setCheckoutError("");
@@ -215,10 +269,17 @@ export function BuildASetPage({
   return (
     <main className={styles.page}>
       <header className={styles.productHero} aria-labelledby="build-a-set-title">
-        <p className={styles.eyebrow}>The Explorers Series</p>
-        <h1 id="build-a-set-title">Build Your Explorers Gallery</h1>
+        <p className={styles.eyebrow}>
+          The Explorers Series
+          {landingMode ? " \u00b7 Continue from the ad" : ""}
+        </p>
+        <h1 id="build-a-set-title">Design Your Own Explorers Gallery</h1>
         <p>
-          Choose one favorite or a set of three. Start designing on the wall below.
+          {landingMode === "explorer-single"
+            ? "Start with the Explorer, natural frame, and white mat you saw. Change any detail while the room stays in view."
+            : landingMode === "nook-set"
+              ? "Start with the three-print reading nook you saw. Choose different Explorers, arrangements, sizes, mats, or frames below."
+              : "Choose one favorite or a set of three. Start designing on the wall below."}
         </p>
       </header>
 
@@ -234,6 +295,8 @@ export function BuildASetPage({
             quantity={quantity}
             frameColor={frameColor}
             onMove={handleMove}
+            initialLayoutId={initialLayoutId}
+            initialRoomId={initialRoomId}
           >
             <div className={styles.configurationColumn}>
               <div className={styles.configurationGrid}>
@@ -452,4 +515,3 @@ export function BuildASetPage({
     </main>
   );
 }
-
