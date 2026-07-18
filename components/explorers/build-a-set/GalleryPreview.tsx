@@ -151,6 +151,10 @@ export function GalleryPreview({
   } as CSSProperties;
   const renderedFrameStyle = {
     backgroundImage: `url("${onWallSingleNaturalShell}")`,
+    filter:
+      frameColor === "white"
+        ? "grayscale(1) brightness(1.75) contrast(0.72)"
+        : undefined,
   } as CSSProperties;
 
   const frameColorClass =
