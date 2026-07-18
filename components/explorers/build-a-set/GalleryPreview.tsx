@@ -10,9 +10,8 @@ import type {
 } from "@/lib/explorers/buildASet";
 import { withSiteBasePath } from "@/lib/sitePath";
 import { ArtworkImage } from "../ArtworkImage";
-import styles from "./BuildASet.module.css";
 import { readingNookBackground } from "./readingNookBackground";
-import realism from "./FrameRealism.module.css";
+import styles from "./BuildASet.module.css";
 
 type RoomId = "wall" | "crib" | "twin-bed" | "dresser" | "reading-nook";
 type LayoutId = "row" | "arc" | "staggered";
@@ -39,12 +38,7 @@ type RoomReference = {
 };
 
 const rooms: RoomReference[] = [
-  {
-    id: "wall",
-    label: "On wall",
-    image: "/explorers/rooms/on-wall-gallery.svg",
-    artCenterYPercent: 46,
-  },
+  { id: "wall", label: "On wall", artCenterYPercent: 46 },
   {
     id: "crib",
     label: "Above crib",
@@ -75,7 +69,7 @@ const rooms: RoomReference[] = [
   {
     id: "reading-nook",
     label: "Reading nook",
-    image: readingNookBackground,
+    image: readingNookBackground.replace("WPxRGE2ax", "WPxRGE2axZ"),
     referenceLabel: "reading bench",
     referenceWidthInches: 60,
     referenceWidthPercent: 66,
@@ -113,21 +107,6 @@ export function GalleryPreview({
   const [layoutId, setLayoutId] = useState<LayoutId>(initialLayout);
   const room = rooms.find((item) => item.id === roomId) ?? rooms[0];
   const isCloseup = room.id === "wall";
-  const selectedSlugs = products.map((product) => product?.slug ?? "");
-  const isDefaultThreeGallery =
-    quantity === 3 &&
-    layoutId === "row" &&
-    selectedSlugs.join(",") === "monkey,explorer,turtle";
-  const isDefaultSingleGallery =
-    quantity === 1 && selectedSlugs[0] === "explorer";
-  const isBakedOnWallMockup =
-    isCloseup &&
-    option.id === "8x10-framed-mat" &&
-    frameColor === "natural" &&
-    (isDefaultThreeGallery || isDefaultSingleGallery);
-  const bakedMockupImage = isDefaultThreeGallery
-    ? "/explorers/rooms/on-wall-gallery.svg"
-    : "/explorers/rooms/on-wall-single.svg";
   const gapInches = 2;
   const wallSpreadInches =
     option.finishedWidth * quantity + gapInches * Math.max(0, quantity - 1);
@@ -168,21 +147,11 @@ export function GalleryPreview({
       : frameColor === "black"
         ? styles.wallFrameBlack
         : styles.wallFrameWhite;
-  const realisticFrameColorClass =
-    frameColor === "natural"
-      ? realism.natural
-      : frameColor === "black"
-        ? realism.black
-        : realism.white;
   const pieceClassName = [
     styles.wallFrame,
-    realism.frame,
     option.format === "Framed" ? styles.wallFrameFramed : styles.wallFramePrint,
-    option.format === "Framed" ? realism.framed : "",
     option.isMatted ? styles.wallFrameMatted : "",
-    option.isMatted ? realism.matted : "",
     option.format === "Framed" ? frameColorClass : "",
-    option.format === "Framed" ? realisticFrameColorClass : "",
   ]
     .filter(Boolean)
     .join(" ");
@@ -203,25 +172,18 @@ export function GalleryPreview({
 
       <div className={styles.wallStudio}>
         <div
-          className={[
-            styles.wallScene,
-            isCloseup ? styles.wallSceneCloseup : "",
-          ]
+          className={[styles.wallScene, isCloseup ? styles.wallSceneCloseup : ""]
             .filter(Boolean)
             .join(" ")}
           style={{ ...visualizerStyle, gridColumn: "1 / -1" }}
         >
-          {isBakedOnWallMockup || room.image ? (
+          {room.image ? (
             <Image
               className={styles.roomBackground}
-              src={withSiteBasePath(isBakedOnWallMockup ? bakedMockupImage : room.image!)}
-              alt={
-                isBakedOnWallMockup
-                  ? "Natural framed Explorers gallery on a softly textured wall"
-                  : room.label + " scale reference"
-              }
+              src={room.image.startsWith("data:") ? room.image : withSiteBasePath(room.image)}
+              alt={room.label + " scale reference"}
               loading="eager"
-              unoptimized
+              unoptimized={room.image.startsWith("data:")}
               fill
               sizes="(max-width: 900px) 100vw, 68vw"
             />
@@ -229,51 +191,47 @@ export function GalleryPreview({
             <div className={styles.closeupWallTexture} aria-hidden="true" />
           )}
 
-          {!isBakedOnWallMockup ? (
-            <div
-              className={styles.wallArtGroup + " " + layoutClass}
-              aria-label={
-                String(quantity) +
-                " " +
-                option.label.toLowerCase() +
-                ", " +
-                products.filter(Boolean).length +
-                " selected" +
-                (isCloseup ? " shown close up" : " shown " + room.label.toLowerCase())
-              }
-            >
-              {products.map((product, index) => (
-                <div
-                  className={`${pieceClassName} ${product ? "" : styles.wallFrameEmpty}`}
-                  key={product?.slug ?? `empty-${index}`}
-                >
-                  {product ? (
-                    <ArtworkImage src={product.image} title={product.title} />
-                  ) : (
-                    <span className={styles.emptyArtwork} aria-hidden="true">
-                      <i>+</i>
-                      <small>Choose artwork</small>
-                    </span>
-                  )}
-                  <span className={styles.acrylicGlint} aria-hidden="true" />
-                  <span className={styles.frameNumber} aria-hidden="true">
-                    {index + 1}
+          <div
+            className={styles.wallArtGroup + " " + layoutClass}
+            aria-label={
+              String(quantity) +
+              " " +
+              option.label.toLowerCase() +
+              ", " +
+              products.filter(Boolean).length +
+              " selected" +
+              (isCloseup ? " shown close up" : " shown " + room.label.toLowerCase())
+            }
+          >
+            {products.map((product, index) => (
+              <div
+                className={`${pieceClassName} ${product ? "" : styles.wallFrameEmpty}`}
+                key={product?.slug ?? `empty-${index}`}
+              >
+                {product ? (
+                  <ArtworkImage src={product.image} title={product.title} />
+                ) : (
+                  <span className={styles.emptyArtwork} aria-hidden="true">
+                    <i>+</i>
+                    <small>Choose artwork</small>
                   </span>
-                </div>
-              ))}
-            </div>
-          ) : null}
+                )}
+                <span className={styles.acrylicGlint} aria-hidden="true" />
+                <span className={styles.frameNumber} aria-hidden="true">
+                  {index + 1}
+                </span>
+              </div>
+            ))}
+          </div>
 
-          {!isCloseup && !isBakedOnWallMockup ? (
+          {!isCloseup ? (
             <div className={styles.wallDimension} aria-hidden="true">
               <span />
               <strong>{formatInches(wallSpreadInches)} in total</strong>
               <span />
             </div>
           ) : null}
-          {!isBakedOnWallMockup ? (
-            <span className={styles.scaleReference}>{referenceText}</span>
-          ) : null}
+          <span className={styles.scaleReference}>{referenceText}</span>
         </div>
       </div>
 
@@ -422,4 +380,3 @@ export function GalleryPreview({
     </section>
   );
 }
-
