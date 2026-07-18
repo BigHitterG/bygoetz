@@ -218,7 +218,7 @@ export function GalleryPreview({
             pointer-events: none;
           }
           .explorers-rendered-frame-tint {
-            --rendered-frame-rail: clamp(10px, 2.6vw, 18px);
+            --rendered-frame-rail: clamp(5px, 1.35vw, 12px);
             position: absolute;
             z-index: 2;
             inset: -4%;
@@ -258,9 +258,9 @@ export function GalleryPreview({
           }
           .explorers-rendered-shell[data-matted="true"] .${styles.wallFrame} img,
           .explorers-rendered-shell[data-matted="true"] .${styles.wallFrame} > div {
-            top: 15% !important;
-            left: 15% !important;
-            width: 70% !important;
+            top: 12% !important;
+            left: 14% !important;
+            width: 72% !important;
             height: 70% !important;
             box-sizing: border-box;
             border: 1px solid rgba(82, 74, 65, 0.16) !important;
