@@ -151,10 +151,6 @@ export function GalleryPreview({
   } as CSSProperties;
   const renderedFrameStyle = {
     backgroundImage: `url("${onWallSingleNaturalShell}")`,
-    filter:
-      frameColor === "white"
-        ? "grayscale(1) brightness(1.75) contrast(0.72)"
-        : undefined,
   } as CSSProperties;
 
   const frameColorClass =
@@ -230,11 +226,16 @@ export function GalleryPreview({
             mix-blend-mode: multiply;
           }
           .explorers-rendered-frame-tint-white {
-            border-color: rgba(255, 255, 255, 0.94);
+            inset: -4%;
+            border: 0;
+            background:
+              linear-gradient(#ffffff, #ffffff) top / 100% 4.5% no-repeat,
+              linear-gradient(#ffffff, #ffffff) bottom / 100% 4.5% no-repeat,
+              linear-gradient(#ffffff, #ffffff) left / 4.5% 100% no-repeat,
+              linear-gradient(#ffffff, #ffffff) right / 4.5% 100% no-repeat;
             box-shadow:
-              inset 0 0 0 1px rgba(92, 88, 82, 0.2),
-              0 0 0 1px rgba(92, 88, 82, 0.08);
-            mix-blend-mode: screen;
+              inset 0 0 0 1px rgba(92, 88, 82, 0.22),
+              0 0 0 1px rgba(92, 88, 82, 0.12);
           }
           .explorers-rendered-shell .${styles.wallFrame} img,
           .explorers-rendered-shell .${styles.wallFrame} > div {
