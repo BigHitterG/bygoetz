@@ -44,23 +44,10 @@
 }
 
 .natural {
-  background-color: #c59d68;
-  background-image:
-    repeating-linear-gradient(
-      88deg,
-      transparent 0 3px,
-      rgba(81, 49, 24, 0.055) 3px 4px,
-      transparent 4px 9px,
-      rgba(255, 247, 227, 0.06) 9px 10px,
-      transparent 10px 17px
-    ),
-    repeating-linear-gradient(
-      93deg,
-      transparent 0 11px,
-      rgba(91, 57, 29, 0.035) 11px 12px,
-      transparent 12px 23px
-    );
-  background-size: 29px 100%, 41px 100%;
+  background-color: #cfac7b;
+  background-image: url("/explorers/materials/pale-oak-v2.webp");
+  background-position: center;
+  background-size: cover;
 }
 
 .black {

@@ -39,7 +39,12 @@ type RoomReference = {
 };
 
 const rooms: RoomReference[] = [
-  { id: "wall", label: "On wall", artCenterYPercent: 46 },
+  {
+    id: "wall",
+    label: "On wall",
+    image: "/explorers/materials/legacy-wall-v2.webp",
+    artCenterYPercent: 46,
+  },
   {
     id: "crib",
     label: "Above crib",
