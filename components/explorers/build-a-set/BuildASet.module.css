@@ -1538,8 +1538,9 @@
   border: 0;
   background: #fff;
   box-shadow:
-    10px 14px 20px rgba(65, 52, 39, 0.2),
-    2px 4px 7px rgba(65, 52, 39, 0.13);
+    1px 2px 2px rgba(57, 43, 31, 0.2),
+    8px 12px 18px rgba(57, 43, 31, 0.2),
+    0 22px 42px rgba(57, 43, 31, 0.09);
 }
 
 .wallFramePrint {
@@ -1547,53 +1548,81 @@
 }
 
 .wallFrameFramed {
-  --frame-rail: clamp(1px, 2.3%, 5px);
+  --frame-rail: clamp(3px, 2.8%, 14px);
   border: 0;
   background: #c9a96f;
   box-shadow:
-    12px 16px 22px rgba(65, 52, 39, 0.24),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.45);
+    1px 2px 2px rgba(50, 36, 24, 0.2),
+    8px 13px 20px rgba(50, 36, 24, 0.23),
+    0 24px 44px rgba(50, 36, 24, 0.1),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.5);
 }
 
 .wallScene:not(.wallSceneCloseup) .wallFrame {
   box-shadow:
-    2px 4px 8px rgba(65, 52, 39, 0.16),
-    0 1px 2px rgba(65, 52, 39, 0.12);
+    1px 2px 2px rgba(65, 52, 39, 0.15),
+    4px 7px 12px rgba(65, 52, 39, 0.17),
+    0 14px 26px rgba(65, 52, 39, 0.07);
 }
 
 .wallScene:not(.wallSceneCloseup) .wallFrameFramed {
   box-shadow:
-    2px 4px 8px rgba(65, 52, 39, 0.18),
-    0 1px 2px rgba(65, 52, 39, 0.12),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.45);
+    1px 2px 2px rgba(65, 52, 39, 0.17),
+    4px 7px 13px rgba(65, 52, 39, 0.19),
+    0 15px 28px rgba(65, 52, 39, 0.08),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.46);
 }
 
 .wallFrameFramed::before {
   position: absolute;
   z-index: 1;
   inset: var(--frame-rail);
-  background: #fff;
+  background:
+    radial-gradient(circle at 22% 17%, rgba(154, 139, 118, 0.045) 0 0.7px, transparent 1px),
+    radial-gradient(circle at 74% 61%, rgba(154, 139, 118, 0.035) 0 0.6px, transparent 0.9px),
+    linear-gradient(110deg, #fffefa 0%, #f6f3eb 46%, #fffefa 100%);
+  background-size: 7px 7px, 9px 9px, cover;
+  box-shadow:
+    inset 0 0 0 1px rgba(94, 77, 58, 0.12),
+    inset 0 0 18px rgba(92, 73, 53, 0.06);
+  content: "";
+  pointer-events: none;
+}
+
+.wallFrameFramed::after {
+  position: absolute;
+  z-index: 3;
+  inset: 0;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.42), transparent 13% 84%, rgba(61, 37, 19, 0.18)),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.18), transparent 10% 88%, rgba(52, 34, 19, 0.12));
+  box-shadow:
+    inset 0 0 0 1px rgba(83, 55, 31, 0.18),
+    inset 0 0 0 2px rgba(255, 248, 232, 0.16),
+    inset 0 0 8px rgba(47, 31, 18, 0.18);
   content: "";
   pointer-events: none;
 }
 
 .wallFrameNatural {
   background-image:
+    linear-gradient(90deg, rgba(63, 38, 18, 0.18), transparent 17% 80%, rgba(63, 38, 18, 0.25)),
     repeating-linear-gradient(
-      92deg,
-      rgba(255, 247, 226, 0.16) 0 2px,
-      rgba(92, 58, 28, 0.08) 2px 3px,
-      transparent 3px 7px
+      94deg,
+      rgba(255, 247, 226, 0.22) 0 1px,
+      rgba(92, 58, 28, 0.12) 1px 2px,
+      transparent 2px 6px
     ),
     linear-gradient(
       96deg,
-      #c7975d 0%,
-      #e0bd82 27%,
-      #b98750 52%,
-      #d9b477 76%,
-      #ac7844 100%
+      #9e6d3c 0%,
+      #d8ad72 16%,
+      #edcc94 34%,
+      #bd8750 55%,
+      #dfba7d 76%,
+      #936034 100%
     );
-  background-size: 9px 100%, cover;
+  background-size: cover, 8px 100%, cover;
 }
 
 .wallFrameBlack {
@@ -1633,7 +1662,24 @@
   left: 15%;
   width: 70%;
   height: 70%;
-  box-shadow: 0 0 0 1px rgba(83, 73, 62, 0.1);
+  border: 1px solid rgba(95, 80, 60, 0.08);
+  box-shadow:
+    0 0 0 1px rgba(83, 73, 62, 0.13),
+    0 1px 2px rgba(72, 58, 43, 0.08),
+    0 0 0 7px rgba(255, 255, 255, 0.08);
+  background: #fffefa;
+}
+
+.wallFrameMatted::before {
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.72), transparent 20% 78%, rgba(116, 92, 64, 0.1)),
+    radial-gradient(circle at 22% 17%, rgba(154, 139, 118, 0.05) 0 0.7px, transparent 1px),
+    linear-gradient(110deg, #fffefa 0%, #f4f0e7 48%, #fffefa 100%);
+  background-size: cover, 7px 7px, cover;
+  box-shadow:
+    inset 0 0 0 1px rgba(94, 77, 58, 0.12),
+    inset 0 0 20px rgba(92, 73, 53, 0.08),
+    inset 0 -10px 14px rgba(75, 55, 35, 0.035);
 }
 
 .wallFrameEmpty .emptyArtwork {
@@ -1688,7 +1734,7 @@
 }
 
 .wallFrameFramed .acrylicGlint {
-  opacity: 1;
+  opacity: 0.72;
 }
 
 .frameNumber {
@@ -2128,7 +2174,7 @@
   }
 
   .wallFrameFramed {
-    --frame-rail: clamp(1px, 2.3%, 4px);
+    --frame-rail: clamp(2px, 2.8%, 8px);
   }
 
   .configurationGrid {
@@ -2169,4 +2215,5 @@
     text-align: left;
   }
 }
+
 
