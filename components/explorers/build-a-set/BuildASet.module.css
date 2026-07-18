@@ -1593,44 +1593,39 @@
   position: absolute;
   z-index: 3;
   inset: 0;
-  background:
-    linear-gradient(135deg, rgba(255, 255, 255, 0.42), transparent 13% 84%, rgba(61, 37, 19, 0.18)),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.18), transparent 10% 88%, rgba(52, 34, 19, 0.12));
+  background: transparent;
   box-shadow:
     inset 0 0 0 1px rgba(83, 55, 31, 0.18),
-    inset 0 0 0 2px rgba(255, 248, 232, 0.16),
-    inset 0 0 8px rgba(47, 31, 18, 0.18);
+    inset 1px 1px 0 rgba(255, 255, 255, 0.2),
+    inset -1px -1px 0 rgba(62, 43, 27, 0.12);
   content: "";
   pointer-events: none;
 }
 
 .wallFrameNatural {
-  background-image:
-    linear-gradient(90deg, rgba(63, 38, 18, 0.18), transparent 17% 80%, rgba(63, 38, 18, 0.25)),
-    repeating-linear-gradient(
-      94deg,
-      rgba(255, 247, 226, 0.22) 0 1px,
-      rgba(92, 58, 28, 0.12) 1px 2px,
-      transparent 2px 6px
-    ),
-    linear-gradient(
-      96deg,
-      #9e6d3c 0%,
-      #d8ad72 16%,
-      #edcc94 34%,
-      #bd8750 55%,
-      #dfba7d 76%,
-      #936034 100%
-    );
-  background-size: cover, 8px 100%, cover;
+  background-color: #e2c79d;
+  background-image: url("/explorers/materials/pale-oak-v2.webp");
+  background-blend-mode: multiply;
+  background-position: center;
+  background-size: cover;
 }
 
 .wallFrameBlack {
-  background-image: linear-gradient(110deg, #0d0d0d, #373330 46%, #111);
+  background-color: #171717;
+  background-image: repeating-linear-gradient(
+    91deg,
+    transparent 0 9px,
+    rgba(255, 255, 255, 0.018) 9px 10px,
+    transparent 10px 18px
+  );
 }
 
 .wallFrameWhite {
-  background-image: linear-gradient(110deg, #d8d6d0, #fff 42%, #e6e2da);
+  background-color: #f7f7f4;
+  background-image:
+    radial-gradient(circle at 30% 24%, rgba(78, 75, 69, 0.03) 0 0.55px, transparent 0.8px),
+    radial-gradient(circle at 72% 68%, rgba(78, 75, 69, 0.022) 0 0.5px, transparent 0.75px);
+  background-size: 9px 9px, 13px 13px;
 }
 
 .wallFrame img,
@@ -1652,10 +1647,6 @@
   height: calc(100% - var(--frame-rail) - var(--frame-rail));
 }
 
-.wallFrameMatted {
-  background-color: #fbfaf6;
-}
-
 .wallFrameMatted img,
 .wallFrameMatted > div {
   top: 15%;
@@ -1671,15 +1662,15 @@
 }
 
 .wallFrameMatted::before {
-  background:
-    linear-gradient(135deg, rgba(255, 255, 255, 0.72), transparent 20% 78%, rgba(116, 92, 64, 0.1)),
-    radial-gradient(circle at 22% 17%, rgba(154, 139, 118, 0.05) 0 0.7px, transparent 1px),
-    linear-gradient(110deg, #fffefa 0%, #f4f0e7 48%, #fffefa 100%);
-  background-size: cover, 7px 7px, cover;
+  background-color: #ffffff;
+  background-image:
+    radial-gradient(circle at 22% 17%, rgba(111, 103, 91, 0.026) 0 0.65px, transparent 0.85px),
+    radial-gradient(circle at 74% 61%, rgba(111, 103, 91, 0.021) 0 0.55px, transparent 0.8px),
+    repeating-linear-gradient(0deg, rgba(92, 84, 72, 0.01) 0 1px, transparent 1px 4px);
+  background-size: 7px 7px, 11px 11px, 100% 4px;
   box-shadow:
     inset 0 0 0 1px rgba(94, 77, 58, 0.12),
-    inset 0 0 20px rgba(92, 73, 53, 0.08),
-    inset 0 -10px 14px rgba(75, 55, 35, 0.035);
+    inset 0 0 8px rgba(92, 73, 53, 0.025);
 }
 
 .wallFrameEmpty .emptyArtwork {

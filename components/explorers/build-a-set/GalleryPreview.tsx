@@ -218,48 +218,32 @@ export function GalleryPreview({
             pointer-events: none;
           }
           .explorers-rendered-frame-tint {
+            --rendered-frame-rail: clamp(10px, 2.6vw, 18px);
             position: absolute;
             z-index: 2;
-            inset: -2%;
+            inset: -4%;
             box-sizing: border-box;
-            border: clamp(4px, 0.6vw, 8px) solid transparent;
+            border: 0;
+            background: #ffffff;
             pointer-events: none;
           }
           .explorers-rendered-frame-tint-black {
-            border-color: rgba(8, 8, 8, 0.94);
-            box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.09);
-            mix-blend-mode: multiply;
+            box-shadow:
+              inset 0 0 0 var(--rendered-frame-rail) #151515,
+              inset 0 0 0 calc(var(--rendered-frame-rail) + 1px) rgba(0, 0, 0, 0.42),
+              inset 1px 1px 0 rgba(255, 255, 255, 0.11),
+              0 1px 2px rgba(37, 29, 23, 0.24),
+              0 10px 18px rgba(37, 29, 23, 0.16);
           }
           .explorers-rendered-frame-tint-white {
-            inset: -4%;
-            border: 0;
-            background: linear-gradient(
-              to bottom,
-              #ffffff 0%,
-              #ffffff 7.5%,
-              transparent 7.5%,
-              transparent 92.5%,
-              #ffffff 92.5%,
-              #ffffff 100%
-            );
-            box-shadow:
-              inset 0 0 0 1px rgba(92, 88, 82, 0.22),
-              0 0 0 1px rgba(92, 88, 82, 0.12);
-          }
-          .explorers-rendered-frame-tint-white::before,
-          .explorers-rendered-frame-tint-white::after {
-            content: "";
-            position: absolute;
-            top: 0;
-            bottom: 0;
-            width: 7.5%;
             background: #ffffff;
-          }
-          .explorers-rendered-frame-tint-white::before {
-            left: 0;
-          }
-          .explorers-rendered-frame-tint-white::after {
-            right: 0;
+            box-shadow:
+              inset 0 0 0 var(--rendered-frame-rail) #f7f7f4,
+              inset 0 0 0 calc(var(--rendered-frame-rail) + 1px) rgba(65, 62, 57, 0.23),
+              inset 1px 1px 0 rgba(255, 255, 255, 0.96),
+              0 0 0 1px rgba(65, 62, 57, 0.24),
+              0 1px 2px rgba(55, 45, 37, 0.2),
+              0 10px 18px rgba(55, 45, 37, 0.13);
           }
           .explorers-rendered-shell .${styles.wallFrame} img,
           .explorers-rendered-shell .${styles.wallFrame} > div {
@@ -349,17 +333,18 @@ export function GalleryPreview({
               >
                 {usesRenderedOnWallFrames ? (
                   <>
-                    <span
-                      className="explorers-rendered-frame-skin"
-                      style={renderedFrameStyle}
-                      aria-hidden="true"
-                    />
-                    {frameColor !== "natural" ? (
+                    {frameColor === "natural" ? (
+                      <span
+                        className="explorers-rendered-frame-skin"
+                        style={renderedFrameStyle}
+                        aria-hidden="true"
+                      />
+                    ) : (
                       <span
                         className={`explorers-rendered-frame-tint explorers-rendered-frame-tint-${frameColor}`}
                         aria-hidden="true"
                       />
-                    ) : null}
+                    )}
                   </>
                 ) : null}
                 {product ? (
