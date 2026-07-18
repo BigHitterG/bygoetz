@@ -10,6 +10,8 @@ import type {
 } from "@/lib/explorers/buildASet";
 import { withSiteBasePath } from "@/lib/sitePath";
 import { ArtworkImage } from "../ArtworkImage";
+import { onWallRowNaturalShell } from "./onWallRowNaturalShell";
+import { onWallSingleNaturalShell } from "./onWallSingleNaturalShell";
 import { readingNookBackground } from "./readingNookBackground";
 import styles from "./BuildASet.module.css";
 
@@ -107,6 +109,13 @@ export function GalleryPreview({
   const [layoutId, setLayoutId] = useState<LayoutId>(initialLayout);
   const room = rooms.find((item) => item.id === roomId) ?? rooms[0];
   const isCloseup = room.id === "wall";
+  const usesRenderedOnWallShell =
+    isCloseup &&
+    option.id === "8x10-framed-mat" &&
+    frameColor === "natural" &&
+    (quantity === 1 || (quantity === 3 && layoutId === "row"));
+  const renderedOnWallShell =
+    quantity === 1 ? onWallSingleNaturalShell : onWallRowNaturalShell;
   const gapInches = 2;
   const wallSpreadInches =
     option.finishedWidth * quantity + gapInches * Math.max(0, quantity - 1);
@@ -170,6 +179,38 @@ export function GalleryPreview({
         Live gallery preview
       </h2>
 
+      {usesRenderedOnWallShell ? (
+        <style>{`
+          .explorers-rendered-shell .${styles.wallFrame} {
+            border: 0 !important;
+            outline: 0 !important;
+            background: transparent !important;
+            box-shadow: none !important;
+          }
+          .explorers-rendered-shell .${styles.wallFrame}::before,
+          .explorers-rendered-shell .${styles.wallFrame}::after,
+          .explorers-rendered-shell .${styles.acrylicGlint},
+          .explorers-rendered-shell .${styles.frameNumber} {
+            display: none !important;
+          }
+          .explorers-rendered-shell .${styles.wallFrame} img,
+          .explorers-rendered-shell .${styles.wallFrame} > div {
+            z-index: 2;
+            top: 15% !important;
+            left: 15% !important;
+            width: 70% !important;
+            height: 70% !important;
+            border: 0 !important;
+            background: #ffffff !important;
+            box-shadow: none !important;
+            object-fit: contain;
+          }
+          .explorers-rendered-shell .${styles.emptyArtwork} {
+            background: #ffffff !important;
+          }
+        `}</style>
+      ) : null}
+
       <div className={styles.wallStudio}>
         <div
           className={[styles.wallScene, isCloseup ? styles.wallSceneCloseup : ""]
@@ -177,7 +218,18 @@ export function GalleryPreview({
             .join(" ")}
           style={{ ...visualizerStyle, gridColumn: "1 / -1" }}
         >
-          {room.image ? (
+          {usesRenderedOnWallShell ? (
+            <Image
+              className={styles.roomBackground}
+              src={renderedOnWallShell}
+              alt=""
+              aria-hidden="true"
+              loading="eager"
+              unoptimized
+              fill
+              sizes="(max-width: 900px) 100vw, 68vw"
+            />
+          ) : room.image ? (
             <Image
               className={styles.roomBackground}
               src={room.image.startsWith("data:") ? room.image : withSiteBasePath(room.image)}
@@ -192,7 +244,13 @@ export function GalleryPreview({
           )}
 
           <div
-            className={styles.wallArtGroup + " " + layoutClass}
+            className={[
+              styles.wallArtGroup,
+              layoutClass,
+              usesRenderedOnWallShell ? "explorers-rendered-shell" : "",
+            ]
+              .filter(Boolean)
+              .join(" ")}
             aria-label={
               String(quantity) +
               " " +
@@ -231,7 +289,9 @@ export function GalleryPreview({
               <span />
             </div>
           ) : null}
-          <span className={styles.scaleReference}>{referenceText}</span>
+          {!usesRenderedOnWallShell ? (
+            <span className={styles.scaleReference}>{referenceText}</span>
+          ) : null}
         </div>
       </div>
 
