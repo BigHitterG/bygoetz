@@ -231,10 +231,10 @@ export function GalleryPreview({
             background: linear-gradient(
               to bottom,
               #ffffff 0%,
-              #ffffff 4.5%,
-              transparent 4.5%,
-              transparent 95.5%,
-              #ffffff 95.5%,
+              #ffffff 7.5%,
+              transparent 7.5%,
+              transparent 92.5%,
+              #ffffff 92.5%,
               #ffffff 100%
             );
             box-shadow:
@@ -247,7 +247,7 @@ export function GalleryPreview({
             position: absolute;
             top: 0;
             bottom: 0;
-            width: 4.5%;
+            width: 7.5%;
             background: #ffffff;
           }
           .explorers-rendered-frame-tint-white::before {
