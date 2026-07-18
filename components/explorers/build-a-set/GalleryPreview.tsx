@@ -228,14 +228,33 @@ export function GalleryPreview({
           .explorers-rendered-frame-tint-white {
             inset: -4%;
             border: 0;
-            background:
-              linear-gradient(#ffffff, #ffffff) top / 100% 4.5% no-repeat,
-              linear-gradient(#ffffff, #ffffff) bottom / 100% 4.5% no-repeat,
-              linear-gradient(#ffffff, #ffffff) left / 4.5% 100% no-repeat,
-              linear-gradient(#ffffff, #ffffff) right / 4.5% 100% no-repeat;
+            background: linear-gradient(
+              to bottom,
+              #ffffff 0%,
+              #ffffff 4.5%,
+              transparent 4.5%,
+              transparent 95.5%,
+              #ffffff 95.5%,
+              #ffffff 100%
+            );
             box-shadow:
               inset 0 0 0 1px rgba(92, 88, 82, 0.22),
               0 0 0 1px rgba(92, 88, 82, 0.12);
+          }
+          .explorers-rendered-frame-tint-white::before,
+          .explorers-rendered-frame-tint-white::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 4.5%;
+            background: #ffffff;
+          }
+          .explorers-rendered-frame-tint-white::before {
+            left: 0;
+          }
+          .explorers-rendered-frame-tint-white::after {
+            right: 0;
           }
           .explorers-rendered-shell .${styles.wallFrame} img,
           .explorers-rendered-shell .${styles.wallFrame} > div {
