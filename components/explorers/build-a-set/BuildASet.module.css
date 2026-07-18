@@ -1745,12 +1745,223 @@
   background: #fffefa;
 }
 
+.gallerySetup {
+  display: grid;
+  gap: 18px;
+  border-bottom: 2px solid #111;
+  padding-bottom: 24px;
+}
+
+.gallerySetupHeader {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.gallerySetupHeader h2 {
+  margin: 0;
+  font-size: 1.55rem;
+  line-height: 1.05;
+}
+
+.gallerySetupHeader > span {
+  display: grid;
+  flex: 0 0 auto;
+  justify-items: end;
+  color: #111;
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.gallerySetupHeader > span small {
+  color: #71685f;
+  font-size: 0.62rem;
+  font-weight: 650;
+}
+
+.gallerySetup .quantityFieldset {
+  margin-top: 0;
+}
+
 .orderThumbnailEmpty {
   display: grid;
   place-items: center;
   border: 1px dashed #c8c0b5;
   color: #756d64;
   font-size: 1rem;
+}
+
+.selectionHelp {
+  margin: -4px 0 10px;
+  color: #71685f;
+  font-size: 0.72rem;
+  line-height: 1.45;
+}
+
+.orderItem {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.selectionSlotButton {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: 48px minmax(0, 1fr);
+  gap: 11px;
+  align-items: center;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  color: #111;
+  cursor: pointer;
+  text-align: left;
+}
+
+.selectionSlotButton:hover strong,
+.selectionSlotButton:focus-visible strong {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.selectionSlotCopy {
+  display: grid;
+  min-width: 0;
+}
+
+.selectionSlotCopy small {
+  color: #776f67;
+  font-size: 0.62rem;
+}
+
+.selectionSlotCopy strong {
+  overflow: hidden;
+  font-size: 0.82rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.selectionSlotCopy em {
+  margin-top: 2px;
+  color: #8a613d;
+  font-size: 0.62rem;
+  font-style: normal;
+  font-weight: 700;
+}
+
+.artworkPickerBackdrop {
+  position: fixed;
+  z-index: 100;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(22, 18, 14, 0.58);
+  padding: 20px;
+}
+
+.artworkPickerDialog {
+  display: grid;
+  width: min(680px, 100%);
+  max-height: min(760px, calc(100svh - 40px));
+  overflow: hidden;
+  border: 1px solid #cfc7bc;
+  background: #fffefa;
+  box-shadow: 0 24px 70px rgba(22, 18, 14, 0.32);
+}
+
+.artworkPickerDialog > header {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 18px;
+  border-bottom: 1px solid #ddd6cc;
+  padding: 22px 22px 16px;
+}
+
+.artworkPickerDialog h2 {
+  margin: 0;
+  font-size: 1.8rem;
+}
+
+.artworkPickerDialog > p {
+  margin: 0;
+  padding: 14px 22px 0;
+  color: #71685f;
+  font-size: 0.78rem;
+}
+
+.artworkPickerClose {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid #bfb6ab;
+  background: #fff;
+  color: #111;
+  cursor: pointer;
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.artworkPickerGrid {
+  display: grid;
+  min-height: 0;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-auto-rows: max-content;
+  align-content: start;
+  gap: 10px;
+  overflow-y: auto;
+  padding: 16px 22px 22px;
+  overscroll-behavior: contain;
+}
+
+.artworkPickerCard {
+  display: grid;
+  min-width: 0;
+  height: max-content;
+  align-self: start;
+  overflow: hidden;
+  border: 1px solid #d7d0c6;
+  background: #fff;
+  color: #111;
+  cursor: pointer;
+  text-align: left;
+}
+
+.artworkPickerCardSelected {
+  border-color: #9f7147;
+  box-shadow: inset 0 0 0 2px #9f7147;
+}
+
+.artworkPickerImage {
+  display: grid;
+  aspect-ratio: 4 / 5;
+  place-items: center;
+  background: #fff;
+  padding: 14px;
+}
+
+.artworkPickerImage img,
+.artworkPickerImage > div {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.artworkPickerFooter {
+  display: grid;
+  gap: 3px;
+  border-top: 1px solid #e2dcd3;
+  padding: 10px;
+}
+
+.artworkPickerFooter strong {
+  font-size: 0.82rem;
+}
+
+.artworkPickerFooter small {
+  color: #71685f;
+  font-size: 0.62rem;
 }
 
 .configurationColumn {
@@ -1768,7 +1979,8 @@
 
 .configurationGrid {
   display: grid;
-  grid-template-columns: minmax(0, 1.12fr) minmax(350px, 0.88fr);
+  grid-template-columns: minmax(0, 760px);
+  justify-content: center;
   gap: 42px;
   align-items: start;
 }
@@ -2154,6 +2366,55 @@
   .wallControls {
     grid-template-columns: 1fr;
     border: 1px solid #d8d2c9;
+  }
+
+  .gallerySetupHeader {
+    display: grid;
+    align-items: start;
+  }
+
+  .gallerySetupHeader h2 {
+    font-size: 1.45rem;
+  }
+
+  .gallerySetupHeader > span {
+    justify-items: start;
+  }
+
+  .selectionSlotButton {
+    grid-template-columns: 54px minmax(0, 1fr);
+  }
+
+  .orderThumbnail {
+    width: 48px;
+    height: 54px;
+  }
+
+  .artworkPickerBackdrop {
+    align-items: end;
+    padding: 10px;
+  }
+
+  .artworkPickerDialog {
+    width: 100%;
+    max-height: calc(100svh - 20px);
+  }
+
+  .artworkPickerDialog > header {
+    padding: 18px 16px 14px;
+  }
+
+  .artworkPickerDialog > p {
+    padding: 12px 16px 0;
+  }
+
+  .artworkPickerGrid {
+    gap: 8px;
+    padding: 14px 16px 18px;
+  }
+
+  .artworkPickerImage {
+    padding: 10px;
   }
 
   .visualizerNote {

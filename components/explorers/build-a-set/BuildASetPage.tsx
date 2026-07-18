@@ -12,7 +12,6 @@ import {
 } from "@/lib/explorers/buildASet";
 import { explorerProducts, type ExplorerProduct } from "@/lib/explorers/products";
 import { withSiteBasePath } from "@/lib/sitePath";
-import { ArtworkSelector } from "./ArtworkSelector";
 import { GalleryPreview } from "./GalleryPreview";
 import { MobileSetSummary } from "./MobileSetSummary";
 import { ProductOptionSelector } from "./ProductOptionSelector";
@@ -143,42 +142,39 @@ export function BuildASetPage({
     validInitialOptionId,
   ]);
 
-  function handleToggle(product: ExplorerProduct) {
+  function handleSelectArtwork(index: number, product: ExplorerProduct) {
     setCheckoutError("");
     setSelectedSlots((current) => {
       const existingIndex = current.indexOf(product.slug);
-      let next: Array<string | null>;
-      let action: "select" | "deselect" | "replace";
+      const currentProduct = explorerProducts.find(
+        (item) => item.slug === current[index],
+      );
+
+      if (existingIndex === index) {
+        setAnnouncement(`${product.title} is already in position ${index + 1}.`);
+        return current;
+      }
+
+      const next = [...current];
+      const action = existingIndex >= 0 ? "swap" : "replace";
 
       if (existingIndex >= 0) {
-        next = current.map((slug, index) => (index === existingIndex ? null : slug));
-        action = "deselect";
+        [next[index], next[existingIndex]] = [next[existingIndex], next[index]];
         setAnnouncement(
-          `${product.title} removed. ${next.filter(Boolean).length} of ${quantity} selected.`,
-        );
-      } else if (current.some((slug) => slug === null)) {
-        const emptyIndex = current.findIndex((slug) => slug === null);
-        next = current.map((slug, index) =>
-          index === emptyIndex ? product.slug : slug,
-        );
-        action = "select";
-        const selectedCount = next.filter(Boolean).length;
-        setAnnouncement(
-          selectedCount === quantity
-            ? `${product.title} selected. Your order is ready to customize.`
-            : `${product.title} selected. ${selectedCount} of ${quantity} selected.`,
+          `${product.title} moved to position ${index + 1}. ${currentProduct?.title ?? "Artwork"} moved to position ${existingIndex + 1}.`,
         );
       } else {
-        const replaced = explorerProducts.find((item) => item.slug === current[0]);
-        next = [...current.slice(1), product.slug];
-        action = "replace";
-        setAnnouncement(`${product.title} replaced ${replaced?.title ?? "the first artwork"}.`);
+        next[index] = product.slug;
+        setAnnouncement(
+          `${product.title} selected for position ${index + 1}, replacing ${currentProduct?.title ?? "the previous artwork"}.`,
+        );
       }
 
       trackMetaCustomEvent("ArtworkSelection", {
         artwork: product.title,
         artwork_slug: product.slug,
         action,
+        position: index + 1,
         selected_count: next.filter(Boolean).length,
         content_ids: next.filter((slug): slug is string => Boolean(slug)),
       });
@@ -226,7 +222,7 @@ export function BuildASetPage({
 
   async function beginCheckout() {
     if (!ready) {
-      document.getElementById("artwork-choices")?.scrollIntoView({ behavior: "smooth" });
+      document.getElementById("artwork-selection")?.scrollIntoView({ behavior: "smooth" });
       return;
     }
 
@@ -299,61 +295,51 @@ export function BuildASetPage({
             quantity={quantity}
             frameColor={frameColor}
             onMove={handleMove}
+            availableProducts={explorerProducts}
+            onSelectArtwork={handleSelectArtwork}
             initialLayoutId={initialLayoutId}
             initialRoomId={initialRoomId}
+            selectionControls={
+              <section className={styles.gallerySetup} aria-labelledby="builder-title">
+                <div className={styles.gallerySetupHeader}>
+                  <div>
+                    <p className={styles.wallControlLabel}>Step 1: Choose your gallery</p>
+                    <h2 id="builder-title">Choose one or three artworks</h2>
+                  </div>
+                  <span aria-live="polite">
+                    {selectedProducts.length}/{quantity}
+                    <small>{progressLabel}</small>
+                  </span>
+                </div>
+
+                <fieldset className={styles.quantityFieldset}>
+                  <legend>Number of artworks</legend>
+                  <div className={styles.quantityChoices}>
+                    <button
+                      type="button"
+                      className={quantity === 1 ? styles.quantityChoiceActive : ""}
+                      aria-pressed={quantity === 1}
+                      onClick={() => handleQuantityChange(1)}
+                    >
+                      <strong>1 print</strong>
+                      <small>One favorite</small>
+                    </button>
+                    <button
+                      type="button"
+                      className={quantity === 3 ? styles.quantityChoiceActive : ""}
+                      aria-pressed={quantity === 3}
+                      onClick={() => handleQuantityChange(3)}
+                    >
+                      <strong>Set of 3</strong>
+                      <small>Save 15%</small>
+                    </button>
+                  </div>
+                </fieldset>
+              </section>
+            }
           >
             <div className={styles.configurationColumn}>
               <div className={styles.configurationGrid}>
-                <section className={styles.artworkConfiguration} aria-labelledby="builder-title">
-                  <div className={styles.configurationHeading}>
-                    <div>
-                      <p className={styles.eyebrow}>Step 1: Choose your gallery</p>
-                      <h2 id="builder-title">Select one or three</h2>
-                    </div>
-                    <div className={styles.progress} aria-live="polite">
-                      <span>{selectedProducts.length}</span>
-                      <strong>{progressLabel}</strong>
-                    </div>
-                  </div>
-
-                  <fieldset className={styles.quantityFieldset}>
-                    <legend>Number of artworks</legend>
-                    <div className={styles.quantityChoices}>
-                      <button
-                        type="button"
-                        className={quantity === 1 ? styles.quantityChoiceActive : ""}
-                        aria-pressed={quantity === 1}
-                        onClick={() => handleQuantityChange(1)}
-                      >
-                        <strong>1 print</strong>
-                        <small>One favorite</small>
-                      </button>
-                      <button
-                        type="button"
-                        className={quantity === 3 ? styles.quantityChoiceActive : ""}
-                        aria-pressed={quantity === 3}
-                        onClick={() => handleQuantityChange(3)}
-                      >
-                        <strong>Set of 3</strong>
-                        <small>Save 15%</small>
-                      </button>
-                    </div>
-                  </fieldset>
-
-                  <p className={styles.artworkInstruction}>
-                    Tap an Explorer to{" "}
-                    {quantity === 1 ? "replace your artwork" : "add or remove it"}.
-                    Your wall preview updates instantly.
-                  </p>
-                  <div id="artwork-choices">
-                    <ArtworkSelector
-                      products={explorerProducts}
-                      selectedSlugs={selectedSlots}
-                      onToggle={handleToggle}
-                    />
-                  </div>
-                </section>
-
                 <ProductOptionSelector
                   quantity={quantity}
                   option={selectedOption}

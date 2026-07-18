@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import Image from "next/image";
 import type { ExplorerProduct } from "@/lib/explorers/products";
 import type {
@@ -10,6 +10,7 @@ import type {
 } from "@/lib/explorers/buildASet";
 import { withSiteBasePath } from "@/lib/sitePath";
 import { ArtworkImage } from "../ArtworkImage";
+import { ArtworkSelector } from "./ArtworkSelector";
 import { onWallSingleNaturalShell } from "./onWallSingleNaturalShell";
 import { readingNookBackground } from "./readingNookBackground";
 import styles from "./BuildASet.module.css";
@@ -23,8 +24,11 @@ type GalleryPreviewProps = {
   quantity: ExplorerOrderQuantity;
   frameColor: ExplorerFrameColor;
   onMove: (index: number, direction: -1 | 1) => void;
+  availableProducts: ExplorerProduct[];
+  onSelectArtwork: (index: number, product: ExplorerProduct) => void;
   initialLayoutId?: string;
   initialRoomId?: string;
+  selectionControls: ReactNode;
   children: ReactNode;
 };
 
@@ -99,8 +103,11 @@ export function GalleryPreview({
   quantity,
   frameColor,
   onMove,
+  availableProducts,
+  onSelectArtwork,
   initialLayoutId,
   initialRoomId,
+  selectionControls,
   children,
 }: GalleryPreviewProps) {
   const initialRoom = rooms.some((room) => room.id === initialRoomId)
@@ -111,6 +118,10 @@ export function GalleryPreview({
     : "row";
   const [roomId, setRoomId] = useState<RoomId>(initialRoom);
   const [layoutId, setLayoutId] = useState<LayoutId>(initialLayout);
+  const [pickerIndex, setPickerIndex] = useState<number | null>(null);
+  const pickerCloseRef = useRef<HTMLButtonElement>(null);
+  const pickerDialogRef = useRef<HTMLElement>(null);
+  const pickerTriggerRefs = useRef<Array<HTMLButtonElement | null>>([]);
   const room = rooms.find((item) => item.id === roomId) ?? rooms[0];
   const isCloseup = room.id === "wall";
   const usesRenderedOnWallFrames =
@@ -157,6 +168,46 @@ export function GalleryPreview({
   const renderedFrameStyle = {
     backgroundImage: `url("${onWallSingleNaturalShell}")`,
   } as CSSProperties;
+
+  useEffect(() => {
+    if (pickerIndex === null) return;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    pickerCloseRef.current?.focus();
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setPickerIndex(null);
+        return;
+      }
+
+      if (event.key !== "Tab" || !pickerDialogRef.current) return;
+      const focusableElements = Array.from(
+        pickerDialogRef.current.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        ),
+      );
+      if (focusableElements.length === 0) return;
+
+      const first = focusableElements[0];
+      const last = focusableElements[focusableElements.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", handleKeyDown);
+      pickerTriggerRefs.current[pickerIndex]?.focus();
+    };
+  }, [pickerIndex]);
 
   const frameColorClass =
     frameColor === "natural"
@@ -395,6 +446,69 @@ export function GalleryPreview({
           borderTop: "1px solid #d8d2c9",
         }}
       >
+        {selectionControls}
+
+        <div className={styles.wallOrder} id="artwork-selection">
+          <p className={styles.wallControlLabel}>Artwork selection</p>
+          <p className={styles.selectionHelp}>
+            Tap a position to choose its artwork. Use the arrows to adjust the order.
+          </p>
+          <div>
+            {products.map((product, index) => (
+              <div className={styles.orderItem} key={`position-${index}`}>
+                <button
+                  ref={(element) => {
+                    pickerTriggerRefs.current[index] = element;
+                  }}
+                  className={styles.selectionSlotButton}
+                  type="button"
+                  onClick={() => setPickerIndex(index)}
+                  aria-label={`Choose artwork for position ${index + 1}, currently ${product?.title ?? "empty"}`}
+                >
+                  <span
+                    className={`${styles.orderThumbnail} ${product ? "" : styles.orderThumbnailEmpty}`}
+                  >
+                    {product ? (
+                      <ArtworkImage src={product.image} title={product.title} />
+                    ) : (
+                      <span aria-hidden="true">+</span>
+                    )}
+                  </span>
+                  <span className={styles.selectionSlotCopy}>
+                    <small>
+                      {quantity === 1 ? "Selected artwork" : "Position " + (index + 1)}
+                    </small>
+                    <strong>{product?.title ?? "Choose artwork"}</strong>
+                    <em>Tap to change</em>
+                  </span>
+                </button>
+                {quantity === 3 && product ? (
+                  <span className={styles.orderButtons}>
+                    <button
+                      type="button"
+                      title={"Move " + product.title + " left"}
+                      aria-label={"Move " + product.title + " left"}
+                      disabled={index === 0}
+                      onClick={() => onMove(index, -1)}
+                    >
+                      {"\u2190"}
+                    </button>
+                    <button
+                      type="button"
+                      title={"Move " + product.title + " right"}
+                      aria-label={"Move " + product.title + " right"}
+                      disabled={index === products.length - 1}
+                      onClick={() => onMove(index, 1)}
+                    >
+                      {"\u2192"}
+                    </button>
+                  </span>
+                ) : null}
+              </div>
+            ))}
+          </div>
+        </div>
+
         <fieldset className={styles.wallControlGroup}>
           <legend>Preview room</legend>
           <div className={styles.segmentedChoices}>
@@ -449,53 +563,6 @@ export function GalleryPreview({
           </fieldset>
         ) : null}
 
-        <div className={styles.wallOrder}>
-          <p className={styles.wallControlLabel}>Artwork order</p>
-          <div>
-            {products.map((product, index) => (
-              <div className={styles.orderItem} key={product?.slug ?? `empty-${index}`}>
-                <span
-                  className={`${styles.orderThumbnail} ${product ? "" : styles.orderThumbnailEmpty}`}
-                >
-                  {product ? (
-                    <ArtworkImage src={product.image} title={product.title} />
-                  ) : (
-                    <span aria-hidden="true">+</span>
-                  )}
-                </span>
-                <span>
-                  <small>
-                    {quantity === 1 ? "Selected artwork" : "Position " + (index + 1)}
-                  </small>
-                  <strong>{product?.title ?? "Choose artwork"}</strong>
-                </span>
-                {quantity === 3 && product ? (
-                  <span className={styles.orderButtons}>
-                    <button
-                      type="button"
-                      title={"Move " + product.title + " left"}
-                      aria-label={"Move " + product.title + " left"}
-                      disabled={index === 0}
-                      onClick={() => onMove(index, -1)}
-                    >
-                      {"\u2190"}
-                    </button>
-                    <button
-                      type="button"
-                      title={"Move " + product.title + " right"}
-                      aria-label={"Move " + product.title + " right"}
-                      disabled={index === products.length - 1}
-                      onClick={() => onMove(index, 1)}
-                    >
-                      {"\u2192"}
-                    </button>
-                  </span>
-                ) : null}
-              </div>
-            ))}
-          </div>
-        </div>
-
         <dl className={styles.wallMeasurements}>
           <div>
             <dt>Each piece</dt>
@@ -523,6 +590,54 @@ export function GalleryPreview({
           </div>
         </dl>
       </div>
+
+      {pickerIndex !== null ? (
+        <div
+          className={styles.artworkPickerBackdrop}
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) setPickerIndex(null);
+          }}
+        >
+          <section
+            ref={pickerDialogRef}
+            className={styles.artworkPickerDialog}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="artwork-picker-title"
+            aria-describedby="artwork-picker-description"
+          >
+            <header>
+              <div>
+                <p className={styles.eyebrow}>
+                  {quantity === 1 ? "Selected artwork" : `Position ${pickerIndex + 1}`}
+                </p>
+                <h2 id="artwork-picker-title">Choose an Explorer</h2>
+              </div>
+              <button
+                ref={pickerCloseRef}
+                className={styles.artworkPickerClose}
+                type="button"
+                aria-label="Close artwork picker"
+                onClick={() => setPickerIndex(null)}
+              >
+                {"\u00d7"}
+              </button>
+            </header>
+            <p id="artwork-picker-description">
+              Choose the artwork for this position. Your wall updates immediately.
+            </p>
+            <ArtworkSelector
+              products={availableProducts}
+              selectedSlugs={products.map((product) => product?.slug ?? null)}
+              activeIndex={pickerIndex}
+              onSelect={(product) => {
+                onSelectArtwork(pickerIndex, product);
+                setPickerIndex(null);
+              }}
+            />
+          </section>
+        </div>
+      ) : null}
 
       <p className={styles.visualizerNote}>
         Room views are proportional guides based on standard furniture dimensions.
