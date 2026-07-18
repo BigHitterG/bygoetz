@@ -245,6 +245,9 @@ export function GalleryPreview({
               0 1px 2px rgba(55, 45, 37, 0.2),
               0 10px 18px rgba(55, 45, 37, 0.13);
           }
+          .explorers-rendered-shell[data-matted="true"] .explorers-rendered-frame-tint {
+            background-color: #faf9f6;
+          }
           .explorers-rendered-shell .${styles.wallFrame} img,
           .explorers-rendered-shell .${styles.wallFrame} > div {
             z-index: 3;
@@ -259,6 +262,11 @@ export function GalleryPreview({
             left: 15% !important;
             width: 70% !important;
             height: 70% !important;
+            box-sizing: border-box;
+            border: 1px solid rgba(82, 74, 65, 0.16) !important;
+            box-shadow:
+              0 1px 2px rgba(67, 56, 44, 0.09),
+              inset 0 0 0 1px rgba(255, 255, 255, 0.78) !important;
           }
           .explorers-rendered-shell[data-matted="false"] .${styles.wallFrame} img,
           .explorers-rendered-shell[data-matted="false"] .${styles.wallFrame} > div {
