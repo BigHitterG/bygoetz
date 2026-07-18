@@ -1,0 +1,70 @@
+.frame {
+  box-shadow:
+    1px 2px 2px rgba(57, 43, 31, 0.2),
+    8px 13px 20px rgba(57, 43, 31, 0.22),
+    0 24px 44px rgba(57, 43, 31, 0.09);
+}
+
+.framed {
+  --frame-rail: clamp(3px, 2.8%, 14px);
+  background: #c9a96f;
+  box-shadow:
+    1px 2px 2px rgba(50, 36, 24, 0.2),
+    8px 13px 20px rgba(50, 36, 24, 0.23),
+    0 24px 44px rgba(50, 36, 24, 0.1),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.5);
+}
+
+.framed::before {
+  inset: var(--frame-rail);
+  background:
+    radial-gradient(circle at 22% 17%, rgba(154, 139, 118, 0.045) 0 0.7px, transparent 1px),
+    radial-gradient(circle at 74% 61%, rgba(154, 139, 118, 0.035) 0 0.6px, transparent 0.9px),
+    linear-gradient(110deg, #fffefa 0%, #f6f3eb 46%, #fffefa 100%);
+  background-size: 7px 7px, 9px 9px, cover;
+  box-shadow:
+    inset 0 0 0 1px rgba(94, 77, 58, 0.12),
+    inset 0 0 18px rgba(92, 73, 53, 0.06);
+}
+
+.framed::after {
+  position: absolute;
+  z-index: 3;
+  inset: 0;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.42), transparent 13% 84%, rgba(61, 37, 19, 0.18)),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.18), transparent 10% 88%, rgba(52, 34, 19, 0.12));
+  box-shadow:
+    inset 0 0 0 1px rgba(83, 55, 31, 0.18),
+    inset 0 0 0 2px rgba(255, 248, 232, 0.16),
+    inset 0 0 8px rgba(47, 31, 18, 0.18);
+  content: "";
+  pointer-events: none;
+}
+
+.natural {
+  background-image:
+    linear-gradient(90deg, rgba(63, 38, 18, 0.18), transparent 17% 80%, rgba(63, 38, 18, 0.25)),
+    repeating-linear-gradient(94deg, rgba(255, 247, 226, 0.22) 0 1px, rgba(92, 58, 28, 0.12) 1px 2px, transparent 2px 6px),
+    linear-gradient(96deg, #9e6d3c 0%, #d8ad72 16%, #edcc94 34%, #bd8750 55%, #dfba7d 76%, #936034 100%);
+  background-size: cover, 8px 100%, cover;
+}
+
+.black {
+  background: linear-gradient(115deg, #111 0%, #343434 34%, #0b0b0b 68%, #272727 100%);
+}
+
+.white {
+  background: linear-gradient(115deg, #dad8d1 0%, #fff 40%, #c8c5bd 72%, #f6f4ed 100%);
+}
+
+.matted {
+  outline: 1px solid rgba(71, 53, 35, 0.14);
+}
+
+@media (max-width: 900px) {
+  .framed {
+    --frame-rail: clamp(2px, 2.8%, 8px);
+  }
+}
+
