@@ -215,18 +215,18 @@ export function GalleryPreview({
           .explorers-rendered-frame-tint {
             position: absolute;
             z-index: 2;
-            inset: 0;
+            inset: -2%;
             box-sizing: border-box;
-            border: var(--frame-rail) solid transparent;
+            border: clamp(4px, 0.6vw, 8px) solid transparent;
             pointer-events: none;
           }
           .explorers-rendered-frame-tint-black {
-            border-color: rgba(8, 8, 8, 0.86);
+            border-color: rgba(8, 8, 8, 0.94);
             box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.09);
             mix-blend-mode: multiply;
           }
           .explorers-rendered-frame-tint-white {
-            border-color: rgba(255, 255, 255, 0.9);
+            border-color: rgba(255, 255, 255, 0.94);
             box-shadow:
               inset 0 0 0 1px rgba(92, 88, 82, 0.2),
               0 0 0 1px rgba(92, 88, 82, 0.08);
