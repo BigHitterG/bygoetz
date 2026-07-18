@@ -7,59 +7,86 @@
 
 .framed {
   --frame-rail: clamp(3px, 2.8%, 14px);
-  background: #c9a96f;
+  background: #c59d68;
   box-shadow:
-    1px 2px 2px rgba(50, 36, 24, 0.2),
-    8px 13px 20px rgba(50, 36, 24, 0.23),
-    0 24px 44px rgba(50, 36, 24, 0.1),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.5);
+    1px 2px 2px rgba(50, 36, 24, 0.18),
+    7px 12px 19px rgba(50, 36, 24, 0.2),
+    0 22px 40px rgba(50, 36, 24, 0.08),
+    inset 1px 1px 0 rgba(255, 255, 255, 0.24),
+    inset -1px -1px 0 rgba(70, 45, 25, 0.14);
 }
 
 .framed::before {
   inset: var(--frame-rail);
-  background:
-    radial-gradient(circle at 22% 17%, rgba(154, 139, 118, 0.045) 0 0.7px, transparent 1px),
-    radial-gradient(circle at 74% 61%, rgba(154, 139, 118, 0.035) 0 0.6px, transparent 0.9px),
-    linear-gradient(110deg, #fffefa 0%, #f6f3eb 46%, #fffefa 100%);
-  background-size: 7px 7px, 9px 9px, cover;
+  background-color: #fff;
+  background-image:
+    radial-gradient(circle at 22% 17%, rgba(111, 103, 91, 0.026) 0 0.65px, transparent 0.85px),
+    radial-gradient(circle at 74% 61%, rgba(111, 103, 91, 0.021) 0 0.55px, transparent 0.8px),
+    repeating-linear-gradient(0deg, rgba(92, 84, 72, 0.01) 0 1px, transparent 1px 4px),
+    repeating-linear-gradient(90deg, rgba(92, 84, 72, 0.008) 0 1px, transparent 1px 5px);
+  background-size: 7px 7px, 11px 11px, 100% 4px, 5px 100%;
   box-shadow:
-    inset 0 0 0 1px rgba(94, 77, 58, 0.12),
-    inset 0 0 18px rgba(92, 73, 53, 0.06);
+    inset 0 0 0 1px rgba(85, 76, 66, 0.1),
+    inset 0 0 7px rgba(92, 73, 53, 0.025);
 }
 
 .framed::after {
   position: absolute;
   z-index: 3;
   inset: 0;
-  background:
-    linear-gradient(135deg, rgba(255, 255, 255, 0.42), transparent 13% 84%, rgba(61, 37, 19, 0.18)),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.18), transparent 10% 88%, rgba(52, 34, 19, 0.12));
+  background: transparent;
   box-shadow:
-    inset 0 0 0 1px rgba(83, 55, 31, 0.18),
-    inset 0 0 0 2px rgba(255, 248, 232, 0.16),
-    inset 0 0 8px rgba(47, 31, 18, 0.18);
+    inset 0 0 0 1px rgba(73, 55, 39, 0.16),
+    inset 1px 1px 0 rgba(255, 255, 255, 0.2),
+    inset -1px -1px 0 rgba(62, 43, 27, 0.12);
   content: "";
   pointer-events: none;
 }
 
 .natural {
+  background-color: #c59d68;
   background-image:
-    linear-gradient(90deg, rgba(63, 38, 18, 0.18), transparent 17% 80%, rgba(63, 38, 18, 0.25)),
-    repeating-linear-gradient(94deg, rgba(255, 247, 226, 0.22) 0 1px, rgba(92, 58, 28, 0.12) 1px 2px, transparent 2px 6px),
-    linear-gradient(96deg, #9e6d3c 0%, #d8ad72 16%, #edcc94 34%, #bd8750 55%, #dfba7d 76%, #936034 100%);
-  background-size: cover, 8px 100%, cover;
+    repeating-linear-gradient(
+      88deg,
+      transparent 0 3px,
+      rgba(81, 49, 24, 0.055) 3px 4px,
+      transparent 4px 9px,
+      rgba(255, 247, 227, 0.06) 9px 10px,
+      transparent 10px 17px
+    ),
+    repeating-linear-gradient(
+      93deg,
+      transparent 0 11px,
+      rgba(91, 57, 29, 0.035) 11px 12px,
+      transparent 12px 23px
+    );
+  background-size: 29px 100%, 41px 100%;
 }
 
 .black {
-  background: linear-gradient(115deg, #111 0%, #343434 34%, #0b0b0b 68%, #272727 100%);
+  background-color: #1d1d1c;
+  background-image: repeating-linear-gradient(
+    91deg,
+    transparent 0 8px,
+    rgba(255, 255, 255, 0.018) 8px 9px,
+    transparent 9px 17px
+  );
 }
 
 .white {
-  background: linear-gradient(115deg, #dad8d1 0%, #fff 40%, #c8c5bd 72%, #f6f4ed 100%);
+  background-color: #f4f4f1;
+  background-image:
+    radial-gradient(circle at 30% 24%, rgba(78, 75, 69, 0.028) 0 0.55px, transparent 0.8px),
+    radial-gradient(circle at 72% 68%, rgba(78, 75, 69, 0.02) 0 0.5px, transparent 0.75px);
+  background-size: 9px 9px, 13px 13px;
 }
 
 .matted {
-  outline: 1px solid rgba(71, 53, 35, 0.14);
+  outline: 1px solid rgba(71, 63, 54, 0.11);
+}
+
+.framed > span:first-of-type {
+  opacity: 0.24;
 }
 
 @media (max-width: 900px) {
@@ -67,4 +94,3 @@
     --frame-rail: clamp(2px, 2.8%, 8px);
   }
 }
-
