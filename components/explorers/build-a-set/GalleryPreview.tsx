@@ -258,15 +258,13 @@ export function GalleryPreview({
           }
           .explorers-rendered-shell[data-matted="true"] .${styles.wallFrame} img,
           .explorers-rendered-shell[data-matted="true"] .${styles.wallFrame} > div {
-            top: 12% !important;
+            top: 15% !important;
             left: 14% !important;
             width: 72% !important;
             height: 70% !important;
             box-sizing: border-box;
-            border: 1px solid rgba(82, 74, 65, 0.16) !important;
-            box-shadow:
-              0 1px 2px rgba(67, 56, 44, 0.09),
-              inset 0 0 0 1px rgba(255, 255, 255, 0.78) !important;
+            border: 0 !important;
+            box-shadow: none !important;
           }
           .explorers-rendered-shell[data-matted="false"] .${styles.wallFrame} img,
           .explorers-rendered-shell[data-matted="false"] .${styles.wallFrame} > div {
@@ -284,6 +282,12 @@ export function GalleryPreview({
             left: 3% !important;
             width: 94% !important;
             height: 94% !important;
+          }
+          @media (max-width: 620px) {
+            .${styles.wallSceneCloseup} .explorers-rendered-shell.${styles.wallLayoutSingle} {
+              top: 50%;
+              width: 52%;
+            }
           }
         `}</style>
       ) : null}
