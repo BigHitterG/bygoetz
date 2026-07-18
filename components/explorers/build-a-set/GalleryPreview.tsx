@@ -10,7 +10,6 @@ import type {
 } from "@/lib/explorers/buildASet";
 import { withSiteBasePath } from "@/lib/sitePath";
 import { ArtworkImage } from "../ArtworkImage";
-import { onWallRowNaturalShell } from "./onWallRowNaturalShell";
 import { onWallSingleNaturalShell } from "./onWallSingleNaturalShell";
 import { readingNookBackground } from "./readingNookBackground";
 import styles from "./BuildASet.module.css";
@@ -109,13 +108,10 @@ export function GalleryPreview({
   const [layoutId, setLayoutId] = useState<LayoutId>(initialLayout);
   const room = rooms.find((item) => item.id === roomId) ?? rooms[0];
   const isCloseup = room.id === "wall";
-  const usesRenderedOnWallShell =
+  const usesRenderedOnWallFrames =
     isCloseup &&
-    option.id === "8x10-framed-mat" &&
-    frameColor === "natural" &&
+    option.format === "Framed" &&
     (quantity === 1 || (quantity === 3 && layoutId === "row"));
-  const renderedOnWallShell =
-    quantity === 1 ? onWallSingleNaturalShell : onWallRowNaturalShell;
   const gapInches = 2;
   const wallSpreadInches =
     option.finishedWidth * quantity + gapInches * Math.max(0, quantity - 1);
@@ -150,6 +146,13 @@ export function GalleryPreview({
     "--dimension-top": String(dimensionTopPercent) + "%",
   } as CSSProperties;
 
+  const renderedWallStyle = {
+    backgroundImage: `url("${onWallSingleNaturalShell}")`,
+  } as CSSProperties;
+  const renderedFrameStyle = {
+    backgroundImage: `url("${onWallSingleNaturalShell}")`,
+  } as CSSProperties;
+
   const frameColorClass =
     frameColor === "natural"
       ? styles.wallFrameNatural
@@ -179,8 +182,15 @@ export function GalleryPreview({
         Live gallery preview
       </h2>
 
-      {usesRenderedOnWallShell ? (
+      {usesRenderedOnWallFrames ? (
         <style>{`
+          .explorers-rendered-wall {
+            position: absolute;
+            inset: 0;
+            background-position: left center;
+            background-repeat: no-repeat;
+            background-size: 390% 100%;
+          }
           .explorers-rendered-shell .${styles.wallFrame} {
             border: 0 !important;
             outline: 0 !important;
@@ -193,20 +203,66 @@ export function GalleryPreview({
           .explorers-rendered-shell .${styles.frameNumber} {
             display: none !important;
           }
+          .explorers-rendered-frame-skin {
+            position: absolute;
+            z-index: 1;
+            inset: -4%;
+            background-position: 50% 25%;
+            background-repeat: no-repeat;
+            background-size: 212% 112%;
+            pointer-events: none;
+          }
+          .explorers-rendered-frame-tint {
+            position: absolute;
+            z-index: 2;
+            inset: 0;
+            box-sizing: border-box;
+            border: var(--frame-rail) solid transparent;
+            pointer-events: none;
+          }
+          .explorers-rendered-frame-tint-black {
+            border-color: rgba(8, 8, 8, 0.86);
+            box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.09);
+            mix-blend-mode: multiply;
+          }
+          .explorers-rendered-frame-tint-white {
+            border-color: rgba(255, 255, 255, 0.9);
+            box-shadow:
+              inset 0 0 0 1px rgba(92, 88, 82, 0.2),
+              0 0 0 1px rgba(92, 88, 82, 0.08);
+            mix-blend-mode: screen;
+          }
           .explorers-rendered-shell .${styles.wallFrame} img,
           .explorers-rendered-shell .${styles.wallFrame} > div {
-            z-index: 2;
-            top: 15% !important;
-            left: 15% !important;
-            width: 70% !important;
-            height: 70% !important;
+            z-index: 3;
             border: 0 !important;
             background: #ffffff !important;
             box-shadow: none !important;
             object-fit: contain;
           }
+          .explorers-rendered-shell[data-matted="true"] .${styles.wallFrame} img,
+          .explorers-rendered-shell[data-matted="true"] .${styles.wallFrame} > div {
+            top: 15% !important;
+            left: 15% !important;
+            width: 70% !important;
+            height: 70% !important;
+          }
+          .explorers-rendered-shell[data-matted="false"] .${styles.wallFrame} img,
+          .explorers-rendered-shell[data-matted="false"] .${styles.wallFrame} > div {
+            top: 3% !important;
+            left: 3% !important;
+            width: 94% !important;
+            height: 94% !important;
+          }
           .explorers-rendered-shell .${styles.emptyArtwork} {
+            z-index: 3;
             background: #ffffff !important;
+          }
+          .explorers-rendered-shell[data-matted="false"] .${styles.emptyArtwork} {
+            top: 3% !important;
+            left: 3% !important;
+            width: 94% !important;
+            height: 94% !important;
           }
         `}</style>
       ) : null}
@@ -218,16 +274,11 @@ export function GalleryPreview({
             .join(" ")}
           style={{ ...visualizerStyle, gridColumn: "1 / -1" }}
         >
-          {usesRenderedOnWallShell ? (
-            <Image
-              className={styles.roomBackground}
-              src={renderedOnWallShell}
-              alt=""
+          {usesRenderedOnWallFrames ? (
+            <div
+              className="explorers-rendered-wall"
+              style={renderedWallStyle}
               aria-hidden="true"
-              loading="eager"
-              unoptimized
-              fill
-              sizes="(max-width: 900px) 100vw, 68vw"
             />
           ) : room.image ? (
             <Image
@@ -247,10 +298,11 @@ export function GalleryPreview({
             className={[
               styles.wallArtGroup,
               layoutClass,
-              usesRenderedOnWallShell ? "explorers-rendered-shell" : "",
+              usesRenderedOnWallFrames ? "explorers-rendered-shell" : "",
             ]
               .filter(Boolean)
               .join(" ")}
+            data-matted={usesRenderedOnWallFrames ? String(option.isMatted) : undefined}
             aria-label={
               String(quantity) +
               " " +
@@ -266,6 +318,21 @@ export function GalleryPreview({
                 className={`${pieceClassName} ${product ? "" : styles.wallFrameEmpty}`}
                 key={product?.slug ?? `empty-${index}`}
               >
+                {usesRenderedOnWallFrames ? (
+                  <>
+                    <span
+                      className="explorers-rendered-frame-skin"
+                      style={renderedFrameStyle}
+                      aria-hidden="true"
+                    />
+                    {frameColor !== "natural" ? (
+                      <span
+                        className={`explorers-rendered-frame-tint explorers-rendered-frame-tint-${frameColor}`}
+                        aria-hidden="true"
+                      />
+                    ) : null}
+                  </>
+                ) : null}
                 {product ? (
                   <ArtworkImage src={product.image} title={product.title} />
                 ) : (
@@ -289,7 +356,7 @@ export function GalleryPreview({
               <span />
             </div>
           ) : null}
-          {!usesRenderedOnWallShell ? (
+          {!usesRenderedOnWallFrames ? (
             <span className={styles.scaleReference}>{referenceText}</span>
           ) : null}
         </div>
