@@ -9,12 +9,16 @@ type GardenMapKeyProps = {
 type MapStyle = CSSProperties & {
   "--cg-map-x": string;
   "--cg-map-y": string;
+  "--cg-map-width": string;
+  "--cg-map-height": string;
 };
 
 export function GardenMapKey({ ui, onNavigate }: GardenMapKeyProps) {
   const mapStyle: MapStyle = {
     "--cg-map-x": `${ui.mapX}%`,
     "--cg-map-y": `${ui.mapY}%`,
+    "--cg-map-width": `${ui.mapWidthPercentage}%`,
+    "--cg-map-height": `${ui.mapHeightPercentage}%`,
   };
 
   function navigate(event: MouseEvent<HTMLButtonElement>) {
@@ -40,7 +44,10 @@ export function GardenMapKey({ ui, onNavigate }: GardenMapKeyProps) {
       >
         <span className="cg-map-north" aria-hidden="true">N</span>
         {ui.mode === "personal" ? (
-          <span className="cg-map-home" aria-hidden="true" />
+          <>
+            <span className="cg-map-property-boundary" aria-hidden="true" />
+            <span className="cg-map-home" aria-hidden="true" />
+          </>
         ) : null}
         {ui.plantMapPoints.map((plant) => (
           <span

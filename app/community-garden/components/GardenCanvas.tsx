@@ -58,6 +58,8 @@ export type GardenUiState = {
   message: string;
   mapX: number;
   mapY: number;
+  mapWidthPercentage: number;
+  mapHeightPercentage: number;
   zoom: number;
   canZoomIn: boolean;
   canZoomOut: boolean;
@@ -113,10 +115,10 @@ type GardenCanvasProps = {
 };
 
 const PERSONAL_WORLD_BOUNDS = {
-  minX: -6,
-  maxX: 12,
-  minY: -7,
-  maxY: 17,
+  minX: 0,
+  maxX: 15,
+  minY: 0,
+  maxY: 19,
 } as const;
 
 function plantKey(gridX: number, gridY: number) {
@@ -129,8 +131,20 @@ function getModeBounds(mode: GardenWorldMode) {
     : { minX: GARDEN_CONFIG.worldMin, maxX: GARDEN_CONFIG.worldMax, minY: GARDEN_CONFIG.worldMin, maxY: GARDEN_CONFIG.worldMax };
 }
 
-function isWithinMode(mode: GardenWorldMode, gridX: number, gridY: number) {
-  const bounds = getModeBounds(mode);
+function getRuntimeBounds(runtime: Runtime) {
+  if (runtime.mode === "community" || !runtime.personalGarden) {
+    return getModeBounds(runtime.mode);
+  }
+  return {
+    minX: 0,
+    maxX: runtime.personalGarden.width - 1,
+    minY: 0,
+    maxY: runtime.personalGarden.height - 1,
+  };
+}
+
+function isWithinRuntime(runtime: Runtime, gridX: number, gridY: number) {
+  const bounds = getRuntimeBounds(runtime);
   return (
     gridX >= bounds.minX &&
     gridX <= bounds.maxX &&
@@ -139,13 +153,13 @@ function isWithinMode(mode: GardenWorldMode, gridX: number, gridY: number) {
   );
 }
 
-function clampModeCoordinate(
-  mode: GardenWorldMode,
+function clampRuntimeCoordinate(
+  runtime: Runtime,
   value: number,
   axis: "x" | "y",
 ) {
-  if (mode === "community") return clampWorldCoordinate(value);
-  const bounds = getModeBounds(mode);
+  if (runtime.mode === "community") return clampWorldCoordinate(value);
+  const bounds = getRuntimeBounds(runtime);
   const minimum = (axis === "x" ? bounds.minX : bounds.minY) + 0.5;
   const maximum = (axis === "x" ? bounds.maxX : bounds.maxY) + 0.5;
   return Math.min(
@@ -289,19 +303,20 @@ function getActionState(runtime: Runtime) {
   };
 }
 
-function getAdjacentTarget(mary: WorldPoint, gridX: number, gridY: number) {
+function getAdjacentTarget(runtime: Runtime, gridX: number, gridY: number) {
   const center = gridToWorld(gridX, gridY);
   const offset = GARDEN_CONFIG.tileSize;
-  const canStandLeft = gridX > GARDEN_CONFIG.worldMin;
-  const canStandRight = gridX < GARDEN_CONFIG.worldMax;
-  const approachFromLeft = mary.x <= center.x;
+  const bounds = getRuntimeBounds(runtime);
+  const canStandLeft = gridX > bounds.minX;
+  const canStandRight = gridX < bounds.maxX;
+  const approachFromLeft = runtime.mary.x <= center.x;
 
   const standOnLeft = canStandLeft && (!canStandRight || approachFromLeft);
   center.x += standOnLeft ? -offset : offset;
 
   return {
-    x: clampWorldCoordinate(center.x),
-    y: clampWorldCoordinate(center.y),
+    x: clampRuntimeCoordinate(runtime, center.x, "x"),
+    y: clampRuntimeCoordinate(runtime, center.y, "y"),
   };
 }
 
@@ -430,6 +445,14 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
         message: runtime.statusMessage,
         mapX: getModeMapPercentage(runtime.mode, gridX, "x"),
         mapY: getModeMapPercentage(runtime.mode, gridY, "y"),
+        mapWidthPercentage:
+          runtime.mode === "personal" && runtime.personalGarden
+            ? (runtime.personalGarden.width / runtime.personalGarden.maxWidth) * 100
+            : 100,
+        mapHeightPercentage:
+          runtime.mode === "personal" && runtime.personalGarden
+            ? (runtime.personalGarden.height / runtime.personalGarden.maxHeight) * 100
+            : 100,
         zoom: runtime.zoom,
         canZoomIn: runtime.zoom < GARDEN_CONFIG.maxCameraZoom,
         canZoomOut: runtime.zoom > GARDEN_CONFIG.minCameraZoom,
@@ -454,10 +477,9 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
       const currentPersonalGarden = personalGardenRef.current;
       if (mode === "personal" && currentPersonalGarden) {
         applyPersonalGarden(runtime, currentPersonalGarden);
-        runtime.zoom = 1.5;
         const destination = gridToWorld(
-          Math.min(2, currentPersonalGarden.width - 1),
-          Math.min(currentPersonalGarden.height + 3, PERSONAL_WORLD_BOUNDS.maxY),
+          Math.floor((currentPersonalGarden.width - 1) / 2),
+          Math.floor((currentPersonalGarden.height - 1) / 2),
         );
         runtime.mary = { ...destination };
         runtime.camera = { ...destination };
@@ -465,10 +487,9 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
         runtime.path = [{ ...destination }];
         runtime.connection = "online";
         runtime.statusMessage =
-          "Welcome home. Choose a garden bed or walk around your land.";
+          "Welcome home. Plant anywhere inside the fence or explore your land.";
       } else {
         runtime.personalGarden = null;
-        runtime.zoom = GARDEN_CONFIG.defaultCameraZoom;
         runtime.plants = new Map();
         runtime.mapPlants = new Map();
         const destination = gridToWorld(0, 0);
@@ -589,16 +610,19 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
         },
         goToMapPosition(mapX, mapY) {
           const runtime = runtimeRef.current;
-          const gridX = getModeGridFromMapPercentage(runtime.mode, mapX, "x");
-          const gridY = getModeGridFromMapPercentage(runtime.mode, mapY, "y");
+          const requestedGridX = getModeGridFromMapPercentage(runtime.mode, mapX, "x");
+          const requestedGridY = getModeGridFromMapPercentage(runtime.mode, mapY, "y");
+          const bounds = getRuntimeBounds(runtime);
+          const gridX = Math.min(bounds.maxX, Math.max(bounds.minX, requestedGridX));
+          const gridY = Math.min(bounds.maxY, Math.max(bounds.minY, requestedGridY));
           const destination = gridToWorld(gridX, gridY);
           runtime.selected = null;
           runtime.target = null;
           runtime.mary = { ...destination };
           runtime.camera = { ...destination };
           runtime.duck = {
-            x: clampModeCoordinate(runtime.mode, destination.x - 18, "x"),
-            y: clampModeCoordinate(runtime.mode, destination.y + 10, "y"),
+            x: clampRuntimeCoordinate(runtime, destination.x - 18, "x"),
+            y: clampRuntimeCoordinate(runtime, destination.y + 10, "y"),
           };
           runtime.path = [{ ...destination }];
           runtime.loadedChunkKey = "";
@@ -770,18 +794,18 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
           const step = GARDEN_CONFIG.moveSpeed * deltaSeconds;
           if (distance <= Math.max(1, step)) {
             runtime.mary = {
-              x: clampModeCoordinate(runtime.mode, runtime.target.x, "x"),
-              y: clampModeCoordinate(runtime.mode, runtime.target.y, "y"),
+              x: clampRuntimeCoordinate(runtime, runtime.target.x, "x"),
+              y: clampRuntimeCoordinate(runtime, runtime.target.y, "y"),
             };
             runtime.target = null;
           } else {
-            runtime.mary.x = clampModeCoordinate(
-              runtime.mode,
+            runtime.mary.x = clampRuntimeCoordinate(
+              runtime,
               runtime.mary.x + (dx / distance) * step,
               "x",
             );
-            runtime.mary.y = clampModeCoordinate(
-              runtime.mode,
+            runtime.mary.y = clampRuntimeCoordinate(
+              runtime,
               runtime.mary.y + (dy / distance) * step,
               "y",
             );
@@ -838,6 +862,8 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
             ? {
                 width: runtime.personalGarden.width,
                 height: runtime.personalGarden.height,
+                maxWidth: runtime.personalGarden.maxWidth,
+                maxHeight: runtime.personalGarden.maxHeight,
                 upgrades: runtime.personalGarden.upgrades,
               }
             : undefined,
@@ -860,7 +886,7 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
 
     function selectCell(gridX: number, gridY: number) {
       const runtime = runtimeRef.current;
-      if (!isWithinMode(runtime.mode, gridX, gridY)) {
+      if (!isWithinRuntime(runtime, gridX, gridY)) {
         runtime.statusMessage = "You have reached the garden edge.";
         publishUi();
         return;
@@ -876,7 +902,7 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
 
       const plant = getPlantAt(runtime, gridX, gridY);
       runtime.selected = { gridX, gridY, plantId: plant?.id };
-      runtime.target = getAdjacentTarget(runtime.mary, gridX, gridY);
+      runtime.target = getAdjacentTarget(runtime, gridX, gridY);
       runtime.statusMessage = plant
         ? `Walking over to the ${getPlantDefinition(plant.plant_type).name.toLowerCase()}...`
         : "Walking to that spot...";
@@ -924,7 +950,7 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
       const currentGridY = Math.floor(runtime.mary.y / GARDEN_CONFIG.tileSize);
       const nextGridX = currentGridX + direction[0];
       const nextGridY = currentGridY + direction[1];
-      if (!isWithinMode(runtime.mode, nextGridX, nextGridY)) {
+      if (!isWithinRuntime(runtime, nextGridX, nextGridY)) {
         runtime.target = null;
         runtime.statusMessage = "You have reached the garden edge.";
         publishUi();
