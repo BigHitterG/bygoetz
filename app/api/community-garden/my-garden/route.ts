@@ -6,6 +6,7 @@ import {
   MY_GARDEN_UPGRADES,
   plantInMyGarden,
   purchaseMyGardenUpgrade,
+  toggleMyGardenPath,
   uprootFromMyGarden,
   type MyGardenPlantType,
   type MyGardenUpgradeType,
@@ -87,6 +88,25 @@ export async function POST(request: NextRequest) {
         );
       }
       return NextResponse.json(await uprootFromMyGarden(steward.id, payload.plantId));
+    }
+
+    if (payload.action === "toggle-path") {
+      if (
+        !isGridCoordinate(payload.gridX, 19) ||
+        !isGridCoordinate(payload.gridY, 23)
+      ) {
+        return NextResponse.json(
+          { error: "Choose a spot inside the fence for the path." },
+          { status: 400 },
+        );
+      }
+      return NextResponse.json(
+        await toggleMyGardenPath(
+          steward.id,
+          Number(payload.gridX),
+          Number(payload.gridY),
+        ),
+      );
     }
 
     if (payload.action === "expand") {

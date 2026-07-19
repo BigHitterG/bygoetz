@@ -13,6 +13,7 @@ export type MyGardenMutation =
       gridY: number;
       plantType: "rose" | "sunflower" | "lavender";
     }
+  | { action: "toggle-path"; gridX: number; gridY: number }
   | { action: "uproot"; plantId: string }
   | { action: "expand" }
   | { action: "purchase-upgrade"; upgradeType: MyGardenUpgradeType };
@@ -145,7 +146,8 @@ export function MyGardenControls({
           Earn Care by planting and thoughtfully watering in the Community Garden:
           the first {garden.dailyCareLimit} Care comes quickly each day, then every
           four helpful actions earns another. Personal plants stay here permanently
-          and can be uprooted for {garden.uprootReturn} Care.
+          and can be uprooted for {garden.uprootReturn} Care. The Path tool is free
+          to add, move, and remove whenever you like.
         </p>
       </aside>
     </div>
