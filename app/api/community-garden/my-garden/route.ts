@@ -15,8 +15,8 @@ import { getGardenStewardByUserId } from "@/lib/communityGarden/stewards";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-function isGridCoordinate(value: unknown) {
-  return Number.isInteger(value) && Number(value) >= 0 && Number(value) <= 19;
+function isGridCoordinate(value: unknown, maximum: number) {
+  return Number.isInteger(value) && Number(value) >= 0 && Number(value) <= maximum;
 }
 
 export async function POST(request: NextRequest) {
@@ -55,8 +55,8 @@ export async function POST(request: NextRequest) {
   try {
     if (payload.action === "plant") {
       if (
-        !isGridCoordinate(payload.gridX) ||
-        !isGridCoordinate(payload.gridY) ||
+        !isGridCoordinate(payload.gridX, 19) ||
+        !isGridCoordinate(payload.gridY, 23) ||
         !MY_GARDEN_PLANT_TYPES.includes(payload.plantType as MyGardenPlantType)
       ) {
         return NextResponse.json(

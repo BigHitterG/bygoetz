@@ -122,7 +122,7 @@ export function MyGardenControls({
 
         <section className="cg-map-expansion">
           <div>
-            <h3>Make room to grow</h3>
+            <h3>Open the next parcel</h3>
             <p>
               Property level {garden.plotLevel} · {garden.width * garden.height} plantable spaces
             </p>
@@ -133,19 +133,19 @@ export function MyGardenControls({
               disabled={busy || garden.careBalance < garden.nextExpansion.careCost}
               onClick={() => void onMutate({ action: "expand" })}
             >
-              Expand to {garden.nextExpansion.width} × {garden.nextExpansion.height}
-              {" · "}
-              {garden.nextExpansion.careCost} Care
+              Add land to {garden.nextExpansion.width} ×{" "}
+              {garden.nextExpansion.height} · {garden.nextExpansion.careCost} Care
             </button>
           ) : (
-            <strong>Full property open</strong>
+            <strong>All available parcels open</strong>
           )}
         </section>
 
         <p className="cg-garden-controls-footnote">
-          Earn Care by planting and thoughtfully watering in the Community Garden.
-          Personal plants stay here permanently and can be uprooted for{" "}
-          {garden.uprootReturn} Care.
+          Earn Care by planting and thoughtfully watering in the Community Garden:
+          the first {garden.dailyCareLimit} Care comes quickly each day, then every
+          four helpful actions earns another. Personal plants stay here permanently
+          and can be uprooted for {garden.uprootReturn} Care.
         </p>
       </aside>
     </div>
