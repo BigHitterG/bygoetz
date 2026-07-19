@@ -1262,6 +1262,7 @@
 }
 
 .cg-sign-in,
+.cg-pass-preview,
 .cg-pass-card,
 .cg-steward-welcome,
 .cg-almanac,
@@ -1271,6 +1272,221 @@
   border: 2px solid rgba(52, 35, 31, 0.58);
   background: rgba(255, 244, 223, 0.72);
   padding: 14px;
+}
+
+.cg-pass-preview {
+  overflow: hidden;
+  padding: 0;
+}
+
+.cg-pass-ticket {
+  position: relative;
+  display: grid;
+  min-height: 126px;
+  grid-template-columns: 42% minmax(0, 1fr);
+  overflow: hidden;
+  border-bottom: 2px dashed rgba(52, 35, 31, 0.48);
+  background:
+    radial-gradient(circle at 0 50%, var(--cg-cream) 0 9px, transparent 10px),
+    radial-gradient(circle at 100% 50%, var(--cg-cream) 0 9px, transparent 10px),
+    #f4d89f;
+}
+
+.cg-pass-ticket-art {
+  position: relative;
+  overflow: hidden;
+  border-right: 2px solid rgba(52, 35, 31, 0.32);
+  background:
+    linear-gradient(155deg, transparent 48%, rgba(75, 117, 67, 0.36) 49% 53%, transparent 54%),
+    linear-gradient(25deg, transparent 51%, rgba(75, 117, 67, 0.32) 52% 56%, transparent 57%),
+    #9fc6a0;
+}
+
+.cg-pass-sun {
+  position: absolute;
+  top: 17px;
+  right: 15px;
+  width: 28px;
+  height: 28px;
+  border: 3px solid var(--cg-ink);
+  border-radius: 50%;
+  background: #f3be4b;
+  box-shadow: 0 0 0 5px rgba(243, 190, 75, 0.28);
+}
+
+.cg-pass-flower {
+  position: absolute;
+  bottom: 23px;
+  width: 23px;
+  height: 23px;
+  border: 3px solid var(--cg-ink);
+  border-radius: 50% 50% 46% 54%;
+  background: var(--cg-red);
+  box-shadow:
+    -10px 3px 0 -4px #fff4df,
+    10px 3px 0 -4px #fff4df;
+}
+
+.cg-pass-flower::after {
+  position: absolute;
+  top: 19px;
+  left: 8px;
+  width: 3px;
+  height: 38px;
+  background: var(--cg-ink);
+  content: "";
+}
+
+.cg-pass-flower.is-one {
+  left: 18px;
+  transform: scale(0.72);
+}
+
+.cg-pass-flower.is-two {
+  bottom: 30px;
+  left: 50%;
+  background: #f3be4b;
+  transform: translateX(-50%) scale(0.9);
+}
+
+.cg-pass-flower.is-three {
+  right: 12px;
+  background: #bca7d8;
+  transform: scale(0.66);
+}
+
+.cg-pass-ticket-copy {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  justify-content: center;
+  padding: 18px 18px 18px 14px;
+}
+
+.cg-pass-ticket-copy small {
+  color: var(--cg-red);
+  font-size: 0.58rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.cg-pass-ticket-copy strong {
+  margin-top: 5px;
+  font-family: "Courier New", ui-monospace, monospace;
+  font-size: clamp(1.1rem, 5.2vw, 1.45rem);
+  line-height: 1.02;
+  text-transform: uppercase;
+}
+
+.cg-pass-ticket-copy span {
+  margin-top: 8px;
+  color: #6f4c3e;
+  font-size: 0.61rem;
+  font-weight: 750;
+  line-height: 1.35;
+}
+
+.cg-pass-promise {
+  padding: 16px 14px 5px;
+}
+
+.cg-pass-promise h3 {
+  font-size: 1rem;
+}
+
+.cg-pass-promise > p:last-child {
+  margin: 6px 0 0;
+  color: #5b4238;
+  font-size: 0.76rem;
+  line-height: 1.45;
+}
+
+.cg-pass-benefits {
+  display: grid;
+  margin: 0;
+  padding: 9px 14px 14px;
+  gap: 8px;
+  list-style: none;
+}
+
+.cg-pass-benefits li {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+  border: 1px solid rgba(52, 35, 31, 0.25);
+  background: rgba(255, 250, 240, 0.68);
+  padding: 9px;
+}
+
+.cg-benefit-icon {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  border: 2px solid var(--cg-ink);
+  background: #f4d89f;
+  color: var(--cg-red);
+  font-family: "Courier New", ui-monospace, monospace;
+  font-size: 0.68rem;
+  font-weight: 900;
+  box-shadow: 2px 2px 0 rgba(52, 35, 31, 0.18);
+}
+
+.cg-benefit-icon.is-ideas {
+  background: #dba5a9;
+}
+
+.cg-benefit-icon.is-devices {
+  background: #b8d4b6;
+}
+
+.cg-pass-benefits strong {
+  display: block;
+  font-size: 0.73rem;
+}
+
+.cg-pass-benefits p {
+  margin: 3px 0 0;
+  color: #6f4c3e;
+  font-size: 0.66rem;
+  line-height: 1.4;
+}
+
+.cg-pass-offer {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+  border-top: 2px solid rgba(52, 35, 31, 0.48);
+  background: var(--cg-ink);
+  padding: 12px 14px;
+  color: var(--cg-cream);
+}
+
+.cg-pass-offer > div {
+  display: grid;
+}
+
+.cg-pass-offer span {
+  font-size: 0.55rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.cg-pass-offer strong {
+  color: #f4d89f;
+  font-family: "Courier New", ui-monospace, monospace;
+  font-size: 1.6rem;
+  line-height: 1;
+}
+
+.cg-pass-offer p {
+  margin: 0;
+  color: rgba(255, 244, 223, 0.82);
+  font-size: 0.63rem;
+  line-height: 1.4;
 }
 
 .cg-sign-in > p,
@@ -1289,6 +1505,91 @@
 
 .cg-sign-in form {
   margin-top: 13px;
+}
+
+.cg-auth-steps {
+  display: grid;
+  margin: 0 0 15px;
+  padding: 0;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  list-style: none;
+}
+
+.cg-auth-steps li {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 6px;
+  align-items: center;
+  color: #6f4c3e;
+  font-size: 0.61rem;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.cg-auth-steps span {
+  display: grid;
+  width: 23px;
+  height: 23px;
+  place-items: center;
+  border: 1px solid rgba(52, 35, 31, 0.55);
+  border-radius: 50%;
+  background: rgba(247, 216, 170, 0.54);
+  color: var(--cg-red);
+  font-family: "Courier New", ui-monospace, monospace;
+}
+
+.cg-auth-tabs {
+  display: grid;
+  margin-bottom: 15px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.cg-auth-tabs button[aria-pressed="true"] {
+  background: var(--cg-ink);
+  color: var(--cg-cream);
+  box-shadow: none;
+}
+
+.cg-auth-help {
+  color: #6f4c3e;
+  font-size: 0.67rem;
+  line-height: 1.4;
+}
+
+.cg-steward .cg-auth-text-button {
+  min-height: auto;
+  margin-top: 11px;
+  border: 0;
+  background: transparent;
+  padding: 2px 0;
+  color: #6f4c3e;
+  font-size: 0.7rem;
+  text-decoration: underline;
+  box-shadow: none;
+}
+
+.cg-auth-confirm button {
+  width: 100%;
+  margin-top: 14px;
+  background: var(--cg-red);
+  color: #fff9e9;
+}
+
+.cg-auth-confirm form button {
+  margin-top: 4px;
+}
+
+.cg-auth-step {
+  margin: 0 0 5px;
+  color: var(--cg-red);
+  font-family: "Courier New", ui-monospace, monospace;
+  font-size: 0.66rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
 .cg-steward label {

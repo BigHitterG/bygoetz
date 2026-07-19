@@ -106,13 +106,14 @@ export function CommunityGardenApp() {
         <button
           className="cg-compact-support"
           type="button"
+          aria-label="Open the Founding Gardener Pass"
           onClick={() => {
             setMenuSection("steward");
             setMenuOpen(true);
           }}
         >
-          <span aria-hidden="true">+</span>
-          $6.99 Pass
+          <span aria-hidden="true">✦</span>
+          Founding Pass
         </button>
 
         <div className="cg-plant-picker" role="group" aria-label="Choose what to plant">
