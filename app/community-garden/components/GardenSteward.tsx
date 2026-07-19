@@ -38,12 +38,23 @@ type ActiveAccount = {
   feedback: FeedbackItem[];
 };
 
+type FreeAccount = { active: false; email: string };
+type AccountResponse = ActiveAccount | FreeAccount;
+
 type AccountState =
   | { status: "loading" }
   | { status: "signed-out" }
   | { status: "free"; email: string }
   | { status: "error"; message: string }
   | { status: "active"; account: ActiveAccount };
+
+type AuthView = "signin" | "signup" | "recovery";
+type PendingAccountLink = {
+  tokenHash: string;
+  type: "signup" | "recovery";
+  checkout: boolean;
+  verified: boolean;
+};
 
 async function getResponseError(response: Response, fallback: string) {
   try {
@@ -54,12 +65,25 @@ async function getResponseError(response: Response, fallback: string) {
   }
 }
 
+function clearAccountLinkFromAddress() {
+  const url = new URL(window.location.href);
+  url.searchParams.delete("steward");
+  url.searchParams.delete("token_hash");
+  url.searchParams.delete("type");
+  url.searchParams.delete("checkout");
+  window.history.replaceState({}, "", `${url.pathname}${url.search}${url.hash}`);
+}
+
 export function GardenSteward() {
   const [session, setSession] = useState<Session | null>(null);
   const [accountState, setAccountState] = useState<AccountState>({ status: "loading" });
+  const [authView, setAuthView] = useState<AuthView>("signin");
+  const [pendingLink, setPendingLink] = useState<PendingAccountLink | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [notice, setNotice] = useState("");
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [passwordConfirm, setPasswordConfirm] = useState("");
   const [category, setCategory] = useState("plants");
   const [idea, setIdea] = useState("");
 
@@ -70,17 +94,36 @@ export function GardenSteward() {
         headers: { authorization: `Bearer ${activeSession.access_token}` },
       });
       if (!response.ok) throw new Error(await getResponseError(response, "Could not load the pass."));
-      const account = (await response.json()) as ActiveAccount | { active: false; email: string };
+      const account = (await response.json()) as AccountResponse;
       setAccountState(
         account.active
           ? { status: "active", account }
           : { status: "free", email: account.email || activeSession.user.email || "" },
       );
+      return account;
     } catch (error) {
       setAccountState({
         status: "error",
         message: error instanceof Error ? error.message : "Could not load the pass.",
       });
+      return null;
+    }
+  }, []);
+
+  const beginCheckout = useCallback(async (activeSession: Session) => {
+    setBusy("checkout");
+    setNotice("");
+    try {
+      const response = await fetch("/api/community-garden/checkout", {
+        method: "POST",
+        headers: { authorization: `Bearer ${activeSession.access_token}` },
+      });
+      if (!response.ok) throw new Error(await getResponseError(response, "Checkout could not start."));
+      const payload = (await response.json()) as { url: string };
+      window.location.assign(payload.url);
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Checkout could not start.");
+      setBusy(null);
     }
   }, []);
 
@@ -91,6 +134,25 @@ export function GardenSteward() {
         setAccountState({ status: "error", message: "Private accounts are not configured yet." });
       });
       return;
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    const stewardStatus = params.get("steward");
+    const tokenHash = params.get("token_hash");
+    const verificationType = params.get("type");
+    if (
+      stewardStatus === "confirm-account" &&
+      tokenHash &&
+      (verificationType === "signup" || verificationType === "recovery")
+    ) {
+      queueMicrotask(() => {
+        setPendingLink({
+          tokenHash,
+          type: verificationType,
+          checkout: params.get("checkout") === "1",
+          verified: false,
+        });
+      });
     }
 
     void client.auth.getSession().then(({ data }) => {
@@ -105,8 +167,6 @@ export function GardenSteward() {
       else setAccountState({ status: "signed-out" });
     });
 
-    const params = new URLSearchParams(window.location.search);
-    const stewardStatus = params.get("steward");
     queueMicrotask(() => {
       if (stewardStatus === "welcome") {
         setNotice("Purchase complete. Your pass now follows this private account.");
@@ -120,41 +180,150 @@ export function GardenSteward() {
     return () => listener.subscription.unsubscribe();
   }, [loadAccount]);
 
-  async function sendSignInLink(event: FormEvent<HTMLFormElement>) {
+  async function sendAccountEmail(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const intent = authView === "signup" ? "signup" : "recovery";
+    const trimmedEmail = email.trim();
+    if (!trimmedEmail) return;
+    if (intent === "signup" && password !== passwordConfirm) {
+      setNotice("Those passwords do not match.");
+      return;
+    }
+
+    setBusy("account-email");
+    setNotice("");
+    try {
+      const response = await fetch("/api/community-garden/auth/email", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          intent,
+          email: trimmedEmail,
+          password: intent === "signup" ? password : undefined,
+        }),
+      });
+      if (!response.ok) {
+        throw new Error(await getResponseError(response, "The account email could not be sent."));
+      }
+      const payload = (await response.json()) as { message?: string };
+      setPassword("");
+      setPasswordConfirm("");
+      setNotice(
+        payload.message ??
+          "Check your email for a private account message from Basil by Goetz.",
+      );
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "The account email could not be sent.");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function signIn(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const client = getGardenAccountClient();
-    if (!client || !email.trim()) return;
+    if (!client || !email.trim() || !password) return;
 
     setBusy("sign-in");
     setNotice("");
-    const { error } = await client.auth.signInWithOtp({
+    const { data, error } = await client.auth.signInWithPassword({
       email: email.trim(),
-      options: {
-        emailRedirectTo: `${window.location.origin}/community-garden?steward=signed-in`,
-      },
+      password,
     });
+    if (error || !data.session) {
+      setBusy(null);
+      setNotice(
+        error?.message === "Invalid login credentials"
+          ? "That email or password was not recognized. You can reset the password below."
+          : error?.message ?? "Basil could not sign in.",
+      );
+      return;
+    }
+
+    setSession(data.session);
+    setPassword("");
+    const account = await loadAccount(data.session);
+    if (account?.active) {
+      setNotice("Signed in. Your Founding Gardener pass is active.");
+      setBusy(null);
+      return;
+    }
+    if (account) {
+      await beginCheckout(data.session);
+      return;
+    }
     setBusy(null);
-    setNotice(
-      error
-        ? error.message
-        : "Check your email and tap the Basil sign-in link. No password is needed.",
-    );
   }
 
-  async function beginCheckout() {
-    if (!session) return;
-    setBusy("checkout");
+  async function confirmAccountLink() {
+    const client = getGardenAccountClient();
+    if (!client || !pendingLink || pendingLink.verified) return;
+
+    setBusy("confirm-account");
     setNotice("");
-    try {
-      const response = await fetch("/api/community-garden/checkout", {
-        method: "POST",
-        headers: { authorization: `Bearer ${session.access_token}` },
-      });
-      if (!response.ok) throw new Error(await getResponseError(response, "Checkout could not start."));
-      const payload = (await response.json()) as { url: string };
-      window.location.assign(payload.url);
-    } catch (error) {
-      setNotice(error instanceof Error ? error.message : "Checkout could not start.");
+    const { data, error } = await client.auth.verifyOtp({
+      token_hash: pendingLink.tokenHash,
+      type: pendingLink.type,
+    });
+    if (error || !data.session) {
+      setBusy(null);
+      setNotice(
+        "That account link has expired or was already used. Please request a fresh email.",
+      );
+      return;
+    }
+
+    clearAccountLinkFromAddress();
+    setSession(data.session);
+    if (pendingLink.type === "recovery") {
+      setPendingLink({ ...pendingLink, verified: true });
+      setPassword("");
+      setPasswordConfirm("");
+      setBusy(null);
+      setNotice("Email confirmed. Choose the password you want to use on your devices.");
+      return;
+    }
+
+    setPendingLink(null);
+    if (pendingLink.checkout) {
+      await beginCheckout(data.session);
+    } else {
+      await loadAccount(data.session);
+      setBusy(null);
+    }
+  }
+
+  async function setNewPassword(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const client = getGardenAccountClient();
+    if (!client || !session || !pendingLink?.verified) return;
+    if (password !== passwordConfirm) {
+      setNotice("Those passwords do not match.");
+      return;
+    }
+    if (password.length < 10 || password.length > 128) {
+      setNotice("Use a password between 10 and 128 characters.");
+      return;
+    }
+
+    setBusy("set-password");
+    setNotice("");
+    const { error } = await client.auth.updateUser({ password });
+    if (error) {
+      setBusy(null);
+      setNotice(error.message);
+      return;
+    }
+
+    const continueToCheckout = pendingLink.checkout;
+    setPassword("");
+    setPasswordConfirm("");
+    setPendingLink(null);
+    if (continueToCheckout) {
+      await beginCheckout(session);
+    } else {
+      await loadAccount(session);
+      setNotice("Password updated. You are signed in on this device.");
       setBusy(null);
     }
   }
@@ -192,6 +361,8 @@ export function GardenSteward() {
     setNotice("Signed out on this device. Your purchase remains on your account.");
   }
 
+  const showAccountLink = Boolean(pendingLink);
+
   return (
     <section className="cg-steward" aria-labelledby="garden-steward-title">
       <p className="cg-kicker">One time · $6.99</p>
@@ -203,11 +374,70 @@ export function GardenSteward() {
 
       {notice ? <p className="cg-steward-notice" aria-live="polite">{notice}</p> : null}
 
-      {accountState.status === "loading" ? (
+      {accountState.status !== "active" && !showAccountLink ? (
+        <div className="cg-pass-preview">
+          <div className="cg-pass-ticket" aria-label="Basil Founding Gardener Pass">
+            <div className="cg-pass-ticket-art" aria-hidden="true">
+              <span className="cg-pass-sun" />
+              <span className="cg-pass-flower is-one" />
+              <span className="cg-pass-flower is-two" />
+              <span className="cg-pass-flower is-three" />
+            </div>
+            <div className="cg-pass-ticket-copy">
+              <small>Basil Community Garden</small>
+              <strong>Founding Gardener</strong>
+              <span>Lifetime garden pass · No gameplay advantage</span>
+            </div>
+          </div>
+
+          <div className="cg-pass-promise">
+            <p className="cg-auth-step">What your pass opens</p>
+            <h3>A closer seat in the garden</h3>
+            <p>
+              You still plant beside everyone else. The pass gives you a richer view of
+              the community and a direct hand in where Basil grows next.
+            </p>
+          </div>
+
+          <ul className="cg-pass-benefits">
+            <li>
+              <span className="cg-benefit-icon is-almanac" aria-hidden="true">01</span>
+              <div>
+                <strong>Open the live Garden Almanac</strong>
+                <p>See what is growing, planted, and watered across the shared garden.</p>
+              </div>
+            </li>
+            <li>
+              <span className="cg-benefit-icon is-ideas" aria-hidden="true">02</span>
+              <div>
+                <strong>Help shape what grows next</strong>
+                <p>Send ideas into the practical upgrade queue and follow their progress.</p>
+              </div>
+            </li>
+            <li>
+              <span className="cg-benefit-icon is-devices" aria-hidden="true">03</span>
+              <div>
+                <strong>Bring your pass to every device</strong>
+                <p>Sign in privately with the same email. Nothing becomes public in-game.</p>
+              </div>
+            </li>
+          </ul>
+
+          <div className="cg-pass-offer">
+            <div>
+              <span>One-time founding price</span>
+              <strong>$6.99</strong>
+            </div>
+            <p>Not a subscription. The garden stays fair and free for everyone.</p>
+          </div>
+        </div>
+      ) : null}
+
+      {accountState.status === "loading" && !showAccountLink ? (
         <p className="cg-steward-loading">Checking for a private Basil account…</p>
       ) : null}
 
-      {accountState.status === "error" ? (
+      {accountState.status === "error" && !showAccountLink ? (
         <div className="cg-steward-error" role="alert">
           <p>{accountState.message}</p>
           {session ? (
@@ -216,31 +446,249 @@ export function GardenSteward() {
         </div>
       ) : null}
 
-      {accountState.status === "signed-out" ? (
-        <div className="cg-sign-in">
-          <h3>Sign in privately</h3>
+      {pendingLink && !pendingLink.verified ? (
+        <div className="cg-sign-in cg-auth-confirm">
+          <p className="cg-auth-step">Account confirmation</p>
+          <h3>Return securely to Basil</h3>
           <p>
-            Use your email on any device. We send a secure sign-in link, so there is no
-            username or password to remember.
+            Press the button below to confirm this private account
+            {pendingLink.checkout ? " and continue to the secure Stripe checkout." : "."}
           </p>
-          <form onSubmit={sendSignInLink}>
-            <label htmlFor="basil-email">Email address</label>
+          <button
+            type="button"
+            disabled={busy === "confirm-account"}
+            onClick={() => void confirmAccountLink()}
+          >
+            {busy === "confirm-account"
+              ? "Confirming account…"
+              : pendingLink.checkout
+                ? "Confirm account & continue to payment"
+                : "Confirm Basil account"}
+          </button>
+        </div>
+      ) : null}
+
+      {pendingLink?.verified ? (
+        <div className="cg-sign-in cg-auth-confirm">
+          <p className="cg-auth-step">Private password</p>
+          <h3>Choose your Basil password</h3>
+          <p>This password is only for signing in. Nothing becomes public in the garden.</p>
+          <form onSubmit={setNewPassword}>
+            <label htmlFor="basil-new-password">New password</label>
             <input
-              id="basil-email"
-              type="email"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              autoComplete="email"
+              id="basil-new-password"
+              type="password"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              autoComplete="new-password"
+              minLength={10}
+              maxLength={128}
               required
             />
-            <button type="submit" disabled={busy === "sign-in" || !email.trim()}>
-              {busy === "sign-in" ? "Sending link…" : "Email me a sign-in link"}
+            <label htmlFor="basil-new-password-confirm">Confirm password</label>
+            <input
+              id="basil-new-password-confirm"
+              type="password"
+              value={passwordConfirm}
+              onChange={(event) => setPasswordConfirm(event.target.value)}
+              autoComplete="new-password"
+              minLength={10}
+              maxLength={128}
+              required
+            />
+            <small className="cg-auth-help">Use at least 10 characters.</small>
+            <button
+              type="submit"
+              disabled={
+                busy === "set-password" ||
+                password.length < 10 ||
+                password !== passwordConfirm
+              }
+            >
+              {busy === "set-password"
+                ? "Saving password…"
+                : pendingLink.checkout
+                  ? "Save password & continue to payment"
+                  : "Save new password"}
             </button>
           </form>
         </div>
       ) : null}
 
-      {accountState.status === "free" ? (
+      {accountState.status === "signed-out" && !showAccountLink ? (
+        <div className="cg-sign-in">
+          <ol className="cg-auth-steps" aria-label="Purchase steps">
+            <li><span>1</span>Private account</li>
+            <li><span>2</span>Email confirmation</li>
+            <li><span>3</span>Secure payment</li>
+          </ol>
+          <div className="cg-auth-tabs" role="group" aria-label="Account options">
+            <button
+              type="button"
+              aria-pressed={authView === "signin"}
+              onClick={() => {
+                setAuthView("signin");
+                setNotice("");
+              }}
+            >
+              Sign in
+            </button>
+            <button
+              type="button"
+              aria-pressed={authView === "signup"}
+              onClick={() => {
+                setAuthView("signup");
+                setNotice("");
+              }}
+            >
+              Create account
+            </button>
+          </div>
+
+          {authView === "signin" ? (
+            <>
+              <h3>Sign in & continue</h3>
+              <p>
+                Your email is your private login. There is no public username, profile,
+                or name attached to what you plant.
+              </p>
+              <form onSubmit={signIn}>
+                <label htmlFor="basil-signin-email">Email address</label>
+                <input
+                  id="basil-signin-email"
+                  type="email"
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
+                  autoComplete="email"
+                  required
+                />
+                <label htmlFor="basil-signin-password">Password</label>
+                <input
+                  id="basil-signin-password"
+                  type="password"
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  autoComplete="current-password"
+                  required
+                />
+                <button
+                  type="submit"
+                  disabled={busy === "sign-in" || !email.trim() || !password}
+                >
+                  {busy === "sign-in" ? "Signing in…" : "Sign in & continue"}
+                </button>
+              </form>
+              <button
+                className="cg-auth-text-button"
+                type="button"
+                onClick={() => {
+                  setAuthView("recovery");
+                  setPassword("");
+                  setNotice("");
+                }}
+              >
+                Forgot your password?
+              </button>
+            </>
+          ) : null}
+
+          {authView === "signup" ? (
+            <>
+              <h3>Create a private account</h3>
+              <p>
+                Use the same email on your other devices. We will send one confirmation
+                from Basil by Goetz, then take you to the $6.99 Stripe checkout.
+              </p>
+              <form onSubmit={sendAccountEmail}>
+                <label htmlFor="basil-signup-email">Email address</label>
+                <input
+                  id="basil-signup-email"
+                  type="email"
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
+                  autoComplete="email"
+                  required
+                />
+                <label htmlFor="basil-signup-password">Create password</label>
+                <input
+                  id="basil-signup-password"
+                  type="password"
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  autoComplete="new-password"
+                  minLength={10}
+                  maxLength={128}
+                  required
+                />
+                <label htmlFor="basil-signup-password-confirm">Confirm password</label>
+                <input
+                  id="basil-signup-password-confirm"
+                  type="password"
+                  value={passwordConfirm}
+                  onChange={(event) => setPasswordConfirm(event.target.value)}
+                  autoComplete="new-password"
+                  minLength={10}
+                  maxLength={128}
+                  required
+                />
+                <small className="cg-auth-help">Use at least 10 characters.</small>
+                <button
+                  type="submit"
+                  disabled={
+                    busy === "account-email" ||
+                    !email.trim() ||
+                    password.length < 10 ||
+                    password !== passwordConfirm
+                  }
+                >
+                  {busy === "account-email"
+                    ? "Sending confirmation…"
+                    : "Create account & continue to payment"}
+                </button>
+              </form>
+            </>
+          ) : null}
+
+          {authView === "recovery" ? (
+            <>
+              <h3>Reset your password</h3>
+              <p>
+                We will send a private password-reset email from Basil by Goetz. You will
+                stay signed in on this device afterward.
+              </p>
+              <form onSubmit={sendAccountEmail}>
+                <label htmlFor="basil-recovery-email">Email address</label>
+                <input
+                  id="basil-recovery-email"
+                  type="email"
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
+                  autoComplete="email"
+                  required
+                />
+                <button
+                  type="submit"
+                  disabled={busy === "account-email" || !email.trim()}
+                >
+                  {busy === "account-email" ? "Sending reset…": "Email me a password reset"}
+                </button>
+              </form>
+              <button
+                className="cg-auth-text-button"
+                type="button"
+                onClick={() => {
+                  setAuthView("signin");
+                  setNotice("");
+                }}
+              >
+                Back to sign in
+              </button>
+            </>
+          ) : null}
+        </div>
+      ) : null}
+
+      {accountState.status === "free" && !showAccountLink ? (
         <div className="cg-pass-card">
           <div className="cg-signed-in-row">
             <span>Signed in privately as {accountState.email}</span>
@@ -260,15 +708,15 @@ export function GardenSteward() {
           <button
             className="cg-support-button"
             type="button"
-            disabled={busy === "checkout"}
-            onClick={() => void beginCheckout()}
+            disabled={busy === "checkout" || !session}
+            onClick={() => session && void beginCheckout(session)}
           >
-            {busy === "checkout" ? "Opening secure checkout…" : "Get the $6.99 pass"}
+            {busy === "checkout" ? "Opening secure checkout…" : "Continue to secure checkout"}
           </button>
         </div>
       ) : null}
 
-      {accountState.status === "active" ? (
+      {accountState.status === "active" && !showAccountLink ? (
         <div className="cg-steward-account">
           <div className="cg-steward-welcome">
             <div className="cg-signed-in-row">
@@ -353,8 +801,8 @@ export function GardenSteward() {
         <p>
           Basil stores your private account email, payment entitlement, and feedback.
           Stripe handles card and receipt details. The public garden never shows who you
-          are or connects your identity to plants. Future verified store purchases can
-          attach to this same account.
+          are or connects your identity to plants. You stay signed in on a device until
+          you sign out. Future verified store purchases can attach to this same account.
         </p>
       </div>
     </section>
