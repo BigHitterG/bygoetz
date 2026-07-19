@@ -27,6 +27,11 @@ export type MyGardenPlant = {
   plantedAt: string;
 };
 
+export type MyGardenPath = {
+  gridX: number;
+  gridY: number;
+};
+
 export type MyGardenState = {
   careBalance: number;
   lifetimeCare: number;
@@ -45,6 +50,7 @@ export type MyGardenState = {
     careCost: number;
   };
   plants: MyGardenPlant[];
+  paths: MyGardenPath[];
   upgrades: MyGardenUpgradeType[];
 };
 
@@ -64,6 +70,11 @@ type PersonalPlantRow = {
 
 type PersonalUpgradeRow = {
   upgrade_type: MyGardenUpgradeType;
+};
+
+type PersonalPathRow = {
+  grid_x: number;
+  grid_y: number;
 };
 
 function getPlotDimensions(plotLevel: number) {
@@ -117,6 +128,7 @@ export async function getMyGarden(stewardId: string): Promise<MyGardenState> {
   const [
     { data: progress, error: progressError },
     { data: plants, error: plantsError },
+    { data: paths, error: pathsError },
     { data: upgrades, error: upgradesError },
   ] = await Promise.all([
     supabase
@@ -132,6 +144,13 @@ export async function getMyGarden(stewardId: string): Promise<MyGardenState> {
       .order("grid_x")
       .returns<PersonalPlantRow[]>(),
     supabase
+      .from("garden_personal_paths")
+      .select("grid_x,grid_y")
+      .eq("steward_id", stewardId)
+      .order("grid_y")
+      .order("grid_x")
+      .returns<PersonalPathRow[]>(),
+    supabase
       .from("garden_personal_upgrades")
       .select("upgrade_type")
       .eq("steward_id", stewardId)
@@ -141,6 +160,7 @@ export async function getMyGarden(stewardId: string): Promise<MyGardenState> {
 
   if (progressError) throw progressError;
   if (plantsError) throw plantsError;
+  if (pathsError) throw pathsError;
   if (upgradesError) throw upgradesError;
 
   const dimensions = getPlotDimensions(progress.plot_level);
@@ -161,6 +181,10 @@ export async function getMyGarden(stewardId: string): Promise<MyGardenState> {
       gridY: plant.grid_y,
       plantType: plant.plant_type,
       plantedAt: plant.planted_at,
+    })),
+    paths: (paths ?? []).map((path) => ({
+      gridX: path.grid_x,
+      gridY: path.grid_y,
     })),
     upgrades: (upgrades ?? []).map((upgrade) => upgrade.upgrade_type),
   };
@@ -216,6 +240,22 @@ export async function uprootFromMyGarden(stewardId: string, plantId: string) {
   });
   if (error) {
     throw new Error(getDatabaseMessage(error, "That plant could not be uprooted."));
+  }
+  return getMyGarden(stewardId);
+}
+
+export async function toggleMyGardenPath(
+  stewardId: string,
+  gridX: number,
+  gridY: number,
+) {
+  const { error } = await getSupabaseAdmin().rpc("toggle_my_garden_path", {
+    p_steward_id: stewardId,
+    p_grid_x: gridX,
+    p_grid_y: gridY,
+  });
+  if (error) {
+    throw new Error(getDatabaseMessage(error, "That path could not be changed."));
   }
   return getMyGarden(stewardId);
 }

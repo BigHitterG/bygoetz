@@ -37,6 +37,7 @@ const INITIAL_UI: GardenUiState = {
   canZoomIn: true,
   canZoomOut: false,
   selectedPlantType: "rose",
+  selectedTool: "rose",
   plantMapPoints: [],
   mode: "community",
 };
@@ -358,7 +359,7 @@ export function CommunityGardenApp() {
                 key={plantType}
                 type="button"
                 aria-label={`Select ${plant.name} seeds`}
-                aria-pressed={ui.selectedPlantType === plantType}
+                aria-pressed={ui.selectedTool === plantType}
                 title={plant.name}
                 onClick={() => canvasRef.current?.selectPlant(plantType)}
               >
@@ -367,6 +368,18 @@ export function CommunityGardenApp() {
               </button>
             );
           })}
+          {world === "personal" ? (
+            <button
+              type="button"
+              aria-label="Select the free path tool"
+              aria-pressed={ui.selectedTool === "path"}
+              title="Path"
+              onClick={() => canvasRef.current?.selectPathTool()}
+            >
+              <span className="cg-path-icon" aria-hidden="true" />
+              <span>Path</span>
+            </button>
+          ) : null}
         </div>
 
         <button
@@ -381,6 +394,8 @@ export function CommunityGardenApp() {
                 ? "cg-water-icon"
                 : ui.action === "uproot"
                   ? "cg-uproot-icon"
+                  : ui.action === "lay-path" || ui.action === "remove-path"
+                    ? "cg-path-icon"
                   : `cg-plant-glyph is-${ui.selectedPlantType}`
             }
             aria-hidden="true"

@@ -524,6 +524,11 @@
   box-shadow: 3px 3px 0 rgba(52, 35, 31, 0.22);
 }
 
+.is-personal-world .cg-plant-picker {
+  width: min(72%, 300px);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
 .cg-plant-picker button {
   display: grid;
   min-width: 0;
@@ -549,6 +554,35 @@
 .cg-plant-picker button[aria-pressed="true"] {
   background: #f3c99b;
   box-shadow: inset 0 -4px 0 var(--cg-coral);
+}
+
+.cg-path-icon {
+  position: relative;
+  display: block;
+  width: 26px;
+  height: 24px;
+  background:
+    linear-gradient(90deg, #b89568 0 42%, transparent 42% 50%, #ceb184 50%) 2px 5px / 22px 7px no-repeat,
+    linear-gradient(90deg, #d2b88c 0 35%, transparent 35% 43%, #b99669 43%) 0 14px / 26px 7px no-repeat;
+}
+
+.cg-path-icon::before,
+.cg-path-icon::after {
+  position: absolute;
+  width: 3px;
+  height: 2px;
+  background: #806347;
+  content: "";
+}
+
+.cg-path-icon::before {
+  left: 7px;
+  top: 8px;
+}
+
+.cg-path-icon::after {
+  right: 6px;
+  bottom: 5px;
 }
 
 .cg-action-button {

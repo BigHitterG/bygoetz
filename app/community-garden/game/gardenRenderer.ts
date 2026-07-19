@@ -9,7 +9,7 @@ export type GardenWorldMode = "community" | "personal";
 export type SelectedCell = { gridX: number; gridY: number; plantId?: string } | null;
 export type GardenEffect =
   | {
-      kind: "plant" | "water" | "uproot";
+      kind: "plant" | "water" | "uproot" | "path";
       gridX: number;
       gridY: number;
       startedAt: number;
@@ -42,6 +42,7 @@ export type RenderGardenState = {
     maxWidth: number;
     maxHeight: number;
     upgrades: MyGardenUpgradeType[];
+    paths: Array<{ gridX: number; gridY: number }>;
     nextExpansion: null | {
       width: number;
       height: number;
@@ -282,8 +283,8 @@ function drawPersonalTerrain(
           : "#98b47f"
         : inExpansion
           ? (gridX + gridY) % 3 === 0
-            ? "#c4d7ad"
-            : "#ccddb6"
+            ? "#f4f1e9"
+            : "#eeebe3"
           : (gridX + gridY) % 3 === 0
             ? "#e3ded2"
             : "#e9e4da";
@@ -291,10 +292,54 @@ function drawPersonalTerrain(
 
       if (inProperty && terrainNoise(gridX, gridY, 73) > 0.66) {
         drawGroundMark(ctx, x, y, zoom, "#6f895d");
-      } else if (inExpansion && !inProperty && terrainNoise(gridX, gridY, 79) > 0.78) {
-        drawGroundMark(ctx, x, y, zoom, "#9db88a");
       }
     }
+  }
+}
+
+function drawPersonalPaths(
+  ctx: CanvasRenderingContext2D,
+  paths: Array<{ gridX: number; gridY: number }>,
+  camera: WorldPoint,
+  viewport: GardenViewport,
+  zoom: number,
+) {
+  const { tileSize, tileScreenHeight } = GARDEN_CONFIG;
+  for (const path of paths) {
+    const topLeft = worldToScreen(
+      { x: path.gridX * tileSize, y: path.gridY * tileSize },
+      camera,
+      viewport,
+      zoom,
+    );
+    if (!isVisible(topLeft, viewport, tileSize * zoom)) continue;
+
+    const inset = Math.max(1, zoom);
+    const width = tileSize * zoom;
+    const height = tileScreenHeight * zoom;
+    ctx.save();
+    ctx.fillStyle =
+      (path.gridX + path.gridY) % 2 === 0 ? "#c7aa7c" : "#cfb589";
+    ctx.fillRect(
+      Math.floor(topLeft.x + inset),
+      Math.floor(topLeft.y + inset),
+      Math.ceil(width - inset * 2),
+      Math.ceil(height - inset * 2),
+    );
+    ctx.fillStyle = "rgba(116, 86, 60, 0.34)";
+    ctx.fillRect(
+      Math.floor(topLeft.x + 4 * zoom),
+      Math.floor(topLeft.y + 4 * zoom),
+      Math.max(2, 3 * zoom),
+      Math.max(1, zoom),
+    );
+    ctx.fillRect(
+      Math.floor(topLeft.x + 10 * zoom),
+      Math.floor(topLeft.y + 8 * zoom),
+      Math.max(2, 2 * zoom),
+      Math.max(1, zoom),
+    );
+    ctx.restore();
   }
 }
 
@@ -379,18 +424,18 @@ function drawLockedParcel(
   ctx.translate(Math.round(labelPoint.x), Math.round(labelPoint.y));
   ctx.scale(zoom, zoom);
   ctx.fillStyle = "rgba(255, 244, 223, 0.9)";
-  ctx.fillRect(-43, -17, 86, 31);
+  ctx.fillRect(-28, -11, 56, 22);
   ctx.strokeStyle = "#8a623f";
   ctx.lineWidth = 1;
-  ctx.strokeRect(-43, -17, 86, 31);
+  ctx.strokeRect(-28, -11, 56, 22);
   ctx.fillStyle = "#8a623f";
-  ctx.fillRect(-4, -11, 8, 7);
-  ctx.strokeRect(-3, -15, 6, 7);
+  ctx.fillRect(-22, -3, 8, 8);
+  ctx.strokeRect(-21, -7, 6, 6);
   ctx.fillStyle = "#5f4437";
   ctx.font = '700 7px "Courier New", monospace';
-  ctx.textAlign = "center";
+  ctx.textAlign = "left";
   ctx.textBaseline = "middle";
-  ctx.fillText(`NEXT PARCEL · ${nextExpansion.careCost} CARE`, 0, 7);
+  ctx.fillText(`${nextExpansion.careCost} CARE`, -9, 1);
   ctx.restore();
 }
 
@@ -972,6 +1017,10 @@ function drawEffects(
       ctx.fillStyle = "#876444";
       ctx.fillRect(-7 - progress * 4, -3, 3, 2);
       ctx.fillRect(4 + progress * 4, -5, 3, 2);
+    } else if (effect.kind === "path") {
+      ctx.fillStyle = "#e1c495";
+      ctx.fillRect(-8 - progress * 2, -7 - progress * 3, 3, 2);
+      ctx.fillRect(5 + progress * 2, -5 - progress * 4, 3, 2);
     } else {
       ctx.fillStyle = "#f2d08c";
       ctx.fillRect(-6 - progress * 5, -10 - progress * 6, 3, 3);
@@ -997,6 +1046,13 @@ export function renderGarden(ctx: CanvasRenderingContext2D, state: RenderGardenS
       state.personalGarden.height,
       state.personalGarden.maxWidth,
       state.personalGarden.maxHeight,
+    );
+    drawPersonalPaths(
+      ctx,
+      state.personalGarden.paths,
+      state.camera,
+      state.viewport,
+      state.zoom,
     );
     drawPersonalDecorations(
       ctx,
