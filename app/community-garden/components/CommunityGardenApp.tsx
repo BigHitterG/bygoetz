@@ -7,6 +7,8 @@ import {
   type GardenCanvasHandle,
   type GardenUiState,
 } from "./GardenCanvas";
+import { getGardenAccountClient } from "../lib/supabaseAccount";
+import type { GardenContribution } from "../lib/supabaseGarden";
 import { GardenMapKey } from "./GardenMapKey";
 import { GardenMenu, type LibrarySection } from "./GardenMenu";
 import {
@@ -29,11 +31,18 @@ const INITIAL_UI: GardenUiState = {
   plantMapPoints: [],
 };
 
+type CareBurst = {
+  id: number;
+  value: number;
+  detail: string;
+};
+
 export function CommunityGardenApp() {
   const canvasRef = useRef<GardenCanvasHandle>(null);
   const [ui, setUi] = useState(INITIAL_UI);
   const [menuOpen, setMenuOpen] = useState(false);
   const [menuSection, setMenuSection] = useState<LibrarySection>("play");
+  const [careBurst, setCareBurst] = useState<CareBurst | null>(null);
   const adLabel = process.env.NEXT_PUBLIC_COMMUNITY_GARDEN_AD_PLACEHOLDER;
 
   useEffect(() => {
@@ -50,10 +59,79 @@ export function CommunityGardenApp() {
     setUi(state);
   }, []);
 
+  const claimCommunityContribution = useCallback(
+    async (contribution: GardenContribution) => {
+      const burstId = Date.now();
+      setCareBurst({
+        id: burstId,
+        value: contribution.careValue,
+        detail: "Helping the Community Garden",
+      });
+
+      const updateBurst = (detail: string) => {
+        setCareBurst((current) =>
+          current?.id === burstId ? { ...current, detail } : current,
+        );
+      };
+
+      const client = getGardenAccountClient();
+      if (!client) {
+        updateBurst("Garden Membership banks Care");
+        return;
+      }
+      const { data } = await client.auth.getSession();
+      if (!data.session) {
+        updateBurst("Garden Membership banks Care");
+        return;
+      }
+
+      try {
+        const response = await fetch("/api/community-garden/care", {
+          method: "POST",
+          headers: {
+            authorization: `Bearer ${data.session.access_token}`,
+            "content-type": "application/json",
+          },
+          body: JSON.stringify({ receiptToken: contribution.receiptToken }),
+        });
+        if (response.status === 401 || response.status === 403) {
+          updateBurst("Garden Membership banks Care");
+          return;
+        }
+        if (!response.ok) {
+          updateBurst("Care was earned but could not be banked");
+          return;
+        }
+        const award = (await response.json()) as {
+          awardedCare: number;
+          careBalance: number;
+        };
+        updateBurst(
+          award.awardedCare > 0
+            ? `Saved · ${award.careBalance} Care in My Garden`
+            : "Daily basket full · thank you for helping",
+        );
+      } catch {
+        updateBurst("Care was earned but could not be banked");
+      }
+    },
+    [],
+  );
+
+  useEffect(() => {
+    if (!careBurst) return;
+    const timeout = window.setTimeout(() => setCareBurst(null), 4200);
+    return () => window.clearTimeout(timeout);
+  }, [careBurst]);
+
   return (
     <main className="cg-root">
       <section className="cg-game-frame" aria-label="Basil Community Garden game">
-        <GardenCanvas ref={canvasRef} onStateChange={onStateChange} />
+        <GardenCanvas
+          ref={canvasRef}
+          onStateChange={onStateChange}
+          onCommunityContribution={claimCommunityContribution}
+        />
 
         <header className="cg-titlebar">
           <div className="cg-pixel-rose" aria-hidden="true">
@@ -106,15 +184,22 @@ export function CommunityGardenApp() {
         <button
           className="cg-compact-support"
           type="button"
-          aria-label="Open the Founding Gardener Pass"
+          aria-label="Open My Garden"
           onClick={() => {
             setMenuSection("steward");
             setMenuOpen(true);
           }}
         >
-          <span aria-hidden="true">✦</span>
-          Founding Pass
+          <span className="cg-home-mark" aria-hidden="true" />
+          My Garden
         </button>
+
+        {careBurst ? (
+          <div key={careBurst.id} className="cg-care-toast" aria-live="polite">
+            <strong>+{careBurst.value} Care</strong>
+            <span>{careBurst.detail}</span>
+          </div>
+        ) : null}
 
         <div className="cg-plant-picker" role="group" aria-label="Choose what to plant">
           {PLANT_TYPES.map((plantType) => {

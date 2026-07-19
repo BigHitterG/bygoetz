@@ -26,7 +26,6 @@ import {
   getLoadedBounds,
   getMapPercentage,
   isWithinGarden,
-  type GardenBounds,
 } from "../lib/gardenConfig";
 import {
   getPlantDefinition,
@@ -39,6 +38,7 @@ import {
   cleanupExpiredGardenPlants,
   fetchGardenPlantMap,
   fetchGardenPlants,
+  type GardenContribution,
   type GardenMapPlant,
   isGardenConfigured,
   plantGardenPlant,
@@ -99,6 +99,7 @@ type Runtime = {
 
 type GardenCanvasProps = {
   onStateChange: (state: GardenUiState) => void;
+  onCommunityContribution?: (contribution: GardenContribution) => void;
 };
 
 function plantKey(gridX: number, gridY: number) {
@@ -208,9 +209,10 @@ function seedLocalPlants() {
 }
 
 export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
-  function GardenCanvas({ onStateChange }, ref) {
+  function GardenCanvas({ onStateChange, onCommunityContribution }, ref) {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const onStateChangeRef = useRef(onStateChange);
+    const onCommunityContributionRef = useRef(onCommunityContribution);
     const loadPlantsRef = useRef<() => Promise<void>>(async () => undefined);
     const lastUiKeyRef = useRef("");
     const start = gridToWorld(0, 0);
@@ -245,6 +247,10 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
     useEffect(() => {
       onStateChangeRef.current = onStateChange;
     }, [onStateChange]);
+
+    useEffect(() => {
+      onCommunityContributionRef.current = onCommunityContribution;
+    }, [onCommunityContribution]);
 
     const publishUi = useCallback(() => {
       const runtime = runtimeRef.current;
@@ -405,17 +411,21 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
             if (actionState.action === "plant") {
               const existing = getPlantAt(runtime, selected.gridX, selected.gridY);
               if (!isPlantable(existing)) throw new Error("Another plant is already here.");
-              const plant = runtime.configured
+              const result = runtime.configured
                 ? await plantGardenPlant(
                     selected.gridX,
                     selected.gridY,
                     runtime.selectedPlantType,
                   )
-                : makeLocalPlant(
-                    selected.gridX,
-                    selected.gridY,
-                    runtime.selectedPlantType,
-                  );
+                : {
+                    plant: makeLocalPlant(
+                      selected.gridX,
+                      selected.gridY,
+                      runtime.selectedPlantType,
+                    ),
+                    contribution: null,
+                  };
+              const { plant, contribution } = result;
               runtime.plants.set(plantKey(plant.grid_x, plant.grid_y), plant);
               runtime.mapPlants.set(plantKey(plant.grid_x, plant.grid_y), plant);
               runtime.selected = { ...selected, plantId: plant.id };
@@ -426,12 +436,17 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
                 startedAt: performance.now(),
               });
               runtime.statusMessage = `A new ${selectedDefinition.name.toLowerCase()} has taken root.`;
+              if (contribution) onCommunityContributionRef.current?.(contribution);
             } else {
               const current = getPlantAt(runtime, selected.gridX, selected.gridY);
               if (!current) throw new Error("That plant is no longer here.");
-              const plant = runtime.configured
+              const result = runtime.configured
                 ? await waterGardenPlant(current.id)
-                : { ...current, last_watered_at: new Date().toISOString() };
+                : {
+                    plant: { ...current, last_watered_at: new Date().toISOString() },
+                    contribution: null,
+                  };
+              const { plant, contribution } = result;
               runtime.plants.set(plantKey(plant.grid_x, plant.grid_y), plant);
               runtime.effects.push({
                 kind: "water",
@@ -440,6 +455,7 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
                 startedAt: performance.now(),
               });
               runtime.statusMessage = `The ${getPlantDefinition(plant.plant_type).name.toLowerCase()} looks brighter already.`;
+              if (contribution) onCommunityContributionRef.current?.(contribution);
             }
             runtime.connection = runtime.configured ? "online" : "offline";
           } catch (error) {

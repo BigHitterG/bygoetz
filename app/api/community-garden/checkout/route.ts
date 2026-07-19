@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
 
   if (await getGardenStewardByUserId(user.id)) {
     return NextResponse.json(
-      { error: "This account already has a Founding Gardener pass." },
+      { error: "This account already has an active Garden Membership." },
       { status: 409 },
     );
   }
@@ -54,9 +54,9 @@ export async function POST(request: NextRequest) {
           currency: GARDEN_STEWARD_CURRENCY,
           unit_amount: GARDEN_STEWARD_PRICE_CENTS,
           product_data: {
-            name: "Basil Founding Gardener",
+            name: "Basil Community Garden Membership",
             description:
-              "A one-time Founding Gardener pass with cross-device account access, Almanac, and feedback queue. No gameplay advantage.",
+              "A one-time membership with a persistent My Garden, 30-bed starter plot, 8 starting Care, cross-device access, Almanac, and upgrade queue.",
             metadata: { order_type: GARDEN_STEWARD_ORDER_TYPE },
           },
         },

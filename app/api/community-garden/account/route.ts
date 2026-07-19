@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getGardenUser } from "@/lib/communityGarden/auth";
+import { getMyGarden } from "@/lib/communityGarden/myGarden";
 import {
   getGardenAlmanac,
   getGardenFeedback,
@@ -21,9 +22,10 @@ export async function GET(request: Request) {
     return NextResponse.json({ active: false, email: user.email });
   }
 
-  const [almanac, feedback] = await Promise.all([
+  const [almanac, feedback, myGarden] = await Promise.all([
     getGardenAlmanac(),
     getGardenFeedback(steward.id),
+    getMyGarden(steward.id),
   ]);
 
   return NextResponse.json({
@@ -35,5 +37,6 @@ export async function GET(request: Request) {
     },
     almanac,
     feedback,
+    myGarden,
   });
 }

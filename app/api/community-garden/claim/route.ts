@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
     gardenUrl.searchParams.set("steward", "welcome");
     return NextResponse.redirect(gardenUrl);
   } catch (error) {
-    console.error("Basil Founding Gardener claim failed", error);
+    console.error("Basil Garden Membership claim failed", error);
     gardenUrl.searchParams.set("steward", "unverified");
     return NextResponse.redirect(gardenUrl);
   }
