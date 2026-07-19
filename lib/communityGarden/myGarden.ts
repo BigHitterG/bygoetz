@@ -9,6 +9,7 @@ export {
 export const MY_GARDEN_PLANT_COST = 2;
 export const MY_GARDEN_UPROOT_RETURN = 1;
 export const GARDEN_DAILY_CARE_LIMIT = 20;
+export const GARDEN_STEADY_ACTIONS_PER_CARE = 4;
 
 export const MY_GARDEN_PLANT_TYPES = [
   "rose",
@@ -66,17 +67,19 @@ type PersonalUpgradeRow = {
 };
 
 function getPlotDimensions(plotLevel: number) {
-  if (plotLevel >= 3) return { width: 16, height: 20 };
-  if (plotLevel === 2) return { width: 14, height: 18 };
+  if (plotLevel >= 5) return { width: 20, height: 24 };
+  if (plotLevel === 4) return { width: 20, height: 20 };
+  if (plotLevel === 3) return { width: 16, height: 20 };
+  if (plotLevel === 2) return { width: 16, height: 16 };
   return { width: 12, height: 16 };
 }
 
 function getNextExpansion(plotLevel: number) {
-  if (plotLevel >= 3) return null;
-  if (plotLevel === 2) {
-    return { level: 3, width: 16, height: 20, careCost: 50 };
-  }
-  return { level: 2, width: 14, height: 18, careCost: 20 };
+  if (plotLevel >= 5) return null;
+  if (plotLevel === 4) return { level: 5, width: 20, height: 24, careCost: 100 };
+  if (plotLevel === 3) return { level: 4, width: 20, height: 20, careCost: 75 };
+  if (plotLevel === 2) return { level: 3, width: 16, height: 20, careCost: 50 };
+  return { level: 2, width: 16, height: 16, careCost: 30 };
 }
 
 function getDatabaseMessage(error: unknown, fallback: string) {
@@ -147,8 +150,8 @@ export async function getMyGarden(stewardId: string): Promise<MyGardenState> {
     dailyCareLimit: GARDEN_DAILY_CARE_LIMIT,
     plotLevel: progress.plot_level,
     ...dimensions,
-    maxWidth: 16,
-    maxHeight: 20,
+    maxWidth: 20,
+    maxHeight: 24,
     plantCost: MY_GARDEN_PLANT_COST,
     uprootReturn: MY_GARDEN_UPROOT_RETURN,
     nextExpansion: getNextExpansion(progress.plot_level),
@@ -180,6 +183,11 @@ export async function claimGardenCare(stewardId: string, receiptToken: string) {
     awardedCare: Number(result.awarded_care ?? 0),
     careBalance: Number(result.care_balance ?? 0),
     lifetimeCare: Number(result.lifetime_care ?? 0),
+    earningMode: result.earning_phase === "steady" ? "steady" : "quick",
+    steadyProgress: Number(result.steady_progress ?? 0),
+    steadyActionsRequired: Number(
+      result.steady_actions_required ?? GARDEN_STEADY_ACTIONS_PER_CARE,
+    ),
   };
 }
 

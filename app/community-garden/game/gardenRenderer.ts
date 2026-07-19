@@ -7,12 +7,22 @@ export type WorldPoint = { x: number; y: number };
 export type GardenViewport = { width: number; height: number };
 export type GardenWorldMode = "community" | "personal";
 export type SelectedCell = { gridX: number; gridY: number; plantId?: string } | null;
-export type GardenEffect = {
-  kind: "plant" | "water" | "uproot";
-  gridX: number;
-  gridY: number;
-  startedAt: number;
-};
+export type GardenEffect =
+  | {
+      kind: "plant" | "water" | "uproot";
+      gridX: number;
+      gridY: number;
+      startedAt: number;
+    }
+  | {
+      kind: "care";
+      x: number;
+      y: number;
+      value: number;
+      steadyProgress?: number;
+      steadyActionsRequired?: number;
+      startedAt: number;
+    };
 
 export type RenderGardenState = {
   viewport: GardenViewport;
@@ -32,6 +42,11 @@ export type RenderGardenState = {
     maxWidth: number;
     maxHeight: number;
     upgrades: MyGardenUpgradeType[];
+    nextExpansion: null | {
+      width: number;
+      height: number;
+      careCost: number;
+    };
   };
 };
 
@@ -288,9 +303,18 @@ function drawPixelShed(
   camera: WorldPoint,
   viewport: GardenViewport,
   zoom: number,
+  width: number,
   sage: boolean,
 ) {
-  const point = worldToScreen(gridToWorld(-1, 3), camera, viewport, zoom);
+  const point = worldToScreen(
+    {
+      x: (Math.floor(width / 2) + 0.5) * GARDEN_CONFIG.tileSize,
+      y: 0,
+    },
+    camera,
+    viewport,
+    zoom,
+  );
   if (!isVisible(point, viewport, 110)) return;
   ctx.save();
   ctx.translate(Math.round(point.x), Math.round(point.y));
@@ -310,6 +334,63 @@ function drawPixelShed(
   ctx.fillRect(12, -14, 2, 2);
   ctx.fillStyle = "#5f4639";
   ctx.fillRect(20, -50, 7, 13);
+  ctx.restore();
+}
+
+function drawLockedParcel(
+  ctx: CanvasRenderingContext2D,
+  camera: WorldPoint,
+  viewport: GardenViewport,
+  zoom: number,
+  width: number,
+  height: number,
+  nextExpansion: NonNullable<RenderGardenState["personalGarden"]>["nextExpansion"],
+) {
+  if (!nextExpansion) return;
+  const { tileSize, tileScreenHeight } = GARDEN_CONFIG;
+  const topLeft = worldToScreen({ x: 0, y: 0 }, camera, viewport, zoom);
+  const currentWidth = width * tileSize * zoom;
+  const currentHeight = height * tileScreenHeight * zoom;
+  const nextWidth = nextExpansion.width * tileSize * zoom;
+  const nextHeight = nextExpansion.height * tileScreenHeight * zoom;
+  const parcelX = nextWidth > currentWidth ? topLeft.x + currentWidth : topLeft.x;
+  const parcelY = nextHeight > currentHeight ? topLeft.y + currentHeight : topLeft.y;
+  const parcelWidth =
+    nextWidth > currentWidth ? nextWidth - currentWidth : currentWidth;
+  const parcelHeight =
+    nextHeight > currentHeight ? nextHeight - currentHeight : currentHeight;
+
+  ctx.save();
+  ctx.fillStyle = "rgba(239, 211, 142, 0.14)";
+  ctx.fillRect(parcelX, parcelY, parcelWidth, parcelHeight);
+  ctx.strokeStyle = "#d49a38";
+  ctx.lineWidth = Math.max(2, 2 * zoom);
+  ctx.setLineDash([5 * zoom, 3 * zoom]);
+  ctx.strokeRect(parcelX, parcelY, parcelWidth, parcelHeight);
+  ctx.restore();
+
+  const labelPoint = {
+    x: parcelX + parcelWidth / 2,
+    y: parcelY + parcelHeight / 2,
+  };
+  if (!isVisible(labelPoint, viewport, 70)) return;
+
+  ctx.save();
+  ctx.translate(Math.round(labelPoint.x), Math.round(labelPoint.y));
+  ctx.scale(zoom, zoom);
+  ctx.fillStyle = "rgba(255, 244, 223, 0.9)";
+  ctx.fillRect(-43, -17, 86, 31);
+  ctx.strokeStyle = "#8a623f";
+  ctx.lineWidth = 1;
+  ctx.strokeRect(-43, -17, 86, 31);
+  ctx.fillStyle = "#8a623f";
+  ctx.fillRect(-4, -11, 8, 7);
+  ctx.strokeRect(-3, -15, 6, 7);
+  ctx.fillStyle = "#5f4437";
+  ctx.font = '700 7px "Courier New", monospace';
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(`NEXT PARCEL · ${nextExpansion.careCost} CARE`, 0, 7);
   ctx.restore();
 }
 
@@ -372,10 +453,20 @@ function drawPersonalDecorations(
   width: number,
   height: number,
   upgrades: MyGardenUpgradeType[],
+  nextExpansion: NonNullable<RenderGardenState["personalGarden"]>["nextExpansion"],
 ) {
   const has = (upgrade: MyGardenUpgradeType) => upgrades.includes(upgrade);
+  drawLockedParcel(
+    ctx,
+    camera,
+    viewport,
+    zoom,
+    width,
+    height,
+    nextExpansion,
+  );
   drawPersonalFence(ctx, camera, viewport, zoom, width, height, has("stone_path"));
-  drawPixelShed(ctx, camera, viewport, zoom, has("sage_shed"));
+  drawPixelShed(ctx, camera, viewport, zoom, width, has("sage_shed"));
 
   if (has("birdhouse")) {
     const point = worldToScreen(gridToWorld(width + 1, 0), camera, viewport, zoom);
@@ -836,18 +927,42 @@ function drawEffects(
 ) {
   for (const effect of effects) {
     const age = now - effect.startedAt;
-    if (age < 0 || age > 900) continue;
-    const progress = age / 900;
-    const point = worldToScreen(
-      gridToWorld(effect.gridX, effect.gridY),
-      camera,
-      viewport,
-      zoom,
-    );
+    const duration = effect.kind === "care" ? 1100 : 900;
+    if (age < 0 || age > duration) continue;
+    const progress = age / duration;
+    const point =
+      effect.kind === "care"
+        ? worldToScreen({ x: effect.x, y: effect.y }, camera, viewport, zoom)
+        : worldToScreen(
+            gridToWorld(effect.gridX, effect.gridY),
+            camera,
+            viewport,
+            zoom,
+          );
     ctx.save();
     ctx.translate(Math.round(point.x), Math.round(point.y));
     ctx.scale(zoom, zoom);
-    if (effect.kind === "water") {
+    if (effect.kind === "care") {
+      const fadeIn = Math.min(1, progress / 0.12);
+      const fadeOut = Math.min(1, (1 - progress) / 0.28);
+      ctx.globalAlpha = Math.min(fadeIn, fadeOut);
+      ctx.translate(0, -31 - progress * 18);
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.font =
+        effect.value > 0
+          ? '900 14px "Courier New", monospace'
+          : '800 7px "Courier New", monospace';
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = "rgba(255, 244, 223, 0.92)";
+      ctx.fillStyle = effect.value > 0 ? "#c94f4c" : "#63764e";
+      const label =
+        effect.value > 0
+          ? `+${effect.value}`
+          : `TENDING ${effect.steadyProgress ?? 0}/${effect.steadyActionsRequired ?? 4}`;
+      ctx.strokeText(label, 0, 0);
+      ctx.fillText(label, 0, 0);
+    } else if (effect.kind === "water") {
       ctx.fillStyle = "#75b7cf";
       for (let index = 0; index < 4; index += 1) {
         const offset = index * 4 - 6;
@@ -891,6 +1006,7 @@ export function renderGarden(ctx: CanvasRenderingContext2D, state: RenderGardenS
       state.personalGarden.width,
       state.personalGarden.height,
       state.personalGarden.upgrades,
+      state.personalGarden.nextExpansion,
     );
     drawPersonalSoilPatches(
       ctx,

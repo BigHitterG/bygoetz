@@ -314,6 +314,10 @@
   box-shadow: 3px 3px 0 rgba(52, 35, 31, 0.2);
 }
 
+.is-personal-world .cg-zoom-control {
+  top: max(82px, calc(env(safe-area-inset-top) + 76px));
+}
+
 .cg-zoom-control button {
   display: grid;
   min-width: 0;
@@ -504,66 +508,6 @@
 
 .is-personal-world .cg-action-button {
   background: rgba(239, 207, 151, 0.96);
-}
-
-.cg-care-toast {
-  position: absolute;
-  right: max(18px, env(safe-area-inset-right));
-  bottom: max(174px, calc(env(safe-area-inset-bottom) + 162px));
-  z-index: 11;
-  display: grid;
-  width: max-content;
-  max-width: min(230px, calc(100% - 36px));
-  margin: 0;
-  justify-items: center;
-  border: 2px solid rgba(52, 35, 31, 0.82);
-  background: rgba(255, 244, 223, 0.94);
-  padding: 7px 10px;
-  color: var(--cg-ink);
-  text-align: center;
-  box-shadow:
-    0 0 0 4px rgba(244, 216, 159, 0.22),
-    3px 3px 0 rgba(52, 35, 31, 0.2);
-  animation: cg-care-rise 4.2s ease-out both;
-  pointer-events: none;
-}
-
-.cg-care-toast strong {
-  color: var(--cg-red);
-  font-family: "Courier New", ui-monospace, monospace;
-  font-size: 0.92rem;
-  line-height: 1;
-  text-transform: uppercase;
-}
-
-.cg-care-toast span {
-  margin-top: 3px;
-  color: #67493d;
-  font-size: 0.57rem;
-  font-weight: 850;
-  line-height: 1.25;
-}
-
-@keyframes cg-care-rise {
-  0% {
-    opacity: 0;
-    transform: translateY(12px) scale(0.88);
-  }
-
-  14% {
-    opacity: 1;
-    transform: translateY(0) scale(1.03);
-  }
-
-  80% {
-    opacity: 1;
-    transform: translateY(-7px) scale(1);
-  }
-
-  100% {
-    opacity: 0;
-    transform: translateY(-18px) scale(0.96);
-  }
 }
 
 .cg-plant-picker {
@@ -3059,6 +3003,10 @@
   .cg-zoom-control {
     top: max(160px, calc(env(safe-area-inset-top) + 154px));
     width: 124px;
+  }
+
+  .is-personal-world .cg-zoom-control {
+    top: max(82px, calc(env(safe-area-inset-top) + 76px));
   }
 
   .cg-plant-picker {

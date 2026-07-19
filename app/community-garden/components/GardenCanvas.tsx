@@ -72,6 +72,11 @@ export type GardenCanvasHandle = {
   performAction: () => Promise<void>;
   goToMapPosition: (mapX: number, mapY: number) => void;
   selectPlant: (plantType: PlantType) => void;
+  showCareReward: (
+    value: number,
+    steadyProgress?: number,
+    steadyActionsRequired?: number,
+  ) => void;
   zoomIn: () => void;
   zoomOut: () => void;
 };
@@ -116,9 +121,9 @@ type GardenCanvasProps = {
 
 const PERSONAL_WORLD_BOUNDS = {
   minX: 0,
-  maxX: 15,
+  maxX: 19,
   minY: 0,
-  maxY: 19,
+  maxY: 23,
 } as const;
 
 function plantKey(gridX: number, gridY: number) {
@@ -590,6 +595,24 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
     useImperativeHandle(
       ref,
       () => ({
+        showCareReward(value, steadyProgress, steadyActionsRequired) {
+          const runtime = runtimeRef.current;
+          if (runtime.mode !== "community") return;
+          runtime.effects.push({
+            kind: "care",
+            x: runtime.mary.x,
+            y: runtime.mary.y,
+            value,
+            steadyProgress,
+            steadyActionsRequired,
+            startedAt: Date.now(),
+          });
+          runtime.statusMessage =
+            value > 0
+              ? `${value} Care earned.`
+              : `Steady tending ${steadyProgress ?? 0} of ${steadyActionsRequired ?? 4} toward the next Care.`;
+          publishUi();
+        },
         zoomIn() {
           const runtime = runtimeRef.current;
           runtime.zoom = clampZoom(runtime.zoom + GARDEN_CONFIG.cameraZoomStep);
@@ -676,7 +699,7 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
                 kind: actionState.action === "plant" ? "plant" : "uproot",
                 gridX: selected.gridX,
                 gridY: selected.gridY,
-                startedAt: performance.now(),
+                startedAt: Date.now(),
               });
               runtime.selected =
                 actionState.action === "plant"
@@ -714,7 +737,7 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
                 kind: "plant",
                 gridX: plant.grid_x,
                 gridY: plant.grid_y,
-                startedAt: performance.now(),
+                startedAt: Date.now(),
               });
               runtime.statusMessage = `A new ${selectedDefinition.name.toLowerCase()} has taken root.`;
               if (contribution) onCommunityContributionRef.current?.(contribution);
@@ -733,7 +756,7 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
                 kind: "water",
                 gridX: plant.grid_x,
                 gridY: plant.grid_y,
-                startedAt: performance.now(),
+                startedAt: Date.now(),
               });
               runtime.statusMessage = `The ${getPlantDefinition(plant.plant_type).name.toLowerCase()} looks brighter already.`;
               if (contribution) onCommunityContributionRef.current?.(contribution);
@@ -836,7 +859,11 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
         const cameraEase = runtime.reducedMotion ? 1 : Math.min(1, deltaSeconds * 7);
         runtime.camera.x += (runtime.mary.x - runtime.camera.x) * cameraEase;
         runtime.camera.y += (runtime.mary.y - runtime.camera.y) * cameraEase;
-        runtime.effects = runtime.effects.filter((effect) => now - effect.startedAt < 900);
+        const wallClockNow = Date.now();
+        runtime.effects = runtime.effects.filter(
+          (effect) =>
+            wallClockNow - effect.startedAt < (effect.kind === "care" ? 1100 : 900),
+        );
 
         const gridX = Math.floor(runtime.mary.x / GARDEN_CONFIG.tileSize);
         const gridY = Math.floor(runtime.mary.y / GARDEN_CONFIG.tileSize);
@@ -865,6 +892,13 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
                 maxWidth: runtime.personalGarden.maxWidth,
                 maxHeight: runtime.personalGarden.maxHeight,
                 upgrades: runtime.personalGarden.upgrades,
+                nextExpansion: runtime.personalGarden.nextExpansion
+                  ? {
+                      width: runtime.personalGarden.nextExpansion.width,
+                      height: runtime.personalGarden.nextExpansion.height,
+                      careCost: runtime.personalGarden.nextExpansion.careCost,
+                    }
+                  : null,
               }
             : undefined,
         });

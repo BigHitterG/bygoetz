@@ -41,12 +41,6 @@ const INITIAL_UI: GardenUiState = {
   mode: "community",
 };
 
-type CareBurst = {
-  id: number;
-  value: number;
-  detail: string;
-};
-
 type AccountResponse =
   | { active: false }
   | { active: true; myGarden: MyGardenState };
@@ -67,7 +61,7 @@ export function CommunityGardenApp() {
   const [world, setWorld] = useState<GardenWorldMode>("community");
   const [menuOpen, setMenuOpen] = useState(false);
   const [menuSection, setMenuSection] = useState<LibrarySection>("play");
-  const [careBurst, setCareBurst] = useState<CareBurst | null>(null);
+  const [careAnnouncement, setCareAnnouncement] = useState("");
   const [session, setSession] = useState<Session | null>(null);
   const [myGarden, setMyGarden] = useState<MyGardenState | null>(null);
   const [gardenControlsOpen, setGardenControlsOpen] = useState(false);
@@ -137,27 +131,20 @@ export function CommunityGardenApp() {
 
   const claimCommunityContribution = useCallback(
     async (contribution: GardenContribution) => {
-      const burstId = Date.now();
-      setCareBurst({
-        id: burstId,
-        value: contribution.careValue,
-        detail: "Helping the Community Garden",
-      });
-
-      const updateBurst = (detail: string) => {
-        setCareBurst((current) =>
-          current?.id === burstId ? { ...current, detail } : current,
-        );
-      };
-
       const client = getGardenAccountClient();
       if (!client) {
-        updateBurst("Garden Membership banks Care");
+        canvasRef.current?.showCareReward(contribution.careValue);
+        setCareAnnouncement(
+          `You helped the Community Garden and earned ${contribution.careValue} Care. A Garden Membership saves Care.`,
+        );
         return;
       }
       const { data } = await client.auth.getSession();
       if (!data.session) {
-        updateBurst("Garden Membership banks Care");
+        canvasRef.current?.showCareReward(contribution.careValue);
+        setCareAnnouncement(
+          `You helped the Community Garden and earned ${contribution.careValue} Care. A Garden Membership saves Care.`,
+        );
         return;
       }
 
@@ -171,17 +158,23 @@ export function CommunityGardenApp() {
           body: JSON.stringify({ receiptToken: contribution.receiptToken }),
         });
         if (response.status === 401 || response.status === 403) {
-          updateBurst("Garden Membership banks Care");
+          canvasRef.current?.showCareReward(contribution.careValue);
+          setCareAnnouncement(
+            `You helped the Community Garden and earned ${contribution.careValue} Care. A Garden Membership saves Care.`,
+          );
           return;
         }
         if (!response.ok) {
-          updateBurst("Care was earned but could not be banked");
+          setCareAnnouncement("Care could not be saved. Please try another garden action.");
           return;
         }
         const award = (await response.json()) as {
           awardedCare: number;
           careBalance: number;
           lifetimeCare: number;
+          earningMode: "quick" | "steady";
+          steadyProgress: number;
+          steadyActionsRequired: number;
         };
         setMyGarden((current) =>
           current
@@ -192,23 +185,27 @@ export function CommunityGardenApp() {
               }
             : current,
         );
-        updateBurst(
-          award.awardedCare > 0
-            ? `Saved · ${award.careBalance} Care in My Garden`
-            : "Daily basket full · thank you for helping",
-        );
+        if (award.awardedCare > 0) {
+          canvasRef.current?.showCareReward(award.awardedCare);
+          setCareAnnouncement(
+            `${award.awardedCare} Care saved. Your balance is ${award.careBalance}.`,
+          );
+        } else {
+          canvasRef.current?.showCareReward(
+            0,
+            award.steadyProgress,
+            award.steadyActionsRequired,
+          );
+          setCareAnnouncement(
+            `Tending progress ${award.steadyProgress} of ${award.steadyActionsRequired}.`,
+          );
+        }
       } catch {
-        updateBurst("Care was earned but could not be banked");
+        setCareAnnouncement("Care could not be saved. Please try another garden action.");
       }
     },
     [],
   );
-
-  useEffect(() => {
-    if (!careBurst) return;
-    const timeout = window.setTimeout(() => setCareBurst(null), 4200);
-    return () => window.clearTimeout(timeout);
-  }, [careBurst]);
 
   const mutateMyGarden = useCallback(
     async (mutation: MyGardenMutation) => {
@@ -295,10 +292,14 @@ export function CommunityGardenApp() {
           </button>
         </header>
 
-        <GardenMapKey
-          ui={ui}
-          onNavigate={(mapX, mapY) => canvasRef.current?.goToMapPosition(mapX, mapY)}
-        />
+        {world === "community" ? (
+          <GardenMapKey
+            ui={ui}
+            onNavigate={(mapX, mapY) =>
+              canvasRef.current?.goToMapPosition(mapX, mapY)
+            }
+          />
+        ) : null}
 
         <div className="cg-zoom-control" role="group" aria-label="Garden zoom">
           <button
@@ -349,13 +350,6 @@ export function CommunityGardenApp() {
           </button>
         ) : null}
 
-        {careBurst ? (
-          <div key={careBurst.id} className="cg-care-toast" aria-live="polite">
-            <strong>+{careBurst.value} Care</strong>
-            <span>{careBurst.detail}</span>
-          </div>
-        ) : null}
-
         <div className="cg-plant-picker" role="group" aria-label="Choose what to plant">
           {PLANT_TYPES.map((plantType) => {
             const plant = getPlantDefinition(plantType);
@@ -395,6 +389,7 @@ export function CommunityGardenApp() {
         </button>
 
         <p className="cg-sr-status" aria-live="polite">{ui.message}</p>
+        <p className="cg-sr-status" aria-live="polite">{careAnnouncement}</p>
       </section>
 
       {world === "community" ? <FutureAdSlot label={adLabel} /> : null}
