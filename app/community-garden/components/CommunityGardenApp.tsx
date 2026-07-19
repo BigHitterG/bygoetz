@@ -1,12 +1,15 @@
 "use client";
 
+import type { Session } from "@supabase/supabase-js";
 import { useCallback, useEffect, useRef, useState } from "react";
+import type { MyGardenState } from "@/lib/communityGarden/myGarden";
 import { FutureAdSlot } from "./FutureAdSlot";
 import {
   GardenCanvas,
   type GardenCanvasHandle,
   type GardenUiState,
 } from "./GardenCanvas";
+import type { GardenWorldMode } from "../game/gardenRenderer";
 import { getGardenAccountClient } from "../lib/supabaseAccount";
 import type { GardenContribution } from "../lib/supabaseGarden";
 import { GardenMapKey } from "./GardenMapKey";
@@ -15,6 +18,10 @@ import {
   getPlantDefinition,
   PLANT_TYPES,
 } from "../lib/roseLifecycle";
+import {
+  MyGardenControls,
+  type MyGardenMutation,
+} from "./MyGardenControls";
 
 const INITIAL_UI: GardenUiState = {
   action: null,
@@ -29,6 +36,7 @@ const INITIAL_UI: GardenUiState = {
   canZoomOut: false,
   selectedPlantType: "rose",
   plantMapPoints: [],
+  mode: "community",
 };
 
 type CareBurst = {
@@ -37,23 +45,89 @@ type CareBurst = {
   detail: string;
 };
 
+type AccountResponse =
+  | { active: false }
+  | { active: true; myGarden: MyGardenState };
+
+async function getResponseError(response: Response, fallback: string) {
+  try {
+    const payload = (await response.json()) as { error?: string };
+    return payload.error ?? fallback;
+  } catch {
+    return fallback;
+  }
+}
+
 export function CommunityGardenApp() {
   const canvasRef = useRef<GardenCanvasHandle>(null);
+  const pendingGardenEntryRef = useRef(false);
   const [ui, setUi] = useState(INITIAL_UI);
+  const [world, setWorld] = useState<GardenWorldMode>("community");
   const [menuOpen, setMenuOpen] = useState(false);
   const [menuSection, setMenuSection] = useState<LibrarySection>("play");
   const [careBurst, setCareBurst] = useState<CareBurst | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
+  const [myGarden, setMyGarden] = useState<MyGardenState | null>(null);
+  const [gardenControlsOpen, setGardenControlsOpen] = useState(false);
+  const [gardenBusy, setGardenBusy] = useState(false);
+  const [gardenNotice, setGardenNotice] = useState("");
   const adLabel = process.env.NEXT_PUBLIC_COMMUNITY_GARDEN_AD_PLACEHOLDER;
+
+  const loadMembership = useCallback(async (activeSession: Session) => {
+    try {
+      const response = await fetch("/api/community-garden/account", {
+        cache: "no-store",
+        headers: { authorization: `Bearer ${activeSession.access_token}` },
+      });
+      if (!response.ok) return null;
+      const account = (await response.json()) as AccountResponse;
+      const nextGarden = account.active ? account.myGarden : null;
+      setMyGarden(nextGarden);
+      if (nextGarden && pendingGardenEntryRef.current) {
+        pendingGardenEntryRef.current = false;
+        setMenuOpen(false);
+        setWorld("personal");
+      }
+      return nextGarden;
+    } catch {
+      return null;
+    }
+  }, []);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.has("steward") || params.has("checkout")) {
       queueMicrotask(() => {
-        setMenuSection("steward");
+        setMenuSection("account");
         setMenuOpen(true);
+        if (params.get("steward") === "welcome") {
+          pendingGardenEntryRef.current = true;
+        }
       });
     }
   }, []);
+
+  useEffect(() => {
+    const client = getGardenAccountClient();
+    if (!client) return;
+
+    void client.auth.getSession().then(({ data }) => {
+      setSession(data.session);
+      if (data.session) void loadMembership(data.session);
+    });
+
+    const { data: listener } = client.auth.onAuthStateChange((_event, nextSession) => {
+      setSession(nextSession);
+      if (nextSession) {
+        void loadMembership(nextSession);
+      } else {
+        setMyGarden(null);
+        setWorld("community");
+      }
+    });
+
+    return () => listener.subscription.unsubscribe();
+  }, [loadMembership]);
 
   const onStateChange = useCallback((state: GardenUiState) => {
     setUi(state);
@@ -105,7 +179,17 @@ export function CommunityGardenApp() {
         const award = (await response.json()) as {
           awardedCare: number;
           careBalance: number;
+          lifetimeCare: number;
         };
+        setMyGarden((current) =>
+          current
+            ? {
+                ...current,
+                careBalance: award.careBalance,
+                lifetimeCare: award.lifetimeCare,
+              }
+            : current,
+        );
         updateBurst(
           award.awardedCare > 0
             ? `Saved · ${award.careBalance} Care in My Garden`
@@ -124,13 +208,68 @@ export function CommunityGardenApp() {
     return () => window.clearTimeout(timeout);
   }, [careBurst]);
 
+  const mutateMyGarden = useCallback(
+    async (mutation: MyGardenMutation) => {
+      if (!session) throw new Error("Sign in to update My Garden.");
+      setGardenBusy(true);
+      setGardenNotice("");
+      try {
+        const response = await fetch("/api/community-garden/my-garden", {
+          method: "POST",
+          headers: {
+            authorization: `Bearer ${session.access_token}`,
+            "content-type": "application/json",
+          },
+          body: JSON.stringify(mutation),
+        });
+        if (!response.ok) {
+          throw new Error(
+            await getResponseError(response, "My Garden could not be updated."),
+          );
+        }
+        const updated = (await response.json()) as MyGardenState;
+        setMyGarden(updated);
+        setGardenNotice(
+          mutation.action === "expand"
+            ? `Your walkable plot is now ${updated.width} × ${updated.height}.`
+            : mutation.action === "purchase-upgrade"
+              ? "Upgrade added to the map."
+              : "",
+        );
+        return updated;
+      } finally {
+        setGardenBusy(false);
+      }
+    },
+    [session],
+  );
+
+  function switchWorld() {
+    if (world === "personal") {
+      setGardenControlsOpen(false);
+      setWorld("community");
+      return;
+    }
+    if (session && myGarden) {
+      setMenuOpen(false);
+      setWorld("personal");
+      return;
+    }
+    setMenuSection("account");
+    setMenuOpen(true);
+    pendingGardenEntryRef.current = true;
+  }
+
   return (
-    <main className="cg-root">
-      <section className="cg-game-frame" aria-label="Basil Community Garden game">
+    <main className={`cg-root is-${world}-world`}>
+      <section className="cg-game-frame" aria-label="Basil garden game">
         <GardenCanvas
           ref={canvasRef}
+          mode={world}
+          personalGarden={myGarden}
           onStateChange={onStateChange}
           onCommunityContribution={claimCommunityContribution}
+          onPersonalGardenMutation={mutateMyGarden}
         />
 
         <header className="cg-titlebar">
@@ -139,7 +278,7 @@ export function CommunityGardenApp() {
           </div>
           <div className="cg-title-copy">
             <h1>Basil</h1>
-            <p>Community Garden</p>
+            <p>{world === "personal" ? "My Garden" : "Community Garden"}</p>
           </div>
           <button
             className="cg-icon-button"
@@ -184,15 +323,29 @@ export function CommunityGardenApp() {
         <button
           className="cg-compact-support"
           type="button"
-          aria-label="Open My Garden"
-          onClick={() => {
-            setMenuSection("steward");
-            setMenuOpen(true);
-          }}
+          aria-label={
+            world === "personal" ? "Go to Community Garden" : "Go to My Garden"
+          }
+          onClick={switchWorld}
         >
-          <span className="cg-home-mark" aria-hidden="true" />
-          My Garden
+          <span
+            className={world === "personal" ? "cg-community-mark" : "cg-home-mark"}
+            aria-hidden="true"
+          />
+          {world === "personal" ? "Community Garden" : "My Garden"}
         </button>
+
+        {world === "personal" && myGarden ? (
+          <button
+            className="cg-care-button"
+            type="button"
+            aria-label={`${myGarden.careBalance} Care. Open My Garden upgrades`}
+            onClick={() => setGardenControlsOpen(true)}
+          >
+            <span>Care</span>
+            <strong>{myGarden.careBalance}</strong>
+          </button>
+        ) : null}
 
         {careBurst ? (
           <div key={careBurst.id} className="cg-care-toast" aria-live="polite">
@@ -230,7 +383,9 @@ export function CommunityGardenApp() {
             className={
               ui.action === "water"
                 ? "cg-water-icon"
-                : `cg-plant-glyph is-${ui.selectedPlantType}`
+                : ui.action === "uproot"
+                  ? "cg-uproot-icon"
+                  : `cg-plant-glyph is-${ui.selectedPlantType}`
             }
             aria-hidden="true"
           />
@@ -240,15 +395,38 @@ export function CommunityGardenApp() {
         <p className="cg-sr-status" aria-live="polite">{ui.message}</p>
       </section>
 
-      <FutureAdSlot label={adLabel} />
+      {world === "community" ? <FutureAdSlot label={adLabel} /> : null}
 
       <GardenMenu
         open={menuOpen}
         section={menuSection}
-        onClose={() => setMenuOpen(false)}
+        onClose={() => {
+          setMenuOpen(false);
+          pendingGardenEntryRef.current = false;
+        }}
         onSectionChange={setMenuSection}
       />
+
+      {myGarden ? (
+        <MyGardenControls
+          garden={myGarden}
+          open={gardenControlsOpen}
+          busy={gardenBusy}
+          notice={gardenNotice}
+          onClose={() => setGardenControlsOpen(false)}
+          onMutate={async (mutation) => {
+            try {
+              await mutateMyGarden(mutation);
+            } catch (error) {
+              setGardenNotice(
+                error instanceof Error
+                  ? error.message
+                  : "My Garden could not be updated.",
+              );
+            }
+          }}
+        />
+      ) : null}
     </main>
   );
 }
-

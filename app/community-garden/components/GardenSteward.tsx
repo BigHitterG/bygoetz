@@ -4,7 +4,6 @@ import type { Session } from "@supabase/supabase-js";
 import { FormEvent, useCallback, useEffect, useState } from "react";
 import type { MyGardenState } from "@/lib/communityGarden/myGarden";
 import { getGardenAccountClient } from "../lib/supabaseAccount";
-import { MyGarden } from "./MyGarden";
 
 const FEEDBACK_CATEGORIES = [
   ["plants", "Plants"],
@@ -77,11 +76,7 @@ function clearAccountLinkFromAddress() {
   window.history.replaceState({}, "", `${url.pathname}${url.search}${url.hash}`);
 }
 
-type GardenStewardProps = {
-  onGoToCommunity?: () => void;
-};
-
-export function GardenSteward({ onGoToCommunity }: GardenStewardProps) {
+export function GardenSteward() {
   const [session, setSession] = useState<Session | null>(null);
   const [accountState, setAccountState] = useState<AccountState>({ status: "loading" });
   const [authView, setAuthView] = useState<AuthView>("signin");
@@ -741,15 +736,6 @@ export function GardenSteward({ onGoToCommunity }: GardenStewardProps) {
               email or linked to a public profile.
             </p>
           </div>
-
-          {session ? (
-            <MyGarden
-              initialGarden={accountState.account.myGarden}
-              session={session}
-              gardenName={accountState.account.steward.gardenName}
-              onGoToCommunity={onGoToCommunity}
-            />
-          ) : null}
 
           <div className="cg-almanac" aria-labelledby="garden-almanac-title">
             <div className="cg-steward-section-heading">

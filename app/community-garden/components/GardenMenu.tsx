@@ -6,13 +6,13 @@ import { GardenGuide } from "./GardenGuide";
 import { GardenSteward } from "./GardenSteward";
 import { PlantGlossary } from "./PlantGlossary";
 
-export type LibrarySection = "play" | "plants" | "elements" | "steward";
+export type LibrarySection = "play" | "plants" | "elements" | "account";
 
 const LIBRARY_TABS = [
   { id: "play", label: "Play", icon: "play" },
   { id: "plants", label: "Plants", icon: "plants" },
   { id: "elements", label: "Elements", icon: "elements" },
-  { id: "steward", label: "My Garden", icon: "home" },
+  { id: "account", label: "Account", icon: "home" },
 ] as const;
 
 type GardenMenuProps = {
@@ -42,9 +42,7 @@ export function GardenMenu({
         <div className="cg-menu-heading">
           <div>
             <p className="cg-kicker">Basil Community Garden</p>
-            <h2 id="garden-menu-title">
-              {section === "steward" ? "My Garden" : "Garden Library"}
-            </h2>
+            <h2 id="garden-menu-title">Garden Library</h2>
           </div>
           <button className="cg-icon-button" type="button" onClick={onClose} aria-label="Close menu">
             <span aria-hidden="true">X</span>
@@ -70,7 +68,7 @@ export function GardenMenu({
           {section === "play" ? <GardenGuide /> : null}
           {section === "plants" ? <PlantGlossary /> : null}
           {section === "elements" ? <GardenElements /> : null}
-          {section === "steward" ? <GardenSteward onGoToCommunity={onClose} /> : null}
+          {section === "account" ? <GardenSteward /> : null}
         </div>
 
         <a className="cg-back-link" href={withSiteBasePath("/")}>

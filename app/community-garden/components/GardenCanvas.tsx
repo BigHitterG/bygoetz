@@ -14,9 +14,12 @@ import {
   renderGarden,
   screenToGrid,
   type GardenEffect,
+  type GardenWorldMode,
   type SelectedCell,
   type WorldPoint,
 } from "../game/gardenRenderer";
+import type { MyGardenState } from "@/lib/communityGarden/myGarden";
+import type { MyGardenMutation } from "./MyGardenControls";
 import {
   clampWorldCoordinate,
   GARDEN_CONFIG,
@@ -25,7 +28,6 @@ import {
   getGridFromMapPercentage,
   getLoadedBounds,
   getMapPercentage,
-  isWithinGarden,
 } from "../lib/gardenConfig";
 import {
   getPlantDefinition,
@@ -46,7 +48,7 @@ import {
 } from "../lib/supabaseGarden";
 
 export type GardenConnection = "connecting" | "online" | "offline" | "error";
-export type GardenAction = "plant" | "water" | null;
+export type GardenAction = "plant" | "water" | "uproot" | null;
 
 export type GardenUiState = {
   action: GardenAction;
@@ -61,6 +63,7 @@ export type GardenUiState = {
   canZoomOut: boolean;
   selectedPlantType: PlantType;
   plantMapPoints: Array<{ x: number; y: number; plantType: PlantType }>;
+  mode: GardenWorldMode;
 };
 
 export type GardenCanvasHandle = {
@@ -95,15 +98,125 @@ type Runtime = {
   configured: boolean;
   connection: GardenConnection;
   statusMessage: string;
+  mode: GardenWorldMode;
+  personalGarden: MyGardenState | null;
 };
 
 type GardenCanvasProps = {
   onStateChange: (state: GardenUiState) => void;
   onCommunityContribution?: (contribution: GardenContribution) => void;
+  mode: GardenWorldMode;
+  personalGarden: MyGardenState | null;
+  onPersonalGardenMutation?: (
+    mutation: MyGardenMutation,
+  ) => Promise<MyGardenState>;
 };
+
+const PERSONAL_WORLD_BOUNDS = {
+  minX: -6,
+  maxX: 12,
+  minY: -7,
+  maxY: 17,
+} as const;
 
 function plantKey(gridX: number, gridY: number) {
   return `${gridX}:${gridY}`;
+}
+
+function getModeBounds(mode: GardenWorldMode) {
+  return mode === "personal"
+    ? PERSONAL_WORLD_BOUNDS
+    : { minX: GARDEN_CONFIG.worldMin, maxX: GARDEN_CONFIG.worldMax, minY: GARDEN_CONFIG.worldMin, maxY: GARDEN_CONFIG.worldMax };
+}
+
+function isWithinMode(mode: GardenWorldMode, gridX: number, gridY: number) {
+  const bounds = getModeBounds(mode);
+  return (
+    gridX >= bounds.minX &&
+    gridX <= bounds.maxX &&
+    gridY >= bounds.minY &&
+    gridY <= bounds.maxY
+  );
+}
+
+function clampModeCoordinate(
+  mode: GardenWorldMode,
+  value: number,
+  axis: "x" | "y",
+) {
+  if (mode === "community") return clampWorldCoordinate(value);
+  const bounds = getModeBounds(mode);
+  const minimum = (axis === "x" ? bounds.minX : bounds.minY) + 0.5;
+  const maximum = (axis === "x" ? bounds.maxX : bounds.maxY) + 0.5;
+  return Math.min(
+    maximum * GARDEN_CONFIG.tileSize,
+    Math.max(minimum * GARDEN_CONFIG.tileSize, value),
+  );
+}
+
+function getModeMapPercentage(
+  mode: GardenWorldMode,
+  coordinate: number,
+  axis: "x" | "y",
+) {
+  if (mode === "community") return getMapPercentage(coordinate);
+  const bounds = getModeBounds(mode);
+  const minimum = axis === "x" ? bounds.minX : bounds.minY;
+  const maximum = axis === "x" ? bounds.maxX : bounds.maxY;
+  return Math.min(
+    100,
+    Math.max(0, ((coordinate - minimum) / (maximum - minimum)) * 100),
+  );
+}
+
+function getModeGridFromMapPercentage(
+  mode: GardenWorldMode,
+  percentage: number,
+  axis: "x" | "y",
+) {
+  if (mode === "community") return getGridFromMapPercentage(percentage);
+  const bounds = getModeBounds(mode);
+  const minimum = axis === "x" ? bounds.minX : bounds.minY;
+  const maximum = axis === "x" ? bounds.maxX : bounds.maxY;
+  return Math.round(
+    minimum + (Math.min(100, Math.max(0, percentage)) / 100) * (maximum - minimum),
+  );
+}
+
+function isPersonalBed(runtime: Runtime, gridX: number, gridY: number) {
+  return Boolean(
+    runtime.personalGarden &&
+      gridX >= 0 &&
+      gridX < runtime.personalGarden.width &&
+      gridY >= 0 &&
+      gridY < runtime.personalGarden.height,
+  );
+}
+
+function toPersonalPlantRecord(
+  plant: MyGardenState["plants"][number],
+): PlantRecord {
+  return {
+    id: plant.id,
+    grid_x: plant.gridX,
+    grid_y: plant.gridY,
+    plant_type: plant.plantType,
+    planted_at: plant.plantedAt,
+    last_watered_at: plant.plantedAt,
+    created_at: plant.plantedAt,
+    permanent: true,
+  };
+}
+
+function applyPersonalGarden(runtime: Runtime, garden: MyGardenState) {
+  runtime.personalGarden = garden;
+  const plants = garden.plants.map(toPersonalPlantRecord);
+  runtime.plants = new Map(
+    plants.map((plant) => [plantKey(plant.grid_x, plant.grid_y), plant]),
+  );
+  runtime.mapPlants = new Map(
+    plants.map((plant) => [plantKey(plant.grid_x, plant.grid_y), plant]),
+  );
 }
 
 function clampZoom(value: number) {
@@ -130,6 +243,32 @@ function getActionState(runtime: Runtime) {
   const plant = getPlantAt(runtime, runtime.selected.gridX, runtime.selected.gridY);
   const visual = plant ? getPlantVisual(plant) : null;
   const nearby = getDistanceToCell(runtime, runtime.selected) <= GARDEN_CONFIG.tileSize * 1.8;
+
+  if (runtime.mode === "personal") {
+    if (!isPersonalBed(runtime, runtime.selected.gridX, runtime.selected.gridY)) {
+      return {
+        action: null as GardenAction,
+        label: "Walk around My Garden",
+        enabled: false,
+      };
+    }
+    if (plant) {
+      return {
+        action: "uproot" as GardenAction,
+        label: `Uproot ${getPlantDefinition(plant.plant_type).name} · +${runtime.personalGarden?.uprootReturn ?? 1} Care`,
+        enabled: nearby && !runtime.actionBusy,
+      };
+    }
+    const cost = runtime.personalGarden?.plantCost ?? 2;
+    return {
+      action: "plant" as GardenAction,
+      label: `Plant ${getPlantDefinition(runtime.selectedPlantType).name} · ${cost} Care`,
+      enabled:
+        nearby &&
+        !runtime.actionBusy &&
+        (runtime.personalGarden?.careBalance ?? 0) >= cost,
+    };
+  }
 
   if (plant && visual && visual.state !== "expired") {
     const definition = getPlantDefinition(plant.plant_type);
@@ -209,10 +348,21 @@ function seedLocalPlants() {
 }
 
 export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
-  function GardenCanvas({ onStateChange, onCommunityContribution }, ref) {
+  function GardenCanvas(
+    {
+      onStateChange,
+      onCommunityContribution,
+      mode,
+      personalGarden,
+      onPersonalGardenMutation,
+    },
+    ref,
+  ) {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const onStateChangeRef = useRef(onStateChange);
     const onCommunityContributionRef = useRef(onCommunityContribution);
+    const onPersonalGardenMutationRef = useRef(onPersonalGardenMutation);
+    const personalGardenRef = useRef(personalGarden);
     const loadPlantsRef = useRef<() => Promise<void>>(async () => undefined);
     const lastUiKeyRef = useRef("");
     const start = gridToWorld(0, 0);
@@ -242,6 +392,8 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
       statusMessage: isGardenConfigured()
         ? "Connecting to the shared garden..."
         : "Preview mode: shared planting is not connected.",
+      mode,
+      personalGarden,
     });
 
     useEffect(() => {
@@ -252,14 +404,22 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
       onCommunityContributionRef.current = onCommunityContribution;
     }, [onCommunityContribution]);
 
+    useEffect(() => {
+      onPersonalGardenMutationRef.current = onPersonalGardenMutation;
+    }, [onPersonalGardenMutation]);
+
+    useEffect(() => {
+      personalGardenRef.current = personalGarden;
+    }, [personalGarden]);
+
     const publishUi = useCallback(() => {
       const runtime = runtimeRef.current;
       const action = getActionState(runtime);
       const gridX = Math.floor(runtime.mary.x / GARDEN_CONFIG.tileSize);
       const gridY = Math.floor(runtime.mary.y / GARDEN_CONFIG.tileSize);
       const plantMapPoints = Array.from(runtime.mapPlants.values()).map((plant) => ({
-        x: getMapPercentage(plant.grid_x),
-        y: getMapPercentage(plant.grid_y),
+        x: getModeMapPercentage(runtime.mode, plant.grid_x, "x"),
+        y: getModeMapPercentage(runtime.mode, plant.grid_y, "y"),
         plantType: plant.plant_type,
       }));
       const state: GardenUiState = {
@@ -268,13 +428,14 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
         actionEnabled: action.enabled,
         connection: runtime.connection,
         message: runtime.statusMessage,
-        mapX: getMapPercentage(gridX),
-        mapY: getMapPercentage(gridY),
+        mapX: getModeMapPercentage(runtime.mode, gridX, "x"),
+        mapY: getModeMapPercentage(runtime.mode, gridY, "y"),
         zoom: runtime.zoom,
         canZoomIn: runtime.zoom < GARDEN_CONFIG.maxCameraZoom,
         canZoomOut: runtime.zoom > GARDEN_CONFIG.minCameraZoom,
         selectedPlantType: runtime.selectedPlantType,
         plantMapPoints,
+        mode: runtime.mode,
       };
       const key = JSON.stringify(state);
       if (key === lastUiKeyRef.current) return;
@@ -282,8 +443,61 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
       onStateChangeRef.current(state);
     }, []);
 
+    useEffect(() => {
+      const runtime = runtimeRef.current;
+      runtime.mode = mode;
+      runtime.selected = null;
+      runtime.target = null;
+      runtime.loadedChunkKey = "";
+      runtime.effects = [];
+
+      const currentPersonalGarden = personalGardenRef.current;
+      if (mode === "personal" && currentPersonalGarden) {
+        applyPersonalGarden(runtime, currentPersonalGarden);
+        runtime.zoom = 1.5;
+        const destination = gridToWorld(
+          Math.min(2, currentPersonalGarden.width - 1),
+          Math.min(currentPersonalGarden.height + 3, PERSONAL_WORLD_BOUNDS.maxY),
+        );
+        runtime.mary = { ...destination };
+        runtime.camera = { ...destination };
+        runtime.duck = { x: destination.x - 18, y: destination.y + 10 };
+        runtime.path = [{ ...destination }];
+        runtime.connection = "online";
+        runtime.statusMessage =
+          "Welcome home. Choose a garden bed or walk around your land.";
+      } else {
+        runtime.personalGarden = null;
+        runtime.zoom = GARDEN_CONFIG.defaultCameraZoom;
+        runtime.plants = new Map();
+        runtime.mapPlants = new Map();
+        const destination = gridToWorld(0, 0);
+        runtime.mary = { ...destination };
+        runtime.camera = { ...destination };
+        runtime.duck = { x: destination.x - 18, y: destination.y + 10 };
+        runtime.path = [{ ...destination }];
+        runtime.connection = runtime.configured ? "connecting" : "offline";
+        runtime.statusMessage = runtime.configured
+          ? "Connecting to the shared garden..."
+          : "Preview mode: shared planting is not connected.";
+      }
+      lastUiKeyRef.current = "";
+      publishUi();
+    }, [mode, publishUi]);
+
+    useEffect(() => {
+      if (mode !== "personal" || !personalGarden) return;
+      const runtime = runtimeRef.current;
+      applyPersonalGarden(runtime, personalGarden);
+      publishUi();
+    }, [mode, personalGarden, publishUi]);
+
     const loadPlants = useCallback(async () => {
       const runtime = runtimeRef.current;
+      if (runtime.mode === "personal") {
+        publishUi();
+        return;
+      }
       const gridX = Math.floor(runtime.mary.x / GARDEN_CONFIG.tileSize);
       const gridY = Math.floor(runtime.mary.y / GARDEN_CONFIG.tileSize);
       const chunkKey = getChunkKey(gridX, gridY);
@@ -375,21 +589,24 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
         },
         goToMapPosition(mapX, mapY) {
           const runtime = runtimeRef.current;
-          const gridX = getGridFromMapPercentage(mapX);
-          const gridY = getGridFromMapPercentage(mapY);
+          const gridX = getModeGridFromMapPercentage(runtime.mode, mapX, "x");
+          const gridY = getModeGridFromMapPercentage(runtime.mode, mapY, "y");
           const destination = gridToWorld(gridX, gridY);
           runtime.selected = null;
           runtime.target = null;
           runtime.mary = { ...destination };
           runtime.camera = { ...destination };
           runtime.duck = {
-            x: clampWorldCoordinate(destination.x - 18),
-            y: clampWorldCoordinate(destination.y + 10),
+            x: clampModeCoordinate(runtime.mode, destination.x - 18, "x"),
+            y: clampModeCoordinate(runtime.mode, destination.y + 10, "y"),
           };
           runtime.path = [{ ...destination }];
           runtime.loadedChunkKey = "";
           runtime.hasMoved = true;
-          runtime.statusMessage = "Exploring a new part of the garden.";
+          runtime.statusMessage =
+            runtime.mode === "personal"
+              ? "Exploring another part of My Garden."
+              : "Exploring a new part of the garden.";
           publishUi();
         },
         async performAction() {
@@ -404,11 +621,51 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
           runtime.statusMessage =
             actionState.action === "plant"
               ? `Planting ${selectedDefinition.name.toLowerCase()}...`
-              : "Watering the plant...";
+              : actionState.action === "uproot"
+                ? "Uprooting the plant..."
+                : "Watering the plant...";
           publishUi();
 
           try {
-            if (actionState.action === "plant") {
+            if (runtime.mode === "personal") {
+              const mutate = onPersonalGardenMutationRef.current;
+              if (!mutate || !runtime.personalGarden) {
+                throw new Error("My Garden could not be updated.");
+              }
+
+              const current = getPlantAt(runtime, selected.gridX, selected.gridY);
+              const mutation: MyGardenMutation =
+                actionState.action === "plant"
+                  ? {
+                      action: "plant",
+                      gridX: selected.gridX,
+                      gridY: selected.gridY,
+                      plantType: runtime.selectedPlantType,
+                    }
+                  : {
+                      action: "uproot",
+                      plantId: current?.id ?? "",
+                    };
+              const updatedGarden = await mutate(mutation);
+              applyPersonalGarden(runtime, updatedGarden);
+              runtime.effects.push({
+                kind: actionState.action === "plant" ? "plant" : "uproot",
+                gridX: selected.gridX,
+                gridY: selected.gridY,
+                startedAt: performance.now(),
+              });
+              runtime.selected =
+                actionState.action === "plant"
+                  ? {
+                      ...selected,
+                      plantId: getPlantAt(runtime, selected.gridX, selected.gridY)?.id,
+                    }
+                  : { gridX: selected.gridX, gridY: selected.gridY };
+              runtime.statusMessage =
+                actionState.action === "plant"
+                  ? `${selectedDefinition.name} planted. ${updatedGarden.careBalance} Care remains.`
+                  : `Plant uprooted. ${updatedGarden.careBalance} Care is available.`;
+            } else if (actionState.action === "plant") {
               const existing = getPlantAt(runtime, selected.gridX, selected.gridY);
               if (!isPlantable(existing)) throw new Error("Another plant is already here.");
               const result = runtime.configured
@@ -513,13 +770,21 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
           const step = GARDEN_CONFIG.moveSpeed * deltaSeconds;
           if (distance <= Math.max(1, step)) {
             runtime.mary = {
-              x: clampWorldCoordinate(runtime.target.x),
-              y: clampWorldCoordinate(runtime.target.y),
+              x: clampModeCoordinate(runtime.mode, runtime.target.x, "x"),
+              y: clampModeCoordinate(runtime.mode, runtime.target.y, "y"),
             };
             runtime.target = null;
           } else {
-            runtime.mary.x = clampWorldCoordinate(runtime.mary.x + (dx / distance) * step);
-            runtime.mary.y = clampWorldCoordinate(runtime.mary.y + (dy / distance) * step);
+            runtime.mary.x = clampModeCoordinate(
+              runtime.mode,
+              runtime.mary.x + (dx / distance) * step,
+              "x",
+            );
+            runtime.mary.y = clampModeCoordinate(
+              runtime.mode,
+              runtime.mary.y + (dy / distance) * step,
+              "y",
+            );
             runtime.moving = true;
             runtime.hasMoved = true;
           }
@@ -568,6 +833,14 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
           effects: runtime.reducedMotion ? [] : runtime.effects,
           moving: runtime.reducedMotion ? false : runtime.moving,
           now: Date.now(),
+          mode: runtime.mode,
+          personalGarden: runtime.personalGarden
+            ? {
+                width: runtime.personalGarden.width,
+                height: runtime.personalGarden.height,
+                upgrades: runtime.personalGarden.upgrades,
+              }
+            : undefined,
         });
         publishUi();
         frameId = requestAnimationFrame(tick);
@@ -587,7 +860,7 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
 
     function selectCell(gridX: number, gridY: number) {
       const runtime = runtimeRef.current;
-      if (!isWithinGarden(gridX, gridY)) {
+      if (!isWithinMode(runtime.mode, gridX, gridY)) {
         runtime.statusMessage = "You have reached the garden edge.";
         publishUi();
         return;
@@ -651,7 +924,7 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
       const currentGridY = Math.floor(runtime.mary.y / GARDEN_CONFIG.tileSize);
       const nextGridX = currentGridX + direction[0];
       const nextGridY = currentGridY + direction[1];
-      if (!isWithinGarden(nextGridX, nextGridY)) {
+      if (!isWithinMode(runtime.mode, nextGridX, nextGridY)) {
         runtime.target = null;
         runtime.statusMessage = "You have reached the garden edge.";
         publishUi();
@@ -659,7 +932,10 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
       }
       runtime.selected = null;
       runtime.target = gridToWorld(nextGridX, nextGridY);
-      runtime.statusMessage = "Exploring the garden...";
+      runtime.statusMessage =
+        runtime.mode === "personal"
+          ? "Exploring My Garden..."
+          : "Exploring the garden...";
       publishUi();
     }
 
@@ -668,7 +944,11 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
         ref={canvasRef}
         className="cg-canvas"
         role="application"
-        aria-label="Basil Community Garden. Tap a location to walk, plant, or water a flower."
+        aria-label={
+          mode === "personal"
+            ? "Basil My Garden. Tap a location to walk, plant, or uproot one of your flowers."
+            : "Basil Community Garden. Tap a location to walk, plant, or water a flower."
+        }
         tabIndex={0}
         onPointerDown={onPointerDown}
         onKeyDown={onKeyDown}

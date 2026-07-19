@@ -26,15 +26,22 @@ export function GardenMapKey({ ui, onNavigate }: GardenMapKeyProps) {
   }
 
   return (
-    <aside className="cg-map-key">
+    <aside className={`cg-map-key is-${ui.mode}`}>
       <button
         className="cg-mini-map"
         type="button"
         style={mapStyle}
         onClick={navigate}
-        aria-label="Garden overview. Select a point to travel there. Colored marks show planted flowers."
+        aria-label={
+          ui.mode === "personal"
+            ? "My Garden overview. Select a point to walk there. Colored marks show your flowers."
+            : "Community Garden overview. Select a point to travel there. Colored marks show planted flowers."
+        }
       >
         <span className="cg-map-north" aria-hidden="true">N</span>
+        {ui.mode === "personal" ? (
+          <span className="cg-map-home" aria-hidden="true" />
+        ) : null}
         {ui.plantMapPoints.map((plant) => (
           <span
             className={`cg-map-plant is-${plant.plantType}`}
