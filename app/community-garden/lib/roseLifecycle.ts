@@ -109,6 +109,7 @@ export type PlantRecord = {
   planted_at: string;
   last_watered_at: string;
   created_at: string;
+  permanent?: boolean;
 };
 
 export type PlantVisual = {
@@ -134,6 +135,17 @@ export function getPlantVisual(plant: PlantRecord, now = Date.now()): PlantVisua
   const lifecycle = definition.lifecycle;
   const plantedAge = Math.max(0, now - Date.parse(plant.planted_at));
   const careAge = Math.max(0, now - Date.parse(plant.last_watered_at));
+
+  if (plant.permanent) {
+    return {
+      state: "blooming",
+      ageMs: plantedAge,
+      colorStrength: 0.92,
+      colorRadius: definition.colorRadius,
+      dampStrength: 0.28,
+    };
+  }
+
   const dampStrength = getMoistureStrength(careAge, lifecycle.wiltMs);
 
   if (careAge >= lifecycle.removeMs) {

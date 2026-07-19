@@ -33,6 +33,13 @@ export function GardenGuide() {
           <dt>Choose</dt>
           <dd>Rose, sunflower, and lavender each grow and return at a different pace.</dd>
         </div>
+        <div>
+          <dt>Switch gardens</dt>
+          <dd>
+            Garden Members can use the bottom-left button to move between the
+            Community Garden and their personal My Garden map.
+          </dd>
+        </div>
       </dl>
 
       <div className="cg-life-guide">
@@ -53,8 +60,8 @@ export function GardenGuide() {
       </div>
 
       <p className="cg-guide-principle">
-        No accounts. No owners. No scores. The garden remembers the care, never
-        who gave it.
+        Public play needs no account and never labels plants with an owner.
+        Membership accounts privately save Care and a personal garden across devices.
       </p>
       <div className="cg-play-notes">
         <h4>How this world decides</h4>

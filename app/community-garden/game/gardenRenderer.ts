@@ -1,12 +1,14 @@
 import { GARDEN_CONFIG, isWithinGarden } from "../lib/gardenConfig";
+import type { MyGardenUpgradeType } from "../lib/myGardenCatalog";
 import { getPlantVisual, type PlantRecord } from "../lib/roseLifecycle";
 import { getTerrainTile, terrainNoise } from "./terrainGenerator";
 
 export type WorldPoint = { x: number; y: number };
 export type GardenViewport = { width: number; height: number };
+export type GardenWorldMode = "community" | "personal";
 export type SelectedCell = { gridX: number; gridY: number; plantId?: string } | null;
 export type GardenEffect = {
-  kind: "plant" | "water";
+  kind: "plant" | "water" | "uproot";
   gridX: number;
   gridY: number;
   startedAt: number;
@@ -23,6 +25,12 @@ export type RenderGardenState = {
   effects: GardenEffect[];
   moving: boolean;
   now: number;
+  mode: GardenWorldMode;
+  personalGarden?: {
+    width: number;
+    height: number;
+    upgrades: MyGardenUpgradeType[];
+  };
 };
 
 type TerrainLayer = "base" | "soil" | "green";
@@ -215,6 +223,163 @@ function drawTerrainLayer(
         }
       }
     }
+  }
+}
+
+function drawPersonalTerrain(
+  ctx: CanvasRenderingContext2D,
+  camera: WorldPoint,
+  viewport: GardenViewport,
+  zoom: number,
+  width: number,
+  height: number,
+) {
+  const { tileSize, tileScreenHeight } = GARDEN_CONFIG;
+  const cellWidth = tileSize * zoom;
+  const cellHeight = tileScreenHeight * zoom;
+  const visible = getVisibleGridBounds(camera, viewport, zoom);
+
+  ctx.fillStyle = "#a9c28c";
+  ctx.fillRect(0, 0, viewport.width, viewport.height);
+
+  for (let gridY = visible.minGridY; gridY <= visible.maxGridY; gridY += 1) {
+    for (let gridX = visible.minGridX; gridX <= visible.maxGridX; gridX += 1) {
+      const topLeft = worldToScreen(
+        { x: gridX * tileSize, y: gridY * tileSize },
+        camera,
+        viewport,
+        zoom,
+      );
+      const x = Math.floor(topLeft.x);
+      const y = Math.floor(topLeft.y);
+      const inPlot =
+        gridX >= 0 && gridX < width && gridY >= 0 && gridY < height;
+
+      ctx.fillStyle = inPlot
+        ? (gridX + gridY) % 2 === 0
+          ? "#856149"
+          : "#7a5843"
+        : (gridX + gridY) % 3 === 0
+          ? "#9db77f"
+          : "#a6bf88";
+      ctx.fillRect(x, y, cellWidth + 1, cellHeight + 1);
+
+      if (inPlot) {
+        ctx.fillStyle = "rgba(238, 204, 153, 0.2)";
+        ctx.fillRect(x + 3 * zoom, y + 4 * zoom, 10 * zoom, zoom);
+        ctx.fillRect(x + 5 * zoom, y + 9 * zoom, 8 * zoom, zoom);
+      } else if (terrainNoise(gridX, gridY, 73) > 0.72) {
+        drawGroundMark(ctx, x, y, zoom, "#6f895d");
+      }
+    }
+  }
+
+  const topLeft = worldToScreen(
+    { x: 0, y: 0 },
+    camera,
+    viewport,
+    zoom,
+  );
+  ctx.save();
+  ctx.strokeStyle = "#ead3a5";
+  ctx.lineWidth = Math.max(2, 3 * zoom);
+  ctx.strokeRect(
+    Math.floor(topLeft.x),
+    Math.floor(topLeft.y),
+    width * tileSize * zoom,
+    height * tileScreenHeight * zoom,
+  );
+  ctx.restore();
+}
+
+function drawPixelShed(
+  ctx: CanvasRenderingContext2D,
+  camera: WorldPoint,
+  viewport: GardenViewport,
+  zoom: number,
+  sage: boolean,
+) {
+  const point = worldToScreen(gridToWorld(-2, 8), camera, viewport, zoom);
+  if (!isVisible(point, viewport, 110)) return;
+  ctx.save();
+  ctx.translate(Math.round(point.x), Math.round(point.y));
+  ctx.scale(zoom, zoom);
+  ctx.fillStyle = "#6d4638";
+  ctx.fillRect(-24, -35, 48, 34);
+  ctx.fillStyle = sage ? "#7e9d73" : "#c78358";
+  ctx.fillRect(-21, -32, 42, 31);
+  ctx.fillStyle = "#8f4642";
+  ctx.fillRect(-29, -42, 58, 12);
+  ctx.fillRect(-20, -48, 40, 7);
+  ctx.fillStyle = "#e4c77d";
+  ctx.fillRect(-15, -24, 12, 11);
+  ctx.fillStyle = "#49362e";
+  ctx.fillRect(4, -26, 12, 25);
+  ctx.fillStyle = "#e7b84e";
+  ctx.fillRect(12, -14, 2, 2);
+  ctx.fillStyle = "#5f4639";
+  ctx.fillRect(20, -50, 7, 13);
+  ctx.restore();
+}
+
+function drawPersonalDecorations(
+  ctx: CanvasRenderingContext2D,
+  camera: WorldPoint,
+  viewport: GardenViewport,
+  zoom: number,
+  width: number,
+  height: number,
+  upgrades: MyGardenUpgradeType[],
+) {
+  const has = (upgrade: MyGardenUpgradeType) => upgrades.includes(upgrade);
+  drawPixelShed(ctx, camera, viewport, zoom, has("sage_shed"));
+
+  const pathStart = gridToWorld(-1, 7);
+  const pathEnd = gridToWorld(1, 4);
+  const start = worldToScreen(pathStart, camera, viewport, zoom);
+  const end = worldToScreen(pathEnd, camera, viewport, zoom);
+  ctx.save();
+  ctx.strokeStyle = has("stone_path") ? "#b9ad99" : "#c7a775";
+  ctx.lineWidth = 10 * zoom;
+  ctx.setLineDash(has("stone_path") ? [7 * zoom, 4 * zoom] : []);
+  ctx.beginPath();
+  ctx.moveTo(start.x, start.y);
+  ctx.lineTo(end.x, end.y);
+  ctx.stroke();
+  ctx.restore();
+
+  if (has("birdhouse")) {
+    const point = worldToScreen(gridToWorld(width + 1, 0), camera, viewport, zoom);
+    ctx.save();
+    ctx.translate(Math.round(point.x), Math.round(point.y));
+    ctx.scale(zoom, zoom);
+    ctx.fillStyle = "#704b39";
+    ctx.fillRect(-2, -24, 4, 25);
+    ctx.fillStyle = "#e0b76d";
+    ctx.fillRect(-10, -35, 20, 15);
+    ctx.fillStyle = "#954a45";
+    ctx.fillRect(-13, -40, 26, 7);
+    ctx.fillStyle = "#4a372e";
+    ctx.fillRect(-3, -31, 6, 6);
+    ctx.restore();
+  }
+
+  if (has("bench")) {
+    const point = worldToScreen(
+      gridToWorld(width + 1, Math.min(3, height - 1)),
+      camera,
+      viewport,
+      zoom,
+    );
+    ctx.save();
+    ctx.translate(Math.round(point.x), Math.round(point.y));
+    ctx.scale(zoom, zoom);
+    ctx.fillStyle = "#7a4936";
+    ctx.fillRect(-15, -15, 30, 5);
+    ctx.fillRect(-15, -7, 30, 5);
+    ctx.fillRect(-12, -2, 4, 10);
+    ctx.fillRect(8, -2, 4, 10);
+    ctx.restore();
   }
 }
 
@@ -631,16 +796,54 @@ function drawEffects(
         const offset = index * 4 - 6;
         ctx.fillRect(offset, -20 + progress * 16 + (index % 2) * 3, 2, 3);
       }
-    } else {
+    } else if (effect.kind === "plant") {
       ctx.fillStyle = "#876444";
       ctx.fillRect(-7 - progress * 4, -3, 3, 2);
       ctx.fillRect(4 + progress * 4, -5, 3, 2);
+    } else {
+      ctx.fillStyle = "#f2d08c";
+      ctx.fillRect(-6 - progress * 5, -10 - progress * 6, 3, 3);
+      ctx.fillRect(3 + progress * 5, -7 - progress * 8, 3, 3);
     }
     ctx.restore();
   }
 }
 
 export function renderGarden(ctx: CanvasRenderingContext2D, state: RenderGardenState) {
+  if (state.mode === "personal" && state.personalGarden) {
+    const visiblePlants = state.plants.filter(
+      (plant) => getPlantVisual(plant, state.now).state !== "expired",
+    );
+    ctx.imageSmoothingEnabled = false;
+    ctx.clearRect(0, 0, state.viewport.width, state.viewport.height);
+    drawPersonalTerrain(
+      ctx,
+      state.camera,
+      state.viewport,
+      state.zoom,
+      state.personalGarden.width,
+      state.personalGarden.height,
+    );
+    drawPersonalDecorations(
+      ctx,
+      state.camera,
+      state.viewport,
+      state.zoom,
+      state.personalGarden.width,
+      state.personalGarden.height,
+      state.personalGarden.upgrades,
+    );
+    drawDampSoil(ctx, visiblePlants, state.camera, state.viewport, state.now, state.zoom);
+    visiblePlants.forEach((plant) =>
+      drawPlant(ctx, plant, state.camera, state.viewport, state.now, state.zoom),
+    );
+    drawDuck(ctx, state.duck, state.camera, state.viewport, state.moving, state.now, state.zoom);
+    drawMary(ctx, state.mary, state.camera, state.viewport, state.moving, state.now, state.zoom);
+    drawEffects(ctx, state.effects, state.camera, state.viewport, state.now, state.zoom);
+    drawSelection(ctx, state.selected, state.camera, state.viewport, state.zoom);
+    return;
+  }
+
   baseLayer = ensureLayer(baseLayer, state.viewport);
   soilLayer = ensureLayer(soilLayer, state.viewport);
   greenLayer = ensureLayer(greenLayer, state.viewport);
