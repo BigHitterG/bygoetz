@@ -1,5 +1,9 @@
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
+import {
+  fulfillGardenStewardCheckout,
+  GARDEN_STEWARD_ORDER_TYPE,
+} from "@/lib/communityGarden/stewards";
 import { fulfillDigitalDownloadCheckout } from "@/lib/explorers/fulfillDigitalDownload";
 import { getStripe } from "@/lib/stripe";
 
@@ -41,7 +45,10 @@ export async function POST(request: Request) {
   try {
     if (checkoutSuccessEvents.has(event.type)) {
       const session = event.data.object as Stripe.Checkout.Session;
-      const result = await fulfillDigitalDownloadCheckout(session);
+      const result =
+        session.metadata?.order_type === GARDEN_STEWARD_ORDER_TYPE
+          ? await fulfillGardenStewardCheckout(session)
+          : await fulfillDigitalDownloadCheckout(session);
       return NextResponse.json({ received: true, fulfillment: result });
     }
 

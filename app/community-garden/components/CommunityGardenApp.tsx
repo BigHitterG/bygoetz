@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { FutureAdSlot } from "./FutureAdSlot";
 import {
   GardenCanvas,
@@ -34,10 +34,17 @@ export function CommunityGardenApp() {
   const [ui, setUi] = useState(INITIAL_UI);
   const [menuOpen, setMenuOpen] = useState(false);
   const [menuSection, setMenuSection] = useState<LibrarySection>("play");
-  const donationUrl =
-    process.env.NEXT_PUBLIC_COMMUNITY_GARDEN_DONATION_URL ??
-    "https://donate.stripe.com/9B614n2dH1Ui6VVdlWgw00F";
   const adLabel = process.env.NEXT_PUBLIC_COMMUNITY_GARDEN_AD_PLACEHOLDER;
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.has("steward") || params.has("checkout")) {
+      queueMicrotask(() => {
+        setMenuSection("steward");
+        setMenuOpen(true);
+      });
+    }
+  }, []);
 
   const onStateChange = useCallback((state: GardenUiState) => {
     setUi(state);
@@ -100,12 +107,12 @@ export function CommunityGardenApp() {
           className="cg-compact-support"
           type="button"
           onClick={() => {
-            setMenuSection("support");
+            setMenuSection("steward");
             setMenuOpen(true);
           }}
         >
           <span aria-hidden="true">+</span>
-          Support
+          $6.99 Pass
         </button>
 
         <div className="cg-plant-picker" role="group" aria-label="Choose what to plant">
@@ -152,7 +159,6 @@ export function CommunityGardenApp() {
       <GardenMenu
         open={menuOpen}
         section={menuSection}
-        donationUrl={donationUrl}
         onClose={() => setMenuOpen(false)}
         onSectionChange={setMenuSection}
       />

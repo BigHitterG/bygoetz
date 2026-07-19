@@ -1,0 +1,39 @@
+import { NextResponse } from "next/server";
+import { getGardenUser } from "@/lib/communityGarden/auth";
+import {
+  getGardenAlmanac,
+  getGardenFeedback,
+  getGardenStewardByUserId,
+} from "@/lib/communityGarden/stewards";
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
+export async function GET(request: Request) {
+  const user = await getGardenUser(request);
+  if (!user) {
+    return NextResponse.json({ error: "Sign in to view this account." }, { status: 401 });
+  }
+
+  const steward = await getGardenStewardByUserId(user.id);
+
+  if (!steward) {
+    return NextResponse.json({ active: false, email: user.email });
+  }
+
+  const [almanac, feedback] = await Promise.all([
+    getGardenAlmanac(),
+    getGardenFeedback(steward.id),
+  ]);
+
+  return NextResponse.json({
+    active: true,
+    steward: {
+      gardenName: steward.garden_name,
+      purchasedAt: steward.purchased_at,
+      email: user.email,
+    },
+    almanac,
+    feedback,
+  });
+}

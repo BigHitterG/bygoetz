@@ -3,22 +3,21 @@
 import { withSiteBasePath } from "@/lib/sitePath";
 import { GardenElements } from "./GardenElements";
 import { GardenGuide } from "./GardenGuide";
+import { GardenSteward } from "./GardenSteward";
 import { PlantGlossary } from "./PlantGlossary";
-import { SupportGarden } from "./SupportGarden";
 
-export type LibrarySection = "play" | "plants" | "elements" | "support";
+export type LibrarySection = "play" | "plants" | "elements" | "steward";
 
 const LIBRARY_TABS = [
   { id: "play", label: "Play", icon: "play" },
   { id: "plants", label: "Plants", icon: "plants" },
   { id: "elements", label: "Elements", icon: "elements" },
-  { id: "support", label: "Support", icon: "support" },
+  { id: "steward", label: "Pass", icon: "support" },
 ] as const;
 
 type GardenMenuProps = {
   open: boolean;
   section: LibrarySection;
-  donationUrl?: string;
   onClose: () => void;
   onSectionChange: (section: LibrarySection) => void;
 };
@@ -26,7 +25,6 @@ type GardenMenuProps = {
 export function GardenMenu({
   open,
   section,
-  donationUrl,
   onClose,
   onSectionChange,
 }: GardenMenuProps) {
@@ -70,7 +68,7 @@ export function GardenMenu({
           {section === "play" ? <GardenGuide /> : null}
           {section === "plants" ? <PlantGlossary /> : null}
           {section === "elements" ? <GardenElements /> : null}
-          {section === "support" ? <SupportGarden donationUrl={donationUrl} /> : null}
+          {section === "steward" ? <GardenSteward /> : null}
         </div>
 
         <a className="cg-back-link" href={withSiteBasePath("/")}>
