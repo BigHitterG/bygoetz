@@ -16,7 +16,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 function isGridCoordinate(value: unknown) {
-  return Number.isInteger(value) && Number(value) >= 0 && Number(value) <= 7;
+  return Number.isInteger(value) && Number(value) >= 0 && Number(value) <= 19;
 }
 
 export async function POST(request: NextRequest) {
@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
         !MY_GARDEN_PLANT_TYPES.includes(payload.plantType as MyGardenPlantType)
       ) {
         return NextResponse.json(
-          { error: "Choose an open garden bed and an available plant." },
+          { error: "Choose an open spot inside the fence and an available plant." },
           { status: 400 },
         );
       }

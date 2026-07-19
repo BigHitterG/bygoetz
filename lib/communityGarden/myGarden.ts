@@ -66,17 +66,17 @@ type PersonalUpgradeRow = {
 };
 
 function getPlotDimensions(plotLevel: number) {
-  if (plotLevel >= 3) return { width: 8, height: 7 };
-  if (plotLevel === 2) return { width: 7, height: 6 };
-  return { width: 6, height: 5 };
+  if (plotLevel >= 3) return { width: 16, height: 20 };
+  if (plotLevel === 2) return { width: 14, height: 18 };
+  return { width: 12, height: 16 };
 }
 
 function getNextExpansion(plotLevel: number) {
   if (plotLevel >= 3) return null;
   if (plotLevel === 2) {
-    return { level: 3, width: 8, height: 7, careCost: 50 };
+    return { level: 3, width: 16, height: 20, careCost: 50 };
   }
-  return { level: 2, width: 7, height: 6, careCost: 20 };
+  return { level: 2, width: 14, height: 18, careCost: 20 };
 }
 
 function getDatabaseMessage(error: unknown, fallback: string) {
@@ -88,11 +88,11 @@ function getDatabaseMessage(error: unknown, fallback: string) {
     "An active Garden Membership is required.",
     "That Care receipt has expired or was already claimed.",
     "That plant is not available in My Garden.",
-    "That bed is outside your current garden plot.",
+    "That spot is outside your current fenced garden.",
     "Earn more Care in the Community Garden before planting here.",
-    "That garden bed is already planted.",
+    "That garden spot is already planted.",
     "That plant is no longer in My Garden.",
-    "Your current My Garden plot is fully expanded.",
+    "Your current My Garden property is fully expanded.",
     "Earn more Care in the Community Garden before expanding.",
     "That My Garden upgrade is not available.",
     "That upgrade is already part of My Garden.",
@@ -147,8 +147,8 @@ export async function getMyGarden(stewardId: string): Promise<MyGardenState> {
     dailyCareLimit: GARDEN_DAILY_CARE_LIMIT,
     plotLevel: progress.plot_level,
     ...dimensions,
-    maxWidth: 8,
-    maxHeight: 7,
+    maxWidth: 16,
+    maxHeight: 20,
     plantCost: MY_GARDEN_PLANT_COST,
     uprootReturn: MY_GARDEN_UPROOT_RETURN,
     nextExpansion: getNextExpansion(progress.plot_level),

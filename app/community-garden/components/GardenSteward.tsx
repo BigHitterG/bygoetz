@@ -396,7 +396,7 @@ export function GardenSteward() {
             <p className="cg-auth-step">What membership opens</p>
             <h3>Your own place inside Basil</h3>
             <p>
-              Settle into a cozy personal plot, then grow it by helping the
+              Settle into a cozy fenced garden, then grow it by helping the
               Community Garden flourish.
             </p>
           </div>
@@ -406,14 +406,14 @@ export function GardenSteward() {
               <span className="cg-benefit-icon is-almanac" aria-hidden="true">01</span>
               <div>
                 <strong>Build your own cozy garden</strong>
-                <p>Start with 30 private beds, a little shed, 8 Care, and permanent plants.</p>
+                <p>Start with a walkable fenced property, a little shed, 8 Care, and permanent plants.</p>
               </div>
             </li>
             <li>
               <span className="cg-benefit-icon is-ideas" aria-hidden="true">02</span>
               <div>
                 <strong>Earn Care by helping everyone</strong>
-                <p>Every player sees Care earned. Membership banks it for your home plot.</p>
+                <p>Every player sees Care earned. Membership banks it for your home garden.</p>
               </div>
             </li>
             <li>
@@ -702,7 +702,7 @@ export function GardenSteward() {
             <small>once, not a subscription</small>
           </div>
           <ul>
-            <li>Starter pack: 30 garden beds, cozy shed, and 8 Care</li>
+            <li>Starter pack: a walkable fenced property, cozy shed, and 8 Care</li>
             <li>Plant and uproot inside your personal garden</li>
             <li>Permanent personal plants plus visible upgrades to earn</li>
             <li>Use membership on any browser or device with the same email</li>

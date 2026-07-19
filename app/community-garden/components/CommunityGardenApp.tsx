@@ -31,6 +31,8 @@ const INITIAL_UI: GardenUiState = {
   message: "Connecting to the shared garden...",
   mapX: 60.38,
   mapY: 60.38,
+  mapWidthPercentage: 100,
+  mapHeightPercentage: 100,
   zoom: 1,
   canZoomIn: true,
   canZoomOut: false,
@@ -231,7 +233,7 @@ export function CommunityGardenApp() {
         setMyGarden(updated);
         setGardenNotice(
           mutation.action === "expand"
-            ? `Your walkable plot is now ${updated.width} × ${updated.height}.`
+            ? `Your fenced garden is now ${updated.width} × ${updated.height}.`
             : mutation.action === "purchase-upgrade"
               ? "Upgrade added to the map."
               : "",

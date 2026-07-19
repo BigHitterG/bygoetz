@@ -124,7 +124,7 @@ export function MyGardenControls({
           <div>
             <h3>Make room to grow</h3>
             <p>
-              Plot level {garden.plotLevel} · {garden.width * garden.height} beds
+              Property level {garden.plotLevel} · {garden.width * garden.height} plantable spaces
             </p>
           </div>
           {garden.nextExpansion ? (
@@ -138,7 +138,7 @@ export function MyGardenControls({
               {garden.nextExpansion.careCost} Care
             </button>
           ) : (
-            <strong>Full plot open</strong>
+            <strong>Full property open</strong>
           )}
         </section>
 
