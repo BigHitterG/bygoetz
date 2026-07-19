@@ -92,7 +92,7 @@ function getPaidGardenSessionDetails(session: Stripe.Checkout.Session) {
     session.amount_total !== GARDEN_STEWARD_PRICE_CENTS ||
     session.currency !== GARDEN_STEWARD_CURRENCY
   ) {
-    throw new Error("The Basil checkout total does not match the Founding Gardener price.");
+    throw new Error("The Basil checkout total does not match the Garden Membership price.");
   }
 
   const userId = session.metadata.user_id ?? "";

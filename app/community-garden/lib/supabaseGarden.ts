@@ -7,6 +7,11 @@ import {
 } from "./roseLifecycle";
 
 export type GardenMapPlant = Pick<PlantRecord, "grid_x" | "grid_y" | "plant_type">;
+export type GardenContribution = {
+  action: "plant" | "water";
+  receiptToken: string;
+  careValue: number;
+};
 
 let gardenClient: SupabaseClient | null = null;
 
@@ -38,12 +43,29 @@ function normalizePlant(value: Record<string, unknown>): PlantRecord {
   return { ...value, plant_type: plantType } as PlantRecord;
 }
 
-function normalizeRpcPlant(data: unknown): PlantRecord {
+function normalizeContributionRpc(
+  data: unknown,
+  action: GardenContribution["action"],
+) {
   const value = Array.isArray(data) ? data[0] : data;
   if (!value || typeof value !== "object") {
     throw new Error("The garden did not return a plant.");
   }
-  return normalizePlant(value as Record<string, unknown>);
+  const record = value as Record<string, unknown>;
+  const plant = normalizePlant({
+    ...record,
+    id: record.plant_id,
+  });
+  const receiptToken =
+    typeof record.receipt_token === "string" ? record.receipt_token : null;
+  const careValue = Number(record.care_value ?? 0);
+  return {
+    plant,
+    contribution:
+      receiptToken && careValue > 0
+        ? { action, receiptToken, careValue } satisfies GardenContribution
+        : null,
+  };
 }
 
 export async function fetchGardenPlants(bounds: GardenBounds) {
@@ -91,26 +113,26 @@ export async function plantGardenPlant(
   const client = getGardenClient();
   if (!client) throw new Error("The shared garden is not connected yet.");
 
-  const { data, error } = await client.rpc("plant_community_garden_plant", {
+  const { data, error } = await client.rpc("perform_community_garden_planting", {
     p_grid_x: gridX,
     p_grid_y: gridY,
     p_plant_type: plantType,
   });
 
   if (error) throw error;
-  return normalizeRpcPlant(data);
+  return normalizeContributionRpc(data, "plant");
 }
 
 export async function waterGardenPlant(plantId: string) {
   const client = getGardenClient();
   if (!client) throw new Error("The shared garden is not connected yet.");
 
-  const { data, error } = await client.rpc("water_community_garden_plant", {
+  const { data, error } = await client.rpc("perform_community_garden_watering", {
     p_plant_id: plantId,
   });
 
   if (error) throw error;
-  return normalizeRpcPlant(data);
+  return normalizeContributionRpc(data, "water");
 }
 
 export async function cleanupExpiredGardenPlants(bounds: GardenBounds) {

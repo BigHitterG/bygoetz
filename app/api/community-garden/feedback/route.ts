@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
 
   if (!steward) {
     return NextResponse.json(
-      { error: "A Founding Gardener pass is required." },
+      { error: "An active Garden Membership is required." },
       { status: 401 },
     );
   }

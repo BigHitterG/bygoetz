@@ -2,7 +2,9 @@
 
 import type { Session } from "@supabase/supabase-js";
 import { FormEvent, useCallback, useEffect, useState } from "react";
+import type { MyGardenState } from "@/lib/communityGarden/myGarden";
 import { getGardenAccountClient } from "../lib/supabaseAccount";
+import { MyGarden } from "./MyGarden";
 
 const FEEDBACK_CATEGORIES = [
   ["plants", "Plants"],
@@ -36,6 +38,7 @@ type ActiveAccount = {
     measuredAt: string;
   };
   feedback: FeedbackItem[];
+  myGarden: MyGardenState;
 };
 
 type FreeAccount = { active: false; email: string };
@@ -74,7 +77,11 @@ function clearAccountLinkFromAddress() {
   window.history.replaceState({}, "", `${url.pathname}${url.search}${url.hash}`);
 }
 
-export function GardenSteward() {
+type GardenStewardProps = {
+  onGoToCommunity?: () => void;
+};
+
+export function GardenSteward({ onGoToCommunity }: GardenStewardProps) {
   const [session, setSession] = useState<Session | null>(null);
   const [accountState, setAccountState] = useState<AccountState>({ status: "loading" });
   const [authView, setAuthView] = useState<AuthView>("signin");
@@ -93,7 +100,7 @@ export function GardenSteward() {
         cache: "no-store",
         headers: { authorization: `Bearer ${activeSession.access_token}` },
       });
-      if (!response.ok) throw new Error(await getResponseError(response, "Could not load the pass."));
+      if (!response.ok) throw new Error(await getResponseError(response, "Could not load the membership."));
       const account = (await response.json()) as AccountResponse;
       setAccountState(
         account.active
@@ -104,7 +111,7 @@ export function GardenSteward() {
     } catch (error) {
       setAccountState({
         status: "error",
-        message: error instanceof Error ? error.message : "Could not load the pass.",
+        message: error instanceof Error ? error.message : "Could not load the membership.",
       });
       return null;
     }
@@ -169,7 +176,7 @@ export function GardenSteward() {
 
     queueMicrotask(() => {
       if (stewardStatus === "welcome") {
-        setNotice("Purchase complete. Your pass now follows this private account.");
+        setNotice("Purchase complete. Your Garden Membership is ready on this account.");
       } else if (stewardStatus === "unverified") {
         setNotice("The purchase could not be verified. Please check your Stripe receipt.");
       } else if (params.get("checkout") === "cancelled") {
@@ -244,7 +251,7 @@ export function GardenSteward() {
     setPassword("");
     const account = await loadAccount(data.session);
     if (account?.active) {
-      setNotice("Signed in. Your Founding Gardener pass is active.");
+      setNotice("Signed in. Your Garden Membership is active.");
       setBusy(null);
       return;
     }
@@ -366,17 +373,17 @@ export function GardenSteward() {
   return (
     <section className="cg-steward" aria-labelledby="garden-steward-title">
       <p className="cg-kicker">One time · $6.99</p>
-      <h2 id="garden-steward-title">Founding Gardener Pass</h2>
+      <h2 id="garden-steward-title">Community Garden Membership</h2>
       <p className="cg-steward-lead">
-        Basil stays free and anonymous to play. The pass funds the shared garden and
-        unlocks a live Garden Almanac plus a direct upgrade queue.
+        Keep playing the Community Garden for free. Membership unlocks a cozy
+        garden of your own, saved across your devices.
       </p>
 
       {notice ? <p className="cg-steward-notice" aria-live="polite">{notice}</p> : null}
 
       {accountState.status !== "active" && !showAccountLink ? (
         <div className="cg-pass-preview">
-          <div className="cg-pass-ticket" aria-label="Basil Founding Gardener Pass">
+          <div className="cg-pass-ticket" aria-label="Basil Community Garden Membership">
             <div className="cg-pass-ticket-art" aria-hidden="true">
               <span className="cg-pass-sun" />
               <span className="cg-pass-flower is-one" />
@@ -385,17 +392,17 @@ export function GardenSteward() {
             </div>
             <div className="cg-pass-ticket-copy">
               <small>Basil Community Garden</small>
-              <strong>Founding Gardener</strong>
-              <span>Lifetime garden pass · No gameplay advantage</span>
+              <strong>Garden Member</strong>
+              <span>My Garden forever · One payment, no subscription</span>
             </div>
           </div>
 
           <div className="cg-pass-promise">
-            <p className="cg-auth-step">What your pass opens</p>
-            <h3>A closer seat in the garden</h3>
+            <p className="cg-auth-step">What membership opens</p>
+            <h3>Your own place inside Basil</h3>
             <p>
-              You still plant beside everyone else. The pass gives you a richer view of
-              the community and a direct hand in where Basil grows next.
+              Settle into a cozy personal plot, then grow it by helping the
+              Community Garden flourish.
             </p>
           </div>
 
@@ -403,32 +410,32 @@ export function GardenSteward() {
             <li>
               <span className="cg-benefit-icon is-almanac" aria-hidden="true">01</span>
               <div>
-                <strong>Open the live Garden Almanac</strong>
-                <p>See what is growing, planted, and watered across the shared garden.</p>
+                <strong>Build your own cozy garden</strong>
+                <p>Start with 30 private beds, a little shed, 8 Care, and permanent plants.</p>
               </div>
             </li>
             <li>
               <span className="cg-benefit-icon is-ideas" aria-hidden="true">02</span>
               <div>
-                <strong>Help shape what grows next</strong>
-                <p>Send ideas into the practical upgrade queue and follow their progress.</p>
+                <strong>Earn Care by helping everyone</strong>
+                <p>Every player sees Care earned. Membership banks it for your home plot.</p>
               </div>
             </li>
             <li>
               <span className="cg-benefit-icon is-devices" aria-hidden="true">03</span>
               <div>
-                <strong>Bring your pass to every device</strong>
-                <p>Sign in privately with the same email. Nothing becomes public in-game.</p>
+                <strong>Keep it on every device</strong>
+                <p>Your garden, Almanac, and membership follow your private account.</p>
               </div>
             </li>
           </ul>
 
           <div className="cg-pass-offer">
             <div>
-              <span>One-time founding price</span>
+              <span>One-time membership</span>
               <strong>$6.99</strong>
             </div>
-            <p>Not a subscription. The garden stays fair and free for everyone.</p>
+            <p>No subscription. Community play stays free for everyone.</p>
           </div>
         </div>
       ) : null}
@@ -695,15 +702,17 @@ export function GardenSteward() {
             <button type="button" onClick={() => void signOut()}>Sign out</button>
           </div>
           <div className="cg-pass-price">
-            <span>Founding Gardener</span>
+            <span>Garden Membership</span>
             <strong>$6.99</strong>
             <small>once, not a subscription</small>
           </div>
           <ul>
-            <li>Use the pass on any browser or device with the same email</li>
+            <li>Starter pack: 30 garden beds, cozy shed, and 8 Care</li>
+            <li>Plant and uproot inside your personal garden</li>
+            <li>Permanent personal plants plus visible upgrades to earn</li>
+            <li>Use membership on any browser or device with the same email</li>
             <li>Garden Almanac with live community totals</li>
             <li>Feedback tracked through the upgrade queue</li>
-            <li>No stronger plants, boosts, or gameplay advantage</li>
           </ul>
           <button
             className="cg-support-button"
@@ -711,7 +720,7 @@ export function GardenSteward() {
             disabled={busy === "checkout" || !session}
             onClick={() => session && void beginCheckout(session)}
           >
-            {busy === "checkout" ? "Opening secure checkout…" : "Continue to secure checkout"}
+            {busy === "checkout" ? "Opening secure checkout…" : "Unlock My Garden · $6.99"}
           </button>
         </div>
       ) : null}
@@ -725,13 +734,22 @@ export function GardenSteward() {
                 Sign out
               </button>
             </div>
-            <p className="cg-kicker">Founding Gardener account</p>
-            <h3>Pass active</h3>
+            <p className="cg-kicker">Community Garden Membership</p>
+            <h3>Membership active</h3>
             <p>
               Your account works across devices. Nothing you plant is labeled with your
               email or linked to a public profile.
             </p>
           </div>
+
+          {session ? (
+            <MyGarden
+              initialGarden={accountState.account.myGarden}
+              session={session}
+              gardenName={accountState.account.steward.gardenName}
+              onGoToCommunity={onGoToCommunity}
+            />
+          ) : null}
 
           <div className="cg-almanac" aria-labelledby="garden-almanac-title">
             <div className="cg-steward-section-heading">

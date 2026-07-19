@@ -207,9 +207,9 @@ export async function sendGardenAccountEmail({
   const emailContent = renderGardenAccountEmail({
     title: isNewSignup ? "Confirm your Basil account" : "Set your Basil password",
     intro: isNewSignup
-      ? "Confirm your email address, then continue directly to the secure $6.99 Founding Gardener checkout."
+      ? "Confirm your email address, then continue directly to the secure $6.99 Community Garden Membership checkout."
       : continueToCheckout
-        ? "This email already has a Basil account. Set a password, then continue directly to the secure $6.99 Founding Gardener checkout."
+        ? "This email already has a Basil account. Set a password, then continue directly to the secure $6.99 Community Garden Membership checkout."
         : "Open Basil to choose a new password for your private account.",
     buttonLabel: isNewSignup
       ? "Confirm account and continue"

@@ -1,5 +1,3 @@
-import { GARDEN_CONFIG } from "./gardenConfig";
-
 const HOUR_MS = 60 * 60 * 1000;
 const MOISTURE_HALF_LIFE_MS = 8 * HOUR_MS;
 
