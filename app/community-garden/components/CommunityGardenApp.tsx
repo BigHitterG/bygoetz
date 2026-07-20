@@ -14,10 +14,7 @@ import { getGardenAccountClient } from "../lib/supabaseAccount";
 import type { GardenContribution } from "../lib/supabaseGarden";
 import { GardenMapKey } from "./GardenMapKey";
 import { GardenMenu, type LibrarySection } from "./GardenMenu";
-import {
-  getPlantDefinition,
-  PLANT_TYPES,
-} from "../lib/roseLifecycle";
+import type { MyGardenMutation } from "../lib/myGardenMutation";
 import {
   awardGuestCare,
   clearGuestGardenPreview,
@@ -30,10 +27,7 @@ import {
   saveGuestGardenPreview,
   type GuestGardenPreview,
 } from "../lib/guestGardenPreview";
-import {
-  MyGardenControls,
-  type MyGardenMutation,
-} from "./MyGardenControls";
+import { GardenInventory } from "./GardenInventory";
 import { GardenMembershipOffer } from "./GardenMembershipOffer";
 
 const INITIAL_UI: GardenUiState = {
@@ -50,6 +44,7 @@ const INITIAL_UI: GardenUiState = {
   canZoomIn: true,
   canZoomOut: false,
   selectedPlantType: "rose",
+  selectedElementType: null,
   selectedTool: "rose",
   plantMapPoints: [],
   mode: "community",
@@ -84,17 +79,11 @@ export function CommunityGardenApp() {
     createGuestGardenPreview(),
   );
   const [memberGarden, setMemberGarden] = useState<MyGardenState | null>(null);
-  const [gardenControlsOpen, setGardenControlsOpen] = useState(false);
+  const [inventoryOpen, setInventoryOpen] = useState(false);
   const [membershipOfferOpen, setMembershipOfferOpen] = useState(false);
-  const [gardenBusy, setGardenBusy] = useState(false);
-  const [gardenNotice, setGardenNotice] = useState("");
   const adLabel = process.env.NEXT_PUBLIC_COMMUNITY_GARDEN_AD_PLACEHOLDER;
   const myGarden = memberGarden ?? guestPreview.garden;
   const isPreview = !memberGarden;
-  const landReady = Boolean(
-    memberGarden?.nextExpansion &&
-      memberGarden.careBalance >= memberGarden.nextExpansion.careCost,
-  );
 
   const commitGuestPreview = useCallback((next: GuestGardenPreview) => {
     guestPreviewRef.current = next;
@@ -291,67 +280,55 @@ export function CommunityGardenApp() {
 
   const mutateMyGarden = useCallback(
     async (mutation: MyGardenMutation) => {
-      setGardenBusy(true);
-      setGardenNotice("");
-      try {
-        if (!memberGarden) {
-          try {
-            const updatedPreview = mutateGuestGarden(
-              guestPreviewRef.current,
-              mutation,
-            );
-            commitGuestPreview(updatedPreview);
-            const used = updatedPreview.garden.preview?.plantingsUsed ?? 0;
-            const limit = updatedPreview.garden.preview?.plantingLimit ?? 3;
-            if (mutation.action === "plant" && used >= limit) {
-              setMembershipOfferOpen(true);
-            }
-            return updatedPreview.garden;
-          } catch (error) {
-            if (error instanceof GuestPreviewLimitError) {
-              setMembershipOfferOpen(true);
-            }
-            throw error;
-          }
-        }
-        if (!session) throw new Error("Sign in to update My Garden.");
-        const response = await fetch("/api/community-garden/my-garden", {
-          method: "POST",
-          headers: {
-            authorization: `Bearer ${session.access_token}`,
-            "content-type": "application/json",
-          },
-          body: JSON.stringify(mutation),
-        });
-        if (!response.ok) {
-          throw new Error(
-            await getResponseError(response, "My Garden could not be updated."),
+      if (!memberGarden) {
+        try {
+          const updatedPreview = mutateGuestGarden(
+            guestPreviewRef.current,
+            mutation,
           );
+          commitGuestPreview(updatedPreview);
+          const used = updatedPreview.garden.preview?.plantingsUsed ?? 0;
+          const limit = updatedPreview.garden.preview?.plantingLimit ?? 3;
+          if (mutation.action === "plant" && used >= limit) {
+            setMembershipOfferOpen(true);
+          }
+          return updatedPreview.garden;
+        } catch (error) {
+          if (error instanceof GuestPreviewLimitError) {
+            setMembershipOfferOpen(true);
+          }
+          throw error;
         }
-        const updated = (await response.json()) as MyGardenState;
-        setMemberGarden(updated);
-        setGardenNotice(
-          mutation.action === "expand"
-            ? `Your fenced garden is now ${updated.width} × ${updated.height}.`
-            : mutation.action === "purchase-upgrade"
-              ? "Upgrade added to the map."
-              : "",
-        );
-        return updated;
-      } finally {
-        setGardenBusy(false);
       }
+      if (!session) throw new Error("Sign in to update My Garden.");
+      const response = await fetch("/api/community-garden/my-garden", {
+        method: "POST",
+        headers: {
+          authorization: `Bearer ${session.access_token}`,
+          "content-type": "application/json",
+        },
+        body: JSON.stringify(mutation),
+      });
+      if (!response.ok) {
+        throw new Error(
+          await getResponseError(response, "My Garden could not be updated."),
+        );
+      }
+      const updated = (await response.json()) as MyGardenState;
+      setMemberGarden(updated);
+      return updated;
     },
     [commitGuestPreview, memberGarden, session],
   );
 
   function switchWorld() {
     if (world === "personal") {
-      setGardenControlsOpen(false);
+      setInventoryOpen(false);
       setWorld("community");
       return;
     }
     setMenuOpen(false);
+    setInventoryOpen(false);
     setWorld("personal");
   }
 
@@ -435,20 +412,14 @@ export function CommunityGardenApp() {
         </button>
 
         {world === "personal" ? (
-          <button
-            className={`cg-care-button${landReady ? " has-land-ready" : ""}`}
-            type="button"
-            aria-label={`${myGarden.careBalance} Care. ${
-              landReady ? "Land ready to unlock. " : ""
-            }Open My Garden details`}
-            onClick={() => setGardenControlsOpen(true)}
+          <output
+            className="cg-care-button is-personal"
+            aria-label={`${myGarden.careBalance} Care`}
           >
-            <span className="cg-care-button-copy">
-              <span>Care</span>
-              <small>{landReady ? "Open land now →" : "Land + upgrades"}</small>
-            </span>
+            <span>Care</span>
             <strong>{myGarden.careBalance}</strong>
-          </button>
+            <i aria-hidden="true">▼</i>
+          </output>
         ) : (
           <output
             className="cg-care-button is-community"
@@ -466,36 +437,24 @@ export function CommunityGardenApp() {
           </div>
         ) : null}
 
-        <div className="cg-plant-picker" role="group" aria-label="Choose what to plant">
-          {PLANT_TYPES.map((plantType) => {
-            const plant = getPlantDefinition(plantType);
-            return (
-              <button
-                key={plantType}
-                type="button"
-                aria-label={`Select ${plant.name} seeds`}
-                aria-pressed={ui.selectedTool === plantType}
-                title={plant.name}
-                onClick={() => canvasRef.current?.selectPlant(plantType)}
-              >
-                <span className={`cg-plant-glyph is-${plantType}`} aria-hidden="true" />
-                <span>{plant.name}</span>
-              </button>
-            );
-          })}
-          {world === "personal" ? (
-            <button
-              type="button"
-              aria-label="Select the free path tool"
-              aria-pressed={ui.selectedTool === "path"}
-              title="Path"
-              onClick={() => canvasRef.current?.selectPathTool()}
-            >
-              <span className="cg-path-icon" aria-hidden="true" />
-              <span>Path</span>
-            </button>
-          ) : null}
-        </div>
+        <GardenInventory
+          mode={world}
+          open={inventoryOpen}
+          selectedTool={ui.selectedTool}
+          onToggle={() => setInventoryOpen((current) => !current)}
+          onSelectPlant={(plantType) => {
+            canvasRef.current?.selectPlant(plantType);
+            setInventoryOpen(false);
+          }}
+          onSelectPath={() => {
+            canvasRef.current?.selectPathTool();
+            setInventoryOpen(false);
+          }}
+          onSelectElement={(elementType) => {
+            canvasRef.current?.selectElement(elementType);
+            setInventoryOpen(false);
+          }}
+        />
 
         <button
           className="cg-action-button"
@@ -509,6 +468,9 @@ export function CommunityGardenApp() {
                 ? "cg-water-icon"
                 : ui.action === "uproot"
                   ? "cg-uproot-icon"
+                  : ui.action === "place-element" ||
+                      ui.action === "remove-element"
+                    ? `cg-item-glyph is-${ui.selectedElementType ?? "stone_paver"}`
                   : ui.action === "expand"
                     ? "cg-lock-icon"
                   : ui.action === "lay-path" || ui.action === "remove-path"
@@ -534,30 +496,6 @@ export function CommunityGardenApp() {
           pendingGardenEntryRef.current = false;
         }}
         onSectionChange={setMenuSection}
-      />
-
-      <MyGardenControls
-        garden={myGarden}
-        open={gardenControlsOpen}
-        busy={gardenBusy}
-        notice={gardenNotice}
-        preview={isPreview}
-        onJoin={() => {
-          setGardenControlsOpen(false);
-          setMembershipOfferOpen(true);
-        }}
-        onClose={() => setGardenControlsOpen(false)}
-        onMutate={async (mutation) => {
-          try {
-            await mutateMyGarden(mutation);
-          } catch (error) {
-            setGardenNotice(
-              error instanceof Error
-                ? error.message
-                : "My Garden could not be updated.",
-            );
-          }
-        }}
       />
 
       <GardenMembershipOffer

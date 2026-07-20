@@ -40,7 +40,7 @@ export function GardenMembershipOffer({
         <p>
           You planted {Math.min(3, planted)} preview flowers. Garden Membership
           keeps them, saves your Care, and opens permanent planting, paths,
-          upgrades, and new land across your devices.
+          placeable garden items, and new land across your devices.
         </p>
         <ul>
           <li>Keep these flowers and your remaining Care</li>

@@ -3,14 +3,15 @@ import { getGardenUser } from "@/lib/communityGarden/auth";
 import {
   expandMyGarden,
   importMyGardenPreview,
+  MY_GARDEN_ELEMENTS,
   MY_GARDEN_PLANT_TYPES,
-  MY_GARDEN_UPGRADES,
+  placeMyGardenElement,
   plantInMyGarden,
-  purchaseMyGardenUpgrade,
+  removeMyGardenElement,
   toggleMyGardenPath,
   uprootFromMyGarden,
+  type MyGardenElementType,
   type MyGardenPlantType,
-  type MyGardenUpgradeType,
 } from "@/lib/communityGarden/myGarden";
 import { getGardenStewardByUserId } from "@/lib/communityGarden/stewards";
 
@@ -50,7 +51,8 @@ export async function POST(request: NextRequest) {
     gridY?: unknown;
     plantType?: unknown;
     plantId?: unknown;
-    upgradeType?: unknown;
+    elementType?: unknown;
+    elementId?: unknown;
     careBalance?: unknown;
     plants?: unknown;
     paths?: unknown;
@@ -169,22 +171,43 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(await expandMyGarden(steward.id));
     }
 
-    if (payload.action === "purchase-upgrade") {
+    if (payload.action === "place-element") {
       if (
-        !MY_GARDEN_UPGRADES.some(
-          (upgrade) => upgrade.type === payload.upgradeType,
+        !isGridCoordinate(payload.gridX, -100_000, 100_000) ||
+        !isGridCoordinate(payload.gridY, -100_000, 100_000) ||
+        !MY_GARDEN_ELEMENTS.some(
+          (element) => element.type === payload.elementType,
         )
       ) {
         return NextResponse.json(
-          { error: "Choose an available My Garden upgrade." },
+          { error: "Choose an open spot and an available My Garden item." },
           { status: 400 },
         );
       }
       return NextResponse.json(
-        await purchaseMyGardenUpgrade(
+        await placeMyGardenElement(
           steward.id,
-          payload.upgradeType as MyGardenUpgradeType,
+          Number(payload.gridX),
+          Number(payload.gridY),
+          payload.elementType as MyGardenElementType,
         ),
+      );
+    }
+
+    if (payload.action === "remove-element") {
+      if (
+        typeof payload.elementId !== "string" ||
+        !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+          payload.elementId,
+        )
+      ) {
+        return NextResponse.json(
+          { error: "Choose an item in My Garden to remove." },
+          { status: 400 },
+        );
+      }
+      return NextResponse.json(
+        await removeMyGardenElement(steward.id, payload.elementId),
       );
     }
 

@@ -1,9 +1,9 @@
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
-import type { MyGardenUpgradeType } from "@/app/community-garden/lib/myGardenCatalog";
+import type { MyGardenElementType } from "@/app/community-garden/lib/myGardenCatalog";
 
 export {
-  MY_GARDEN_UPGRADES,
-  type MyGardenUpgradeType,
+  MY_GARDEN_ELEMENTS,
+  type MyGardenElementType,
 } from "@/app/community-garden/lib/myGardenCatalog";
 
 export const MY_GARDEN_PLANT_COST = 2;
@@ -30,6 +30,15 @@ export type MyGardenPlant = {
 export type MyGardenPath = {
   gridX: number;
   gridY: number;
+};
+
+export type MyGardenElement = {
+  id: string;
+  gridX: number;
+  gridY: number;
+  elementType: MyGardenElementType;
+  careCost: number;
+  placedAt: string;
 };
 
 export type MyGardenPreviewImport = {
@@ -65,7 +74,7 @@ export type MyGardenState = {
   };
   plants: MyGardenPlant[];
   paths: MyGardenPath[];
-  upgrades: MyGardenUpgradeType[];
+  elements: MyGardenElement[];
   preview?: {
     plantingLimit: number;
     plantingsUsed: number;
@@ -86,13 +95,18 @@ type PersonalPlantRow = {
   planted_at: string;
 };
 
-type PersonalUpgradeRow = {
-  upgrade_type: MyGardenUpgradeType;
-};
-
 type PersonalPathRow = {
   grid_x: number;
   grid_y: number;
+};
+
+type PersonalElementRow = {
+  id: string;
+  grid_x: number;
+  grid_y: number;
+  element_type: MyGardenElementType;
+  care_cost: number;
+  placed_at: string;
 };
 
 export function getPlotBounds(plotLevel: number) {
@@ -142,9 +156,11 @@ function getDatabaseMessage(error: unknown, fallback: string) {
     "That garden spot is already planted.",
     "That plant is no longer in My Garden.",
     "Earn more Care in the Community Garden before expanding.",
-    "That My Garden upgrade is not available.",
-    "That upgrade is already part of My Garden.",
-    "Earn more Care in the Community Garden before adding that upgrade.",
+    "That item is not available in My Garden.",
+    "That garden spot already has an item.",
+    "That garden spot is occupied.",
+    "Earn more Care in the Community Garden before placing that item.",
+    "That item is no longer in My Garden.",
   ];
   return allowedMessages.find((candidate) => message.includes(candidate)) ?? fallback;
 }
@@ -163,7 +179,7 @@ export async function getMyGarden(stewardId: string): Promise<MyGardenState> {
     { data: progress, error: progressError },
     { data: plants, error: plantsError },
     { data: paths, error: pathsError },
-    { data: upgrades, error: upgradesError },
+    { data: elements, error: elementsError },
   ] = await Promise.all([
     supabase
       .from("garden_member_progress")
@@ -185,17 +201,17 @@ export async function getMyGarden(stewardId: string): Promise<MyGardenState> {
       .order("grid_x")
       .returns<PersonalPathRow[]>(),
     supabase
-      .from("garden_personal_upgrades")
-      .select("upgrade_type")
+      .from("garden_personal_elements")
+      .select("id,grid_x,grid_y,element_type,care_cost,placed_at")
       .eq("steward_id", stewardId)
-      .order("purchased_at")
-      .returns<PersonalUpgradeRow[]>(),
+      .order("placed_at")
+      .returns<PersonalElementRow[]>(),
   ]);
 
   if (progressError) throw progressError;
   if (plantsError) throw plantsError;
   if (pathsError) throw pathsError;
-  if (upgradesError) throw upgradesError;
+  if (elementsError) throw elementsError;
 
   const dimensions = getPlotBounds(progress.plot_level);
   const nextExpansion = getNextExpansion(progress.plot_level);
@@ -221,7 +237,14 @@ export async function getMyGarden(stewardId: string): Promise<MyGardenState> {
       gridX: path.grid_x,
       gridY: path.grid_y,
     })),
-    upgrades: (upgrades ?? []).map((upgrade) => upgrade.upgrade_type),
+    elements: (elements ?? []).map((element) => ({
+      id: element.id,
+      gridX: element.grid_x,
+      gridY: element.grid_y,
+      elementType: element.element_type,
+      careCost: element.care_cost,
+      placedAt: element.placed_at,
+    })),
   };
 }
 
@@ -323,16 +346,34 @@ export async function expandMyGarden(stewardId: string) {
   return getMyGarden(stewardId);
 }
 
-export async function purchaseMyGardenUpgrade(
+export async function placeMyGardenElement(
   stewardId: string,
-  upgradeType: MyGardenUpgradeType,
+  gridX: number,
+  gridY: number,
+  elementType: MyGardenElementType,
 ) {
-  const { error } = await getSupabaseAdmin().rpc("purchase_my_garden_upgrade", {
+  const { error } = await getSupabaseAdmin().rpc("place_my_garden_element", {
     p_steward_id: stewardId,
-    p_upgrade_type: upgradeType,
+    p_grid_x: gridX,
+    p_grid_y: gridY,
+    p_element_type: elementType,
   });
   if (error) {
-    throw new Error(getDatabaseMessage(error, "That upgrade could not be added."));
+    throw new Error(getDatabaseMessage(error, "That item could not be placed."));
+  }
+  return getMyGarden(stewardId);
+}
+
+export async function removeMyGardenElement(
+  stewardId: string,
+  elementId: string,
+) {
+  const { error } = await getSupabaseAdmin().rpc("remove_my_garden_element", {
+    p_steward_id: stewardId,
+    p_element_id: elementId,
+  });
+  if (error) {
+    throw new Error(getDatabaseMessage(error, "That item could not be removed."));
   }
   return getMyGarden(stewardId);
 }

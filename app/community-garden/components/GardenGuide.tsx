@@ -25,8 +25,9 @@ export function GardenGuide() {
         <div>
           <dt>Care</dt>
           <dd>
-            Select an open spot, choose a seed, and plant. Dark soil shows recent
-            shared watering and slowly dries as the plant approaches wilting.
+            Open Inventory to choose a seed, select an open spot, and plant.
+            Dark soil shows recent shared watering and slowly dries as the plant
+            approaches wilting.
           </dd>
         </div>
         <div>
@@ -37,7 +38,8 @@ export function GardenGuide() {
           <dt>Switch gardens</dt>
           <dd>
             Use the bottom-left button to try My Garden. Plant three preview
-            flowers before deciding whether you want to keep it.
+            flowers before deciding whether you want to keep it. Membership also
+            opens paths and placeable garden items in its Inventory.
           </dd>
         </div>
       </dl>

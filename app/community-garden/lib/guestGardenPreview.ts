@@ -5,7 +5,7 @@ import type {
   MyGardenPlantType,
   MyGardenState,
 } from "@/lib/communityGarden/myGarden";
-import type { MyGardenMutation } from "../components/MyGardenControls";
+import type { MyGardenMutation } from "./myGardenMutation";
 
 const STORAGE_KEY = "basil-guest-garden-preview-v1";
 const CHECKOUT_TRANSFER_KEY = "basil-guest-garden-checkout-v1";
@@ -118,7 +118,7 @@ export function createGuestGardenPreview(): GuestGardenPreview {
       },
       plants: [],
       paths: [],
-      upgrades: [],
+      elements: [],
       preview: {
         plantingLimit: GUEST_PLANTING_LIMIT,
         plantingsUsed: 0,

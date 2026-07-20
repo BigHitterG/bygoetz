@@ -1,5 +1,5 @@
 import { GARDEN_CONFIG, isWithinGarden } from "../lib/gardenConfig";
-import type { MyGardenUpgradeType } from "../lib/myGardenCatalog";
+import type { MyGardenElementType } from "../lib/myGardenCatalog";
 import { getPlantVisual, type PlantRecord } from "../lib/roseLifecycle";
 import { getTerrainTile, terrainNoise } from "./terrainGenerator";
 
@@ -43,7 +43,13 @@ export type RenderGardenState = {
     height: number;
     maxWidth: number;
     maxHeight: number;
-    upgrades: MyGardenUpgradeType[];
+    elements: Array<{
+      id: string;
+      gridX: number;
+      gridY: number;
+      elementType: MyGardenElementType;
+      careCost: number;
+    }>;
     paths: Array<{ gridX: number; gridY: number }>;
     nextExpansion: null | {
       minX: number;
@@ -359,15 +365,11 @@ function drawPixelShed(
   camera: WorldPoint,
   viewport: GardenViewport,
   zoom: number,
-  minX: number,
-  minY: number,
-  width: number,
-  sage: boolean,
 ) {
   const point = worldToScreen(
     {
-      x: (minX + Math.floor(width / 2) + 0.5) * GARDEN_CONFIG.tileSize,
-      y: minY * GARDEN_CONFIG.tileSize,
+      x: 6.5 * GARDEN_CONFIG.tileSize,
+      y: 0,
     },
     camera,
     viewport,
@@ -379,7 +381,7 @@ function drawPixelShed(
   ctx.scale(zoom, zoom);
   ctx.fillStyle = "#6d4638";
   ctx.fillRect(-24, -35, 48, 34);
-  ctx.fillStyle = sage ? "#7e9d73" : "#c78358";
+  ctx.fillStyle = "#c78358";
   ctx.fillRect(-21, -32, 42, 31);
   ctx.fillStyle = "#8f4642";
   ctx.fillRect(-29, -42, 58, 12);
@@ -554,10 +556,8 @@ function drawPersonalDecorations(
   minY: number,
   width: number,
   height: number,
-  upgrades: MyGardenUpgradeType[],
   nextExpansion: NonNullable<RenderGardenState["personalGarden"]>["nextExpansion"],
 ) {
-  const has = (upgrade: MyGardenUpgradeType) => upgrades.includes(upgrade);
   drawLockedParcel(
     ctx,
     camera,
@@ -578,55 +578,57 @@ function drawPersonalDecorations(
     minY,
     width,
     height,
-    has("stone_path"),
+    false,
   );
-  drawPixelShed(
-    ctx,
-    camera,
-    viewport,
-    zoom,
-    minX,
-    minY,
-    width,
-    has("sage_shed"),
-  );
+  drawPixelShed(ctx, camera, viewport, zoom);
+}
 
-  if (has("birdhouse")) {
+function drawPersonalElements(
+  ctx: CanvasRenderingContext2D,
+  elements: NonNullable<RenderGardenState["personalGarden"]>["elements"],
+  camera: WorldPoint,
+  viewport: GardenViewport,
+  zoom: number,
+) {
+  const sorted = [...elements].sort((left, right) => left.gridY - right.gridY);
+  for (const element of sorted) {
     const point = worldToScreen(
-      gridToWorld(minX + width + 1, minY),
+      gridToWorld(element.gridX, element.gridY),
       camera,
       viewport,
       zoom,
     );
+    if (!isVisible(point, viewport)) continue;
     ctx.save();
     ctx.translate(Math.round(point.x), Math.round(point.y));
     ctx.scale(zoom, zoom);
-    ctx.fillStyle = "#704b39";
-    ctx.fillRect(-2, -24, 4, 25);
-    ctx.fillStyle = "#e0b76d";
-    ctx.fillRect(-10, -35, 20, 15);
-    ctx.fillStyle = "#954a45";
-    ctx.fillRect(-13, -40, 26, 7);
-    ctx.fillStyle = "#4a372e";
-    ctx.fillRect(-3, -31, 6, 6);
-    ctx.restore();
-  }
 
-  if (has("bench")) {
-    const point = worldToScreen(
-      gridToWorld(minX + width + 1, minY + Math.min(3, height - 1)),
-      camera,
-      viewport,
-      zoom,
-    );
-    ctx.save();
-    ctx.translate(Math.round(point.x), Math.round(point.y));
-    ctx.scale(zoom, zoom);
-    ctx.fillStyle = "#7a4936";
-    ctx.fillRect(-15, -15, 30, 5);
-    ctx.fillRect(-15, -7, 30, 5);
-    ctx.fillRect(-12, -2, 4, 10);
-    ctx.fillRect(8, -2, 4, 10);
+    if (element.elementType === "stone_paver") {
+      ctx.fillStyle = "#817b70";
+      ctx.fillRect(-7, -5, 14, 9);
+      ctx.fillStyle = "#bdb6a9";
+      ctx.fillRect(-6, -4, 12, 7);
+      ctx.fillStyle = "#d8d1c4";
+      ctx.fillRect(-4, -3, 5, 2);
+    } else if (element.elementType === "birdhouse") {
+      ctx.fillStyle = "#704b39";
+      ctx.fillRect(-2, -20, 4, 21);
+      ctx.fillStyle = "#e0b76d";
+      ctx.fillRect(-8, -31, 16, 12);
+      ctx.fillStyle = "#954a45";
+      ctx.fillRect(-10, -35, 20, 5);
+      ctx.fillStyle = "#4a372e";
+      ctx.fillRect(-2, -28, 5, 5);
+    } else {
+      ctx.fillStyle = "#603b31";
+      ctx.fillRect(-10, -13, 20, 4);
+      ctx.fillRect(-10, -7, 20, 4);
+      ctx.fillRect(-8, -3, 3, 8);
+      ctx.fillRect(5, -3, 3, 8);
+      ctx.fillStyle = "#9e6445";
+      ctx.fillRect(-9, -12, 18, 2);
+      ctx.fillRect(-9, -6, 18, 2);
+    }
     ctx.restore();
   }
 }
@@ -1147,12 +1149,18 @@ export function renderGarden(ctx: CanvasRenderingContext2D, state: RenderGardenS
       state.personalGarden.minY,
       state.personalGarden.width,
       state.personalGarden.height,
-      state.personalGarden.upgrades,
       state.personalGarden.nextExpansion,
     );
     drawPersonalSoilPatches(
       ctx,
       visiblePlants,
+      state.camera,
+      state.viewport,
+      state.zoom,
+    );
+    drawPersonalElements(
+      ctx,
+      state.personalGarden.elements,
       state.camera,
       state.viewport,
       state.zoom,
