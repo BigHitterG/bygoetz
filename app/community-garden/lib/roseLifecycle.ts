@@ -1,5 +1,6 @@
 const HOUR_MS = 60 * 60 * 1000;
 const MOISTURE_HALF_LIFE_MS = 8 * HOUR_MS;
+export const WATERING_CARE_COOLDOWN_MS = 4 * HOUR_MS;
 
 export type PlantType = "rose" | "sunflower" | "lavender";
 
@@ -243,5 +244,17 @@ export function getPlantVisual(plant: PlantRecord, now = Date.now()): PlantVisua
 
 export function isPlantable(plant: PlantRecord | undefined, now = Date.now()) {
   return !plant || getPlantVisual(plant, now).state === "expired";
+}
+
+export function canEarnWateringCare(
+  plant: PlantRecord,
+  now = Date.now(),
+) {
+  if (plant.permanent) return false;
+  const lastWateredAt = Date.parse(plant.last_watered_at);
+  return (
+    Number.isFinite(lastWateredAt) &&
+    lastWateredAt <= now - WATERING_CARE_COOLDOWN_MS
+  );
 }
 

@@ -33,6 +33,7 @@ import {
   getMapPercentage,
 } from "../lib/gardenConfig";
 import {
+  canEarnWateringCare,
   getPlantDefinition,
   getPlantVisual,
   isPlantable,
@@ -78,6 +79,7 @@ export type GardenUiState = {
   selectedElementType: MyGardenElementType | null;
   selectedTool: GardenTool;
   plantMapPoints: Array<{ x: number; y: number; plantType: PlantType }>;
+  nextMapUpdateAt: number | null;
   mode: GardenWorldMode;
 };
 
@@ -459,7 +461,9 @@ function getActionState(runtime: Runtime) {
     }
     return {
       action: "water" as GardenAction,
-      label: `Water ${definition.name}`,
+      label: canEarnWateringCare(plant)
+        ? `Water ${definition.name} · +1 Care`
+        : `Water ${definition.name}`,
       enabled: nearby && !runtime.actionBusy,
     };
   }
@@ -665,6 +669,10 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
               ? runtime.selectedElementType
               : runtime.selectedPlantType,
         plantMapPoints,
+        nextMapUpdateAt:
+          runtime.mode === "community" && runtime.snapshotNextRefreshAt > 0
+            ? runtime.snapshotNextRefreshAt
+            : null,
         mode: runtime.mode,
       };
       const key = JSON.stringify(state);

@@ -108,6 +108,15 @@
   text-transform: uppercase;
 }
 
+.cg-update-status {
+  color: rgba(111, 76, 62, 0.66);
+  font-size: 0.53rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  text-transform: none;
+  white-space: nowrap;
+}
+
 .cg-icon-button {
   display: grid;
   width: 42px;

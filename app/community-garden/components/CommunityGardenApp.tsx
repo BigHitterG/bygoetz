@@ -30,6 +30,7 @@ import {
 } from "../lib/guestGardenPreview";
 import { GardenInventory } from "./GardenInventory";
 import { GardenMembershipOffer } from "./GardenMembershipOffer";
+import { GardenUpdateStatus } from "./GardenUpdateStatus";
 
 const INITIAL_UI: GardenUiState = {
   action: null,
@@ -48,6 +49,7 @@ const INITIAL_UI: GardenUiState = {
   selectedElementType: null,
   selectedTool: "rose",
   plantMapPoints: [],
+  nextMapUpdateAt: null,
   mode: "community",
 };
 
@@ -456,7 +458,12 @@ export function CommunityGardenApp() {
           </div>
           <div className="cg-title-copy">
             <h1>Basil</h1>
-            <p>{world === "personal" ? "My Garden" : "Community Garden"}</p>
+            <p>
+              {world === "personal" ? "My Garden" : "Community Garden"}
+              {world === "community" ? (
+                <GardenUpdateStatus nextUpdateAt={ui.nextMapUpdateAt} />
+              ) : null}
+            </p>
           </div>
           <button
             className="cg-icon-button"

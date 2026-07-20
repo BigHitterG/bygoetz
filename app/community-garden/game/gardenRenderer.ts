@@ -1,6 +1,10 @@
 import { GARDEN_CONFIG, isWithinGarden } from "../lib/gardenConfig";
 import type { MyGardenElementType } from "../lib/myGardenCatalog";
-import { getPlantVisual, type PlantRecord } from "../lib/roseLifecycle";
+import {
+  canEarnWateringCare,
+  getPlantVisual,
+  type PlantRecord,
+} from "../lib/roseLifecycle";
 import { getTerrainTile, terrainNoise } from "./terrainGenerator";
 
 export type WorldPoint = { x: number; y: number };
@@ -845,6 +849,7 @@ function drawPlant(
   viewport: GardenViewport,
   now: number,
   zoom: number,
+  showCareCue = false,
 ) {
   const point = worldToScreen(
     gridToWorld(plant.grid_x, plant.grid_y),
@@ -870,6 +875,9 @@ function drawPlant(
 
   if (visual.state === "seed" || visual.state === "sprout") {
     drawSeedOrSprout(ctx, plant, visual.state);
+    if (showCareCue && canEarnWateringCare(plant, now)) {
+      drawCareReadyCue(ctx, now, plant);
+    }
     ctx.restore();
     return;
   }
@@ -881,6 +889,29 @@ function drawPlant(
   } else {
     drawRosePlant(ctx, plant, visual.state);
   }
+  if (showCareCue && canEarnWateringCare(plant, now)) {
+    drawCareReadyCue(ctx, now, plant);
+  }
+  ctx.restore();
+}
+
+function drawCareReadyCue(
+  ctx: CanvasRenderingContext2D,
+  now: number,
+  plant: PlantRecord,
+) {
+  const phase =
+    (now / 1600 + Math.abs(plant.grid_x * 7 + plant.grid_y * 11)) %
+    (Math.PI * 2);
+  ctx.save();
+  ctx.globalAlpha = 0.48 + Math.sin(phase) * 0.1;
+  ctx.translate(7, -21);
+  ctx.fillStyle = "#fff4df";
+  ctx.fillRect(-2, 0, 5, 1);
+  ctx.fillRect(0, -2, 1, 5);
+  ctx.fillStyle = "#c94f4c";
+  ctx.fillRect(-1, 0, 3, 1);
+  ctx.fillRect(0, -1, 1, 3);
   ctx.restore();
 }
 
@@ -1223,7 +1254,15 @@ export function renderGarden(ctx: CanvasRenderingContext2D, state: RenderGardenS
   ctx.drawImage(greenLayer, 0, 0);
   drawDampSoil(ctx, visiblePlants, state.camera, state.viewport, state.now, state.zoom);
   visiblePlants.forEach((plant) =>
-    drawPlant(ctx, plant, state.camera, state.viewport, state.now, state.zoom),
+    drawPlant(
+      ctx,
+      plant,
+      state.camera,
+      state.viewport,
+      state.now,
+      state.zoom,
+      true,
+    ),
   );
   drawDuck(ctx, state.duck, state.camera, state.viewport, state.moving, state.now, state.zoom);
   drawMary(ctx, state.mary, state.camera, state.viewport, state.moving, state.now, state.zoom);
