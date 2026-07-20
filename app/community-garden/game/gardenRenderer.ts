@@ -37,6 +37,8 @@ export type RenderGardenState = {
   now: number;
   mode: GardenWorldMode;
   personalGarden?: {
+    minX: number;
+    minY: number;
     width: number;
     height: number;
     maxWidth: number;
@@ -44,6 +46,8 @@ export type RenderGardenState = {
     upgrades: MyGardenUpgradeType[];
     paths: Array<{ gridX: number; gridY: number }>;
     nextExpansion: null | {
+      minX: number;
+      minY: number;
       width: number;
       height: number;
       careCost: number;
@@ -249,10 +253,11 @@ function drawPersonalTerrain(
   camera: WorldPoint,
   viewport: GardenViewport,
   zoom: number,
+  minX: number,
+  minY: number,
   width: number,
   height: number,
-  maxWidth: number,
-  maxHeight: number,
+  nextExpansion: NonNullable<RenderGardenState["personalGarden"]>["nextExpansion"],
 ) {
   const { tileSize, tileScreenHeight } = GARDEN_CONFIG;
   const cellWidth = tileSize * zoom;
@@ -272,10 +277,16 @@ function drawPersonalTerrain(
       );
       const x = Math.floor(topLeft.x);
       const y = Math.floor(topLeft.y);
+      const maxX = minX + width - 1;
+      const maxY = minY + height - 1;
       const inProperty =
-        gridX >= 0 && gridX < width && gridY >= 0 && gridY < height;
+        gridX >= minX && gridX <= maxX && gridY >= minY && gridY <= maxY;
       const inExpansion =
-        gridX >= 0 && gridX < maxWidth && gridY >= 0 && gridY < maxHeight;
+        nextExpansion &&
+        gridX >= nextExpansion.minX &&
+        gridX < nextExpansion.minX + nextExpansion.width &&
+        gridY >= nextExpansion.minY &&
+        gridY < nextExpansion.minY + nextExpansion.height;
 
       ctx.fillStyle = inProperty
         ? (gridX + gridY) % 2 === 0
@@ -348,13 +359,15 @@ function drawPixelShed(
   camera: WorldPoint,
   viewport: GardenViewport,
   zoom: number,
+  minX: number,
+  minY: number,
   width: number,
   sage: boolean,
 ) {
   const point = worldToScreen(
     {
-      x: (Math.floor(width / 2) + 0.5) * GARDEN_CONFIG.tileSize,
-      y: 0,
+      x: (minX + Math.floor(width / 2) + 0.5) * GARDEN_CONFIG.tileSize,
+      y: minY * GARDEN_CONFIG.tileSize,
     },
     camera,
     viewport,
@@ -387,23 +400,58 @@ function drawLockedParcel(
   camera: WorldPoint,
   viewport: GardenViewport,
   zoom: number,
+  minX: number,
+  minY: number,
   width: number,
   height: number,
   nextExpansion: NonNullable<RenderGardenState["personalGarden"]>["nextExpansion"],
 ) {
   if (!nextExpansion) return;
   const { tileSize, tileScreenHeight } = GARDEN_CONFIG;
-  const topLeft = worldToScreen({ x: 0, y: 0 }, camera, viewport, zoom);
-  const currentWidth = width * tileSize * zoom;
-  const currentHeight = height * tileScreenHeight * zoom;
-  const nextWidth = nextExpansion.width * tileSize * zoom;
-  const nextHeight = nextExpansion.height * tileScreenHeight * zoom;
-  const parcelX = nextWidth > currentWidth ? topLeft.x + currentWidth : topLeft.x;
-  const parcelY = nextHeight > currentHeight ? topLeft.y + currentHeight : topLeft.y;
-  const parcelWidth =
-    nextWidth > currentWidth ? nextWidth - currentWidth : currentWidth;
-  const parcelHeight =
-    nextHeight > currentHeight ? nextHeight - currentHeight : currentHeight;
+  const currentMaxX = minX + width - 1;
+  const currentMaxY = minY + height - 1;
+  const nextMaxX = nextExpansion.minX + nextExpansion.width - 1;
+  const nextMaxY = nextExpansion.minY + nextExpansion.height - 1;
+  let parcelMinX = minX;
+  let parcelMinY = minY;
+  let parcelColumns = width;
+  let parcelRows = height;
+
+  if (nextExpansion.minX < minX) {
+    parcelMinX = nextExpansion.minX;
+    parcelMinY = nextExpansion.minY;
+    parcelColumns = minX - nextExpansion.minX;
+    parcelRows = nextExpansion.height;
+  } else if (nextMaxX > currentMaxX) {
+    parcelMinX = currentMaxX + 1;
+    parcelMinY = nextExpansion.minY;
+    parcelColumns = nextMaxX - currentMaxX;
+    parcelRows = nextExpansion.height;
+  } else if (nextExpansion.minY < minY) {
+    parcelMinX = nextExpansion.minX;
+    parcelMinY = nextExpansion.minY;
+    parcelColumns = nextExpansion.width;
+    parcelRows = minY - nextExpansion.minY;
+  } else if (nextMaxY > currentMaxY) {
+    parcelMinX = nextExpansion.minX;
+    parcelMinY = currentMaxY + 1;
+    parcelColumns = nextExpansion.width;
+    parcelRows = nextMaxY - currentMaxY;
+  }
+
+  const parcelTopLeft = worldToScreen(
+    {
+      x: parcelMinX * tileSize,
+      y: parcelMinY * tileSize,
+    },
+    camera,
+    viewport,
+    zoom,
+  );
+  const parcelX = parcelTopLeft.x;
+  const parcelY = parcelTopLeft.y;
+  const parcelWidth = parcelColumns * tileSize * zoom;
+  const parcelHeight = parcelRows * tileScreenHeight * zoom;
 
   ctx.save();
   ctx.fillStyle = "rgba(239, 211, 142, 0.14)";
@@ -444,12 +492,19 @@ function drawPersonalFence(
   camera: WorldPoint,
   viewport: GardenViewport,
   zoom: number,
+  minX: number,
+  minY: number,
   width: number,
   height: number,
   stonePosts: boolean,
 ) {
   const { tileSize, tileScreenHeight } = GARDEN_CONFIG;
-  const topLeft = worldToScreen({ x: 0, y: 0 }, camera, viewport, zoom);
+  const topLeft = worldToScreen(
+    { x: minX * tileSize, y: minY * tileSize },
+    camera,
+    viewport,
+    zoom,
+  );
   const fenceWidth = width * tileSize * zoom;
   const fenceHeight = height * tileScreenHeight * zoom;
 
@@ -467,8 +522,8 @@ function drawPersonalFence(
   ctx.fillStyle = postColor;
   const postWidth = Math.max(3, 3 * zoom);
   const postHeight = Math.max(7, 8 * zoom);
-  for (let gridX = 0; gridX <= width; gridX += 1) {
-    const x = topLeft.x + gridX * tileSize * zoom;
+  for (let column = 0; column <= width; column += 1) {
+    const x = topLeft.x + column * tileSize * zoom;
     ctx.fillRect(x - postWidth / 2, topLeft.y - postHeight / 2, postWidth, postHeight);
     ctx.fillRect(
       x - postWidth / 2,
@@ -477,8 +532,8 @@ function drawPersonalFence(
       postHeight,
     );
   }
-  for (let gridY = 1; gridY < height; gridY += 1) {
-    const y = topLeft.y + gridY * tileScreenHeight * zoom;
+  for (let row = 1; row < height; row += 1) {
+    const y = topLeft.y + row * tileScreenHeight * zoom;
     ctx.fillRect(topLeft.x - postWidth / 2, y - postHeight / 2, postWidth, postHeight);
     ctx.fillRect(
       topLeft.x + fenceWidth - postWidth / 2,
@@ -495,6 +550,8 @@ function drawPersonalDecorations(
   camera: WorldPoint,
   viewport: GardenViewport,
   zoom: number,
+  minX: number,
+  minY: number,
   width: number,
   height: number,
   upgrades: MyGardenUpgradeType[],
@@ -506,15 +563,41 @@ function drawPersonalDecorations(
     camera,
     viewport,
     zoom,
+    minX,
+    minY,
     width,
     height,
     nextExpansion,
   );
-  drawPersonalFence(ctx, camera, viewport, zoom, width, height, has("stone_path"));
-  drawPixelShed(ctx, camera, viewport, zoom, width, has("sage_shed"));
+  drawPersonalFence(
+    ctx,
+    camera,
+    viewport,
+    zoom,
+    minX,
+    minY,
+    width,
+    height,
+    has("stone_path"),
+  );
+  drawPixelShed(
+    ctx,
+    camera,
+    viewport,
+    zoom,
+    minX,
+    minY,
+    width,
+    has("sage_shed"),
+  );
 
   if (has("birdhouse")) {
-    const point = worldToScreen(gridToWorld(width + 1, 0), camera, viewport, zoom);
+    const point = worldToScreen(
+      gridToWorld(minX + width + 1, minY),
+      camera,
+      viewport,
+      zoom,
+    );
     ctx.save();
     ctx.translate(Math.round(point.x), Math.round(point.y));
     ctx.scale(zoom, zoom);
@@ -531,7 +614,7 @@ function drawPersonalDecorations(
 
   if (has("bench")) {
     const point = worldToScreen(
-      gridToWorld(width + 1, Math.min(3, height - 1)),
+      gridToWorld(minX + width + 1, minY + Math.min(3, height - 1)),
       camera,
       viewport,
       zoom,
@@ -1042,10 +1125,11 @@ export function renderGarden(ctx: CanvasRenderingContext2D, state: RenderGardenS
       state.camera,
       state.viewport,
       state.zoom,
+      state.personalGarden.minX,
+      state.personalGarden.minY,
       state.personalGarden.width,
       state.personalGarden.height,
-      state.personalGarden.maxWidth,
-      state.personalGarden.maxHeight,
+      state.personalGarden.nextExpansion,
     );
     drawPersonalPaths(
       ctx,
@@ -1059,6 +1143,8 @@ export function renderGarden(ctx: CanvasRenderingContext2D, state: RenderGardenS
       state.camera,
       state.viewport,
       state.zoom,
+      state.personalGarden.minX,
+      state.personalGarden.minY,
       state.personalGarden.width,
       state.personalGarden.height,
       state.personalGarden.upgrades,

@@ -370,8 +370,8 @@ export function GardenSteward() {
       <p className="cg-kicker">One time · $6.99</p>
       <h2 id="garden-steward-title">Community Garden Membership</h2>
       <p className="cg-steward-lead">
-        Keep playing the Community Garden for free. Membership unlocks a cozy
-        garden of your own, saved across your devices.
+        Keep playing the Community Garden for free and try three flowers in My
+        Garden. Membership keeps what you started and saves it across devices.
       </p>
 
       {notice ? <p className="cg-steward-notice" aria-live="polite">{notice}</p> : null}
@@ -393,11 +393,11 @@ export function GardenSteward() {
           </div>
 
           <div className="cg-pass-promise">
-            <p className="cg-auth-step">What membership opens</p>
-            <h3>Your own place inside Basil</h3>
+            <p className="cg-auth-step">Keep what you started</p>
+            <h3>Let your preview garden grow</h3>
             <p>
-              Settle into a cozy fenced garden, then grow it by helping the
-              Community Garden flourish.
+              Save your preview flowers and Care, then grow your garden by
+              helping the Community Garden flourish.
             </p>
           </div>
 
@@ -405,15 +405,15 @@ export function GardenSteward() {
             <li>
               <span className="cg-benefit-icon is-almanac" aria-hidden="true">01</span>
               <div>
-                <strong>Build your own cozy garden</strong>
-                <p>Start with a walkable fenced property, a little shed, 8 Care, and permanent plants.</p>
+                <strong>Keep your cozy garden</strong>
+                <p>Your preview flowers remain, plus a walkable property, little shed, and 8 starter Care.</p>
               </div>
             </li>
             <li>
               <span className="cg-benefit-icon is-ideas" aria-hidden="true">02</span>
               <div>
                 <strong>Earn Care by helping everyone</strong>
-                <p>Every player sees Care earned. Membership banks it for your home garden.</p>
+                <p>Everyone sees Care earned. Membership permanently banks it for your home garden.</p>
               </div>
             </li>
             <li>
@@ -702,6 +702,7 @@ export function GardenSteward() {
             <small>once, not a subscription</small>
           </div>
           <ul>
+            <li>Keep your preview flowers and remaining temporary Care</li>
             <li>Starter pack: a walkable fenced property, cozy shed, and 8 Care</li>
             <li>Plant and uproot inside your personal garden</li>
             <li>Permanent personal plants plus visible upgrades to earn</li>
@@ -715,7 +716,7 @@ export function GardenSteward() {
             disabled={busy === "checkout" || !session}
             onClick={() => session && void beginCheckout(session)}
           >
-            {busy === "checkout" ? "Opening secure checkout…" : "Unlock My Garden · $6.99"}
+            {busy === "checkout" ? "Opening secure checkout…" : "Keep My Garden · $6.99"}
           </button>
         </div>
       ) : null}
