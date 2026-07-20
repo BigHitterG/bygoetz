@@ -1,39 +1,38 @@
-import { createClient, type SupabaseClient } from "@supabase/supabase-js";
-import type { GardenBounds } from "./gardenConfig";
 import {
   PLANT_TYPES,
   type PlantRecord,
   type PlantType,
 } from "./roseLifecycle";
 
-export type GardenMapPlant = Pick<PlantRecord, "grid_x" | "grid_y" | "plant_type">;
+export type GardenMapPlant = Pick<
+  PlantRecord,
+  "grid_x" | "grid_y" | "plant_type"
+>;
 export type GardenContribution = {
   action: "plant" | "water";
   receiptToken: string;
   careValue: number;
 };
+export type GardenSnapshot = {
+  version: number;
+  generatedAt: string;
+  nextRefreshAt: string;
+  plantCount: number;
+  plants: PlantRecord[];
+};
 
-let gardenClient: SupabaseClient | null = null;
+type GardenActionResult = {
+  plant: PlantRecord;
+  contribution: GardenContribution | null;
+};
+
+const SNAPSHOT_INTERVAL_MS = 10 * 60 * 1000;
 
 export function isGardenConfigured() {
   return Boolean(
-    process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+    process.env.NEXT_PUBLIC_SUPABASE_URL &&
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
   );
-}
-
-function getGardenClient() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-  if (!url || !key) return null;
-
-  if (!gardenClient) {
-    gardenClient = createClient(url, key, {
-      auth: { persistSession: false, autoRefreshToken: false },
-    });
-  }
-
-  return gardenClient;
 }
 
 function normalizePlant(value: Record<string, unknown>): PlantRecord {
@@ -43,109 +42,102 @@ function normalizePlant(value: Record<string, unknown>): PlantRecord {
   return { ...value, plant_type: plantType } as PlantRecord;
 }
 
-function normalizeContributionRpc(
-  data: unknown,
-  action: GardenContribution["action"],
-) {
-  const value = Array.isArray(data) ? data[0] : data;
-  if (!value || typeof value !== "object") {
-    throw new Error("The garden did not return a plant.");
+async function responseError(response: Response, fallback: string) {
+  try {
+    const payload = (await response.json()) as { error?: string };
+    return payload.error ?? fallback;
+  } catch {
+    return fallback;
   }
-  const record = value as Record<string, unknown>;
-  const plant = normalizePlant({
-    ...record,
-    id: record.plant_id,
-  });
-  const receiptToken =
-    typeof record.receipt_token === "string" ? record.receipt_token : null;
-  const careValue = Number(record.care_value ?? 0);
+}
+
+export function getCurrentSnapshotVersion(now = Date.now()) {
+  return Math.floor(now / SNAPSHOT_INTERVAL_MS);
+}
+
+export async function fetchGardenSnapshot(): Promise<GardenSnapshot> {
+  const version = getCurrentSnapshotVersion();
+  const response = await fetch(
+    `/api/community-garden/snapshot?version=${version}`,
+    { cache: "force-cache" },
+  );
+  if (!response.ok) {
+    throw new Error(
+      await responseError(response, "The shared garden could not refresh."),
+    );
+  }
+  const data = (await response.json()) as Record<string, unknown>;
+  const plants = Array.isArray(data.plants)
+    ? data.plants
+        .filter(
+          (plant): plant is Record<string, unknown> =>
+            Boolean(plant) && typeof plant === "object",
+        )
+        .map(normalizePlant)
+    : [];
   return {
-    plant,
-    contribution:
-      receiptToken && careValue > 0
-        ? { action, receiptToken, careValue } satisfies GardenContribution
-        : null,
+    version: Number(data.version),
+    generatedAt: String(data.generatedAt),
+    nextRefreshAt: String(data.nextRefreshAt),
+    plantCount: Number(data.plantCount ?? plants.length),
+    plants,
   };
 }
 
-export async function fetchGardenPlants(bounds: GardenBounds) {
-  const client = getGardenClient();
-  if (!client) return [];
+async function submitGardenAction(
+  payload: Omit<Record<string, unknown>, "actionId">,
+): Promise<GardenActionResult> {
+  const actionId = crypto.randomUUID();
+  const body = JSON.stringify({ ...payload, actionId });
+  let response: Response;
 
-  const { data, error } = await client
-    .from("community_garden_roses")
-    .select("id,grid_x,grid_y,plant_type,planted_at,last_watered_at,created_at")
-    .gte("grid_x", bounds.minX)
-    .lte("grid_x", bounds.maxX)
-    .gte("grid_y", bounds.minY)
-    .lte("grid_y", bounds.maxY)
-    .order("grid_x")
-    .order("grid_y");
+  try {
+    response = await fetch("/api/community-garden/action", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body,
+    });
+  } catch {
+    // A single retry uses the same action id, so a lost response cannot apply
+    // the action or award Care twice.
+    response = await fetch("/api/community-garden/action", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body,
+    });
+  }
 
-  if (error) throw error;
-  return (data ?? []).map((plant) => normalizePlant(plant));
+  if (!response.ok) {
+    throw new Error(await responseError(response, "That did not work."));
+  }
+
+  const data = (await response.json()) as Record<string, unknown>;
+  if (!data.plant || typeof data.plant !== "object") {
+    throw new Error("The garden did not return a plant.");
+  }
+  const contribution =
+    data.contribution && typeof data.contribution === "object"
+      ? (data.contribution as GardenContribution)
+      : null;
+  return {
+    plant: normalizePlant(data.plant as Record<string, unknown>),
+    contribution,
+  };
 }
 
-export async function fetchGardenPlantMap(bounds: GardenBounds) {
-  const client = getGardenClient();
-  if (!client) return [];
-
-  const { data, error } = await client
-    .from("community_garden_roses")
-    .select("grid_x,grid_y,plant_type")
-    .gte("grid_x", bounds.minX)
-    .lte("grid_x", bounds.maxX)
-    .gte("grid_y", bounds.minY)
-    .lte("grid_y", bounds.maxY)
-    .order("grid_x")
-    .order("grid_y")
-    .limit(1000);
-
-  if (error) throw error;
-  return (data ?? []).map((plant) => normalizePlant(plant)) as GardenMapPlant[];
-}
-
-export async function plantGardenPlant(
+export function plantGardenPlant(
   gridX: number,
   gridY: number,
   plantType: PlantType,
 ) {
-  const client = getGardenClient();
-  if (!client) throw new Error("The shared garden is not connected yet.");
-
-  const { data, error } = await client.rpc("perform_community_garden_planting", {
-    p_grid_x: gridX,
-    p_grid_y: gridY,
-    p_plant_type: plantType,
+  return submitGardenAction({
+    action: "plant",
+    gridX,
+    gridY,
+    plantType,
   });
-
-  if (error) throw error;
-  return normalizeContributionRpc(data, "plant");
 }
 
-export async function waterGardenPlant(plantId: string) {
-  const client = getGardenClient();
-  if (!client) throw new Error("The shared garden is not connected yet.");
-
-  const { data, error } = await client.rpc("perform_community_garden_watering", {
-    p_plant_id: plantId,
-  });
-
-  if (error) throw error;
-  return normalizeContributionRpc(data, "water");
+export function waterGardenPlant(plantId: string) {
+  return submitGardenAction({ action: "water", plantId });
 }
-
-export async function cleanupExpiredGardenPlants(bounds: GardenBounds) {
-  const client = getGardenClient();
-  if (!client) return;
-
-  const { error } = await client.rpc("cleanup_community_garden_plants", {
-    p_min_x: bounds.minX,
-    p_max_x: bounds.maxX,
-    p_min_y: bounds.minY,
-    p_max_y: bounds.maxY,
-  });
-
-  if (error) throw error;
-}
-

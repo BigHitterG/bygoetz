@@ -16,7 +16,9 @@ export const GARDEN_CONFIG = {
   worldMin: -96,
   worldMax: 63,
   moveSpeed: 62,
-  pollIntervalMs: 20_000,
+  // This is only a local freshness check. The shared snapshot itself advances
+  // once per ten-minute garden window.
+  pollIntervalMs: 60_000,
 } as const;
 
 export type GardenBounds = {

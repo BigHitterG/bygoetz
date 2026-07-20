@@ -28,7 +28,6 @@ import {
   clampWorldCoordinate,
   GARDEN_CONFIG,
   getChunkKey,
-  getGardenBounds,
   getGridFromMapPercentage,
   getLoadedBounds,
   getMapPercentage,
@@ -41,9 +40,7 @@ import {
   type PlantType,
 } from "../lib/roseLifecycle";
 import {
-  cleanupExpiredGardenPlants,
-  fetchGardenPlantMap,
-  fetchGardenPlants,
+  fetchGardenSnapshot,
   type GardenContribution,
   type GardenMapPlant,
   isGardenConfigured,
@@ -117,12 +114,12 @@ type Runtime = {
   toolMode: "plant" | "path" | "element";
   plants: Map<string, PlantRecord>;
   mapPlants: Map<string, GardenMapPlant>;
+  communityPlants: Map<string, PlantRecord>;
+  snapshotNextRefreshAt: number;
   effects: GardenEffect[];
   path: WorldPoint[];
   lastFrame: number;
   loadedChunkKey: string;
-  chunkCache: Map<string, PlantRecord[]>;
-  cacheOrder: string[];
   requestId: number;
   actionBusy: boolean;
   hasMoved: boolean;
@@ -583,12 +580,12 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
       toolMode: "plant",
       plants: new Map(),
       mapPlants: new Map(),
+      communityPlants: new Map(),
+      snapshotNextRefreshAt: 0,
       effects: [],
       path: [{ ...start }],
       lastFrame: 0,
       loadedChunkKey: "",
-      chunkCache: new Map(),
-      cacheOrder: [],
       requestId: 0,
       actionBusy: false,
       hasMoved: false,
@@ -765,58 +762,63 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
       }
       const gridX = Math.floor(runtime.mary.x / GARDEN_CONFIG.tileSize);
       const gridY = Math.floor(runtime.mary.y / GARDEN_CONFIG.tileSize);
-      const chunkKey = getChunkKey(gridX, gridY);
       const bounds = getLoadedBounds(gridX, gridY);
-      const cleanupBounds = getLoadedBounds(
-        gridX,
-        gridY,
-        GARDEN_CONFIG.cleanupChunkLoadRadius,
-      );
-      const cached = runtime.chunkCache.get(chunkKey);
-      if (cached) {
+
+      const showLocalSnapshot = () => {
         runtime.plants = new Map(
-          cached.map((plant) => [plantKey(plant.grid_x, plant.grid_y), plant]),
+          Array.from(runtime.communityPlants.values())
+            .filter(
+              (plant) =>
+                plant.grid_x >= bounds.minX &&
+                plant.grid_x <= bounds.maxX &&
+                plant.grid_y >= bounds.minY &&
+                plant.grid_y <= bounds.maxY &&
+                getPlantVisual(plant).state !== "expired",
+            )
+            .map((plant) => [plantKey(plant.grid_x, plant.grid_y), plant]),
         );
-      }
+        runtime.mapPlants = new Map(
+          Array.from(runtime.communityPlants.values()).map((plant) => [
+            plantKey(plant.grid_x, plant.grid_y),
+            plant,
+          ]),
+        );
+      };
 
       if (!runtime.configured) {
-        if (runtime.plants.size === 0) {
+        if (runtime.communityPlants.size === 0) {
           const localPlants = seedLocalPlants();
-          runtime.plants = new Map(
-            localPlants.map((plant) => [plantKey(plant.grid_x, plant.grid_y), plant]),
-          );
-          runtime.mapPlants = new Map(
+          runtime.communityPlants = new Map(
             localPlants.map((plant) => [plantKey(plant.grid_x, plant.grid_y), plant]),
           );
         }
+        showLocalSnapshot();
+        publishUi();
+        return;
+      }
+
+      if (
+        runtime.snapshotNextRefreshAt > 0 &&
+        Date.now() < runtime.snapshotNextRefreshAt
+      ) {
+        showLocalSnapshot();
         publishUi();
         return;
       }
 
       const requestId = ++runtime.requestId;
       try {
-        await cleanupExpiredGardenPlants(cleanupBounds);
-        const [plants, mapPlants] = await Promise.all([
-          fetchGardenPlants(bounds),
-          fetchGardenPlantMap(getGardenBounds()),
-        ]);
+        const snapshot = await fetchGardenSnapshot();
         if (requestId !== runtime.requestId) return;
 
-        runtime.plants = new Map(
-          plants
-            .filter((plant) => getPlantVisual(plant).state !== "expired")
-            .map((plant) => [plantKey(plant.grid_x, plant.grid_y), plant]),
+        runtime.communityPlants = new Map(
+          snapshot.plants.map((plant) => [
+            plantKey(plant.grid_x, plant.grid_y),
+            plant,
+          ]),
         );
-        runtime.mapPlants = new Map(
-          mapPlants.map((plant) => [plantKey(plant.grid_x, plant.grid_y), plant]),
-        );
-        runtime.chunkCache.set(chunkKey, plants);
-        runtime.cacheOrder = runtime.cacheOrder.filter((key) => key !== chunkKey);
-        runtime.cacheOrder.push(chunkKey);
-        while (runtime.cacheOrder.length > 6) {
-          const oldest = runtime.cacheOrder.shift();
-          if (oldest) runtime.chunkCache.delete(oldest);
-        }
+        runtime.snapshotNextRefreshAt = Date.parse(snapshot.nextRefreshAt);
+        showLocalSnapshot();
         runtime.connection = "online";
         runtime.statusMessage = "The shared garden is connected.";
       } catch (error) {
@@ -1098,6 +1100,10 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
               const { plant, contribution } = result;
               runtime.plants.set(plantKey(plant.grid_x, plant.grid_y), plant);
               runtime.mapPlants.set(plantKey(plant.grid_x, plant.grid_y), plant);
+              runtime.communityPlants.set(
+                plantKey(plant.grid_x, plant.grid_y),
+                plant,
+              );
               runtime.selected = { ...selected, plantId: plant.id };
               runtime.effects.push({
                 kind: "plant",
@@ -1118,6 +1124,10 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
                   };
               const { plant, contribution } = result;
               runtime.plants.set(plantKey(plant.grid_x, plant.grid_y), plant);
+              runtime.communityPlants.set(
+                plantKey(plant.grid_x, plant.grid_y),
+                plant,
+              );
               runtime.effects.push({
                 kind: "water",
                 gridX: plant.grid_x,
