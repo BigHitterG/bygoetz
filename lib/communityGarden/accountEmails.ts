@@ -244,5 +244,8 @@ export async function sendGardenAccountEmail({
   );
   if (error) throw new Error(error.message);
 
-  return { sent: true as const };
+  return {
+    sent: true as const,
+    accountStatus: isNewSignup ? ("new" as const) : ("existing" as const),
+  };
 }

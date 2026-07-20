@@ -1,9 +1,19 @@
 "use client";
 
 import type { Session } from "@supabase/supabase-js";
-import { FormEvent, useCallback, useEffect, useState } from "react";
+import {
+  FormEvent,
+  useCallback,
+  useEffect,
+  useEffectEvent,
+  useRef,
+  useState,
+} from "react";
 import type { MyGardenState } from "@/lib/communityGarden/myGarden";
+import { trackMetaCustomEvent } from "@/lib/analytics/metaPixel";
 import { getGardenAccountClient } from "../lib/supabaseAccount";
+
+const PENDING_VERIFICATION_KEY = "basil-account-verification-pending-v1";
 
 const FEEDBACK_CATEGORIES = [
   ["plants", "Plants"],
@@ -58,6 +68,45 @@ type PendingAccountLink = {
   verified: boolean;
 };
 
+type VerificationPending = {
+  email: string;
+  existingAccount: boolean;
+};
+
+function loadPendingVerification() {
+  if (typeof window === "undefined") return null;
+  try {
+    const value = window.localStorage.getItem(PENDING_VERIFICATION_KEY);
+    if (!value) return null;
+    const parsed = JSON.parse(value) as VerificationPending & { expiresAt?: number };
+    if (!parsed.email || Number(parsed.expiresAt) <= Date.now()) {
+      window.localStorage.removeItem(PENDING_VERIFICATION_KEY);
+      return null;
+    }
+    return {
+      email: parsed.email,
+      existingAccount: Boolean(parsed.existingAccount),
+    } satisfies VerificationPending;
+  } catch {
+    return null;
+  }
+}
+
+function savePendingVerification(value: VerificationPending | null) {
+  if (typeof window === "undefined") return;
+  if (!value) {
+    window.localStorage.removeItem(PENDING_VERIFICATION_KEY);
+    return;
+  }
+  window.localStorage.setItem(
+    PENDING_VERIFICATION_KEY,
+    JSON.stringify({
+      ...value,
+      expiresAt: Date.now() + 7 * 24 * 60 * 60 * 1000,
+    }),
+  );
+}
+
 async function getResponseError(response: Response, fallback: string) {
   try {
     const payload = (await response.json()) as { error?: string };
@@ -81,6 +130,8 @@ export function GardenSteward() {
   const [accountState, setAccountState] = useState<AccountState>({ status: "loading" });
   const [authView, setAuthView] = useState<AuthView>("signin");
   const [pendingLink, setPendingLink] = useState<PendingAccountLink | null>(null);
+  const [verificationPending, setVerificationPending] =
+    useState<VerificationPending | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [notice, setNotice] = useState("");
   const [email, setEmail] = useState("");
@@ -88,6 +139,7 @@ export function GardenSteward() {
   const [passwordConfirm, setPasswordConfirm] = useState("");
   const [category, setCategory] = useState("plants");
   const [idea, setIdea] = useState("");
+  const confirmationStartedRef = useRef("");
 
   const loadAccount = useCallback(async (activeSession: Session) => {
     try {
@@ -115,6 +167,7 @@ export function GardenSteward() {
   const beginCheckout = useCallback(async (activeSession: Session) => {
     setBusy("checkout");
     setNotice("");
+    trackMetaCustomEvent("BasilCheckoutStarted");
     try {
       const response = await fetch("/api/community-garden/checkout", {
         method: "POST",
@@ -124,12 +177,16 @@ export function GardenSteward() {
       const payload = (await response.json()) as { url: string };
       window.location.assign(payload.url);
     } catch (error) {
+      console.error("Basil checkout session creation failed", {
+        message: error instanceof Error ? error.message : "Unknown error",
+      });
       setNotice(error instanceof Error ? error.message : "Checkout could not start.");
       setBusy(null);
     }
   }, []);
 
   useEffect(() => {
+    queueMicrotask(() => setVerificationPending(loadPendingVerification()));
     const client = getGardenAccountClient();
     if (!client) {
       queueMicrotask(() => {
@@ -171,10 +228,12 @@ export function GardenSteward() {
 
     queueMicrotask(() => {
       if (stewardStatus === "welcome") {
+        trackMetaCustomEvent("BasilCheckoutCompleted");
         setNotice("Purchase complete. Your Garden Membership is ready on this account.");
       } else if (stewardStatus === "unverified") {
         setNotice("The purchase could not be verified. Please check your Stripe receipt.");
       } else if (params.get("checkout") === "cancelled") {
+        trackMetaCustomEvent("BasilCheckoutCanceled");
         setNotice("Checkout cancelled. The community garden is still free to play.");
       }
     });
@@ -207,9 +266,21 @@ export function GardenSteward() {
       if (!response.ok) {
         throw new Error(await getResponseError(response, "The account email could not be sent."));
       }
-      const payload = (await response.json()) as { message?: string };
+      const payload = (await response.json()) as {
+        message?: string;
+        accountStatus?: "new" | "existing";
+      };
       setPassword("");
       setPasswordConfirm("");
+      const pending = {
+        email: trimmedEmail,
+        existingAccount: payload.accountStatus === "existing",
+      };
+      setVerificationPending(pending);
+      savePendingVerification(pending);
+      trackMetaCustomEvent("BasilVerificationEmailSent", {
+        account_status: payload.accountStatus ?? "new",
+      });
       setNotice(
         payload.message ??
           "Check your email for a private account message from Basil by Goetz.",
@@ -234,6 +305,18 @@ export function GardenSteward() {
     });
     if (error || !data.session) {
       setBusy(null);
+      if (
+        error?.message.toLowerCase().includes("email not confirmed") ||
+        error?.message.toLowerCase().includes("email_not_confirmed")
+      ) {
+        const pending = { email: email.trim(), existingAccount: true };
+        setVerificationPending(pending);
+        savePendingVerification(pending);
+        setNotice(
+          "This account already exists but has not yet been verified. Check your email or resend the verification link.",
+        );
+        return;
+      }
       setNotice(
         error?.message === "Invalid login credentials"
           ? "That email or password was not recognized. You can reset the password below."
@@ -269,13 +352,19 @@ export function GardenSteward() {
     });
     if (error || !data.session) {
       setBusy(null);
+      clearAccountLinkFromAddress();
+      setPendingLink(null);
+      setVerificationPending(loadPendingVerification());
       setNotice(
-        "That account link has expired or was already used. Please request a fresh email.",
+        "That verification link has expired or was already used. Resend a fresh link or return to sign in.",
       );
       return;
     }
 
     clearAccountLinkFromAddress();
+    savePendingVerification(null);
+    setVerificationPending(null);
+    trackMetaCustomEvent("BasilVerificationCompleted");
     setSession(data.session);
     if (pendingLink.type === "recovery") {
       setPendingLink({ ...pendingLink, verified: true });
@@ -363,7 +452,56 @@ export function GardenSteward() {
     setNotice("Signed out on this device. Your purchase remains on your account.");
   }
 
+  async function resendVerification() {
+    if (!verificationPending?.email) return;
+    setBusy("resend-verification");
+    setNotice("");
+    try {
+      const response = await fetch("/api/community-garden/auth/email", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          intent: "recovery",
+          email: verificationPending.email,
+        }),
+      });
+      if (!response.ok) {
+        throw new Error(
+          await getResponseError(
+            response,
+            "The verification email could not be resent.",
+          ),
+        );
+      }
+      setNotice(
+        "A fresh Basil verification email was sent. Check spam, junk, promotions, and other filtered folders too.",
+      );
+      trackMetaCustomEvent("BasilVerificationEmailResent");
+    } catch (error) {
+      setNotice(
+        error instanceof Error
+          ? error.message
+          : "The verification email could not be resent.",
+      );
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  const confirmAccountLinkEvent = useEffectEvent(confirmAccountLink);
+
+  useEffect(() => {
+    if (!pendingLink || pendingLink.verified) return;
+    if (confirmationStartedRef.current === pendingLink.tokenHash) return;
+    confirmationStartedRef.current = pendingLink.tokenHash;
+    queueMicrotask(() => void confirmAccountLinkEvent());
+  }, [pendingLink]);
+
   const showAccountLink = Boolean(pendingLink);
+  const showVerificationPending =
+    Boolean(verificationPending) &&
+    !showAccountLink &&
+    accountState.status !== "active";
 
   return (
     <section className="cg-steward" aria-labelledby="garden-steward-title">
@@ -376,7 +514,7 @@ export function GardenSteward() {
 
       {notice ? <p className="cg-steward-notice" aria-live="polite">{notice}</p> : null}
 
-      {accountState.status !== "active" && !showAccountLink ? (
+      {accountState.status !== "active" && !showAccountLink && !showVerificationPending ? (
         <div className="cg-pass-preview">
           <div className="cg-pass-ticket" aria-label="Basil Community Garden Membership">
             <div className="cg-pass-ticket-art" aria-hidden="true">
@@ -435,11 +573,11 @@ export function GardenSteward() {
         </div>
       ) : null}
 
-      {accountState.status === "loading" && !showAccountLink ? (
+      {accountState.status === "loading" && !showAccountLink && !showVerificationPending ? (
         <p className="cg-steward-loading">Checking for a private Basil account…</p>
       ) : null}
 
-      {accountState.status === "error" && !showAccountLink ? (
+      {accountState.status === "error" && !showAccountLink && !showVerificationPending ? (
         <div className="cg-steward-error" role="alert">
           <p>{accountState.message}</p>
           {session ? (
@@ -451,10 +589,10 @@ export function GardenSteward() {
       {pendingLink && !pendingLink.verified ? (
         <div className="cg-sign-in cg-auth-confirm">
           <p className="cg-auth-step">Account confirmation</p>
-          <h3>Return securely to Basil</h3>
+          <h3>Verifying your Basil account</h3>
           <p>
-            Press the button below to confirm this private account
-            {pendingLink.checkout ? " and continue to the secure Stripe checkout." : "."}
+            Please wait while Basil confirms your email
+            {pendingLink.checkout ? " and resumes your purchase." : "."}
           </p>
           <button
             type="button"
@@ -466,6 +604,62 @@ export function GardenSteward() {
               : pendingLink.checkout
                 ? "Confirm account & continue to payment"
                 : "Confirm Basil account"}
+          </button>
+        </div>
+      ) : null}
+
+      {showVerificationPending && verificationPending ? (
+        <div className="cg-sign-in cg-auth-confirm cg-verification-pending">
+          <p className="cg-auth-step">Account created</p>
+          <h3>Check your email to verify your account</h3>
+          <p>
+            We sent a verification link to <strong>{verificationPending.email}</strong>.
+            Open the email and follow the link before signing in or continuing your
+            purchase.
+          </p>
+          {verificationPending.existingAccount ? (
+            <p className="cg-auth-existing">
+              This account already exists but may not yet be verified. Check your email
+              or resend the verification link.
+            </p>
+          ) : null}
+          <p className="cg-auth-folder-reminder">
+            The message is from Basil by Goetz. If it is not in your inbox, check spam,
+            junk, promotions, and other filtered folders.
+          </p>
+          <button
+            type="button"
+            disabled={busy === "resend-verification"}
+            onClick={() => void resendVerification()}
+          >
+            {busy === "resend-verification"
+              ? "Sending a fresh link..."
+              : "Resend verification email"}
+          </button>
+          <button
+            className="cg-auth-text-button"
+            type="button"
+            onClick={() => {
+              savePendingVerification(null);
+              setVerificationPending(null);
+              setEmail("");
+              setAuthView("signup");
+              setNotice("");
+            }}
+          >
+            Change email address
+          </button>
+          <button
+            className="cg-auth-text-button"
+            type="button"
+            onClick={() => {
+              savePendingVerification(null);
+              setVerificationPending(null);
+              setAuthView("signin");
+              setNotice("After verifying, sign in here to continue your purchase.");
+            }}
+          >
+            Return to sign in after verification
           </button>
         </div>
       ) : null}
@@ -517,7 +711,7 @@ export function GardenSteward() {
         </div>
       ) : null}
 
-      {accountState.status === "signed-out" && !showAccountLink ? (
+      {accountState.status === "signed-out" && !showAccountLink && !showVerificationPending ? (
         <div className="cg-sign-in">
           <ol className="cg-auth-steps" aria-label="Purchase steps">
             <li><span>1</span>Private account</li>
@@ -690,7 +884,7 @@ export function GardenSteward() {
         </div>
       ) : null}
 
-      {accountState.status === "free" && !showAccountLink ? (
+      {accountState.status === "free" && !showAccountLink && !showVerificationPending ? (
         <div className="cg-pass-card">
           <div className="cg-signed-in-row">
             <span>Signed in privately as {accountState.email}</span>
