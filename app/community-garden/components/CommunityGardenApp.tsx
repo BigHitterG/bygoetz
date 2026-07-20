@@ -2,6 +2,7 @@
 
 import type { Session } from "@supabase/supabase-js";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { trackMetaCustomEvent } from "@/lib/analytics/metaPixel";
 import type { MyGardenState } from "@/lib/communityGarden/myGarden";
 import { FutureAdSlot } from "./FutureAdSlot";
 import {
@@ -81,6 +82,9 @@ export function CommunityGardenApp() {
   const [memberGarden, setMemberGarden] = useState<MyGardenState | null>(null);
   const [inventoryOpen, setInventoryOpen] = useState(false);
   const [membershipOfferOpen, setMembershipOfferOpen] = useState(false);
+  const [guestPreviewReady, setGuestPreviewReady] = useState(false);
+  const [restoreMessage, setRestoreMessage] = useState("");
+  const restoredJourneyRef = useRef(false);
   const adLabel = process.env.NEXT_PUBLIC_COMMUNITY_GARDEN_AD_PLACEHOLDER;
   const myGarden = memberGarden ?? guestPreview.garden;
   const isPreview = !memberGarden;
@@ -107,6 +111,8 @@ export function CommunityGardenApp() {
           preview.garden.plants.length > 0 ||
           preview.garden.paths.length > 0;
         if (hasTemporaryProgress) {
+          setRestoreMessage("Restoring your garden...");
+          trackMetaCustomEvent("BasilGuestRestoreStarted");
           try {
             const importResponse = await fetch(
               "/api/community-garden/my-garden",
@@ -128,9 +134,25 @@ export function CommunityGardenApp() {
               const emptyPreview = createGuestGardenPreview();
               guestPreviewRef.current = emptyPreview;
               setGuestPreview(emptyPreview);
+              setRestoreMessage("");
+              trackMetaCustomEvent("BasilGuestStateRestored");
+            } else {
+              setRestoreMessage(
+                "Your saved garden is still safe. We will try restoring it again.",
+              );
+              trackMetaCustomEvent("BasilGuestRestoreFailed", {
+                status: importResponse.status,
+              });
             }
-          } catch {
+          } catch (error) {
             // Keep the temporary preview available for a later retry.
+            console.error("Basil guest garden restoration failed", {
+              message: error instanceof Error ? error.message : "Unknown error",
+            });
+            setRestoreMessage(
+              "Your saved garden is still safe. We will try restoring it again.",
+            );
+            trackMetaCustomEvent("BasilGuestRestoreFailed");
           }
         }
       }
@@ -151,7 +173,38 @@ export function CommunityGardenApp() {
       const storedPreview = loadGuestGardenPreview();
       guestPreviewRef.current = storedPreview;
       setGuestPreview(storedPreview);
+      setGuestPreviewReady(true);
     });
+  }, []);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    const updateViewport = () => {
+      const height = window.visualViewport?.height ?? window.innerHeight;
+      root.style.setProperty("--basil-viewport-height", `${Math.round(height)}px`);
+    };
+    const onOrientationChange = () => {
+      trackMetaCustomEvent("BasilOrientationChanged", {
+        orientation: window.matchMedia("(orientation: portrait)").matches
+          ? "portrait"
+          : "landscape",
+      });
+      updateViewport();
+      window.setTimeout(updateViewport, 250);
+    };
+    updateViewport();
+    if (window.matchMedia("(min-width: 600px) and (max-width: 1180px)").matches) {
+      trackMetaCustomEvent("BasilTabletLayoutLoaded");
+    }
+    window.addEventListener("resize", updateViewport);
+    window.addEventListener("orientationchange", onOrientationChange);
+    window.visualViewport?.addEventListener("resize", updateViewport);
+    return () => {
+      window.removeEventListener("resize", updateViewport);
+      window.removeEventListener("orientationchange", onOrientationChange);
+      window.visualViewport?.removeEventListener("resize", updateViewport);
+      root.style.removeProperty("--basil-viewport-height");
+    };
   }, []);
 
   useEffect(() => {
@@ -173,21 +226,74 @@ export function CommunityGardenApp() {
 
     void client.auth.getSession().then(({ data }) => {
       setSession(data.session);
-      if (data.session) void loadMembership(data.session);
     });
 
     const { data: listener } = client.auth.onAuthStateChange((_event, nextSession) => {
       setSession(nextSession);
-      if (nextSession) {
-        void loadMembership(nextSession);
-      } else {
+      if (!nextSession) {
         setMemberGarden(null);
         setWorld("community");
       }
     });
 
     return () => listener.subscription.unsubscribe();
-  }, [loadMembership]);
+  }, []);
+
+  useEffect(() => {
+    if (!guestPreviewReady || !session) return;
+    queueMicrotask(() => void loadMembership(session));
+  }, [guestPreviewReady, loadMembership, session]);
+
+  useEffect(() => {
+    if (!guestPreviewReady || memberGarden) return;
+    const timeout = window.setTimeout(() => {
+      const next = {
+        ...guestPreviewRef.current,
+        journey: {
+          world,
+          mapX: ui.mapX,
+          mapY: ui.mapY,
+          zoom: ui.zoom,
+          selectedTool: ui.selectedTool,
+        },
+      } satisfies GuestGardenPreview;
+      guestPreviewRef.current = next;
+      setGuestPreview(next);
+      saveGuestGardenPreview(next);
+    }, 250);
+    return () => window.clearTimeout(timeout);
+  }, [
+    guestPreviewReady,
+    memberGarden,
+    ui.mapX,
+    ui.mapY,
+    ui.selectedTool,
+    ui.zoom,
+    world,
+  ]);
+
+  useEffect(() => {
+    if (
+      !guestPreviewReady ||
+      restoredJourneyRef.current ||
+      !guestPreviewRef.current.journey
+    ) {
+      return;
+    }
+    restoredJourneyRef.current = true;
+    const journey = guestPreviewRef.current.journey;
+    setWorld(journey.world);
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => {
+        canvasRef.current?.restoreView(
+          journey.mapX,
+          journey.mapY,
+          journey.zoom,
+          journey.selectedTool,
+        );
+      });
+    });
+  }, [guestPreviewReady]);
 
   const onStateChange = useCallback((state: GardenUiState) => {
     setUi(state);
@@ -484,6 +590,16 @@ export function CommunityGardenApp() {
 
         <p className="cg-sr-status" aria-live="polite">{ui.message}</p>
         <p className="cg-sr-status" aria-live="polite">{careAnnouncement}</p>
+        {restoreMessage ? (
+          <p
+            className={`cg-restore-status${
+              restoreMessage.startsWith("Restoring") ? "" : " is-error"
+            }`}
+            role="status"
+          >
+            {restoreMessage}
+          </p>
+        ) : null}
       </section>
 
       {world === "community" ? <FutureAdSlot label={adLabel} /> : null}
@@ -507,7 +623,24 @@ export function CommunityGardenApp() {
           setWorld("community");
         }}
         onJoin={() => {
-          preserveGuestGardenPreviewForCheckout(guestPreviewRef.current);
+          const pendingPreview = {
+            ...guestPreviewRef.current,
+            journey: {
+              world,
+              mapX: ui.mapX,
+              mapY: ui.mapY,
+              zoom: ui.zoom,
+              selectedTool: ui.selectedTool,
+            },
+          } satisfies GuestGardenPreview;
+          guestPreviewRef.current = pendingPreview;
+          setGuestPreview(pendingPreview);
+          preserveGuestGardenPreviewForCheckout(pendingPreview);
+          trackMetaCustomEvent("BasilGuestStateSaved", {
+            plants: pendingPreview.garden.plants.length,
+            paths: pendingPreview.garden.paths.length,
+          });
+          trackMetaCustomEvent("BasilSignupStarted");
           setMembershipOfferOpen(false);
           setMenuSection("account");
           setMenuOpen(true);

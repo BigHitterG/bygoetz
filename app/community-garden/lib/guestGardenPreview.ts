@@ -9,7 +9,7 @@ import type { MyGardenMutation } from "./myGardenMutation";
 
 const STORAGE_KEY = "basil-guest-garden-preview-v1";
 const CHECKOUT_TRANSFER_KEY = "basil-guest-garden-checkout-v1";
-const CHECKOUT_TRANSFER_LIFETIME_MS = 2 * 60 * 60 * 1000;
+const CHECKOUT_TRANSFER_LIFETIME_MS = 7 * 24 * 60 * 60 * 1000;
 const QUICK_CARE_LIMIT = 20;
 const STEADY_ACTIONS_PER_CARE = 4;
 export const GUEST_PLANTING_LIMIT = 3;
@@ -18,6 +18,13 @@ export type GuestGardenPreview = {
   garden: MyGardenState;
   quickCareEarned: number;
   steadyActions: number;
+  journey?: {
+    world: "community" | "personal";
+    mapX: number;
+    mapY: number;
+    zoom: number;
+    selectedTool: string;
+  };
 };
 
 export type GuestCareAward = {
@@ -163,6 +170,39 @@ export function loadGuestGardenPreview() {
     return {
       quickCareEarned: clampInteger(parsed.quickCareEarned, 0, QUICK_CARE_LIMIT),
       steadyActions: clampInteger(parsed.steadyActions, 0, 10000),
+      journey:
+        parsed.journey && typeof parsed.journey === "object"
+          ? {
+              world:
+                (parsed.journey as Record<string, unknown>).world === "personal"
+                  ? "personal"
+                  : "community",
+              mapX: clampInteger(
+                (parsed.journey as Record<string, unknown>).mapX,
+                0,
+                100,
+              ),
+              mapY: clampInteger(
+                (parsed.journey as Record<string, unknown>).mapY,
+                0,
+                100,
+              ),
+              zoom: Math.min(
+                2,
+                Math.max(
+                  0.5,
+                  Number((parsed.journey as Record<string, unknown>).zoom) || 1,
+                ),
+              ),
+              selectedTool:
+                typeof (parsed.journey as Record<string, unknown>).selectedTool ===
+                "string"
+                  ? String(
+                      (parsed.journey as Record<string, unknown>).selectedTool,
+                    ).slice(0, 40)
+                  : "rose",
+            }
+          : undefined,
       garden: {
         ...createGuestGardenPreview().garden,
         careBalance,
@@ -182,7 +222,18 @@ export function loadGuestGardenPreview() {
 
 export function saveGuestGardenPreview(preview: GuestGardenPreview) {
   if (typeof window === "undefined") return;
-  window.sessionStorage.setItem(STORAGE_KEY, JSON.stringify(preview));
+  try {
+    window.sessionStorage.setItem(STORAGE_KEY, JSON.stringify(preview));
+    window.localStorage.setItem(
+      CHECKOUT_TRANSFER_KEY,
+      JSON.stringify({
+        expiresAt: Date.now() + CHECKOUT_TRANSFER_LIFETIME_MS,
+        preview,
+      }),
+    );
+  } catch {
+    // The in-memory preview remains playable when private storage is unavailable.
+  }
 }
 
 export function clearGuestGardenPreview() {
@@ -195,13 +246,7 @@ export function preserveGuestGardenPreviewForCheckout(
   preview: GuestGardenPreview,
 ) {
   if (typeof window === "undefined") return;
-  window.localStorage.setItem(
-    CHECKOUT_TRANSFER_KEY,
-    JSON.stringify({
-      expiresAt: Date.now() + CHECKOUT_TRANSFER_LIFETIME_MS,
-      preview,
-    }),
-  );
+  saveGuestGardenPreview(preview);
 }
 
 export function awardGuestCare(

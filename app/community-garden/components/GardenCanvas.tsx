@@ -97,6 +97,12 @@ export type GardenCanvasHandle = {
   ) => void;
   zoomIn: () => void;
   zoomOut: () => void;
+  restoreView: (
+    mapX: number,
+    mapY: number,
+    zoom: number,
+    selectedTool: string,
+  ) => void;
 };
 
 type Runtime = {
@@ -556,6 +562,14 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
     >({});
     const loadPlantsRef = useRef<() => Promise<void>>(async () => undefined);
     const lastUiKeyRef = useRef("");
+    const pointerGestureRef = useRef<{
+      pointerId: number;
+      startX: number;
+      startY: number;
+      lastX: number;
+      lastY: number;
+      dragged: boolean;
+    } | null>(null);
     const start = gridToWorld(0, 0);
     const runtimeRef = useRef<Runtime>({
       mary: { ...start },
@@ -850,6 +864,48 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
           runtime.statusMessage = "Zoomed out to see more of the garden.";
           publishUi();
         },
+        restoreView(mapX, mapY, zoom, selectedTool) {
+          const runtime = runtimeRef.current;
+          const requestedGridX = getRuntimeGridFromMapPercentage(
+            runtime,
+            mapX,
+            "x",
+          );
+          const requestedGridY = getRuntimeGridFromMapPercentage(
+            runtime,
+            mapY,
+            "y",
+          );
+          const bounds = getRuntimeBounds(runtime);
+          const destination = gridToWorld(
+            Math.min(bounds.maxX, Math.max(bounds.minX, requestedGridX)),
+            Math.min(bounds.maxY, Math.max(bounds.minY, requestedGridY)),
+          );
+          runtime.mary = { ...destination };
+          runtime.camera = { ...destination };
+          runtime.target = null;
+          runtime.zoom = clampZoom(zoom);
+          if (selectedTool === "path" && runtime.mode === "personal") {
+            runtime.toolMode = "path";
+          } else if (
+            (selectedTool === "birdhouse" ||
+              selectedTool === "bench" ||
+              selectedTool === "stone_paver") &&
+            runtime.mode === "personal"
+          ) {
+            runtime.toolMode = "element";
+            runtime.selectedElementType = selectedTool;
+          } else if (
+            selectedTool === "rose" ||
+            selectedTool === "sunflower" ||
+            selectedTool === "lavender"
+          ) {
+            runtime.toolMode = "plant";
+            runtime.selectedPlantType = selectedTool;
+          }
+          runtime.loadedChunkKey = "";
+          publishUi();
+        },
         selectPlant(plantType) {
           const runtime = runtimeRef.current;
           runtime.selectedPlantType = plantType;
@@ -1105,6 +1161,15 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
       resizeCanvas();
       const resizeObserver = new ResizeObserver(resizeCanvas);
       resizeObserver.observe(canvas);
+      const scheduleResize = () => {
+        window.requestAnimationFrame(() => {
+          resizeCanvas();
+          window.requestAnimationFrame(resizeCanvas);
+        });
+      };
+      window.addEventListener("resize", scheduleResize);
+      window.addEventListener("orientationchange", scheduleResize);
+      window.visualViewport?.addEventListener("resize", scheduleResize);
       runtimeRef.current.reducedMotion = window.matchMedia(
         "(prefers-reduced-motion: reduce)",
       ).matches;
@@ -1230,6 +1295,9 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
         cancelAnimationFrame(frameId);
         window.clearInterval(pollId);
         resizeObserver.disconnect();
+        window.removeEventListener("resize", scheduleResize);
+        window.removeEventListener("orientationchange", scheduleResize);
+        window.visualViewport?.removeEventListener("resize", scheduleResize);
       };
     }, [publishUi]);
 
@@ -1299,21 +1367,97 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
       publishUi();
     }
 
-    function onPointerDown(event: ReactPointerEvent<HTMLCanvasElement>) {
+    function getPointerCell(
+      event: ReactPointerEvent<HTMLCanvasElement>,
+    ) {
       event.preventDefault();
       const canvas = canvasRef.current;
-      if (!canvas) return;
+      if (!canvas) return null;
       const bounds = canvas.getBoundingClientRect();
       const screenX = ((event.clientX - bounds.left) / bounds.width) * canvas.width;
       const screenY = ((event.clientY - bounds.top) / bounds.height) * canvas.height;
-      const cell = screenToGrid(
+      return screenToGrid(
         screenX,
         screenY,
         runtimeRef.current.camera,
         { width: canvas.width, height: canvas.height },
         runtimeRef.current.zoom,
       );
-      selectCell(cell.gridX, cell.gridY);
+    }
+
+    function onPointerDown(event: ReactPointerEvent<HTMLCanvasElement>) {
+      event.preventDefault();
+      if (pointerGestureRef.current) return;
+      pointerGestureRef.current = {
+        pointerId: event.pointerId,
+        startX: event.clientX,
+        startY: event.clientY,
+        lastX: event.clientX,
+        lastY: event.clientY,
+        dragged: false,
+      };
+      event.currentTarget.setPointerCapture(event.pointerId);
+      event.currentTarget.focus({ preventScroll: true });
+    }
+
+    function onPointerMove(event: ReactPointerEvent<HTMLCanvasElement>) {
+      const gesture = pointerGestureRef.current;
+      if (!gesture || gesture.pointerId !== event.pointerId) return;
+      event.preventDefault();
+      gesture.lastX = event.clientX;
+      gesture.lastY = event.clientY;
+      if (
+        Math.hypot(
+          event.clientX - gesture.startX,
+          event.clientY - gesture.startY,
+        ) >= 12
+      ) {
+        gesture.dragged = true;
+      }
+    }
+
+    function onPointerUp(event: ReactPointerEvent<HTMLCanvasElement>) {
+      const gesture = pointerGestureRef.current;
+      if (!gesture || gesture.pointerId !== event.pointerId) return;
+      event.preventDefault();
+      pointerGestureRef.current = null;
+      event.currentTarget.releasePointerCapture(event.pointerId);
+      const runtime = runtimeRef.current;
+      if (!gesture.dragged) {
+        const cell = getPointerCell(event);
+        if (cell) selectCell(cell.gridX, cell.gridY);
+        return;
+      }
+
+      const worldDx = -(event.clientX - gesture.startX) / runtime.zoom;
+      const worldDy = -(event.clientY - gesture.startY) / runtime.zoom;
+      runtime.selected = null;
+      runtime.target = {
+        x: clampRuntimeCoordinate(runtime, runtime.mary.x + worldDx, "x"),
+        y: clampRuntimeCoordinate(runtime, runtime.mary.y + worldDy, "y"),
+      };
+      runtime.statusMessage =
+        runtime.mode === "personal"
+          ? "Exploring My Garden..."
+          : "Exploring the garden...";
+      publishUi();
+    }
+
+    function onPointerCancel(event: ReactPointerEvent<HTMLCanvasElement>) {
+      if (pointerGestureRef.current?.pointerId !== event.pointerId) return;
+      pointerGestureRef.current = null;
+      if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+        event.currentTarget.releasePointerCapture(event.pointerId);
+      }
+    }
+
+    function onDoubleClick(event: ReactPointerEvent<HTMLCanvasElement>) {
+      event.preventDefault();
+      const runtime = runtimeRef.current;
+      runtime.zoom = clampZoom(runtime.zoom + GARDEN_CONFIG.cameraZoomStep);
+      publishUi();
+      const canvas = canvasRef.current;
+      if (!canvas) return;
       canvas.focus({ preventScroll: true });
     }
 
@@ -1367,6 +1511,10 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
         }
         tabIndex={0}
         onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
+        onPointerCancel={onPointerCancel}
+        onDoubleClick={onDoubleClick}
         onKeyDown={onKeyDown}
         onContextMenu={(event) => event.preventDefault()}
       />

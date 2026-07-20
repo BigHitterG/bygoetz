@@ -58,15 +58,18 @@ export async function POST(request: NextRequest) {
       email,
       password: typeof password === "string" ? password : undefined,
       requestedIntent: intent,
-      origin: request.nextUrl.origin,
+      origin: process.env.NEXT_PUBLIC_SITE_URL ?? request.nextUrl.origin,
     });
 
     return NextResponse.json(
       {
         accepted: true,
+        accountStatus: result.sent ? result.accountStatus : "existing",
         message:
           result.sent
-            ? "Check your email for a message from Basil by Goetz."
+            ? result.accountStatus === "existing"
+              ? "This account already exists. Check your email for a Basil link to verify or recover it."
+              : "Your account was created. Check your email for a verification message from Basil by Goetz."
             : "If that account exists, a Basil password email is on its way.",
       },
       { status: 202 },
