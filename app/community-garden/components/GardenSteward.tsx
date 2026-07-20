@@ -705,7 +705,7 @@ export function GardenSteward() {
             <li>Keep your preview flowers and remaining temporary Care</li>
             <li>Starter pack: a walkable fenced property, cozy shed, and 8 Care</li>
             <li>Plant and uproot inside your personal garden</li>
-            <li>Permanent personal plants plus visible upgrades to earn</li>
+            <li>Permanent plants plus benches, birdhouses, and pavers to place</li>
             <li>Use membership on any browser or device with the same email</li>
             <li>Garden Almanac with live community totals</li>
             <li>Feedback tracked through the upgrade queue</li>

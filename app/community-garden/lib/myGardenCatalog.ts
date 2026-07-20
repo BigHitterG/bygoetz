@@ -1,8 +1,11 @@
-export const MY_GARDEN_UPGRADES = [
+export const MY_GARDEN_ELEMENTS = [
   { type: "birdhouse", name: "Birdhouse", careCost: 6 },
   { type: "bench", name: "Garden bench", careCost: 10 },
-  { type: "stone_path", name: "Stone fence posts", careCost: 14 },
-  { type: "sage_shed", name: "Sage shed", careCost: 18 },
+  { type: "stone_paver", name: "Stone paver", careCost: 1 },
 ] as const;
 
-export type MyGardenUpgradeType = (typeof MY_GARDEN_UPGRADES)[number]["type"];
+export type MyGardenElementType = (typeof MY_GARDEN_ELEMENTS)[number]["type"];
+
+export function getMyGardenElement(type: MyGardenElementType) {
+  return MY_GARDEN_ELEMENTS.find((element) => element.type === type)!;
+}

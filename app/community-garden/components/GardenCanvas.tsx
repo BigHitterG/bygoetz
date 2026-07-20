@@ -19,7 +19,11 @@ import {
   type WorldPoint,
 } from "../game/gardenRenderer";
 import type { MyGardenState } from "@/lib/communityGarden/myGarden";
-import type { MyGardenMutation } from "./MyGardenControls";
+import {
+  getMyGardenElement,
+  type MyGardenElementType,
+} from "../lib/myGardenCatalog";
+import type { MyGardenMutation } from "../lib/myGardenMutation";
 import {
   clampWorldCoordinate,
   GARDEN_CONFIG,
@@ -55,8 +59,10 @@ export type GardenAction =
   | "expand"
   | "lay-path"
   | "remove-path"
+  | "place-element"
+  | "remove-element"
   | null;
-export type GardenTool = PlantType | "path";
+export type GardenTool = PlantType | "path" | MyGardenElementType;
 
 export type GardenUiState = {
   action: GardenAction;
@@ -72,6 +78,7 @@ export type GardenUiState = {
   canZoomIn: boolean;
   canZoomOut: boolean;
   selectedPlantType: PlantType;
+  selectedElementType: MyGardenElementType | null;
   selectedTool: GardenTool;
   plantMapPoints: Array<{ x: number; y: number; plantType: PlantType }>;
   mode: GardenWorldMode;
@@ -82,6 +89,7 @@ export type GardenCanvasHandle = {
   goToMapPosition: (mapX: number, mapY: number) => void;
   selectPlant: (plantType: PlantType) => void;
   selectPathTool: () => void;
+  selectElement: (elementType: MyGardenElementType) => void;
   showCareReward: (
     value: number,
     steadyProgress?: number,
@@ -99,7 +107,8 @@ type Runtime = {
   target: WorldPoint | null;
   selected: SelectedCell;
   selectedPlantType: PlantType;
-  toolMode: "plant" | "path";
+  selectedElementType: MyGardenElementType;
+  toolMode: "plant" | "path" | "element";
   plants: Map<string, PlantRecord>;
   mapPlants: Map<string, GardenMapPlant>;
   effects: GardenEffect[];
@@ -301,6 +310,12 @@ function hasPersonalPath(runtime: Runtime, gridX: number, gridY: number) {
   );
 }
 
+function getPersonalElement(runtime: Runtime, gridX: number, gridY: number) {
+  return runtime.personalGarden?.elements.find(
+    (element) => element.gridX === gridX && element.gridY === gridY,
+  );
+}
+
 function getDistanceToCell(runtime: Runtime, selected: NonNullable<SelectedCell>) {
   const point = gridToWorld(selected.gridX, selected.gridY);
   return Math.hypot(runtime.mary.x - point.x, runtime.mary.y - point.y);
@@ -344,7 +359,27 @@ function getActionState(runtime: Runtime) {
         enabled: false,
       };
     }
+    const element = getPersonalElement(
+      runtime,
+      runtime.selected.gridX,
+      runtime.selected.gridY,
+    );
+    if (element) {
+      const definition = getMyGardenElement(element.elementType);
+      return {
+        action: "remove-element" as GardenAction,
+        label: `Pick up ${definition.name} · +${element.careCost} Care`,
+        enabled: nearby && !runtime.actionBusy,
+      };
+    }
     if (runtime.toolMode === "path") {
+      if (plant) {
+        return {
+          action: null as GardenAction,
+          label: "A flower is growing here",
+          enabled: false,
+        };
+      }
       const hasPath = hasPersonalPath(
         runtime,
         runtime.selected.gridX,
@@ -356,11 +391,40 @@ function getActionState(runtime: Runtime) {
         enabled: nearby && !runtime.actionBusy,
       };
     }
+    if (runtime.toolMode === "element") {
+      if (plant || hasPersonalPath(runtime, runtime.selected.gridX, runtime.selected.gridY)) {
+        return {
+          action: null as GardenAction,
+          label: "Choose an open tile",
+          enabled: false,
+        };
+      }
+      const definition = getMyGardenElement(runtime.selectedElementType);
+      const preview = Boolean(runtime.personalGarden?.preview);
+      const care = runtime.personalGarden?.careBalance ?? 0;
+      return {
+        action: "place-element" as GardenAction,
+        label: preview
+          ? `Place ${definition.name} · Join`
+          : `Place ${definition.name} · ${definition.careCost} Care`,
+        enabled:
+          nearby &&
+          !runtime.actionBusy &&
+          (preview || care >= definition.careCost),
+      };
+    }
     if (plant) {
       return {
         action: "uproot" as GardenAction,
         label: `Uproot ${getPlantDefinition(plant.plant_type).name} · +${runtime.personalGarden?.uprootReturn ?? 1} Care`,
         enabled: nearby && !runtime.actionBusy,
+      };
+    }
+    if (hasPersonalPath(runtime, runtime.selected.gridX, runtime.selected.gridY)) {
+      return {
+        action: null as GardenAction,
+        label: "A path is here",
+        enabled: false,
       };
     }
     const cost = runtime.personalGarden?.plantCost ?? 2;
@@ -501,6 +565,7 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
       target: null,
       selected: null,
       selectedPlantType: "rose",
+      selectedElementType: "stone_paver",
       toolMode: "plant",
       plants: new Map(),
       mapPlants: new Map(),
@@ -543,6 +608,13 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
     const publishUi = useCallback(() => {
       const runtime = runtimeRef.current;
       const action = getActionState(runtime);
+      const selectedElement = runtime.selected
+        ? getPersonalElement(
+            runtime,
+            runtime.selected.gridX,
+            runtime.selected.gridY,
+          )
+        : undefined;
       const gridX = Math.floor(runtime.mary.x / GARDEN_CONFIG.tileSize);
       const gridY = Math.floor(runtime.mary.y / GARDEN_CONFIG.tileSize);
       const plantMapPoints = Array.from(runtime.mapPlants.values()).map(
@@ -572,8 +644,15 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
         canZoomIn: runtime.zoom < GARDEN_CONFIG.maxCameraZoom,
         canZoomOut: runtime.zoom > GARDEN_CONFIG.minCameraZoom,
         selectedPlantType: runtime.selectedPlantType,
+        selectedElementType:
+          selectedElement?.elementType ??
+          (runtime.toolMode === "element" ? runtime.selectedElementType : null),
         selectedTool:
-          runtime.toolMode === "path" ? "path" : runtime.selectedPlantType,
+          runtime.toolMode === "path"
+            ? "path"
+            : runtime.toolMode === "element"
+              ? runtime.selectedElementType
+              : runtime.selectedPlantType,
         plantMapPoints,
         mode: runtime.mode,
       };
@@ -786,6 +865,14 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
             "Path tool selected. Choose a spot to lay or remove a path for free.";
           publishUi();
         },
+        selectElement(elementType) {
+          const runtime = runtimeRef.current;
+          if (runtime.mode !== "personal") return;
+          runtime.selectedElementType = elementType;
+          runtime.toolMode = "element";
+          runtime.statusMessage = `${getMyGardenElement(elementType).name} selected. Choose an open tile.`;
+          publishUi();
+        },
         goToMapPosition(mapX, mapY) {
           const runtime = runtimeRef.current;
           const requestedGridX = getRuntimeGridFromMapPercentage(
@@ -831,6 +918,10 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
           runtime.statusMessage =
             actionState.action === "expand"
               ? "Opening your next garden parcel..."
+              : actionState.action === "place-element"
+                ? `Placing ${getMyGardenElement(runtime.selectedElementType).name.toLowerCase()}...`
+                : actionState.action === "remove-element"
+                  ? "Picking up that garden item..."
               : actionState.action === "lay-path" ||
                 actionState.action === "remove-path"
               ? "Updating your garden path..."
@@ -849,12 +940,32 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
               }
 
               const current = getPlantAt(runtime, selected.gridX, selected.gridY);
+              const currentElement = getPersonalElement(
+                runtime,
+                selected.gridX,
+                selected.gridY,
+              );
               const isPathAction =
                 actionState.action === "lay-path" ||
                 actionState.action === "remove-path";
+              const isElementAction =
+                actionState.action === "place-element" ||
+                actionState.action === "remove-element";
               const mutation: MyGardenMutation =
                 actionState.action === "expand"
                   ? { action: "expand" }
+                  : actionState.action === "place-element"
+                    ? {
+                        action: "place-element",
+                        gridX: selected.gridX,
+                        gridY: selected.gridY,
+                        elementType: runtime.selectedElementType,
+                      }
+                    : actionState.action === "remove-element"
+                      ? {
+                          action: "remove-element",
+                          elementId: currentElement?.id ?? "",
+                        }
                   : isPathAction
                   ? {
                       action: "toggle-path",
@@ -876,7 +987,7 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
               applyPersonalGarden(runtime, updatedGarden);
               if (actionState.action !== "expand") {
                 runtime.effects.push({
-                  kind: isPathAction
+                  kind: isPathAction || isElementAction
                     ? "path"
                     : actionState.action === "plant"
                       ? "plant"
@@ -889,7 +1000,7 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
               runtime.selected =
                 actionState.action === "expand"
                   ? null
-                  : isPathAction
+                  : isPathAction || isElementAction
                   ? { gridX: selected.gridX, gridY: selected.gridY }
                   : actionState.action === "plant"
                   ? {
@@ -900,6 +1011,10 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
               runtime.statusMessage =
                 actionState.action === "expand"
                   ? `Parcel opened. The next piece of land is ready when you have ${updatedGarden.nextExpansion?.careCost ?? "more"} Care.`
+                  : actionState.action === "place-element"
+                    ? `${getMyGardenElement(runtime.selectedElementType).name} placed. ${updatedGarden.careBalance} Care remains.`
+                    : actionState.action === "remove-element"
+                      ? `Item picked up. ${updatedGarden.careBalance} Care is available.`
                   : isPathAction
                   ? actionState.action === "lay-path"
                     ? "Path added for free."
@@ -1088,7 +1203,7 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
                 height: runtime.personalGarden.height,
                 maxWidth: runtime.personalGarden.maxWidth,
                 maxHeight: runtime.personalGarden.maxHeight,
-                upgrades: runtime.personalGarden.upgrades,
+                elements: runtime.personalGarden.elements,
                 paths: runtime.personalGarden.paths,
                 nextExpansion: runtime.personalGarden.nextExpansion
                   ? {
@@ -1127,6 +1242,46 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
         return;
       }
 
+      if (lockedParcel) {
+        const garden = runtime.personalGarden;
+        const cost = garden?.nextExpansion?.careCost ?? 0;
+        runtime.selected = { gridX, gridY };
+        runtime.target = getLockedParcelApproach(runtime, gridX, gridY);
+        if (
+          garden &&
+          !garden.preview &&
+          garden.careBalance >= cost &&
+          onPersonalGardenMutationRef.current &&
+          !runtime.actionBusy
+        ) {
+          runtime.actionBusy = true;
+          runtime.statusMessage = `Opening this parcel for ${cost} Care...`;
+          publishUi();
+          void onPersonalGardenMutationRef.current({ action: "expand" })
+            .then((updatedGarden) => {
+              applyPersonalGarden(runtime, updatedGarden);
+              runtime.selected = null;
+              runtime.statusMessage = `Parcel opened. ${updatedGarden.careBalance} Care remains.`;
+            })
+            .catch((error) => {
+              runtime.statusMessage =
+                error instanceof Error
+                  ? error.message
+                  : "That parcel could not be opened.";
+            })
+            .finally(() => {
+              runtime.actionBusy = false;
+              publishUi();
+            });
+          return;
+        }
+        runtime.statusMessage = garden?.preview
+          ? "Garden Membership saves and expands this land."
+          : `Earn ${Math.max(0, cost - (garden?.careBalance ?? 0))} more Care to open this parcel.`;
+        publishUi();
+        return;
+      }
+
       const maryGridX = Math.floor(runtime.mary.x / GARDEN_CONFIG.tileSize);
       const maryGridY = Math.floor(runtime.mary.y / GARDEN_CONFIG.tileSize);
       if (maryGridX === gridX && maryGridY === gridY) {
@@ -1137,14 +1292,10 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
 
       const plant = getPlantAt(runtime, gridX, gridY);
       runtime.selected = { gridX, gridY, plantId: plant?.id };
-      runtime.target = lockedParcel
-        ? getLockedParcelApproach(runtime, gridX, gridY)
-        : getAdjacentTarget(runtime, gridX, gridY);
-      runtime.statusMessage = lockedParcel
-        ? `This parcel is ready to unlock for ${runtime.personalGarden?.nextExpansion?.careCost ?? 0} Care.`
-        : plant
-          ? `Walking over to the ${getPlantDefinition(plant.plant_type).name.toLowerCase()}...`
-          : "Walking to that spot...";
+      runtime.target = getAdjacentTarget(runtime, gridX, gridY);
+      runtime.statusMessage = plant
+        ? `Walking over to the ${getPlantDefinition(plant.plant_type).name.toLowerCase()}...`
+        : "Walking to that spot...";
       publishUi();
     }
 

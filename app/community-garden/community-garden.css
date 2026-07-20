@@ -112,7 +112,7 @@
 .cg-steward textarea:focus-visible,
 .cg-back-link:focus-visible,
 .cg-mini-map:focus-visible,
-.cg-plant-picker button:focus-visible,
+.cg-inventory button:focus-visible,
 .cg-library-tabs button:focus-visible,
 .cg-zoom-control button:focus-visible,
 .cg-canvas:focus-visible {
@@ -470,43 +470,20 @@
   text-transform: uppercase;
 }
 
-.cg-care-button .cg-care-button-copy {
-  display: grid;
-  gap: 2px;
-  text-align: left;
-}
-
-.cg-care-button .cg-care-button-copy span {
-  line-height: 1;
-}
-
-.cg-care-button .cg-care-button-copy small {
-  color: #5f4437;
-  font-size: 0.48rem;
-  font-weight: 800;
-  letter-spacing: 0;
-  line-height: 1.1;
-  text-transform: none;
-}
-
-.cg-care-button.has-land-ready .cg-care-button-copy small {
-  color: var(--cg-red);
-  font-weight: 900;
-}
-
-.cg-care-button.has-land-ready {
-  box-shadow:
-    0 0 0 2px rgba(201, 79, 76, 0.24),
-    3px 3px 0 rgba(52, 35, 31, 0.22);
-}
-
 .cg-care-button strong {
   color: var(--cg-red);
   font-size: 1.05rem;
 }
 
-.cg-care-button.is-community {
+.cg-care-button.is-community,
+.cg-care-button.is-personal {
   cursor: default;
+}
+
+.cg-care-button i {
+  color: #6f4c3e;
+  font-size: 0.55rem;
+  font-style: normal;
 }
 
 .cg-preview-progress {
@@ -588,32 +565,112 @@
   background: rgba(239, 207, 151, 0.96);
 }
 
-.cg-plant-picker {
+.cg-inventory {
   position: absolute;
   right: max(12px, env(safe-area-inset-right));
   bottom: max(108px, calc(env(safe-area-inset-bottom) + 96px));
   z-index: 8;
   display: grid;
-  width: min(56%, 250px);
-  height: 58px;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  width: min(72%, 300px);
+  gap: 8px;
+}
+
+.cg-inventory-toggle {
+  display: grid;
+  width: 100%;
+  min-height: 58px;
+  grid-template-columns: 38px minmax(0, 1fr) 18px;
+  gap: 7px;
+  align-items: center;
   border: 2px solid var(--cg-ink);
   background: rgba(255, 244, 223, 0.95);
+  color: var(--cg-ink);
+  cursor: pointer;
+  padding: 4px 8px;
+  font: inherit;
+  text-align: left;
   box-shadow: 3px 3px 0 rgba(52, 35, 31, 0.22);
 }
 
-.is-personal-world .cg-plant-picker {
-  width: min(72%, 300px);
+.cg-inventory-toggle > span:nth-child(2) {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.cg-inventory-toggle small {
+  color: #765446;
+  font-size: 0.48rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.cg-inventory-toggle strong {
+  overflow: hidden;
+  font-size: 0.65rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cg-inventory-toggle i {
+  font-size: 0.58rem;
+  font-style: normal;
+  text-align: center;
+}
+
+.cg-inventory-panel {
+  overflow: hidden;
+  border: 2px solid var(--cg-ink);
+  background: rgba(255, 244, 223, 0.98);
+  box-shadow: 4px 4px 0 rgba(52, 35, 31, 0.24);
+}
+
+.cg-inventory-panel header {
+  display: grid;
+  gap: 2px;
+  border-bottom: 1px solid rgba(52, 35, 31, 0.32);
+  padding: 8px 10px;
+}
+
+.cg-inventory-panel header strong {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+}
+
+.cg-inventory-panel header small {
+  color: #6f4c3e;
+  font-size: 0.5rem;
+}
+
+.cg-inventory-section > p {
+  margin: 0;
+  border-bottom: 1px solid rgba(52, 35, 31, 0.2);
+  background: #eadfbe;
+  padding: 4px 8px;
+  color: #6f4c3e;
+  font-size: 0.5rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.cg-inventory-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.cg-inventory-grid.is-items {
   grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
-.cg-plant-picker button {
+.cg-inventory-grid button {
   display: grid;
   min-width: 0;
+  min-height: 62px;
   place-items: center;
   gap: 1px;
   border: 0;
   border-right: 1px solid rgba(52, 35, 31, 0.32);
+  border-bottom: 1px solid rgba(52, 35, 31, 0.2);
   border-radius: 0;
   background: transparent;
   color: var(--cg-ink);
@@ -625,13 +682,19 @@
   line-height: 1;
 }
 
-.cg-plant-picker button:last-child {
+.cg-inventory-grid button:last-child {
   border-right: 0;
 }
 
-.cg-plant-picker button[aria-pressed="true"] {
+.cg-inventory-grid button[aria-pressed="true"] {
   background: #f3c99b;
   box-shadow: inset 0 -4px 0 var(--cg-coral);
+}
+
+.cg-inventory-grid button small {
+  color: #7b5745;
+  font-size: 0.43rem;
+  font-weight: 800;
 }
 
 .cg-path-icon {
@@ -661,6 +724,72 @@
 .cg-path-icon::after {
   right: 6px;
   bottom: 5px;
+}
+
+.cg-item-glyph {
+  position: relative;
+  display: block;
+  width: 28px;
+  height: 28px;
+}
+
+.cg-item-glyph::before,
+.cg-item-glyph::after {
+  position: absolute;
+  content: "";
+}
+
+.cg-item-glyph.is-birdhouse::before {
+  left: 6px;
+  top: 3px;
+  width: 16px;
+  height: 14px;
+  border-top: 5px solid #954a45;
+  background: #e0b76d;
+  box-shadow: inset 6px 4px 0 -3px #4a372e;
+}
+
+.cg-item-glyph.is-birdhouse::after {
+  left: 12px;
+  top: 16px;
+  width: 4px;
+  height: 12px;
+  background: #704b39;
+}
+
+.cg-item-glyph.is-bench::before {
+  left: 2px;
+  top: 7px;
+  width: 24px;
+  height: 5px;
+  background: #9e6445;
+  box-shadow: 0 8px 0 #7a4936;
+}
+
+.cg-item-glyph.is-bench::after {
+  left: 5px;
+  top: 11px;
+  width: 4px;
+  height: 15px;
+  background: #603b31;
+  box-shadow: 14px 0 0 #603b31;
+}
+
+.cg-item-glyph.is-stone_paver::before {
+  left: 3px;
+  top: 8px;
+  width: 22px;
+  height: 15px;
+  border: 2px solid #817b70;
+  background: #bdb6a9;
+}
+
+.cg-item-glyph.is-stone_paver::after {
+  left: 7px;
+  top: 11px;
+  width: 8px;
+  height: 3px;
+  background: #d8d1c4;
 }
 
 .cg-action-button {
@@ -3215,7 +3344,7 @@
     width: calc(50% - 16px);
   }
 
-  .cg-plant-picker {
+  .cg-inventory {
     right: 10px;
     width: calc(62% - 16px);
   }
@@ -3301,9 +3430,12 @@
     top: max(82px, calc(env(safe-area-inset-top) + 76px));
   }
 
-  .cg-plant-picker {
+  .cg-inventory {
     bottom: max(100px, calc(env(safe-area-inset-bottom) + 90px));
-    height: 52px;
+  }
+
+  .cg-inventory-toggle {
+    min-height: 52px;
   }
 }
 
