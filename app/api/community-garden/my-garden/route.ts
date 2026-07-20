@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getGardenUser } from "@/lib/communityGarden/auth";
 import {
   expandMyGarden,
+  importMyGardenPreview,
   MY_GARDEN_PLANT_TYPES,
   MY_GARDEN_UPGRADES,
   plantInMyGarden,
@@ -16,8 +17,12 @@ import { getGardenStewardByUserId } from "@/lib/communityGarden/stewards";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-function isGridCoordinate(value: unknown, maximum: number) {
-  return Number.isInteger(value) && Number(value) >= 0 && Number(value) <= maximum;
+function isGridCoordinate(value: unknown, minimum: number, maximum: number) {
+  return (
+    Number.isInteger(value) &&
+    Number(value) >= minimum &&
+    Number(value) <= maximum
+  );
 }
 
 export async function POST(request: NextRequest) {
@@ -46,6 +51,9 @@ export async function POST(request: NextRequest) {
     plantType?: unknown;
     plantId?: unknown;
     upgradeType?: unknown;
+    careBalance?: unknown;
+    plants?: unknown;
+    paths?: unknown;
   };
   try {
     payload = (await request.json()) as typeof payload;
@@ -54,10 +62,58 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    if (payload.action === "import-preview") {
+      const plants = Array.isArray(payload.plants) ? payload.plants : [];
+      const paths = Array.isArray(payload.paths) ? payload.paths : [];
+      const validPlants = plants.every(
+        (candidate) =>
+          candidate &&
+          typeof candidate === "object" &&
+          isGridCoordinate((candidate as { gridX?: unknown }).gridX, 0, 11) &&
+          isGridCoordinate((candidate as { gridY?: unknown }).gridY, 0, 15) &&
+          MY_GARDEN_PLANT_TYPES.includes(
+            (candidate as { plantType?: unknown })
+              .plantType as MyGardenPlantType,
+          ),
+      );
+      const validPaths = paths.every(
+        (candidate) =>
+          candidate &&
+          typeof candidate === "object" &&
+          isGridCoordinate((candidate as { gridX?: unknown }).gridX, 0, 11) &&
+          isGridCoordinate((candidate as { gridY?: unknown }).gridY, 0, 15),
+      );
+      if (
+        !Number.isInteger(payload.careBalance) ||
+        Number(payload.careBalance) < 0 ||
+        Number(payload.careBalance) > 20 ||
+        plants.length > 3 ||
+        paths.length > 64 ||
+        !validPlants ||
+        !validPaths
+      ) {
+        return NextResponse.json(
+          { error: "Choose a valid temporary garden to keep." },
+          { status: 400 },
+        );
+      }
+      return NextResponse.json(
+        await importMyGardenPreview(steward.id, {
+          careBalance: Number(payload.careBalance),
+          plants: plants as Array<{
+            gridX: number;
+            gridY: number;
+            plantType: MyGardenPlantType;
+          }>,
+          paths: paths as Array<{ gridX: number; gridY: number }>,
+        }),
+      );
+    }
+
     if (payload.action === "plant") {
       if (
-        !isGridCoordinate(payload.gridX, 19) ||
-        !isGridCoordinate(payload.gridY, 23) ||
+        !isGridCoordinate(payload.gridX, -100_000, 100_000) ||
+        !isGridCoordinate(payload.gridY, -100_000, 100_000) ||
         !MY_GARDEN_PLANT_TYPES.includes(payload.plantType as MyGardenPlantType)
       ) {
         return NextResponse.json(
@@ -92,8 +148,8 @@ export async function POST(request: NextRequest) {
 
     if (payload.action === "toggle-path") {
       if (
-        !isGridCoordinate(payload.gridX, 19) ||
-        !isGridCoordinate(payload.gridY, 23)
+        !isGridCoordinate(payload.gridX, -100_000, 100_000) ||
+        !isGridCoordinate(payload.gridY, -100_000, 100_000)
       ) {
         return NextResponse.json(
           { error: "Choose a spot inside the fence for the path." },

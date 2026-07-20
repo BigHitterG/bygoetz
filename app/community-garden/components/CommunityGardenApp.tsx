@@ -19,9 +19,22 @@ import {
   PLANT_TYPES,
 } from "../lib/roseLifecycle";
 import {
+  awardGuestCare,
+  clearGuestGardenPreview,
+  createGuestGardenPreview,
+  getGuestPreviewImport,
+  GuestPreviewLimitError,
+  loadGuestGardenPreview,
+  mutateGuestGarden,
+  preserveGuestGardenPreviewForCheckout,
+  saveGuestGardenPreview,
+  type GuestGardenPreview,
+} from "../lib/guestGardenPreview";
+import {
   MyGardenControls,
   type MyGardenMutation,
 } from "./MyGardenControls";
+import { GardenMembershipOffer } from "./GardenMembershipOffer";
 
 const INITIAL_UI: GardenUiState = {
   action: null,
@@ -58,17 +71,36 @@ async function getResponseError(response: Response, fallback: string) {
 export function CommunityGardenApp() {
   const canvasRef = useRef<GardenCanvasHandle>(null);
   const pendingGardenEntryRef = useRef(false);
+  const guestPreviewRef = useRef<GuestGardenPreview>(
+    createGuestGardenPreview(),
+  );
   const [ui, setUi] = useState(INITIAL_UI);
   const [world, setWorld] = useState<GardenWorldMode>("community");
   const [menuOpen, setMenuOpen] = useState(false);
   const [menuSection, setMenuSection] = useState<LibrarySection>("play");
   const [careAnnouncement, setCareAnnouncement] = useState("");
   const [session, setSession] = useState<Session | null>(null);
-  const [myGarden, setMyGarden] = useState<MyGardenState | null>(null);
+  const [guestPreview, setGuestPreview] = useState<GuestGardenPreview>(
+    createGuestGardenPreview(),
+  );
+  const [memberGarden, setMemberGarden] = useState<MyGardenState | null>(null);
   const [gardenControlsOpen, setGardenControlsOpen] = useState(false);
+  const [membershipOfferOpen, setMembershipOfferOpen] = useState(false);
   const [gardenBusy, setGardenBusy] = useState(false);
   const [gardenNotice, setGardenNotice] = useState("");
   const adLabel = process.env.NEXT_PUBLIC_COMMUNITY_GARDEN_AD_PLACEHOLDER;
+  const myGarden = memberGarden ?? guestPreview.garden;
+  const isPreview = !memberGarden;
+  const landReady = Boolean(
+    memberGarden?.nextExpansion &&
+      memberGarden.careBalance >= memberGarden.nextExpansion.careCost,
+  );
+
+  const commitGuestPreview = useCallback((next: GuestGardenPreview) => {
+    guestPreviewRef.current = next;
+    setGuestPreview(next);
+    saveGuestGardenPreview(next);
+  }, []);
 
   const loadMembership = useCallback(async (activeSession: Session) => {
     try {
@@ -78,8 +110,42 @@ export function CommunityGardenApp() {
       });
       if (!response.ok) return null;
       const account = (await response.json()) as AccountResponse;
-      const nextGarden = account.active ? account.myGarden : null;
-      setMyGarden(nextGarden);
+      let nextGarden = account.active ? account.myGarden : null;
+      if (nextGarden) {
+        const preview = guestPreviewRef.current;
+        const hasTemporaryProgress =
+          preview.garden.lifetimeCare > 0 ||
+          preview.garden.plants.length > 0 ||
+          preview.garden.paths.length > 0;
+        if (hasTemporaryProgress) {
+          try {
+            const importResponse = await fetch(
+              "/api/community-garden/my-garden",
+              {
+                method: "POST",
+                headers: {
+                  authorization: `Bearer ${activeSession.access_token}`,
+                  "content-type": "application/json",
+                },
+                body: JSON.stringify({
+                  action: "import-preview",
+                  ...getGuestPreviewImport(preview),
+                }),
+              },
+            );
+            if (importResponse.ok) {
+              nextGarden = (await importResponse.json()) as MyGardenState;
+              clearGuestGardenPreview();
+              const emptyPreview = createGuestGardenPreview();
+              guestPreviewRef.current = emptyPreview;
+              setGuestPreview(emptyPreview);
+            }
+          } catch {
+            // Keep the temporary preview available for a later retry.
+          }
+        }
+      }
+      setMemberGarden(nextGarden);
       if (nextGarden && pendingGardenEntryRef.current) {
         pendingGardenEntryRef.current = false;
         setMenuOpen(false);
@@ -89,6 +155,14 @@ export function CommunityGardenApp() {
     } catch {
       return null;
     }
+  }, []);
+
+  useEffect(() => {
+    queueMicrotask(() => {
+      const storedPreview = loadGuestGardenPreview();
+      guestPreviewRef.current = storedPreview;
+      setGuestPreview(storedPreview);
+    });
   }, []);
 
   useEffect(() => {
@@ -118,7 +192,7 @@ export function CommunityGardenApp() {
       if (nextSession) {
         void loadMembership(nextSession);
       } else {
-        setMyGarden(null);
+        setMemberGarden(null);
         setWorld("community");
       }
     });
@@ -132,19 +206,21 @@ export function CommunityGardenApp() {
 
   const claimCommunityContribution = useCallback(
     async (contribution: GardenContribution) => {
-      const client = getGardenAccountClient();
-      if (!client) {
-        canvasRef.current?.showCareReward(contribution.careValue);
-        setCareAnnouncement(
-          `You helped the Community Garden and earned ${contribution.careValue} Care. A Garden Membership saves Care.`,
+      if (!session || !memberGarden) {
+        const award = awardGuestCare(
+          guestPreviewRef.current,
+          contribution.careValue,
         );
-        return;
-      }
-      const { data } = await client.auth.getSession();
-      if (!data.session) {
-        canvasRef.current?.showCareReward(contribution.careValue);
+        commitGuestPreview(award.preview);
+        canvasRef.current?.showCareReward(
+          award.awardedCare,
+          award.steadyProgress,
+          4,
+        );
         setCareAnnouncement(
-          `You helped the Community Garden and earned ${contribution.careValue} Care. A Garden Membership saves Care.`,
+          award.awardedCare > 0
+            ? `${award.awardedCare} temporary Care earned. Your preview balance is ${award.preview.garden.careBalance}.`
+            : `Tending progress ${award.steadyProgress} of 4 toward another temporary Care.`,
         );
         return;
       }
@@ -153,15 +229,20 @@ export function CommunityGardenApp() {
         const response = await fetch("/api/community-garden/care", {
           method: "POST",
           headers: {
-            authorization: `Bearer ${data.session.access_token}`,
+            authorization: `Bearer ${session.access_token}`,
             "content-type": "application/json",
           },
           body: JSON.stringify({ receiptToken: contribution.receiptToken }),
         });
         if (response.status === 401 || response.status === 403) {
-          canvasRef.current?.showCareReward(contribution.careValue);
+          const award = awardGuestCare(
+            guestPreviewRef.current,
+            contribution.careValue,
+          );
+          commitGuestPreview(award.preview);
+          canvasRef.current?.showCareReward(award.awardedCare);
           setCareAnnouncement(
-            `You helped the Community Garden and earned ${contribution.careValue} Care. A Garden Membership saves Care.`,
+            `${award.awardedCare} temporary Care earned. A Garden Membership saves it.`,
           );
           return;
         }
@@ -177,7 +258,7 @@ export function CommunityGardenApp() {
           steadyProgress: number;
           steadyActionsRequired: number;
         };
-        setMyGarden((current) =>
+        setMemberGarden((current) =>
           current
             ? {
                 ...current,
@@ -205,15 +286,35 @@ export function CommunityGardenApp() {
         setCareAnnouncement("Care could not be saved. Please try another garden action.");
       }
     },
-    [],
+    [commitGuestPreview, memberGarden, session],
   );
 
   const mutateMyGarden = useCallback(
     async (mutation: MyGardenMutation) => {
-      if (!session) throw new Error("Sign in to update My Garden.");
       setGardenBusy(true);
       setGardenNotice("");
       try {
+        if (!memberGarden) {
+          try {
+            const updatedPreview = mutateGuestGarden(
+              guestPreviewRef.current,
+              mutation,
+            );
+            commitGuestPreview(updatedPreview);
+            const used = updatedPreview.garden.preview?.plantingsUsed ?? 0;
+            const limit = updatedPreview.garden.preview?.plantingLimit ?? 3;
+            if (mutation.action === "plant" && used >= limit) {
+              setMembershipOfferOpen(true);
+            }
+            return updatedPreview.garden;
+          } catch (error) {
+            if (error instanceof GuestPreviewLimitError) {
+              setMembershipOfferOpen(true);
+            }
+            throw error;
+          }
+        }
+        if (!session) throw new Error("Sign in to update My Garden.");
         const response = await fetch("/api/community-garden/my-garden", {
           method: "POST",
           headers: {
@@ -228,7 +329,7 @@ export function CommunityGardenApp() {
           );
         }
         const updated = (await response.json()) as MyGardenState;
-        setMyGarden(updated);
+        setMemberGarden(updated);
         setGardenNotice(
           mutation.action === "expand"
             ? `Your fenced garden is now ${updated.width} × ${updated.height}.`
@@ -241,7 +342,7 @@ export function CommunityGardenApp() {
         setGardenBusy(false);
       }
     },
-    [session],
+    [commitGuestPreview, memberGarden, session],
   );
 
   function switchWorld() {
@@ -250,14 +351,8 @@ export function CommunityGardenApp() {
       setWorld("community");
       return;
     }
-    if (session && myGarden) {
-      setMenuOpen(false);
-      setWorld("personal");
-      return;
-    }
-    setMenuSection("account");
-    setMenuOpen(true);
-    pendingGardenEntryRef.current = true;
+    setMenuOpen(false);
+    setWorld("personal");
   }
 
   return (
@@ -339,16 +434,36 @@ export function CommunityGardenApp() {
           {world === "personal" ? "Community Garden" : "My Garden"}
         </button>
 
-        {world === "personal" && myGarden ? (
+        {world === "personal" ? (
           <button
-            className="cg-care-button"
+            className={`cg-care-button${landReady ? " has-land-ready" : ""}`}
             type="button"
-            aria-label={`${myGarden.careBalance} Care. Open My Garden upgrades`}
+            aria-label={`${myGarden.careBalance} Care. ${
+              landReady ? "Land ready to unlock. " : ""
+            }Open My Garden details`}
             onClick={() => setGardenControlsOpen(true)}
+          >
+            <span className="cg-care-button-copy">
+              <span>Care</span>
+              <small>{landReady ? "Open land now →" : "Land + upgrades"}</small>
+            </span>
+            <strong>{myGarden.careBalance}</strong>
+          </button>
+        ) : (
+          <output
+            className="cg-care-button is-community"
+            aria-label={`${myGarden.careBalance} ${isPreview ? "temporary " : ""}Care`}
           >
             <span>Care</span>
             <strong>{myGarden.careBalance}</strong>
-          </button>
+          </output>
+        )}
+
+        {world === "personal" && myGarden.preview ? (
+          <div className="cg-preview-progress" aria-live="polite">
+            Preview · {myGarden.preview.plantingsUsed} of{" "}
+            {myGarden.preview.plantingLimit} flowers
+          </div>
         ) : null}
 
         <div className="cg-plant-picker" role="group" aria-label="Choose what to plant">
@@ -394,6 +509,8 @@ export function CommunityGardenApp() {
                 ? "cg-water-icon"
                 : ui.action === "uproot"
                   ? "cg-uproot-icon"
+                  : ui.action === "expand"
+                    ? "cg-lock-icon"
                   : ui.action === "lay-path" || ui.action === "remove-path"
                     ? "cg-path-icon"
                   : `cg-plant-glyph is-${ui.selectedPlantType}`
@@ -419,26 +536,46 @@ export function CommunityGardenApp() {
         onSectionChange={setMenuSection}
       />
 
-      {myGarden ? (
-        <MyGardenControls
-          garden={myGarden}
-          open={gardenControlsOpen}
-          busy={gardenBusy}
-          notice={gardenNotice}
-          onClose={() => setGardenControlsOpen(false)}
-          onMutate={async (mutation) => {
-            try {
-              await mutateMyGarden(mutation);
-            } catch (error) {
-              setGardenNotice(
-                error instanceof Error
-                  ? error.message
-                  : "My Garden could not be updated.",
-              );
-            }
-          }}
-        />
-      ) : null}
+      <MyGardenControls
+        garden={myGarden}
+        open={gardenControlsOpen}
+        busy={gardenBusy}
+        notice={gardenNotice}
+        preview={isPreview}
+        onJoin={() => {
+          setGardenControlsOpen(false);
+          setMembershipOfferOpen(true);
+        }}
+        onClose={() => setGardenControlsOpen(false)}
+        onMutate={async (mutation) => {
+          try {
+            await mutateMyGarden(mutation);
+          } catch (error) {
+            setGardenNotice(
+              error instanceof Error
+                ? error.message
+                : "My Garden could not be updated.",
+            );
+          }
+        }}
+      />
+
+      <GardenMembershipOffer
+        open={membershipOfferOpen}
+        planted={myGarden.preview?.plantingsUsed ?? 3}
+        onClose={() => setMembershipOfferOpen(false)}
+        onLater={() => {
+          setMembershipOfferOpen(false);
+          setWorld("community");
+        }}
+        onJoin={() => {
+          preserveGuestGardenPreviewForCheckout(guestPreviewRef.current);
+          setMembershipOfferOpen(false);
+          setMenuSection("account");
+          setMenuOpen(true);
+          pendingGardenEntryRef.current = true;
+        }}
+      />
     </main>
   );
 }

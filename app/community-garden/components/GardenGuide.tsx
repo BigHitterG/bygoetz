@@ -36,8 +36,8 @@ export function GardenGuide() {
         <div>
           <dt>Switch gardens</dt>
           <dd>
-            Garden Members can use the bottom-left button to move between the
-            Community Garden and their personal My Garden map.
+            Use the bottom-left button to try My Garden. Plant three preview
+            flowers before deciding whether you want to keep it.
           </dd>
         </div>
       </dl>
@@ -61,7 +61,8 @@ export function GardenGuide() {
 
       <p className="cg-guide-principle">
         Public play needs no account and never labels plants with an owner.
-        Membership accounts privately save Care and a personal garden across devices.
+        Preview Care and flowers are temporary. Membership privately saves them
+        and keeps My Garden available across devices.
       </p>
       <div className="cg-play-notes">
         <h4>How this world decides</h4>

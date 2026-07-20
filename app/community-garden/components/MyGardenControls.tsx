@@ -23,7 +23,9 @@ type MyGardenControlsProps = {
   open: boolean;
   busy: boolean;
   notice: string;
+  preview: boolean;
   onClose: () => void;
+  onJoin: () => void;
   onMutate: (mutation: MyGardenMutation) => Promise<void>;
 };
 
@@ -32,7 +34,9 @@ export function MyGardenControls({
   open,
   busy,
   notice,
+  preview,
   onClose,
+  onJoin,
   onMutate,
 }: MyGardenControlsProps) {
   if (!open) return null;
@@ -65,6 +69,21 @@ export function MyGardenControls({
         </div>
 
         {notice ? <p className="cg-garden-controls-notice">{notice}</p> : null}
+
+        {preview && garden.preview ? (
+          <section className="cg-garden-preview-card">
+            <div>
+              <p>Temporary preview</p>
+              <strong>
+                {garden.preview.plantingsUsed} of{" "}
+                {garden.preview.plantingLimit} flowers planted
+              </strong>
+            </div>
+            <button type="button" onClick={onJoin}>
+              Keep this garden · $6.99
+            </button>
+          </section>
+        ) : null}
 
         <section className="cg-garden-controls-summary">
           <div>
@@ -105,7 +124,12 @@ export function MyGardenControls({
                   </div>
                   <button
                     type="button"
-                    disabled={busy || owned || garden.careBalance < upgrade.careCost}
+                    disabled={
+                      busy ||
+                      preview ||
+                      owned ||
+                      garden.careBalance < upgrade.careCost
+                    }
                     onClick={() =>
                       void onMutate({
                         action: "purchase-upgrade",
@@ -125,13 +149,18 @@ export function MyGardenControls({
           <div>
             <h3>Open the next parcel</h3>
             <p>
-              Property level {garden.plotLevel} · {garden.width * garden.height} plantable spaces
+              Property level {garden.plotLevel} · {garden.width * garden.height} plantable spaces.
+              Tap the pale locked land on the map or open it here.
             </p>
           </div>
           {garden.nextExpansion ? (
             <button
               type="button"
-              disabled={busy || garden.careBalance < garden.nextExpansion.careCost}
+              disabled={
+                busy ||
+                preview ||
+                garden.careBalance < garden.nextExpansion.careCost
+              }
               onClick={() => void onMutate({ action: "expand" })}
             >
               Add land to {garden.nextExpansion.width} ×{" "}
@@ -143,11 +172,9 @@ export function MyGardenControls({
         </section>
 
         <p className="cg-garden-controls-footnote">
-          Earn Care by planting and thoughtfully watering in the Community Garden:
-          the first {garden.dailyCareLimit} Care comes quickly each day, then every
-          four helpful actions earns another. Personal plants stay here permanently
-          and can be uprooted for {garden.uprootReturn} Care. The Path tool is free
-          to add, move, and remove whenever you like.
+          {preview
+            ? `This preview and its Care last for this browser session. Plant up to ${garden.preview?.plantingLimit ?? 3} flowers and try the Path tool. Membership saves the garden and opens upgrades.`
+            : `Earn Care by planting and thoughtfully watering in the Community Garden: the first ${garden.dailyCareLimit} Care comes quickly each day, then every four helpful actions earns another. Personal plants stay here permanently and can be uprooted for ${garden.uprootReturn} Care. The Path tool is free to add, move, and remove whenever you like.`}
         </p>
       </aside>
     </div>

@@ -32,11 +32,23 @@ export type MyGardenPath = {
   gridY: number;
 };
 
+export type MyGardenPreviewImport = {
+  careBalance: number;
+  plants: Array<{
+    gridX: number;
+    gridY: number;
+    plantType: MyGardenPlantType;
+  }>;
+  paths: MyGardenPath[];
+};
+
 export type MyGardenState = {
   careBalance: number;
   lifetimeCare: number;
   dailyCareLimit: number;
   plotLevel: number;
+  minX: number;
+  minY: number;
   width: number;
   height: number;
   maxWidth: number;
@@ -45,6 +57,8 @@ export type MyGardenState = {
   uprootReturn: number;
   nextExpansion: null | {
     level: number;
+    minX: number;
+    minY: number;
     width: number;
     height: number;
     careCost: number;
@@ -52,6 +66,10 @@ export type MyGardenState = {
   plants: MyGardenPlant[];
   paths: MyGardenPath[];
   upgrades: MyGardenUpgradeType[];
+  preview?: {
+    plantingLimit: number;
+    plantingsUsed: number;
+  };
 };
 
 type ProgressRow = {
@@ -77,20 +95,37 @@ type PersonalPathRow = {
   grid_y: number;
 };
 
-function getPlotDimensions(plotLevel: number) {
-  if (plotLevel >= 5) return { width: 20, height: 24 };
-  if (plotLevel === 4) return { width: 20, height: 20 };
-  if (plotLevel === 3) return { width: 16, height: 20 };
-  if (plotLevel === 2) return { width: 16, height: 16 };
-  return { width: 12, height: 16 };
+export function getPlotBounds(plotLevel: number) {
+  const expansions = Math.max(0, Math.floor(plotLevel) - 1);
+  const right = Math.floor((expansions + 3) / 4);
+  const down = Math.floor((expansions + 2) / 4);
+  const left = Math.floor((expansions + 1) / 4);
+  const up = Math.floor(expansions / 4);
+  const minX = -left * 4;
+  const minY = -up * 4;
+  const width = 12 + (left + right) * 4;
+  const height = 16 + (up + down) * 4;
+  return { minX, minY, width, height };
+}
+
+export function getExpansionCareCost(plotLevel: number) {
+  if (plotLevel === 1) return 30;
+  if (plotLevel === 2) return 50;
+  if (plotLevel === 3) return 75;
+  if (plotLevel === 4) return 100;
+  const ringStep = plotLevel - 4;
+  return Math.min(
+    2_000_000_000,
+    100 + 25 * ringStep + (5 * ringStep * (ringStep + 1)) / 2,
+  );
 }
 
 function getNextExpansion(plotLevel: number) {
-  if (plotLevel >= 5) return null;
-  if (plotLevel === 4) return { level: 5, width: 20, height: 24, careCost: 100 };
-  if (plotLevel === 3) return { level: 4, width: 20, height: 20, careCost: 75 };
-  if (plotLevel === 2) return { level: 3, width: 16, height: 20, careCost: 50 };
-  return { level: 2, width: 16, height: 16, careCost: 30 };
+  return {
+    level: plotLevel + 1,
+    ...getPlotBounds(plotLevel + 1),
+    careCost: getExpansionCareCost(plotLevel),
+  };
 }
 
 function getDatabaseMessage(error: unknown, fallback: string) {
@@ -106,7 +141,6 @@ function getDatabaseMessage(error: unknown, fallback: string) {
     "Earn more Care in the Community Garden before planting here.",
     "That garden spot is already planted.",
     "That plant is no longer in My Garden.",
-    "Your current My Garden property is fully expanded.",
     "Earn more Care in the Community Garden before expanding.",
     "That My Garden upgrade is not available.",
     "That upgrade is already part of My Garden.",
@@ -163,18 +197,19 @@ export async function getMyGarden(stewardId: string): Promise<MyGardenState> {
   if (pathsError) throw pathsError;
   if (upgradesError) throw upgradesError;
 
-  const dimensions = getPlotDimensions(progress.plot_level);
+  const dimensions = getPlotBounds(progress.plot_level);
+  const nextExpansion = getNextExpansion(progress.plot_level);
   return {
     careBalance: progress.care_balance,
     lifetimeCare: progress.lifetime_care,
     dailyCareLimit: GARDEN_DAILY_CARE_LIMIT,
     plotLevel: progress.plot_level,
     ...dimensions,
-    maxWidth: 20,
-    maxHeight: 24,
+    maxWidth: nextExpansion.width,
+    maxHeight: nextExpansion.height,
     plantCost: MY_GARDEN_PLANT_COST,
     uprootReturn: MY_GARDEN_UPROOT_RETURN,
-    nextExpansion: getNextExpansion(progress.plot_level),
+    nextExpansion,
     plants: (plants ?? []).map((plant) => ({
       id: plant.id,
       gridX: plant.grid_x,
@@ -256,6 +291,24 @@ export async function toggleMyGardenPath(
   });
   if (error) {
     throw new Error(getDatabaseMessage(error, "That path could not be changed."));
+  }
+  return getMyGarden(stewardId);
+}
+
+export async function importMyGardenPreview(
+  stewardId: string,
+  preview: MyGardenPreviewImport,
+) {
+  const { error } = await getSupabaseAdmin().rpc("import_my_garden_preview", {
+    p_steward_id: stewardId,
+    p_care_balance: preview.careBalance,
+    p_plants: preview.plants,
+    p_paths: preview.paths,
+  });
+  if (error) {
+    throw new Error(
+      getDatabaseMessage(error, "That garden preview could not be saved."),
+    );
   }
   return getMyGarden(stewardId);
 }
