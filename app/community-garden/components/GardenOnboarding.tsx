@@ -35,30 +35,21 @@ export function GardenOnboarding({
       ? {
           kicker: "A small beginning",
           title: "Plant three community flowers",
-          copy: "We will walk through all three. Open Inventory and choose your first seed.",
+          copy: "Open Inventory and choose your plant once. You will use it for all three plantings.",
           action: "Open Inventory",
           onAction: onOpenInventory,
         }
-      : step === "community-tile"
+      : step === "community-tile" || step === "community-repeat"
         ? {
             kicker: `Community planting ${Math.min(3, communityPlantings + 1)} of 3`,
             title: actionReady ? "You are in place" : "Choose the glowing patch",
             copy: actionReady
               ? "Tap the Plant button below to add your flower."
-              : "Tap the highlighted open ground. Your gardener will walk over to it.",
+              : communityPlantings > 0
+                ? "Keep your chosen plant. Tap the next glowing patch to walk over."
+                : "Tap the highlighted open ground. Your gardener will walk over to it.",
             action: null,
             onAction: null,
-          }
-      : step === "community-repeat"
-        ? {
-            kicker: `${communityPlantings} of 3 planted`,
-            title:
-              3 - communityPlantings === 1
-                ? "Plant one more community flower"
-                : `Plant ${Math.max(1, 3 - communityPlantings)} more community flowers`,
-            copy: "Your Care is growing. Open Inventory to choose the next flower.",
-            action: "Open Inventory",
-            onAction: onOpenInventory,
           }
       : step === "my-garden"
         ? {

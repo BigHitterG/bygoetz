@@ -603,6 +603,7 @@
   position: absolute;
   right: -8px;
   top: -10px;
+  z-index: 2;
   display: grid;
   min-width: 22px;
   height: 22px;
@@ -614,6 +615,7 @@
   padding: 0 5px;
   font-size: 0.62rem;
   line-height: 1;
+  pointer-events: none;
   box-shadow: 0 0 0 2px var(--cg-ink), 2px 2px 0 rgba(52, 35, 31, 0.22);
   animation: cg-notice-arrive 480ms ease-out both;
 }

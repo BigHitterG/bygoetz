@@ -116,6 +116,11 @@ export function CommunityGardenApp() {
   const isPreview = !memberGarden;
   const onboardingPlantActionReady =
     ui.action === "plant" && ui.actionEnabled;
+  const showMyGardenInvitation =
+    world === "community" &&
+    !memberGarden &&
+    communityOnboardingPlantings >= 3 &&
+    !isGardenOnboardingFinished(onboardingStep);
   const myGardenTutorialLocked =
     !memberGarden &&
     Boolean(onboardingStep) &&
@@ -356,10 +361,18 @@ export function CommunityGardenApp() {
       } else if (storedCommunityPlantings >= 3) {
         next = "my-garden";
       } else if (storedCommunityPlantings > 0) {
-        next = "community-repeat";
+        next = "community-tile";
       } else {
         next = "plant";
       }
+    } else if (
+      !memberGarden &&
+      !isGardenOnboardingFinished(next) &&
+      storedCommunityPlantings >= 3
+    ) {
+      next = "my-garden";
+    } else if (next === "community-repeat") {
+      next = "community-tile";
     }
     queueMicrotask(() => {
       setCommunityOnboardingPlantings(storedCommunityPlantings);
@@ -572,6 +585,11 @@ export function CommunityGardenApp() {
               ]);
               setShowFreePlantingNotice(true);
             }
+            if (
+              used >= (updatedPreview.garden.preview?.plantingLimit ?? 3)
+            ) {
+              setMembershipOfferOpen(true);
+            }
           }
           return updatedPreview.garden;
         } catch (error) {
@@ -637,16 +655,21 @@ export function CommunityGardenApp() {
         setCommunityOnboardingPlantings(nextPlantings);
         saveCommunityOnboardingPlantings(nextPlantings);
         transitionOnboarding(
-          nextPlantings >= 3 ? "my-garden" : "community-repeat",
+          nextPlantings >= 3 ? "my-garden" : "community-tile",
           ["plant", "select-seed", "community-tile", "community-repeat"],
         );
+        if (nextPlantings < 3) {
+          window.requestAnimationFrame(() => {
+            canvasRef.current?.suggestPlantingSpot();
+          });
+        }
       }
     },
     [transitionOnboarding],
   );
 
   function openInventoryForOnboarding() {
-    transitionOnboarding("select-seed", ["plant", "community-repeat"]);
+    transitionOnboarding("select-seed", ["plant"]);
     transitionOnboarding("personal-seed", ["personal-inventory"]);
     setInventoryOpen(true);
   }
@@ -724,7 +747,7 @@ export function CommunityGardenApp() {
 
         <button
           className={`cg-compact-support${
-            world === "community" && onboardingStep === "my-garden"
+            showMyGardenInvitation
               ? " is-onboarding-highlight"
               : ""
           }`}
@@ -744,7 +767,7 @@ export function CommunityGardenApp() {
             aria-hidden="true"
           />
           {world === "personal" ? "Community Garden" : "My Garden"}
-          {world === "community" && onboardingStep === "my-garden" ? (
+          {showMyGardenInvitation ? (
             <strong className="cg-my-garden-notice" aria-label="My Garden is ready">
               {myGarden.careBalance}
             </strong>

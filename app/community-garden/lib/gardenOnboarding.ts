@@ -34,6 +34,7 @@ export function loadGardenOnboardingStep(): GardenOnboardingStep | null {
     if (value === "preview-free" || value === "preview-full") return "complete";
     if (value === "select-seed") return "plant";
     if (value === "personal-seed") return "personal-inventory";
+    if (value === "community-repeat") return "community-tile";
     return value && VALID_STEPS.has(value as GardenOnboardingStep)
       ? (value as GardenOnboardingStep)
       : null;
