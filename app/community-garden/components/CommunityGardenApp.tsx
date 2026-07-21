@@ -34,6 +34,13 @@ import {
 import { GardenInventory } from "./GardenInventory";
 import { GardenMembershipOffer } from "./GardenMembershipOffer";
 import { GardenUpdateStatus } from "./GardenUpdateStatus";
+import { GardenOnboarding } from "./GardenOnboarding";
+import {
+  isGardenOnboardingFinished,
+  loadGardenOnboardingStep,
+  saveGardenOnboardingStep,
+  type GardenOnboardingStep,
+} from "../lib/gardenOnboarding";
 
 const INITIAL_UI: GardenUiState = {
   action: null,
@@ -93,6 +100,9 @@ export function CommunityGardenApp() {
   const [inventoryOpen, setInventoryOpen] = useState(false);
   const [membershipOfferOpen, setMembershipOfferOpen] = useState(false);
   const [guestPreviewReady, setGuestPreviewReady] = useState(false);
+  const [accountChecked, setAccountChecked] = useState(false);
+  const [onboardingStep, setOnboardingStep] =
+    useState<GardenOnboardingStep | null>(null);
   const [restoreMessage, setRestoreMessage] = useState("");
   const restoredJourneyRef = useRef(false);
   const adLabel = process.env.NEXT_PUBLIC_COMMUNITY_GARDEN_AD_PLACEHOLDER;
@@ -175,6 +185,8 @@ export function CommunityGardenApp() {
       return nextGarden;
     } catch {
       return null;
+    } finally {
+      setAccountChecked(true);
     }
   }, []);
 
@@ -186,6 +198,19 @@ export function CommunityGardenApp() {
       setGuestPreviewReady(true);
     });
   }, []);
+
+  const transitionOnboarding = useCallback(
+    (next: GardenOnboardingStep, from?: GardenOnboardingStep[]) => {
+      setOnboardingStep((current) => {
+        if (isGardenOnboardingFinished(current)) return current;
+        if (from && (!current || !from.includes(current))) return current;
+        saveGardenOnboardingStep(next);
+        trackMetaCustomEvent("BasilOnboardingStep", { step: next });
+        return next;
+      });
+    },
+    [],
+  );
 
   useEffect(() => {
     const sendPulse = () => {
@@ -259,17 +284,27 @@ export function CommunityGardenApp() {
 
   useEffect(() => {
     const client = getGardenAccountClient();
-    if (!client) return;
+    if (!client) {
+      queueMicrotask(() => setAccountChecked(true));
+      return;
+    }
 
-    void client.auth.getSession().then(({ data }) => {
-      setSession(data.session);
-    });
+    void client.auth
+      .getSession()
+      .then(({ data }) => {
+        setSession(data.session);
+        if (!data.session) setAccountChecked(true);
+      })
+      .catch(() => setAccountChecked(true));
 
     const { data: listener } = client.auth.onAuthStateChange((_event, nextSession) => {
       setSession(nextSession);
       if (!nextSession) {
         setMemberGarden(null);
         setWorld("community");
+        setAccountChecked(true);
+      } else {
+        setAccountChecked(false);
       }
     });
 
@@ -280,6 +315,46 @@ export function CommunityGardenApp() {
     if (!guestPreviewReady || !session) return;
     queueMicrotask(() => void loadMembership(session));
   }, [guestPreviewReady, loadMembership, session]);
+
+  useEffect(() => {
+    if (
+      !guestPreviewReady ||
+      !accountChecked ||
+      ui.connection === "connecting" ||
+      onboardingStep
+    ) {
+      return;
+    }
+
+    const stored = loadGardenOnboardingStep();
+    let next = stored;
+    if (memberGarden) {
+      next = "complete";
+    } else if (!next) {
+      const plantings = guestPreviewRef.current.garden.preview?.plantingsUsed ?? 0;
+      if (plantings >= 3) next = "complete";
+      else if (
+        plantings > 0 ||
+        guestPreviewRef.current.journey?.world === "personal"
+      ) {
+        next = "preview";
+      } else if (guestPreviewRef.current.garden.lifetimeCare > 0) {
+        next = "my-garden";
+      } else {
+        next = "plant";
+      }
+    }
+    queueMicrotask(() => {
+      saveGardenOnboardingStep(next);
+      setOnboardingStep(next);
+    });
+  }, [
+    accountChecked,
+    guestPreviewReady,
+    memberGarden,
+    onboardingStep,
+    ui.connection,
+  ]);
 
   useEffect(() => {
     if (!guestPreviewReady || memberGarden) return;
@@ -338,6 +413,9 @@ export function CommunityGardenApp() {
 
   const claimCommunityContribution = useCallback(
     (contribution: GardenContribution) => {
+      if (contribution.action === "plant") {
+        transitionOnboarding("my-garden", ["plant"]);
+      }
       if (!session || !memberGarden) {
         const award = awardGuestCare(
           guestPreviewRef.current,
@@ -437,7 +515,7 @@ export function CommunityGardenApp() {
           }
         });
     },
-    [commitGuestPreview, memberGarden, session],
+    [commitGuestPreview, memberGarden, session, transitionOnboarding],
   );
 
   const mutateMyGarden = useCallback(
@@ -452,11 +530,13 @@ export function CommunityGardenApp() {
           const used = updatedPreview.garden.preview?.plantingsUsed ?? 0;
           const limit = updatedPreview.garden.preview?.plantingLimit ?? 3;
           if (mutation.action === "plant" && used >= limit) {
+            transitionOnboarding("complete", ["preview"]);
             setMembershipOfferOpen(true);
           }
           return updatedPreview.garden;
         } catch (error) {
           if (error instanceof GuestPreviewLimitError) {
+            transitionOnboarding("complete", ["preview"]);
             setMembershipOfferOpen(true);
           }
           throw error;
@@ -480,7 +560,7 @@ export function CommunityGardenApp() {
       setMemberGarden(updated);
       return updated;
     },
-    [commitGuestPreview, memberGarden, session],
+    [commitGuestPreview, memberGarden, session, transitionOnboarding],
   );
 
   function switchWorld() {
@@ -491,6 +571,7 @@ export function CommunityGardenApp() {
     }
     setMenuOpen(false);
     setInventoryOpen(false);
+    transitionOnboarding("preview", ["plant", "my-garden"]);
     setWorld("personal");
   }
 
@@ -577,6 +658,11 @@ export function CommunityGardenApp() {
             aria-hidden="true"
           />
           {world === "personal" ? "Community Garden" : "My Garden"}
+          {world === "community" && onboardingStep === "my-garden" ? (
+            <strong className="cg-my-garden-notice" aria-label="My Garden is ready">
+              {myGarden.careBalance}
+            </strong>
+          ) : null}
         </button>
 
         {world === "personal" ? (
@@ -661,6 +747,19 @@ export function CommunityGardenApp() {
             {restoreMessage}
           </p>
         ) : null}
+
+        <GardenOnboarding
+          step={onboardingStep}
+          previewPlantings={myGarden.preview?.plantingsUsed ?? 0}
+          previewLimit={myGarden.preview?.plantingLimit ?? 3}
+          inventoryOpen={inventoryOpen}
+          onDismiss={() => transitionOnboarding("dismissed")}
+          onOpenInventory={() => setInventoryOpen(true)}
+          onOpenMyGarden={() => {
+            transitionOnboarding("preview", ["my-garden"]);
+            setWorld("personal");
+          }}
+        />
       </section>
 
       {world === "community" ? <FutureAdSlot label={adLabel} /> : null}
@@ -681,6 +780,7 @@ export function CommunityGardenApp() {
         onClose={() => setMembershipOfferOpen(false)}
         onLater={() => {
           setMembershipOfferOpen(false);
+          transitionOnboarding("complete", ["preview"]);
           setWorld("community");
         }}
         onJoin={() => {

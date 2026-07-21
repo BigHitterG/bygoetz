@@ -150,6 +150,7 @@
 .cg-inventory button:focus-visible,
 .cg-library-tabs button:focus-visible,
 .cg-zoom-control button:focus-visible,
+.cg-onboarding-card button:focus-visible,
 .cg-canvas:focus-visible {
   outline: 3px solid #1f6e8c;
   outline-offset: 3px;
@@ -590,6 +591,133 @@
 .cg-compact-support span {
   color: var(--cg-red);
   font-size: 1rem;
+}
+
+.cg-my-garden-notice {
+  position: absolute;
+  right: -8px;
+  top: -10px;
+  display: grid;
+  min-width: 22px;
+  height: 22px;
+  place-items: center;
+  border: 2px solid var(--cg-cream);
+  border-radius: 999px;
+  background: var(--cg-red);
+  color: #fff9e9;
+  padding: 0 5px;
+  font-size: 0.62rem;
+  line-height: 1;
+  box-shadow: 0 0 0 2px var(--cg-ink), 2px 2px 0 rgba(52, 35, 31, 0.22);
+  animation: cg-notice-arrive 480ms ease-out both;
+}
+
+.cg-onboarding-card {
+  position: absolute;
+  right: max(12px, env(safe-area-inset-right));
+  bottom: max(174px, calc(env(safe-area-inset-bottom) + 162px));
+  z-index: 11;
+  display: grid;
+  width: min(260px, calc(100% - 24px));
+  gap: 6px;
+  border: 2px solid var(--cg-ink);
+  background: rgba(255, 244, 223, 0.97);
+  padding: 12px 34px 12px 12px;
+  box-shadow: 4px 4px 0 rgba(52, 35, 31, 0.22);
+}
+
+.cg-onboarding-card.is-my-garden {
+  right: auto;
+  left: max(12px, env(safe-area-inset-left));
+  bottom: max(72px, calc(env(safe-area-inset-bottom) + 60px));
+}
+
+.cg-onboarding-card::after {
+  position: absolute;
+  right: 24px;
+  bottom: -10px;
+  width: 16px;
+  height: 16px;
+  border-right: 2px solid var(--cg-ink);
+  border-bottom: 2px solid var(--cg-ink);
+  background: var(--cg-cream);
+  content: "";
+  transform: rotate(45deg);
+}
+
+.cg-onboarding-card.is-my-garden::after {
+  right: auto;
+  left: 24px;
+}
+
+.cg-onboarding-card p,
+.cg-onboarding-card h2,
+.cg-onboarding-card > span {
+  margin: 0;
+}
+
+.cg-onboarding-card p {
+  color: var(--cg-red);
+  font-size: 0.54rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.cg-onboarding-card h2 {
+  font-size: 0.83rem;
+  line-height: 1.1;
+  text-transform: uppercase;
+}
+
+.cg-onboarding-card > span {
+  color: #6f4c3e;
+  font-size: 0.62rem;
+  font-weight: 700;
+  line-height: 1.38;
+}
+
+.cg-onboarding-dismiss {
+  position: absolute;
+  right: 7px;
+  top: 7px;
+  display: grid;
+  width: 25px;
+  height: 25px;
+  place-items: center;
+  border: 0;
+  background: transparent;
+  color: #6f4c3e;
+  cursor: pointer;
+  padding: 0;
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.cg-onboarding-action {
+  min-height: 34px;
+  justify-self: start;
+  border: 2px solid var(--cg-ink);
+  background: var(--cg-coral);
+  color: #fff9e9;
+  cursor: pointer;
+  padding: 6px 9px;
+  font: inherit;
+  font-size: 0.6rem;
+  font-weight: 900;
+  box-shadow: 2px 2px 0 rgba(52, 35, 31, 0.2);
+}
+
+@keyframes cg-notice-arrive {
+  from {
+    opacity: 0;
+    transform: scale(0.55);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 .cg-home-mark {

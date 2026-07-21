@@ -19,6 +19,7 @@ export type GardenSnapshot = {
   nextRefreshAt: string;
   plantCount: number;
   plants: PlantRecord[];
+  spawnPoints: Array<{ gridX: number; gridY: number }>;
 };
 
 type GardenActionResult = {
@@ -135,12 +136,24 @@ export async function fetchGardenSnapshot(): Promise<GardenSnapshot> {
         )
         .map(normalizePlant)
     : [];
+  const spawnPoints = Array.isArray(data.spawnPoints)
+    ? data.spawnPoints.flatMap((point) => {
+        if (!point || typeof point !== "object") return [];
+        const candidate = point as Record<string, unknown>;
+        const gridX = Number(candidate.gridX);
+        const gridY = Number(candidate.gridY);
+        return Number.isInteger(gridX) && Number.isInteger(gridY)
+          ? [{ gridX, gridY }]
+          : [];
+      })
+    : [];
   return {
     version: Number(data.version),
     generatedAt: String(data.generatedAt),
     nextRefreshAt: String(data.nextRefreshAt),
     plantCount: Number(data.plantCount ?? plants.length),
     plants,
+    spawnPoints,
   };
 }
 

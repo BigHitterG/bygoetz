@@ -48,6 +48,14 @@ The Phase 1 design can serve 5,000 mostly-reading simultaneous sessions because 
 - Recovery: repeated action IDs return the original result.
 - Conflicts: current first-valid-plant-wins and watering rules remain authoritative.
 
+## Cached frontier entry (implemented)
+
+- Each ten-minute snapshot now includes a small list of reusable arrival points.
+- Arrival points are calculated from the snapshot already in memory, so no extra database query or per-visitor map scan is required.
+- Candidates stay inside the largest connected garden footprint, contain nearby plants, retain open planting space, and are separated from one another.
+- A first load chooses one candidate locally. A restored camera location always wins, so refresh and checkout recovery do not unexpectedly move the player.
+- This is an entry-placement aid, not a new region system. The garden remains one 160 by 160 map with the same planting and watering rules.
+
 No visible countdown is required. A future ecological or storytelling timer can be added as a product feature without becoming part of action correctness.
 
 ## Free-tier-safe verification

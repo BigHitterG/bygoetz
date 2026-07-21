@@ -136,6 +136,7 @@ type Runtime = {
   }>;
   lastUiPublishAt: number;
   hasMoved: boolean;
+  spawnApplied: boolean;
   moving: boolean;
   reducedMotion: boolean;
   configured: boolean;
@@ -640,6 +641,7 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
       cachedPlantMapPoints: [],
       lastUiPublishAt: 0,
       hasMoved: false,
+      spawnApplied: false,
       moving: false,
       reducedMotion: false,
       configured: isGardenConfigured(),
@@ -833,7 +835,7 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
       }
       const gridX = Math.floor(runtime.mary.x / GARDEN_CONFIG.tileSize);
       const gridY = Math.floor(runtime.mary.y / GARDEN_CONFIG.tileSize);
-      const bounds = getLoadedBounds(gridX, gridY);
+      let bounds = getLoadedBounds(gridX, gridY);
 
       const showLocalSnapshot = () => {
         runtime.plants = new Map(
@@ -892,6 +894,28 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
         );
         runtime.mapRevision += 1;
         runtime.snapshotNextRefreshAt = Date.parse(snapshot.nextRefreshAt);
+        if (
+          !runtime.spawnApplied &&
+          !runtime.hasMoved &&
+          !runtime.target &&
+          snapshot.spawnPoints.length > 0
+        ) {
+          const spawn =
+            snapshot.spawnPoints[
+              Math.floor(Math.random() * snapshot.spawnPoints.length)
+            ];
+          const destination = gridToWorld(spawn.gridX, spawn.gridY);
+          runtime.mary = { ...destination };
+          runtime.camera = { ...destination };
+          runtime.duck = {
+            x: clampRuntimeCoordinate(runtime, destination.x - 18, "x"),
+            y: clampRuntimeCoordinate(runtime, destination.y + 10, "y"),
+          };
+          runtime.path = [{ ...destination }];
+          runtime.loadedChunkKey = "";
+          runtime.spawnApplied = true;
+          bounds = getLoadedBounds(spawn.gridX, spawn.gridY);
+        }
         showLocalSnapshot();
         runtime.connection = "online";
         runtime.statusMessage = "The shared garden is connected.";
@@ -942,6 +966,7 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
         },
         restoreView(mapX, mapY, zoom, selectedTool) {
           const runtime = runtimeRef.current;
+          if (runtime.mode === "community") runtime.spawnApplied = true;
           const requestedGridX = getRuntimeGridFromMapPercentage(
             runtime,
             mapX,

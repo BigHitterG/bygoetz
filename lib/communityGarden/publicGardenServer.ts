@@ -1,9 +1,11 @@
 import { createHmac, randomUUID, timingSafeEqual } from "node:crypto";
 import type { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
+import { computeFrontierSpawnPoints } from "./frontierSpawns";
 
 const SESSION_COOKIE = "basil-garden-session";
 const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 365;
+const snapshotCache = new Map<number, Record<string, unknown>>();
 
 type SignedSession = {
   id: string;
@@ -83,7 +85,21 @@ export async function loadCommunityGardenSnapshot() {
   if (!data || typeof data !== "object") {
     throw new Error("The shared garden did not return a snapshot.");
   }
-  return data as Record<string, unknown>;
+  const snapshot = data as Record<string, unknown>;
+  const version = Number(snapshot.version);
+  const cached = snapshotCache.get(version);
+  if (cached) return cached;
+
+  const plants = Array.isArray(snapshot.plants) ? snapshot.plants : [];
+  const enrichedSnapshot: Record<string, unknown> = {
+    ...snapshot,
+    spawnPoints: computeFrontierSpawnPoints(plants, version),
+  };
+  snapshotCache.set(version, enrichedSnapshot);
+  for (const cachedVersion of snapshotCache.keys()) {
+    if (cachedVersion !== version) snapshotCache.delete(cachedVersion);
+  }
+  return enrichedSnapshot;
 }
 
 export async function submitCommunityGardenAction(input: {
