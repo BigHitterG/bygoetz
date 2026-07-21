@@ -10,8 +10,8 @@ Use this file as the manual source of truth. Mark an item complete only when its
 
 - [x] Initial advertised market is US-only.
 - [x] Garden Membership price is frozen at a one-time $6.99 for the first measured test.
-- [ ] Owner accepts an initial Meta research budget of `$_____` within the recommended $100-150 range.
-- [ ] Owner accepts that the initial budget is research money and is not guaranteed profit.
+- [x] Owner accepts an initial Meta research budget capped at $150.
+- [x] Owner accepts that the initial budget is research money and is not guaranteed profit.
 - [x] No app-store launch is included in the first web test.
 - [x] No unrelated gameplay work is included in Phase 0.
 
@@ -47,8 +47,8 @@ The owner reported that Meta Ads is open in the ChatGPT browser. That confirms a
 - [ ] Confirm the domain is owned.
 - [ ] Confirm the exact Meta business, Page, ad account, and dataset/Pixel.
 - [ ] Confirm Stripe, Vercel, Supabase, Resend, and GitHub owner/admin access.
-- [ ] Enter and accept the initial research budget.
-- [ ] Confirm the $6.99 price freeze and US-only scope with the launch owner.
+- [x] Enter and accept the $150 initial research budget.
+- [x] Confirm the $6.99 price freeze and US-only scope with the launch owner.
 
 Phase 0 completion date: `_____`  
 Owner approval: `_____`  
@@ -163,7 +163,7 @@ Completion date: `_____`
 - [ ] Use Sales objective, Website destination, authoritative Purchase optimization.
 - [ ] Target US, ages 24-54, all genders, Advantage+ audience/placements.
 - [ ] Use one ad set and three to four creatives.
-- [ ] Set `$_____/day` and hard total cap `$_____` within the approved research budget.
+- [ ] Set `$_____/day` and enforce the approved $150 hard total cap.
 - [ ] Reconcile spend/click/session/signup/checkout/purchase daily.
 - [ ] Reconcile every purchase across Stripe, Supabase, first-party analytics, and Meta.
 - [ ] Stop immediately for duplicate purchase, missing entitlement, lost guest state, broken verification, or major device failure.
@@ -211,4 +211,3 @@ Do not spend against cold traffic until every launch-critical row is green.
 Final go/no-go owner: `_____`  
 Decision/date: `_____`  
 Approved campaign/ad account: `_____`
-

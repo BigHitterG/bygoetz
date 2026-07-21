@@ -2,11 +2,12 @@
 
 Last audited: July 21, 2026  
 Launch scope: US-only web launch, one-time Garden Membership at $6.99  
+Owner-approved initial Meta research cap: $150
 Phase 0 rule: documentation and launch decisions only; no gameplay or production behavior changes
 
 ## Launch status
 
-Basil is live and suitable for controlled external testing, but paid advertising must wait for the Phase 0 manual gate and the measurement, policy, and reliability gates below. The initial ad budget is research money, not forecast profit.
+Basil is live and suitable for controlled external testing, but paid advertising must wait for the Phase 0 manual gate and the measurement, policy, and reliability gates below. The owner has approved a $150 initial ad-research cap and accepts that this is research money, not forecast profit.
 
 Phase 0 has established the technical baseline. It is not complete until the owner confirms domain ownership, the exact Meta assets, dashboard access for every production dependency, and the research budget in [the launch checklist](./basil-launch-checklist.md).
 
@@ -212,7 +213,7 @@ Gate: every creative lands on the verified domain, attribution survives the full
 
 ### Phase 8 - First Meta research test
 
-Run a US-only Meta Sales campaign optimized for the authoritative Purchase event, broad Advantage+ audience/placements, ages 24-54, all genders, one ad set, and three to four creatives. Spend $10-15 per day with a hard total cap of $100-150.
+Run a US-only Meta Sales campaign optimized for the authoritative Purchase event, broad Advantage+ audience/placements, ages 24-54, all genders, one ad set, and three to four creatives. Spend $10-15 per day with the owner-approved hard total cap of $150.
 
 Gate: spend never exceeds the owner-approved cap; purchases reconcile between Stripe, Supabase, first-party events, and Meta; pause immediately for duplicate purchases, broken verification, lost guest work, entitlement failures, or major device breakage.
 
@@ -231,4 +232,3 @@ Gate: retained web users and measured demand justify the platform cost. App-stor
 ## Change-control rule
 
 Until the first measured ad test is complete, a launch phase may fix a blocker discovered by its gate, but it should not introduce unrelated gameplay, economy, map, art, or monetization changes. Update [the launch checklist](./basil-launch-checklist.md) after each phase with the date, owner, evidence, commit, deployment, and outstanding blockers.
-
