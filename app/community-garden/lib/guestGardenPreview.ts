@@ -12,11 +12,13 @@ const CHECKOUT_TRANSFER_KEY = "basil-guest-garden-checkout-v1";
 const CHECKOUT_TRANSFER_LIFETIME_MS = 7 * 24 * 60 * 60 * 1000;
 const QUICK_CARE_LIMIT = 20;
 const STEADY_ACTIONS_PER_CARE = 4;
+const ONBOARDING_PLANTING_BONUSES = 3;
 export const GUEST_PLANTING_LIMIT = 3;
 
 export type GuestGardenPreview = {
   garden: MyGardenState;
   quickCareEarned: number;
+  onboardingPlantingBonuses: number;
   steadyActions: number;
   journey?: {
     world: "community" | "personal";
@@ -101,6 +103,7 @@ function normalizePaths(value: unknown) {
 export function createGuestGardenPreview(): GuestGardenPreview {
   return {
     quickCareEarned: 0,
+    onboardingPlantingBonuses: 0,
     steadyActions: 0,
     garden: {
       careBalance: 0,
@@ -167,8 +170,18 @@ export function loadGuestGardenPreview() {
     );
     const careBalance = clampInteger(gardenRecord.careBalance, 0, 100);
     const lifetimeCare = clampInteger(gardenRecord.lifetimeCare, careBalance, 500);
+    const quickCareEarned = clampInteger(
+      parsed.quickCareEarned,
+      0,
+      QUICK_CARE_LIMIT,
+    );
     return {
-      quickCareEarned: clampInteger(parsed.quickCareEarned, 0, QUICK_CARE_LIMIT),
+      quickCareEarned,
+      onboardingPlantingBonuses: clampInteger(
+        parsed.onboardingPlantingBonuses ?? Math.ceil(quickCareEarned / 2),
+        0,
+        ONBOARDING_PLANTING_BONUSES,
+      ),
       steadyActions: clampInteger(parsed.steadyActions, 0, 10000),
       journey:
         parsed.journey && typeof parsed.journey === "object"
@@ -252,17 +265,23 @@ export function preserveGuestGardenPreviewForCheckout(
 export function awardGuestCare(
   current: GuestGardenPreview,
   requestedCare: number,
+  action: "plant" | "water",
 ): GuestCareAward {
   const value = clampInteger(requestedCare, 0, 5);
   let awardedCare = 0;
   let quickCareEarned = current.quickCareEarned;
+  let onboardingPlantingBonuses = current.onboardingPlantingBonuses;
   let steadyActions = current.steadyActions;
   let steadyProgress = steadyActions % STEADY_ACTIONS_PER_CARE;
 
-  if (quickCareEarned < QUICK_CARE_LIMIT) {
-    awardedCare = Math.min(value, QUICK_CARE_LIMIT - quickCareEarned);
+  if (
+    action === "plant" &&
+    value > 0 &&
+    onboardingPlantingBonuses < ONBOARDING_PLANTING_BONUSES
+  ) {
+    awardedCare = 2;
     quickCareEarned += awardedCare;
-    steadyProgress = 0;
+    onboardingPlantingBonuses += 1;
   } else {
     steadyActions += 1;
     steadyProgress = steadyActions % STEADY_ACTIONS_PER_CARE;
@@ -273,7 +292,9 @@ export function awardGuestCare(
     awardedCare,
     steadyProgress,
     preview: {
+      ...current,
       quickCareEarned,
+      onboardingPlantingBonuses,
       steadyActions,
       garden: {
         ...current.garden,

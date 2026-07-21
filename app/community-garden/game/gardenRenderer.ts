@@ -159,7 +159,21 @@ function drawGroundMark(
   ctx.fillRect(x + 10 * scale, y + 8 * scale, 3 * scale, scale);
 }
 
-function drawSuggestedPlantingCell(
+function getSuggestedPlantingScreen(
+  cell: NonNullable<SelectedCell>,
+  camera: WorldPoint,
+  viewport: GardenViewport,
+  zoom: number,
+) {
+  return worldToScreen(
+    gridToWorld(cell.gridX, cell.gridY),
+    camera,
+    viewport,
+    zoom,
+  );
+}
+
+function drawSuggestedPlantingHighlight(
   ctx: CanvasRenderingContext2D,
   cell: SelectedCell,
   camera: WorldPoint,
@@ -168,12 +182,7 @@ function drawSuggestedPlantingCell(
   zoom: number,
 ) {
   if (!cell) return;
-  const screen = worldToScreen(
-    gridToWorld(cell.gridX, cell.gridY),
-    camera,
-    viewport,
-    zoom,
-  );
+  const screen = getSuggestedPlantingScreen(cell, camera, viewport, zoom);
   const pulse = 0.84 + Math.sin(now / 180) * 0.12;
   const width = GARDEN_CONFIG.tileSize * zoom;
   const height = GARDEN_CONFIG.tileScreenHeight * zoom * 1.06;
@@ -188,27 +197,96 @@ function drawSuggestedPlantingCell(
   ctx.ellipse(0, 0, width / 2, height / 2, 0, 0, Math.PI * 2);
   ctx.fill();
   ctx.stroke();
-  ctx.setLineDash([]);
+  ctx.restore();
+}
+
+function rectanglesOverlap(
+  first: { left: number; top: number; right: number; bottom: number },
+  second: { left: number; top: number; right: number; bottom: number },
+) {
+  return (
+    first.left < second.right &&
+    first.right > second.left &&
+    first.top < second.bottom &&
+    first.bottom > second.top
+  );
+}
+
+function drawSuggestedPlantingLabel(
+  ctx: CanvasRenderingContext2D,
+  cell: SelectedCell,
+  mary: WorldPoint,
+  camera: WorldPoint,
+  viewport: GardenViewport,
+  zoom: number,
+) {
+  if (!cell) return;
+  const screen = getSuggestedPlantingScreen(cell, camera, viewport, zoom);
+  const maryScreen = worldToScreen(mary, camera, viewport, zoom);
+  const width = GARDEN_CONFIG.tileSize * zoom;
+  const height = GARDEN_CONFIG.tileScreenHeight * zoom * 1.06;
   const labelWidth = Math.max(54, Math.round(62 * zoom));
   const labelHeight = Math.max(18, Math.round(19 * zoom));
-  const labelY = -height / 2 - labelHeight - Math.max(5, 6 * zoom);
+  const gap = Math.max(16, Math.round(18 * zoom));
+  const candidates = [
+    { x: 0, y: -height / 2 - labelHeight - gap },
+    { x: width / 2 + labelWidth / 2 + gap, y: -labelHeight / 2 },
+    { x: -width / 2 - labelWidth / 2 - gap, y: -labelHeight / 2 },
+    { x: 0, y: height / 2 + gap },
+  ];
+  const playerBounds = {
+    left: maryScreen.x - screen.x - Math.max(16, 18 * zoom),
+    right: maryScreen.x - screen.x + Math.max(16, 18 * zoom),
+    top: maryScreen.y - screen.y - Math.max(34, 42 * zoom),
+    bottom: maryScreen.y - screen.y + Math.max(10, 12 * zoom),
+  };
+  const padding = 8;
+  const positionedCandidates = candidates.map((candidate) => ({
+    x: Math.min(
+      viewport.width - padding - screen.x - labelWidth / 2,
+      Math.max(padding - screen.x + labelWidth / 2, candidate.x),
+    ),
+    y: Math.min(
+      viewport.height - padding - screen.y - labelHeight,
+      Math.max(padding - screen.y, candidate.y),
+    ),
+  }));
+  const chosen = positionedCandidates.find((candidate) => {
+    const bounds = {
+      left: candidate.x - labelWidth / 2,
+      top: candidate.y,
+      right: candidate.x + labelWidth / 2,
+      bottom: candidate.y + labelHeight,
+    };
+    return !rectanglesOverlap(bounds, playerBounds);
+  });
+  if (!chosen) return;
+  const labelX = chosen.x;
+  const labelY = chosen.y;
+
+  ctx.save();
+  ctx.translate(Math.round(screen.x), Math.round(screen.y));
+  ctx.globalAlpha = 0.96;
+  ctx.strokeStyle = "#34231f";
+  ctx.lineWidth = Math.max(2, Math.round(2 * zoom));
+  ctx.beginPath();
+  ctx.moveTo(0, 0);
+  ctx.lineTo(
+    Math.max(labelX - labelWidth / 2, Math.min(0, labelX + labelWidth / 2)),
+    Math.max(labelY, Math.min(0, labelY + labelHeight)),
+  );
+  ctx.stroke();
   ctx.globalAlpha = 0.96;
   ctx.fillStyle = "#fff4df";
   ctx.strokeStyle = "#34231f";
   ctx.lineWidth = 2;
-  ctx.fillRect(-labelWidth / 2, labelY, labelWidth, labelHeight);
-  ctx.strokeRect(-labelWidth / 2, labelY, labelWidth, labelHeight);
+  ctx.fillRect(labelX - labelWidth / 2, labelY, labelWidth, labelHeight);
+  ctx.strokeRect(labelX - labelWidth / 2, labelY, labelWidth, labelHeight);
   ctx.fillStyle = "#b83136";
   ctx.font = `900 ${Math.max(8, Math.round(8 * zoom))}px monospace`;
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  ctx.fillText("PLANT HERE", 0, labelY + labelHeight / 2 + 1);
-  ctx.beginPath();
-  ctx.moveTo(-4, labelY + labelHeight);
-  ctx.lineTo(0, labelY + labelHeight + 5);
-  ctx.lineTo(4, labelY + labelHeight);
-  ctx.fillStyle = "#34231f";
-  ctx.fill();
+  ctx.fillText("PLANT HERE", labelX, labelY + labelHeight / 2 + 1);
   ctx.restore();
 }
 
@@ -1285,7 +1363,7 @@ export function renderGarden(ctx: CanvasRenderingContext2D, state: RenderGardenS
       state.personalGarden.height,
       state.personalGarden.nextExpansion,
     );
-    drawSuggestedPlantingCell(
+    drawSuggestedPlantingHighlight(
       ctx,
       state.suggestedPlantingCell,
       state.camera,
@@ -1312,6 +1390,14 @@ export function renderGarden(ctx: CanvasRenderingContext2D, state: RenderGardenS
     );
     drawDuck(ctx, state.duck, state.camera, state.viewport, state.moving, state.now, state.zoom);
     drawMary(ctx, state.mary, state.camera, state.viewport, state.moving, state.now, state.zoom);
+    drawSuggestedPlantingLabel(
+      ctx,
+      state.suggestedPlantingCell,
+      state.mary,
+      state.camera,
+      state.viewport,
+      state.zoom,
+    );
     drawEffects(ctx, state.effects, state.camera, state.viewport, state.now, state.zoom);
     drawSelection(ctx, state.selected, state.camera, state.viewport, state.zoom);
     return;
@@ -1362,7 +1448,7 @@ export function renderGarden(ctx: CanvasRenderingContext2D, state: RenderGardenS
   ctx.drawImage(baseLayer, 0, 0);
   ctx.drawImage(soilLayer, 0, 0);
   ctx.drawImage(greenLayer, 0, 0);
-  drawSuggestedPlantingCell(
+  drawSuggestedPlantingHighlight(
     ctx,
     state.suggestedPlantingCell,
     state.camera,
@@ -1384,6 +1470,14 @@ export function renderGarden(ctx: CanvasRenderingContext2D, state: RenderGardenS
   );
   drawDuck(ctx, state.duck, state.camera, state.viewport, state.moving, state.now, state.zoom);
   drawMary(ctx, state.mary, state.camera, state.viewport, state.moving, state.now, state.zoom);
+  drawSuggestedPlantingLabel(
+    ctx,
+    state.suggestedPlantingCell,
+    state.mary,
+    state.camera,
+    state.viewport,
+    state.zoom,
+  );
   drawEffects(ctx, state.effects, state.camera, state.viewport, state.now, state.zoom);
   drawSelection(ctx, state.selected, state.camera, state.viewport, state.zoom);
 }

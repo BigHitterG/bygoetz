@@ -467,6 +467,7 @@ export function CommunityGardenApp() {
         const award = awardGuestCare(
           guestPreviewRef.current,
           contribution.careValue,
+          contribution.action,
         );
         commitGuestPreview(award.preview);
         canvasRef.current?.showCareReward(
@@ -504,6 +505,7 @@ export function CommunityGardenApp() {
               const award = awardGuestCare(
                 guestPreviewRef.current,
                 contribution.careValue,
+                contribution.action,
               );
               commitGuestPreview(award.preview);
               canvasRef.current?.showCareReward(award.awardedCare);

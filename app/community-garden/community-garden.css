@@ -715,9 +715,16 @@
   left: auto;
 }
 
+.cg-onboarding-card.is-plant,
+.cg-onboarding-card.is-personal-inventory {
+  right: auto;
+  bottom: max(82px, calc(env(safe-area-inset-bottom) + 70px));
+  left: max(12px, env(safe-area-inset-left));
+}
+
 .cg-onboarding-card.is-community-tile,
 .cg-onboarding-card.is-personal-tile {
-  bottom: max(174px, calc(env(safe-area-inset-bottom) + 162px));
+  bottom: max(108px, calc(env(safe-area-inset-bottom) + 96px));
 }
 
 .cg-onboarding-card::after {
@@ -730,7 +737,22 @@
   border-bottom: 2px solid var(--cg-ink);
   background: var(--cg-cream);
   content: "";
+  display: none;
   transform: rotate(45deg);
+}
+
+.cg-onboarding-card.is-plant::after,
+.cg-onboarding-card.is-personal-inventory::after,
+.cg-onboarding-card.is-community-tile.is-action-ready::after,
+.cg-onboarding-card.is-personal-tile.is-action-ready::after,
+.cg-onboarding-card.is-my-garden::after {
+  display: block;
+}
+
+.cg-onboarding-card.is-plant::after,
+.cg-onboarding-card.is-personal-inventory::after {
+  right: auto;
+  left: 24px;
 }
 
 .cg-onboarding-card.is-my-garden::after {

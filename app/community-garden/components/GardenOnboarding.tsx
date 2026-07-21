@@ -87,7 +87,7 @@ export function GardenOnboarding({
 
   return (
     <aside
-      className={`cg-onboarding-card is-${step}`}
+      className={`cg-onboarding-card is-${step}${actionReady ? " is-action-ready" : ""}`}
       aria-labelledby="cg-onboarding-title"
     >
       <button
