@@ -20,17 +20,26 @@ Use this file as the manual source of truth. Mark an item complete only when its
 | System | Status | Evidence or non-secret identifier | Owner / next action |
 | --- | --- | --- | --- |
 | `basilcommunitygarden.com` | Not confirmed owned. Available for $11.25/year through Vercel at audit time. | `https://vercel.com/domains/search?q=basilcommunitygarden.com` | Owner purchases at normal price; do not attach or redirect yet. |
-| Meta Business Portfolio | Not verified | Business name/ID: `_____` | Owner confirms administrator access. |
-| Facebook Page for Basil or By Goetz | Not verified | Page name/ID: `_____` | Owner chooses the launch identity and confirms access. |
-| Meta ad account | Not verified | Ad account name/ID: `_____` | Owner confirms billing/admin access. |
-| Meta Events Manager dataset/Pixel | Not verified and not visibly active on production | Dataset/Pixel name/ID: `_____` | Owner confirms access; Phase 3 activates and tests it. |
+| Meta Business Portfolio | Confirmed read-only in Meta Business settings | `Thomas R Goetz` / `314343197818474` | Full-access owner account was visible. Keep this as the proposed Basil business owner. |
+| Facebook Page for Basil or By Goetz | Confirmed read-only | `Goetz` / `156574785247266`, owned by `Thomas R Goetz` | Proposed launch Page. `GetzLab` is also accessible but is not the proposed Basil identity. |
+| Meta ad account | Two accounts found; launch account decision required | Current Ads Manager account: `67385321`. Portfolio-owned account: `Thomas R Goetz's ad account` / `555175360336933`. | Choose one before Phase 3. Prefer the portfolio-owned account unless billing/history requirements justify the legacy account. |
+| Meta Events Manager dataset/Pixel | Active portfolio Pixel confirmed; separate inactive dataset also found | Proposed: `ByGoetz Website Pixel` / `1421445296116963`, receiving Meta Pixel and Conversions API events. Separate: `Codex Connection` / `28293873963551687`, inactive and never received an event. | Use the active portfolio Pixel for Basil unless Phase 3 identifies a measured reason to create a dedicated Basil dataset. |
 | Stripe production account | Runtime is configured; dashboard access not manually confirmed in this audit | Account label/ID suffix: `_____` | Owner confirms live-mode, webhook, refund, and dispute access. |
 | Vercel project | Confirmed | `bygoetz`, `prj_MXqx7eJDGtvK0XOOB80zVSUnTxdo` | Keep owner/admin and rollback access current. |
 | Supabase project | Confirmed healthy | `bygoetz`, `qripkmzrujarmmbgewub` | Keep database/Auth access current. |
 | Resend account | Runtime email integration exists; dashboard access not manually confirmed in this audit | Account/domain: `send.bygoetz.com` | Owner confirms sender-domain and delivery-log access. |
 | GitHub repository | Confirmed | `BigHitterG/bygoetz` | Keep repository/admin access current. |
 
-The owner reported that Meta Ads is open in the ChatGPT browser. That confirms a session is available to the owner, but Phase 0 remains open until the exact Portfolio, Page, ad account, and dataset/Pixel above are identified.
+The Meta assets above were inspected read-only in the owner's signed-in Meta session on July 21, 2026. No campaigns, drafts, billing, permissions, Pages, datasets, or tracking settings were changed. Phase 0 remains open on Meta only because account `67385321` was active in Ads Manager while the verified Business Portfolio owns account `555175360336933`; the launch ad account must be selected explicitly before measurement setup.
+
+### Meta asset inventory
+
+| Role | Proposed launch asset | Other observed asset | Launch note |
+| --- | --- | --- | --- |
+| Business owner | `Thomas R Goetz` portfolio (`314343197818474`) | `Tom G. - Design and Artwork` portfolio (`2251374908256334`) | Use the portfolio that owns the Goetz Page and active website Pixel. |
+| Facebook identity | `Goetz` Page (`156574785247266`) | `GetzLab` Page was also accessible | Use `Goetz` for the existing By Goetz identity unless a Basil-specific Page is intentionally created later. |
+| Advertising account | Pending owner decision | Ads Manager was open on `67385321`; the portfolio owns `Thomas R Goetz's ad account` (`555175360336933`) | Do not launch until the campaign, Page, Pixel, billing, and permissions are confirmed on one account. |
+| Measurement | `ByGoetz Website Pixel` (`1421445296116963`) | `Codex Connection` (`28293873963551687`) was inactive | The proposed Pixel was visibly receiving events through both Meta Pixel and Conversions API. Production Basil still needs Phase 3 implementation and Test Events verification. |
 
 ## Phase 0 - Establish the baseline
 
@@ -45,7 +54,7 @@ The owner reported that Meta Ads is open in the ChatGPT browser. That confirms a
 - [x] Create the phased roadmap and this updateable checklist.
 - [x] Confirm no gameplay, database, auth, payment, price, or visual behavior changed in Phase 0.
 - [ ] Confirm the domain is owned.
-- [ ] Confirm the exact Meta business, Page, ad account, and dataset/Pixel.
+- [ ] Confirm the exact Meta business, Page, ad account, and dataset/Pixel. Business, Page, and proposed Pixel are recorded; launch ad account selection remains.
 - [ ] Confirm Stripe, Vercel, Supabase, Resend, and GitHub owner/admin access.
 - [x] Enter and accept the $150 initial research budget.
 - [x] Confirm the $6.99 price freeze and US-only scope with the launch owner.

@@ -9,7 +9,7 @@ Phase 0 rule: documentation and launch decisions only; no gameplay or production
 
 Basil is live and suitable for controlled external testing, but paid advertising must wait for the Phase 0 manual gate and the measurement, policy, and reliability gates below. The owner has approved a $150 initial ad-research cap and accepts that this is research money, not forecast profit.
 
-Phase 0 has established the technical baseline. It is not complete until the owner confirms domain ownership, the exact Meta assets, dashboard access for every production dependency, and the research budget in [the launch checklist](./basil-launch-checklist.md).
+Phase 0 has established the technical baseline. Meta inspection confirmed the proposed Business Portfolio, Facebook Page, and active website Pixel, but found two different ad accounts; the owner must choose the launch account. Phase 0 is not complete until the owner confirms domain ownership, resolves that Meta account choice, and confirms dashboard access for every production dependency in [the launch checklist](./basil-launch-checklist.md).
 
 ## Production baseline
 
@@ -102,7 +102,7 @@ Important limitation: the pending guest preview is browser-local. Opening verifi
 | Supabase Auth | Email/password identity, verification/recovery tokens, sessions | Auth dashboard access; permitted redirect URLs; password/security settings |
 | Resend | Sends custom Basil signup, verification, and password-recovery email | `RESEND_API_KEY`; verified `send.bygoetz.com` sender; `BASIL_AUTH_FROM_EMAIL`; optional reply-to |
 | Stripe | One-time $6.99 USD Checkout and authoritative paid status | Production account access; `STRIPE_SECRET_KEY`; `STRIPE_WEBHOOK_SECRET`; webhook endpoint; refunds/disputes access |
-| Meta | Browser PageView and custom funnel events when configured | Business Portfolio, Page, ad account, Events Manager dataset/Pixel, verified domain, Pixel ID; later CAPI token |
+| Meta | Browser PageView and custom funnel events when configured | Proposed portfolio `Thomas R Goetz` (`314343197818474`), Page `Goetz` (`156574785247266`), active `ByGoetz Website Pixel` (`1421445296116963`); launch ad account must be chosen between current Ads Manager account `67385321` and portfolio-owned account `555175360336933`; later verified domain and CAPI token |
 | GitHub | Source control; pushes to `main` trigger Vercel production | Repository/admin access; branch/deploy discipline |
 | Browser storage | Temporary guest preview, verification-pending state, onboarding, camera/zoom/tool restoration | Same browser profile, storage available, seven-day checkout transfer window |
 
@@ -153,14 +153,14 @@ The live HTML audited on July 21 did not include the Meta Pixel initialization s
 
 Ordered by launch impact:
 
-1. **No trustworthy paid-acquisition measurement.** The live Pixel is not verifiably active, Basil lacks first-party funnel attribution, and purchase reporting is not server authoritative.
+1. **No trustworthy paid-acquisition measurement.** An existing portfolio Pixel is receiving events, but the live Basil HTML is not verifiably initializing it, Basil lacks first-party funnel attribution, and purchase reporting is not server authoritative.
 2. **Required customer-facing policies are incomplete.** Basil needs specific Privacy, Terms, Refund, Support, and Account Deletion surfaces before ads direct strangers into account creation and payment.
 3. **External conversion is not validated.** The two current membership records may be owner/test records; they do not establish cold-audience conversion or support readiness.
 4. **Historical action errors need a clean observation window.** Seven-day Vercel history includes 33 `Unknown error` community-action failures across three estimated users on an older deployment and two `23505` planting conflicts on another older deployment. The current baseline deployment had no error-level runtime logs at audit time, but it had been live for less than one hour.
 5. **Guest restoration is device-local.** Cross-device verification works for the account, but the original preview is recoverable only from the browser profile that stored it unless a later phase adds a server-side temporary session.
 6. **Auth hardening is incomplete.** Supabase's leaked-password protection advisor is currently disabled. The app requires ten characters but does not yet have the additional compromised-password check.
 7. **Capacity targets are estimates, not load-test results.** The cached-snapshot architecture is designed for many readers, but the current Supabase plan and true action throughput have not been validated at launch traffic levels.
-8. **Operational ownership is not fully recorded.** Exact Meta assets, domain ownership, dashboard access, support ownership, and incident contacts still require manual confirmation.
+8. **Operational ownership is not fully resolved.** Meta Business, Page, and Pixel assets are recorded, but the launch ad account is ambiguous; domain ownership, remaining dashboard access, support ownership, and incident contacts still require manual confirmation.
 9. **The repository has two deployment stories.** Vercel Git integration is the real dynamic production host, while a GitHub Pages static-export workflow and README remain in the repository. This can confuse release ownership and is unsuitable for Basil API routes.
 10. **No independent client-performance analytics.** The private health system observes server operations but does not yet report real-user Core Web Vitals or client rendering failures.
 11. **The dedicated domain is not owned or configured.** Basil metadata, auth return links, Resend copy, Stripe returns, and canonical URLs all currently use `bygoetz.com`.
