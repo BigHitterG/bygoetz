@@ -46,6 +46,7 @@ import { GardenUpdateStatus } from "./GardenUpdateStatus";
 import { GardenOnboarding } from "./GardenOnboarding";
 import {
   isGardenOnboardingFinished,
+  isGardenOnboardingPlantType,
   loadCommunityOnboardingPlantings,
   loadGardenOnboardingStep,
   saveCommunityOnboardingPlantings,
@@ -145,6 +146,8 @@ export function CommunityGardenApp() {
     !isGardenOnboardingFinished(onboardingStep) &&
     onboardingStep !== "my-garden" &&
     communityOnboardingPlantings < 3;
+  const onboardingInventoryLocked =
+    Boolean(onboardingStep) && !isGardenOnboardingFinished(onboardingStep);
   const showContinueGardenGuidance =
     world === "personal" &&
     !memberGarden &&
@@ -490,6 +493,18 @@ export function CommunityGardenApp() {
     if (!guestPreviewReady || !session) return;
     queueMicrotask(() => void loadMembership(session));
   }, [guestPreviewReady, loadMembership, session]);
+
+  useEffect(() => {
+    if (!onboardingInventoryLocked) return;
+    if (
+      ui.selectedTool === "rose" ||
+      ui.selectedTool === "sunflower" ||
+      ui.selectedTool === "lavender"
+    ) {
+      return;
+    }
+    canvasRef.current?.selectPlant("rose");
+  }, [onboardingInventoryLocked, ui.selectedTool]);
 
   useEffect(() => {
     if (
@@ -1041,6 +1056,7 @@ export function CommunityGardenApp() {
           mode={world}
           open={inventoryOpen}
           selectedTool={ui.selectedTool}
+          onboardingLocked={onboardingInventoryLocked}
           guidePlantChoice={
             onboardingStep === "select-seed" ||
             onboardingStep === "personal-seed"
@@ -1050,6 +1066,12 @@ export function CommunityGardenApp() {
             else setInventoryOpen(false);
           }}
           onSelectPlant={(plantType) => {
+            if (
+              onboardingInventoryLocked &&
+              !isGardenOnboardingPlantType(plantType)
+            ) {
+              return;
+            }
             void trackBasilFunnelEvent("plant_selected");
             canvasRef.current?.selectPlant(plantType);
             const shouldGuideSpot =
@@ -1065,10 +1087,12 @@ export function CommunityGardenApp() {
             }
           }}
           onSelectPath={() => {
+            if (onboardingInventoryLocked) return;
             canvasRef.current?.selectPathTool();
             setInventoryOpen(false);
           }}
           onSelectElement={(elementType) => {
+            if (onboardingInventoryLocked) return;
             canvasRef.current?.selectElement(elementType);
             setInventoryOpen(false);
           }}

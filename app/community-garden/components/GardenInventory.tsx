@@ -7,12 +7,17 @@ import {
   type MyGardenElementType,
 } from "../lib/myGardenCatalog";
 import { getPlantDefinition, PLANT_TYPES, type PlantType } from "../lib/roseLifecycle";
+import {
+  GARDEN_ONBOARDING_PLANT_TYPES,
+  isGardenOnboardingPlantType,
+} from "../lib/gardenOnboarding";
 
 type GardenInventoryProps = {
   mode: GardenWorldMode;
   open: boolean;
   selectedTool: GardenTool;
   guidePlantChoice?: boolean;
+  onboardingLocked?: boolean;
   onToggle: () => void;
   onSelectPlant: (plantType: PlantType) => void;
   onSelectPath: () => void;
@@ -24,11 +29,15 @@ export function GardenInventory({
   open,
   selectedTool,
   guidePlantChoice = false,
+  onboardingLocked = false,
   onToggle,
   onSelectPlant,
   onSelectPath,
   onSelectElement,
 }: GardenInventoryProps) {
+  const availablePlantTypes = onboardingLocked
+    ? GARDEN_ONBOARDING_PLANT_TYPES
+    : PLANT_TYPES;
   const selectedElement = MY_GARDEN_ELEMENTS.find(
     (element) => element.type === selectedTool,
   );
@@ -65,7 +74,7 @@ export function GardenInventory({
           <div className="cg-inventory-section">
             <p>Plants</p>
             <div className="cg-inventory-grid">
-              {PLANT_TYPES.map((plantType) => {
+              {availablePlantTypes.map((plantType) => {
                 const plant = getPlantDefinition(plantType);
                 return (
                   <button
@@ -74,7 +83,14 @@ export function GardenInventory({
                     aria-label={`Select ${plant.name} seeds`}
                     aria-pressed={selectedTool === plantType}
                     className={guidePlantChoice ? "is-onboarding-choice" : undefined}
-                    onClick={() => onSelectPlant(plantType)}
+                    onClick={() => {
+                      if (
+                        !onboardingLocked ||
+                        isGardenOnboardingPlantType(plantType)
+                      ) {
+                        onSelectPlant(plantType);
+                      }
+                    }}
                   >
                     <span
                       className={`cg-plant-glyph is-${plantType}`}
@@ -87,7 +103,7 @@ export function GardenInventory({
             </div>
           </div>
 
-          {mode === "personal" ? (
+          {mode === "personal" && !onboardingLocked ? (
             <div className="cg-inventory-section">
               <p>Items</p>
               <div className="cg-inventory-grid is-items">

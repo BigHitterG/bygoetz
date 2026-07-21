@@ -1,3 +1,5 @@
+import type { PlantType } from "./roseLifecycle";
+
 export type GardenOnboardingStep =
   | "plant"
   | "select-seed"
@@ -12,6 +14,20 @@ export type GardenOnboardingStep =
 
 const STORAGE_KEY = "basil-onboarding-v1";
 const COMMUNITY_PLANTINGS_KEY = "basil-onboarding-community-plantings-v1";
+
+// Keep the tutorial stable even as the full garden catalog grows. These are
+// the only choices that teach the core planting loop during onboarding.
+export const GARDEN_ONBOARDING_PLANT_TYPES = [
+  "rose",
+  "sunflower",
+  "lavender",
+] as const satisfies readonly PlantType[];
+
+export function isGardenOnboardingPlantType(plantType: PlantType) {
+  return (GARDEN_ONBOARDING_PLANT_TYPES as readonly PlantType[]).includes(
+    plantType,
+  );
+}
 
 const VALID_STEPS = new Set<GardenOnboardingStep>([
   "plant",
