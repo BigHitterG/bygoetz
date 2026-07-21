@@ -302,6 +302,7 @@ async function provisionPaidGardenAccount(input: {
   const supabase = getSupabaseAdmin();
   let gardenSaved = Boolean(input.row.garden_saved_at);
   const activationTime = new Date().toISOString();
+  const staleActivation = new Date(Date.now() - 5 * 60 * 1000).toISOString();
   const { data: claimed, error: claimError } = await supabase
     .from("garden_pending_purchases")
     .update({
@@ -311,7 +312,9 @@ async function provisionPaidGardenAccount(input: {
       updated_at: activationTime,
     })
     .eq("id", input.row.id)
-    .is("activation_started_at", null)
+    .or(
+      `activation_started_at.is.null,activation_started_at.lt.${staleActivation}`,
+    )
     .select("id")
     .maybeSingle();
   if (claimError) throw claimError;
