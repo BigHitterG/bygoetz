@@ -1,9 +1,12 @@
 import { createHash, createHmac, randomBytes } from "node:crypto";
 import type Stripe from "stripe";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
-import { sendGardenAccountEmail } from "./accountEmails";
+import {
+  createPaidGardenSessionHandoff,
+  sendPaidGardenVerificationEmail,
+} from "./accountEmails";
 import { recordBasilFunnelEvent } from "./funnel";
-import { importMyGardenPreview, type MyGardenPlantType } from "./myGarden";
+import type { MyGardenPlantType } from "./myGarden";
 import {
   createGardenName,
   GARDEN_STEWARD_CURRENCY,
@@ -14,6 +17,7 @@ import {
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const CLAIM_TOKEN_PATTERN = /^[A-Za-z0-9_-]{40,100}$/;
+export const PENDING_GARDEN_CLAIM_COOKIE = "basil_pending_purchase";
 
 export type PendingGardenPreview = {
   careBalance: number;
@@ -38,11 +42,22 @@ type PendingPurchaseRow = {
   launch_session_id: string | null;
   preview: PendingGardenPreview;
   stripe_session_id: string | null;
+  stripe_customer_id: string | null;
   status: string;
+  buyer_email: string | null;
+  garden_saved_at: string | null;
   activation_started_at: string | null;
   activation_sent_at: string | null;
+  handoff_issued_at: string | null;
   claimed_user_id: string | null;
+  last_error: string | null;
   expires_at: string;
+};
+
+export type BasilAccountLookup = {
+  userId: string;
+  emailConfirmed: boolean;
+  hasMembership: boolean;
 };
 
 function integerInRange(value: unknown, minimum: number, maximum: number) {
@@ -105,6 +120,8 @@ export async function createPendingGardenPurchase(input: {
   preview: PendingGardenPreview;
   launchSessionId: string | null;
   requestIp: string;
+  buyerEmail?: string;
+  claimedUserId?: string;
 }) {
   const claimToken = randomBytes(32).toString("base64url");
   const supabase = getSupabaseAdmin();
@@ -130,6 +147,8 @@ export async function createPendingGardenPurchase(input: {
       launch_session_id: input.launchSessionId,
       preview: input.preview,
       request_ip_hash: requestIpHash,
+      buyer_email: input.buyerEmail ?? null,
+      claimed_user_id: input.claimedUserId ?? null,
     })
     .select("id")
     .single();
@@ -142,14 +161,118 @@ export async function createPendingGardenPurchase(input: {
   return { id: data.id as string, claimToken };
 }
 
+export function serializePendingGardenClaim(id: string, claimToken: string) {
+  return `${id}.${claimToken}`;
+}
+
+function parsePendingGardenClaim(value: string | null | undefined) {
+  if (!value) return null;
+  const separator = value.indexOf(".");
+  if (separator < 1) return null;
+  const id = value.slice(0, separator);
+  const claimToken = value.slice(separator + 1);
+  if (!UUID_PATTERN.test(id) || !CLAIM_TOKEN_PATTERN.test(claimToken)) return null;
+  return { id, claimToken };
+}
+
+export async function getPendingGardenPurchaseByClaim(
+  serializedClaim: string | null | undefined,
+) {
+  const claim = parsePendingGardenClaim(serializedClaim);
+  if (!claim) return null;
+  const { data, error } = await getSupabaseAdmin()
+    .from("garden_pending_purchases")
+    .select(
+      "id,claim_token_hash,launch_session_id,preview,stripe_session_id,stripe_customer_id,status,buyer_email,garden_saved_at,activation_started_at,activation_sent_at,handoff_issued_at,claimed_user_id,last_error,expires_at",
+    )
+    .eq("id", claim.id)
+    .eq("claim_token_hash", hashClaimToken(claim.claimToken))
+    .gt("expires_at", new Date().toISOString())
+    .maybeSingle();
+  if (error) throw error;
+  return data
+    ? { row: data as PendingPurchaseRow, claimToken: claim.claimToken }
+    : null;
+}
+
+export async function refreshPendingGardenPreview(
+  pendingId: string,
+  claimToken: string,
+  preview: PendingGardenPreview,
+) {
+  const { error } = await getSupabaseAdmin()
+    .from("garden_pending_purchases")
+    .update({ preview, updated_at: new Date().toISOString() })
+    .eq("id", pendingId)
+    .eq("claim_token_hash", hashClaimToken(claimToken))
+    .is("paid_at", null);
+  if (error) throw error;
+}
+
+export async function lookupBasilAccountByEmail(
+  email: string,
+): Promise<BasilAccountLookup | null> {
+  const { data, error } = await getSupabaseAdmin().rpc(
+    "get_basil_account_status_by_email",
+    { p_email: email },
+  );
+  if (error) throw error;
+  const row = Array.isArray(data) ? data[0] : null;
+  if (!row?.user_id) return null;
+  return {
+    userId: String(row.user_id),
+    emailConfirmed: row.email_confirmed === true,
+    hasMembership: row.has_membership === true,
+  };
+}
+
+export async function createPendingBasilAccount(email: string, password: string) {
+  const existing = await lookupBasilAccountByEmail(email);
+  if (existing) return { status: "existing" as const, account: existing };
+
+  const { data, error } = await getSupabaseAdmin().auth.admin.createUser({
+    email,
+    password,
+    email_confirm: false,
+  });
+  if (error || !data.user) {
+    const racedAccount = await lookupBasilAccountByEmail(email);
+    if (racedAccount) {
+      return { status: "existing" as const, account: racedAccount };
+    }
+    throw error ?? new Error("Basil could not create this account.");
+  }
+  return { status: "created" as const, userId: data.user.id };
+}
+
+export async function removeUnusedPendingBasilAccount(
+  userId: string,
+  pendingId?: string,
+) {
+  const supabase = getSupabaseAdmin();
+  if (pendingId) {
+    await supabase
+      .from("garden_pending_purchases")
+      .delete()
+      .eq("id", pendingId)
+      .is("paid_at", null);
+  }
+  await supabase.auth.admin.deleteUser(userId, false);
+}
+
 export async function attachPendingGardenCheckout(
   pendingId: string,
   claimToken: string,
   stripeSessionId: string,
+  stripeCustomerId: string | null,
 ) {
   const { error } = await getSupabaseAdmin()
     .from("garden_pending_purchases")
-    .update({ stripe_session_id: stripeSessionId, updated_at: new Date().toISOString() })
+    .update({
+      stripe_session_id: stripeSessionId,
+      stripe_customer_id: stripeCustomerId,
+      updated_at: new Date().toISOString(),
+    })
     .eq("id", pendingId)
     .eq("claim_token_hash", hashClaimToken(claimToken));
   if (error) throw error;
@@ -173,11 +296,11 @@ export function isPendingGardenCheckout(session: Stripe.Checkout.Session) {
 
 async function provisionPaidGardenAccount(input: {
   row: PendingPurchaseRow;
-  claimToken: string;
   buyerEmail: string;
   session: Stripe.Checkout.Session;
 }) {
   const supabase = getSupabaseAdmin();
+  let gardenSaved = Boolean(input.row.garden_saved_at);
   const activationTime = new Date().toISOString();
   const { data: claimed, error: claimError } = await supabase
     .from("garden_pending_purchases")
@@ -195,60 +318,54 @@ async function provisionPaidGardenAccount(input: {
   if (!claimed) return { status: "already_processing" as const };
 
   try {
-    const temporaryPassword = randomBytes(36).toString("base64url");
-    const account = await sendGardenAccountEmail({
-      email: input.buyerEmail,
-      password: temporaryPassword,
-      requestedIntent: "signup",
-      origin: process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.bygoetz.com",
-      continueToCheckout: false,
-      paidPurchase: true,
-      requiresPassword: true,
-    });
-    if (!account.sent || !account.userId) {
-      throw new Error("Basil could not provision the purchased account.");
+    let userId = input.row.claimed_user_id;
+    if (!userId) {
+      const existing = await lookupBasilAccountByEmail(input.buyerEmail);
+      if (!existing) {
+        throw new Error("The paid Basil account could not be recovered.");
+      }
+      userId = existing.userId;
+      const { error: attachUserError } = await supabase
+        .from("garden_pending_purchases")
+        .update({ claimed_user_id: userId, updated_at: new Date().toISOString() })
+        .eq("id", input.row.id);
+      if (attachUserError) throw attachUserError;
     }
 
-    const gardenName = createGardenName(account.userId);
+    const gardenName = createGardenName(userId);
     const now = new Date().toISOString();
-    const { data: steward, error: stewardError } = await supabase
-      .from("garden_stewards")
-      .upsert(
-        { user_id: account.userId, garden_name: gardenName, updated_at: now },
-        { onConflict: "user_id" },
-      )
-      .select("id")
-      .single();
-    if (stewardError) throw stewardError;
+    const { error: fulfillmentError } = await supabase.rpc(
+      "finalize_basil_pending_purchase",
+      {
+        p_pending_id: input.row.id,
+        p_user_id: userId,
+        p_garden_name: gardenName,
+        p_provider_purchase_id: input.session.id,
+        p_provider_customer_id: stripeObjectId(input.session.customer),
+        p_provider_payment_id: stripeObjectId(input.session.payment_intent),
+        p_amount_paid_cents: input.session.amount_total,
+        p_currency: input.session.currency,
+        p_purchased_at: new Date(input.session.created * 1000).toISOString(),
+      },
+    );
+    if (fulfillmentError) throw fulfillmentError;
+    gardenSaved = true;
 
-    const { error: entitlementError } = await supabase
-      .from("garden_entitlements")
-      .upsert(
-        {
-          steward_id: steward.id,
-          product_key: GARDEN_STEWARD_ORDER_TYPE,
-          provider: "stripe",
-          provider_purchase_id: input.session.id,
-          provider_customer_id: stripeObjectId(input.session.customer),
-          provider_payment_id: stripeObjectId(input.session.payment_intent),
-          amount_paid_cents: input.session.amount_total,
-          currency: input.session.currency,
-          status: "active",
-          purchased_at: new Date(input.session.created * 1000).toISOString(),
-          updated_at: now,
-        },
-        { onConflict: "provider,provider_purchase_id" },
-      );
-    if (entitlementError) throw entitlementError;
-
-    await importMyGardenPreview(steward.id, input.row.preview);
+    const verification = await sendPaidGardenVerificationEmail({
+      email: input.buyerEmail,
+      origin: process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.bygoetz.com",
+      idempotencyKey: input.session.id,
+    });
+    if (verification.userId !== userId) {
+      throw new Error("The Basil verification link belongs to another account.");
+    }
 
     const { error: completeError } = await supabase
       .from("garden_pending_purchases")
       .update({
         status: "activation_sent",
         activation_sent_at: now,
-        claimed_user_id: account.userId,
+        claimed_user_id: userId,
         last_error: null,
         updated_at: now,
       })
@@ -256,18 +373,11 @@ async function provisionPaidGardenAccount(input: {
     if (completeError) throw completeError;
 
     if (input.row.launch_session_id) {
-      await Promise.allSettled([
-        recordBasilFunnelEvent({
-          launchSessionId: input.row.launch_session_id,
-          event: "signup_started",
-          sourceKey: `paid-account:${input.session.id}`,
-        }),
-        recordBasilFunnelEvent({
-          launchSessionId: input.row.launch_session_id,
-          event: "verification_sent",
-          sourceKey: `paid-verification:${input.session.id}`,
-        }),
-      ]);
+      await recordBasilFunnelEvent({
+        launchSessionId: input.row.launch_session_id,
+        event: "verification_sent",
+        sourceKey: `paid-verification:${input.session.id}`,
+      }).catch(() => undefined);
     }
 
     return { status: "activation_sent" as const };
@@ -276,7 +386,7 @@ async function provisionPaidGardenAccount(input: {
     await supabase
       .from("garden_pending_purchases")
       .update({
-        status: "failed",
+        status: gardenSaved ? "paid" : "failed",
         activation_started_at: null,
         last_error: message.slice(0, 500),
         updated_at: new Date().toISOString(),
@@ -309,7 +419,7 @@ export async function fulfillPendingGardenCheckout(session: Stripe.Checkout.Sess
   const { data, error } = await supabase
     .from("garden_pending_purchases")
     .select(
-      "id,claim_token_hash,launch_session_id,preview,stripe_session_id,status,activation_started_at,activation_sent_at,claimed_user_id,expires_at",
+      "id,claim_token_hash,launch_session_id,preview,stripe_session_id,stripe_customer_id,status,buyer_email,garden_saved_at,activation_started_at,activation_sent_at,handoff_issued_at,claimed_user_id,last_error,expires_at",
     )
     .eq("id", metadata.pendingId)
     .eq("claim_token_hash", hashClaimToken(metadata.claimToken))
@@ -321,6 +431,11 @@ export async function fulfillPendingGardenCheckout(session: Stripe.Checkout.Sess
   }
 
   const now = new Date().toISOString();
+  if (row.buyer_email && row.buyer_email !== buyerEmail) {
+    throw new Error(
+      "Stripe used a different email than the Basil account created for this garden.",
+    );
+  }
   const { error: paidError } = await supabase
     .from("garden_pending_purchases")
     .update({
@@ -360,8 +475,106 @@ export async function fulfillPendingGardenCheckout(session: Stripe.Checkout.Sess
   }
   return provisionPaidGardenAccount({
     row,
-    claimToken: metadata.claimToken,
     buyerEmail,
     session,
   });
+}
+
+async function getPendingAccountUser(row: PendingPurchaseRow) {
+  if (!row.claimed_user_id) return null;
+  const { data, error } = await getSupabaseAdmin().auth.admin.getUserById(
+    row.claimed_user_id,
+  );
+  if (error) throw error;
+  return data.user;
+}
+
+export async function getPendingGardenAccountStatus(
+  serializedClaim: string | null | undefined,
+) {
+  const pending = await getPendingGardenPurchaseByClaim(serializedClaim);
+  if (!pending) return null;
+  const user = await getPendingAccountUser(pending.row);
+  return {
+    pendingId: pending.row.id,
+    email: pending.row.buyer_email ?? user?.email ?? "",
+    paid: Boolean(pending.row.garden_saved_at),
+    verificationSent: Boolean(pending.row.activation_sent_at),
+    verified: Boolean(user?.email_confirmed_at),
+    finalized: pending.row.status === "claimed",
+    status: pending.row.status,
+    error: pending.row.last_error ?? null,
+  };
+}
+
+export async function resendPendingGardenVerification(
+  serializedClaim: string | null | undefined,
+  resendKey: string,
+) {
+  const pending = await getPendingGardenPurchaseByClaim(serializedClaim);
+  if (!pending?.row.garden_saved_at || !pending.row.claimed_user_id) {
+    throw new Error("This paid garden is not ready for account verification yet.");
+  }
+  const user = await getPendingAccountUser(pending.row);
+  const email = pending.row.buyer_email ?? user?.email;
+  if (!email) throw new Error("The purchased Basil account has no email address.");
+  const verification = await sendPaidGardenVerificationEmail({
+    email,
+    origin: process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.bygoetz.com",
+    idempotencyKey: `${pending.row.id}-${resendKey}`,
+  });
+  if (verification.userId !== pending.row.claimed_user_id) {
+    throw new Error("The Basil verification link belongs to another account.");
+  }
+  const now = new Date().toISOString();
+  const { error } = await getSupabaseAdmin()
+    .from("garden_pending_purchases")
+    .update({
+      status: "activation_sent",
+      activation_started_at: now,
+      activation_sent_at: now,
+      last_error: null,
+      updated_at: now,
+    })
+    .eq("id", pending.row.id);
+  if (error) throw error;
+  if (pending.row.launch_session_id) {
+    await recordBasilFunnelEvent({
+      launchSessionId: pending.row.launch_session_id,
+      event: "verification_sent",
+      sourceKey: `paid-verification-resend:${pending.row.id}`,
+    });
+  }
+  return { sent: true as const, email };
+}
+
+export async function createPendingGardenSessionHandoff(
+  serializedClaim: string | null | undefined,
+) {
+  const pending = await getPendingGardenPurchaseByClaim(serializedClaim);
+  if (!pending?.row.garden_saved_at || !pending.row.claimed_user_id) {
+    throw new Error("This paid garden is not ready to sign in yet.");
+  }
+  const user = await getPendingAccountUser(pending.row);
+  const email = pending.row.buyer_email ?? user?.email;
+  if (!user?.email_confirmed_at || !email) {
+    throw new Error("Confirm the Basil account email before continuing.");
+  }
+  const previousIssue = pending.row.handoff_issued_at
+    ? Date.parse(pending.row.handoff_issued_at)
+    : 0;
+  if (Number.isFinite(previousIssue) && Date.now() - previousIssue < 15_000) {
+    throw new Error("Basil is already finishing this sign-in. Please wait a moment.");
+  }
+  const handoff = await createPaidGardenSessionHandoff(email);
+  if (handoff.userId !== pending.row.claimed_user_id) {
+    throw new Error("The Basil sign-in belongs to another account.");
+  }
+  const now = new Date().toISOString();
+  const { error } = await getSupabaseAdmin()
+    .from("garden_pending_purchases")
+    .update({ handoff_issued_at: now, updated_at: now })
+    .eq("id", pending.row.id);
+  if (error) throw error;
+  return { tokenHash: handoff.tokenHash, type: handoff.type };
 }

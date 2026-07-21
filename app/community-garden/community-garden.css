@@ -3576,6 +3576,56 @@
   font-size: 1.45rem;
 }
 
+.cg-membership-offer-account {
+  display: grid;
+  margin-top: 14px;
+  gap: 6px;
+}
+
+.cg-membership-offer-account-heading {
+  display: grid;
+  margin-bottom: 3px;
+  gap: 2px;
+}
+
+.cg-membership-offer-account-heading strong,
+.cg-membership-offer-account label {
+  font-size: 0.68rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.cg-membership-offer-account-heading span,
+.cg-membership-offer-account > small {
+  color: #6f4c3e;
+  font-family: system-ui, sans-serif;
+  font-size: 0.68rem;
+  line-height: 1.35;
+}
+
+.cg-membership-offer-account input {
+  width: 100%;
+  min-height: 42px;
+  border: 2px solid var(--cg-ink);
+  border-radius: 0;
+  background: #fffaf0;
+  color: var(--cg-ink);
+  padding: 8px 10px;
+  font: 0.86rem system-ui, sans-serif;
+}
+
+.cg-membership-offer-account .cg-steward-notice {
+  margin: 4px 0 0;
+}
+
+.cg-membership-offer-account .cg-membership-offer-account-link {
+  min-height: 38px;
+  border-color: var(--cg-ink);
+  background: #fffaf0;
+  color: var(--cg-ink);
+  font-size: 0.7rem;
+}
+
 .cg-membership-offer button {
   width: 100%;
   min-height: 46px;
@@ -3588,7 +3638,7 @@
 }
 
 .cg-membership-offer-join {
-  margin-top: 14px;
+  margin-top: 6px;
   background: var(--cg-red);
   color: #fff9e9;
   box-shadow: 3px 3px 0 rgba(52, 35, 31, 0.24);

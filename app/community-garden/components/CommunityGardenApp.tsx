@@ -38,7 +38,10 @@ import {
   type GuestGardenPreview,
 } from "../lib/guestGardenPreview";
 import { GardenInventory } from "./GardenInventory";
-import { GardenMembershipOffer } from "./GardenMembershipOffer";
+import {
+  GardenMembershipOffer,
+  type GardenMembershipCredentials,
+} from "./GardenMembershipOffer";
 import { GardenUpdateStatus } from "./GardenUpdateStatus";
 import { GardenOnboarding } from "./GardenOnboarding";
 import {
@@ -154,7 +157,9 @@ export function CommunityGardenApp() {
     saveGuestGardenPreview(next);
   }, []);
 
-  const startMembershipCheckout = useCallback(async () => {
+  const startMembershipCheckout = useCallback(async (
+    credentials: GardenMembershipCredentials,
+  ) => {
     const pendingPreview = {
       ...guestPreviewRef.current,
       journey: {
@@ -177,7 +182,13 @@ export function CommunityGardenApp() {
     setMembershipCheckoutError("");
 
     try {
-      const response = await fetch("/api/community-garden/checkout", {
+      const checkoutBody = {
+        launchSessionId: getBasilLaunchSessionId(),
+        preview: getGuestPreviewImport(pendingPreview),
+        email: credentials.email,
+        password: credentials.password,
+      };
+      let response = await fetch("/api/community-garden/checkout", {
         method: "POST",
         headers: {
           "content-type": "application/json",
@@ -185,11 +196,49 @@ export function CommunityGardenApp() {
             ? { authorization: `Bearer ${session.access_token}` }
             : {}),
         },
-        body: JSON.stringify({
-          launchSessionId: getBasilLaunchSessionId(),
-          preview: getGuestPreviewImport(pendingPreview),
-        }),
+        body: JSON.stringify(checkoutBody),
       });
+      if (response.status === 409 && !session) {
+        const conflict = (await response.json().catch(() => ({}))) as {
+          code?: string;
+          error?: string;
+        };
+        if (conflict.code !== "account_exists") {
+          throw new Error(conflict.error ?? "This Basil account cannot start checkout.");
+        }
+
+        const client = getGardenAccountClient();
+        if (!client) throw new Error("Private Basil accounts are unavailable right now.");
+        const { data, error } = await client.auth.signInWithPassword(credentials);
+        if (error || !data.session) {
+          throw new Error(
+            error?.message.toLowerCase().includes("email not confirmed")
+              ? "This account already exists and still needs email verification. Open Account to resend the confirmation or recover access."
+              : "This account already exists. Sign in from Account, or reset its password, before purchasing again.",
+          );
+        }
+        setSession(data.session);
+        response = await fetch("/api/community-garden/checkout", {
+          method: "POST",
+          headers: {
+            authorization: `Bearer ${data.session.access_token}`,
+            "content-type": "application/json",
+          },
+          body: JSON.stringify(checkoutBody),
+        });
+        if (response.status === 409) {
+          const active = (await response.json().catch(() => ({}))) as {
+            error?: string;
+          };
+          if (active.error?.includes("active Garden Membership")) {
+            setMembershipOfferOpen(false);
+            setMembershipCheckoutBusy(false);
+            setRestoreMessage("Welcome back. Restoring your saved garden…");
+            return;
+          }
+          throw new Error(active.error ?? "This account cannot start checkout.");
+        }
+      }
       if (!response.ok) {
         throw new Error(
           await getResponseError(response, "Secure checkout could not start."),
@@ -1111,11 +1160,18 @@ export function CommunityGardenApp() {
         onClose={dismissMembershipOffer}
         checkoutBusy={membershipCheckoutBusy}
         checkoutError={membershipCheckoutError}
+        accountReady={Boolean(session)}
         onLater={() => {
           dismissMembershipOffer();
           if (membershipOfferStage !== "soft") setWorld("community");
         }}
-        onJoin={() => void startMembershipCheckout()}
+        onAccount={() => {
+          setMembershipOfferOpen(false);
+          setMembershipCheckoutError("");
+          setMenuSection("account");
+          setMenuOpen(true);
+        }}
+        onJoin={(credentials) => void startMembershipCheckout(credentials)}
       />
     </main>
   );

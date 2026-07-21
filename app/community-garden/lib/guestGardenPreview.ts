@@ -324,9 +324,15 @@ export function awardGuestCare(
     onboardingPlantingBonuses < ONBOARDING_PLANTING_BONUSES
   ) {
     awardedCare = 2;
-    quickCareEarned += awardedCare;
+    quickCareEarned = Math.min(QUICK_CARE_LIMIT, quickCareEarned + awardedCare);
     onboardingPlantingBonuses += 1;
-  } else {
+  } else if (value > 0 && quickCareEarned < QUICK_CARE_LIMIT) {
+    // Keep the first session moving: after the three +2 planting bonuses,
+    // every legitimate community action earns +1 until the quick-care bank is full.
+    awardedCare = 1;
+    quickCareEarned += 1;
+    steadyProgress = 0;
+  } else if (value > 0) {
     steadyActions += 1;
     steadyProgress = steadyActions % STEADY_ACTIONS_PER_CARE;
     awardedCare = steadyProgress === 0 ? 1 : 0;

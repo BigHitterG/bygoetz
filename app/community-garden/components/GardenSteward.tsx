@@ -68,7 +68,7 @@ type AccountState =
 type AuthView = "signin" | "signup" | "recovery";
 type PendingAccountLink = {
   tokenHash: string;
-  type: "signup" | "recovery";
+  type: "signup" | "recovery" | "magiclink";
   checkout: boolean;
   setup: boolean;
   verified: boolean;
@@ -77,6 +77,17 @@ type PendingAccountLink = {
 type VerificationPending = {
   email: string;
   existingAccount: boolean;
+};
+
+type PaidPurchaseStatus = {
+  pending: true;
+  email: string;
+  paid: boolean;
+  verificationSent: boolean;
+  verified: boolean;
+  finalized: boolean;
+  status: string;
+  error: string | null;
 };
 
 function loadPendingVerification() {
@@ -140,6 +151,8 @@ export function GardenSteward() {
   const [verificationPending, setVerificationPending] =
     useState<VerificationPending | null>(null);
   const [paidVerificationPending, setPaidVerificationPending] = useState(false);
+  const [paidPurchaseStatus, setPaidPurchaseStatus] =
+    useState<PaidPurchaseStatus | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [notice, setNotice] = useState("");
   const [email, setEmail] = useState("");
@@ -148,6 +161,7 @@ export function GardenSteward() {
   const [category, setCategory] = useState("plants");
   const [idea, setIdea] = useState("");
   const confirmationStartedRef = useRef("");
+  const handoffStartedRef = useRef(false);
 
   const loadAccount = useCallback(async (activeSession: Session) => {
     try {
@@ -182,6 +196,67 @@ export function GardenSteward() {
       // The entitlement and server preview are already safe; account load can retry later.
     }
   }, []);
+
+  const refreshPaidPurchaseStatus = useCallback(async () => {
+    try {
+      const response = await fetch("/api/community-garden/purchase/status", {
+        cache: "no-store",
+      });
+      if (!response.ok) return null;
+      const status = (await response.json()) as PaidPurchaseStatus;
+      setPaidPurchaseStatus(status);
+
+      if (!status.verified || session || handoffStartedRef.current) return status;
+      handoffStartedRef.current = true;
+      const handoffResponse = await fetch(
+        "/api/community-garden/purchase/status",
+        {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ action: "handoff" }),
+        },
+      );
+      if (!handoffResponse.ok) {
+        throw new Error(
+          await getResponseError(
+            handoffResponse,
+            "Basil could not finish signing in on this browser.",
+          ),
+        );
+      }
+      const handoff = (await handoffResponse.json()) as {
+        tokenHash: string;
+        type: "magiclink";
+      };
+      const client = getGardenAccountClient();
+      if (!client) throw new Error("Private Basil accounts are unavailable right now.");
+      const { data, error } = await client.auth.verifyOtp({
+        token_hash: handoff.tokenHash,
+        type: handoff.type,
+      });
+      if (error || !data.session) {
+        throw new Error(error?.message ?? "Basil could not finish signing in.");
+      }
+      savePendingVerification(null);
+      setVerificationPending(null);
+      setPaidVerificationPending(false);
+      setSession(data.session);
+      trackMetaCustomEvent("BasilVerificationCompleted");
+      void trackBasilFunnelEvent("verification_completed");
+      await finalizePaidVerification(data.session);
+      await loadAccount(data.session);
+      setNotice("Account confirmed. Your saved garden is ready.");
+      return status;
+    } catch (error) {
+      handoffStartedRef.current = false;
+      setNotice(
+        error instanceof Error
+          ? error.message
+          : "Basil could not finish this account yet.",
+      );
+      return null;
+    }
+  }, [finalizePaidVerification, loadAccount, session]);
 
   const beginCheckout = useCallback(async (activeSession: Session) => {
     setBusy("checkout");
@@ -226,7 +301,9 @@ export function GardenSteward() {
     if (
       stewardStatus === "confirm-account" &&
       tokenHash &&
-      (verificationType === "signup" || verificationType === "recovery")
+      (verificationType === "signup" ||
+        verificationType === "recovery" ||
+        verificationType === "magiclink")
     ) {
       queueMicrotask(() => {
         setPendingLink({
@@ -270,6 +347,17 @@ export function GardenSteward() {
 
     return () => listener.subscription.unsubscribe();
   }, [loadAccount]);
+
+  useEffect(() => {
+    if (!paidVerificationPending || session) return;
+    queueMicrotask(() => void refreshPaidPurchaseStatus());
+    const timer = window.setInterval(() => {
+      if (document.visibilityState === "visible") {
+        void refreshPaidPurchaseStatus();
+      }
+    }, 3_000);
+    return () => window.clearInterval(timer);
+  }, [paidVerificationPending, refreshPaidPurchaseStatus, session]);
 
   async function sendAccountEmail(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -526,6 +614,42 @@ export function GardenSteward() {
     }
   }
 
+  async function resendPaidVerification() {
+    setBusy("resend-paid-verification");
+    setNotice("");
+    try {
+      const response = await fetch("/api/community-garden/purchase/status", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ action: "resend" }),
+      });
+      if (!response.ok) {
+        throw new Error(
+          await getResponseError(
+            response,
+            "The Basil confirmation email could not be resent.",
+          ),
+        );
+      }
+      const payload = (await response.json()) as { email?: string };
+      setNotice(
+        `A fresh Basil confirmation was sent${
+          payload.email ? ` to ${payload.email}` : ""
+        }. Check spam, junk, and promotions too.`,
+      );
+      trackMetaCustomEvent("BasilVerificationEmailResent");
+      await refreshPaidPurchaseStatus();
+    } catch (error) {
+      setNotice(
+        error instanceof Error
+          ? error.message
+          : "The Basil confirmation email could not be resent.",
+      );
+    } finally {
+      setBusy(null);
+    }
+  }
+
   const confirmAccountLinkEvent = useEffectEvent(confirmAccountLink);
 
   useEffect(() => {
@@ -711,23 +835,39 @@ export function GardenSteward() {
           <p className="cg-auth-step">Payment complete</p>
           <h3>Check your email to finish your Basil account</h3>
           <p>
-            We sent a Basil verification link to the email used at Stripe checkout.
-            Your preview flowers, paths, and remaining Care are already stored safely
-            and will appear when you finish verification.
+            We sent a Basil verification link
+            {paidPurchaseStatus?.email ? (
+              <> to <strong>{paidPurchaseStatus.email}</strong></>
+            ) : null}
+            . {paidPurchaseStatus?.paid
+              ? "Your preview flowers, paths, and remaining Care are already stored safely."
+              : "Basil is finishing the secure save of your preview garden."}
           </p>
+          {paidPurchaseStatus?.error ? (
+            <p className="cg-auth-existing" role="alert">
+              Your payment is safe, but Basil needs another moment to finish saving
+              the garden. This page will keep trying.
+            </p>
+          ) : null}
           <p className="cg-auth-folder-reminder">
             The message is from Basil by Goetz. If it is not in your inbox, check spam,
             junk, promotions, and other filtered folders.
           </p>
           <button
             type="button"
-            onClick={() => {
-              setPaidVerificationPending(false);
-              setAuthView("signin");
-              setNotice("After verification, sign in with the password you chose.");
-            }}
+            disabled={busy === "resend-paid-verification"}
+            onClick={() => void resendPaidVerification()}
           >
-            Return to sign in after verification
+            {busy === "resend-paid-verification"
+              ? "Sending a fresh confirmation…"
+              : "Resend confirmation email"}
+          </button>
+          <button
+            className="cg-auth-text-button"
+            type="button"
+            onClick={() => void refreshPaidPurchaseStatus()}
+          >
+            I verified — continue on this device
           </button>
         </div>
       ) : null}

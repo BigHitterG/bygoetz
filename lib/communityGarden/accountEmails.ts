@@ -3,6 +3,7 @@ import { getResend } from "@/lib/resend";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 
 export type GardenAccountEmailIntent = "signup" | "recovery";
+export type GardenAccountVerificationType = "signup" | "recovery" | "magiclink";
 
 const EMAIL_WINDOW_MS = 60 * 60 * 1000;
 const EMAIL_LIMIT = 5;
@@ -75,7 +76,7 @@ export async function claimGardenAccountEmailRequest(
 function getGardenAccountLink(
   origin: string,
   tokenHash: string,
-  verificationType: "signup" | "recovery",
+  verificationType: GardenAccountVerificationType,
   continueToCheckout: boolean,
   requiresPassword?: boolean,
 ) {
@@ -168,7 +169,7 @@ export async function sendGardenAccountEmail({
   idempotencyKey?: string;
 }) {
   const supabase = getSupabaseAdmin();
-  let verificationType: "signup" | "recovery" = requestedIntent;
+  let verificationType: GardenAccountVerificationType = requestedIntent;
   let properties: { hashed_token: string };
   let userId: string | null = null;
 
@@ -281,4 +282,75 @@ export async function sendGardenAccountEmail({
     accountStatus: isNewSignup ? ("new" as const) : ("existing" as const),
     userId,
   };
+}
+
+async function generatePaidGardenLink(email: string) {
+  const { data, error } = await getSupabaseAdmin().auth.admin.generateLink({
+    type: "magiclink",
+    email,
+  });
+  if (error || !data.properties || !data.user?.id) {
+    throw (
+      error ?? new Error("Basil could not create the purchased account link.")
+    );
+  }
+  return {
+    tokenHash: data.properties.hashed_token,
+    type: "magiclink" as const,
+    userId: data.user.id,
+  };
+}
+
+export async function sendPaidGardenVerificationEmail({
+  email,
+  origin,
+  idempotencyKey,
+}: {
+  email: string;
+  origin: string;
+  idempotencyKey: string;
+}) {
+  const verification = await generatePaidGardenLink(email);
+  const link = getGardenAccountLink(
+    origin,
+    verification.tokenHash,
+    verification.type,
+    false,
+    false,
+  );
+  const emailContent = renderGardenAccountEmail({
+    title: "Confirm your Basil account",
+    intro:
+      "Your $6.99 Garden Membership is paid and your garden is safely stored. Confirm this email to finish your private Basil account and continue growing.",
+    buttonLabel: "Confirm account and open my garden",
+    link,
+  });
+  const { error } = await getResend().emails.send(
+    {
+      from:
+        process.env.BASIL_AUTH_FROM_EMAIL ??
+        "Basil by Goetz <garden@send.bygoetz.com>",
+      to: [email],
+      replyTo: process.env.RESEND_REPLY_TO_EMAIL
+        ? [process.env.RESEND_REPLY_TO_EMAIL]
+        : undefined,
+      subject: "Confirm your Basil account — your garden is saved",
+      text: emailContent.text,
+      html: emailContent.html,
+    },
+    {
+      headers: {
+        "Idempotency-Key": `basil-paid-verification-${idempotencyKey}`.slice(
+          0,
+          256,
+        ),
+      },
+    },
+  );
+  if (error) throw new Error(error.message);
+  return { sent: true as const, userId: verification.userId };
+}
+
+export async function createPaidGardenSessionHandoff(email: string) {
+  return generatePaidGardenLink(email);
 }

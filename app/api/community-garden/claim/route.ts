@@ -18,9 +18,10 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(gardenUrl);
   }
 
+  let pendingCheckout = false;
   try {
     const session = await getStripe().checkout.sessions.retrieve(sessionId);
-    const pendingCheckout = isPendingGardenCheckout(session);
+    pendingCheckout = isPendingGardenCheckout(session);
     const result = pendingCheckout
       ? await fulfillPendingGardenCheckout(session)
       : await fulfillGardenStewardCheckout(session);
@@ -36,7 +37,10 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(gardenUrl);
   } catch (error) {
     console.error("Basil Garden Membership claim failed", error);
-    gardenUrl.searchParams.set("steward", "unverified");
+    gardenUrl.searchParams.set(
+      "steward",
+      pendingCheckout ? "verification-sent" : "unverified",
+    );
     return NextResponse.redirect(gardenUrl);
   }
 }
