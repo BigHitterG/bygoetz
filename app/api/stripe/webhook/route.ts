@@ -4,6 +4,10 @@ import {
   fulfillGardenStewardCheckout,
   GARDEN_STEWARD_ORDER_TYPE,
 } from "@/lib/communityGarden/stewards";
+import {
+  fulfillPendingGardenCheckout,
+  isPendingGardenCheckout,
+} from "@/lib/communityGarden/pendingPurchase";
 import { fulfillDigitalDownloadCheckout } from "@/lib/explorers/fulfillDigitalDownload";
 import { getStripe } from "@/lib/stripe";
 
@@ -47,7 +51,9 @@ export async function POST(request: Request) {
       const session = event.data.object as Stripe.Checkout.Session;
       const result =
         session.metadata?.order_type === GARDEN_STEWARD_ORDER_TYPE
-          ? await fulfillGardenStewardCheckout(session)
+          ? isPendingGardenCheckout(session)
+            ? await fulfillPendingGardenCheckout(session)
+            : await fulfillGardenStewardCheckout(session)
           : await fulfillDigitalDownloadCheckout(session);
       return NextResponse.json({ received: true, fulfillment: result });
     }

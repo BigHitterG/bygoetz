@@ -82,16 +82,16 @@ Guest browser
 3. The first three unpaid community plantings each award two temporary Care. Later guest actions use the normal steady cadence of one Care per four qualifying actions.
 4. After three community plantings, My Garden becomes available. The visitor can enter a temporary private preview using the same game interface.
 5. The preview permits free paths and up to three personal flower plantings. The fourth personal planting attempt opens the current membership offer.
-6. The offer explains the one-time $6.99 Garden Membership and sends the visitor to the Account section when they choose to continue.
-7. Before account creation, the app saves temporary plants, paths, Care, current world, camera position, zoom, and selected tool. The current tab uses `sessionStorage`; a seven-day `localStorage` transfer survives verification, checkout, return, and reasonable refreshes in the same browser profile.
-8. A new customer enters a private email, password, and password confirmation. `/api/community-garden/auth/email` rate-limits hashed email/IP requests, asks Supabase Auth to create a signup or recovery link, and sends Basil-branded email through Resend.
-9. The app shows a dedicated verification-pending state with the destination email, resend, change-email, spam-folder guidance, and return-to-sign-in actions.
-10. The emailed link returns to Basil with a token hash, verification type, and preserved checkout intent. The browser calls Supabase `verifyOtp`. A valid new signup receives a session and resumes checkout. An existing/recovery flow can require choosing a new password first.
-11. `/api/community-garden/checkout` verifies the authenticated account has no active membership and creates a one-time Stripe Checkout session for $6.99 USD.
-12. A successful payment returns through `/api/community-garden/claim`; Stripe payment verification creates or updates the steward and entitlement. The signed Stripe webhook provides a second fulfillment path. Upserts make repeated success callbacks idempotent. Cancellation returns to the unchanged guest garden.
-13. On return, `/api/community-garden/account` loads membership. If active, the client submits a one-time `import-preview` mutation. Supabase reconciles the guest Care, plants, and paths into the persistent garden. Local pending state is cleared only after the import succeeds; otherwise it remains available for retry. The saved garden view is restored when practical.
+6. The offer explains the one-time $6.99 Garden Membership. Choosing it immediately starts the secure purchase path; account verification is no longer placed before payment.
+7. Before leaving Basil, the app keeps its browser backup and sends a strictly validated preview containing remaining Care, up to three plants, and up to 64 paths to `/api/community-garden/checkout`.
+8. The server writes that preview to the RLS-protected, service-role-only `garden_pending_purchases` table with a random claim secret and seven-day expiry, then creates a one-time Stripe-hosted Checkout session for $6.99 USD. Stripe collects the receipt/account email on its hosted page; Basil never handles card details.
+9. Stripe metadata connects the checkout to the pending preview without putting the preview or email in metadata. The checkout route also records authoritative paywall and checkout milestones.
+10. A paid Stripe webhook or `/api/community-garden/claim` callback validates the signature/session, exact price, currency, payment status, pending record, and claim secret. Conditional activation locking plus provider purchase uniqueness make duplicate callbacks idempotent.
+11. After payment, Basil creates or resolves the private Supabase account for the Stripe email, grants the entitlement, imports the preview server-side through `import_my_garden_preview`, and sends a Basil-branded verification/setup email through Resend.
+12. Stripe returns the customer to a dedicated payment-complete screen explaining that the garden is safe and verification is the remaining step. The email link can open in another browser, verifies with Supabase `verifyOtp`, and requires the customer to choose their Basil password.
+13. After verification, `/api/community-garden/account` loads the already-persistent membership and exact preview garden. Browser storage remains a fallback and is cleared only after the authenticated garden is confirmed. Cancellation returns to the unchanged guest garden.
 
-Important limitation: the pending guest preview is browser-local. Opening verification in another browser or device can verify the account, but that other browser cannot import a preview stored only on the original device. The original browser can resume once its session updates or the user signs in there.
+The pending preview is now server-backed before Stripe, so cross-browser email verification no longer determines whether the paid garden survives. Pending purchase rows are private, bounded, and expire after seven days; cleanup is an operational retention task rather than a source of authority for completed entitlements.
 
 ## Production dependencies
 

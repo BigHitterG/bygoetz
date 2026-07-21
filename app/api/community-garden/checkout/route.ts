@@ -1,5 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getGardenUser } from "@/lib/communityGarden/auth";
+import { recordBasilFunnelEvent } from "@/lib/communityGarden/funnel";
+import {
+  attachPendingGardenCheckout,
+  createPendingGardenPurchase,
+  normalizePendingGardenPreview,
+  PendingCheckoutRateLimitError,
+} from "@/lib/communityGarden/pendingPurchase";
 import {
   createGardenName,
   GARDEN_STEWARD_CURRENCY,
@@ -25,6 +32,7 @@ export async function POST(request: NextRequest) {
 
   const body = (await request.json().catch(() => ({}))) as {
     launchSessionId?: unknown;
+    preview?: unknown;
   };
   const launchSessionId =
     typeof body.launchSessionId === "string" && UUID_PATTERN.test(body.launchSessionId)
@@ -32,33 +40,58 @@ export async function POST(request: NextRequest) {
       : null;
 
   const user = await getGardenUser(request);
-  if (!user?.email) {
+  const preview = normalizePendingGardenPreview(body.preview);
+
+  if (!user?.email && !preview) {
     return NextResponse.json(
-      { error: "Sign in privately before starting checkout." },
-      { status: 401 },
+      { error: "Basil could not safely save this preview garden for checkout." },
+      { status: 400 },
     );
   }
 
-  if (await getGardenStewardByUserId(user.id)) {
+  if (user && (await getGardenStewardByUserId(user.id))) {
     return NextResponse.json(
       { error: "This account already has an active Garden Membership." },
       { status: 409 },
     );
   }
 
-  const gardenName = createGardenName(user.id);
-  const metadata = {
+  let pendingPurchase: Awaited<ReturnType<typeof createPendingGardenPurchase>> | null = null;
+  try {
+    pendingPurchase = !user
+      ? await createPendingGardenPurchase({
+          preview: preview!,
+          launchSessionId,
+          requestIp:
+            request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+            request.headers.get("x-real-ip") ??
+            "unknown",
+        })
+      : null;
+  } catch (error) {
+    if (error instanceof PendingCheckoutRateLimitError) {
+      return NextResponse.json({ error: error.message }, { status: 429 });
+    }
+    throw error;
+  }
+  const gardenName = user ? createGardenName(user.id) : null;
+  const metadata: Record<string, string> = {
     order_type: GARDEN_STEWARD_ORDER_TYPE,
     entitlement_version: "1",
-    user_id: user.id,
-    garden_name: gardenName,
     ...(launchSessionId ? { launch_session_id: launchSessionId } : {}),
+    ...(user && gardenName ? { user_id: user.id, garden_name: gardenName } : {}),
+    ...(pendingPurchase
+      ? {
+          pending_purchase_id: pendingPurchase.id,
+          pending_claim_token: pendingPurchase.claimToken,
+        }
+      : {}),
   };
 
   const session = await getStripe().checkout.sessions.create({
     mode: "payment",
     customer_creation: "always",
-    customer_email: user.email,
+    customer_email: user?.email,
     line_items: [
       {
         quantity: 1,
@@ -87,6 +120,29 @@ export async function POST(request: NextRequest) {
       { error: "Stripe did not return a checkout URL." },
       { status: 502 },
     );
+  }
+
+  if (pendingPurchase) {
+    await attachPendingGardenCheckout(
+      pendingPurchase.id,
+      pendingPurchase.claimToken,
+      session.id,
+    );
+  }
+
+  if (launchSessionId) {
+    await Promise.allSettled([
+      recordBasilFunnelEvent({
+        launchSessionId,
+        event: "paywall_viewed",
+        sourceKey: `checkout-route-paywall:${session.id}`,
+      }),
+      recordBasilFunnelEvent({
+        launchSessionId,
+        event: "checkout_started",
+        sourceKey: `checkout-route:${session.id}`,
+      }),
+    ]);
   }
 
   return NextResponse.json({ url: session.url });

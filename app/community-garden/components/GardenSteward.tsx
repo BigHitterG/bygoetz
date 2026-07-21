@@ -70,6 +70,7 @@ type PendingAccountLink = {
   tokenHash: string;
   type: "signup" | "recovery";
   checkout: boolean;
+  setup: boolean;
   verified: boolean;
 };
 
@@ -127,6 +128,7 @@ function clearAccountLinkFromAddress() {
   url.searchParams.delete("token_hash");
   url.searchParams.delete("type");
   url.searchParams.delete("checkout");
+  url.searchParams.delete("setup");
   window.history.replaceState({}, "", `${url.pathname}${url.search}${url.hash}`);
 }
 
@@ -137,6 +139,7 @@ export function GardenSteward() {
   const [pendingLink, setPendingLink] = useState<PendingAccountLink | null>(null);
   const [verificationPending, setVerificationPending] =
     useState<VerificationPending | null>(null);
+  const [paidVerificationPending, setPaidVerificationPending] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
   const [notice, setNotice] = useState("");
   const [email, setEmail] = useState("");
@@ -166,6 +169,17 @@ export function GardenSteward() {
         message: error instanceof Error ? error.message : "Could not load the membership.",
       });
       return null;
+    }
+  }, []);
+
+  const finalizePaidVerification = useCallback(async (activeSession: Session) => {
+    try {
+      await fetch("/api/community-garden/purchase/verified", {
+        method: "POST",
+        headers: { authorization: `Bearer ${activeSession.access_token}` },
+      });
+    } catch {
+      // The entitlement and server preview are already safe; account load can retry later.
     }
   }, []);
 
@@ -219,6 +233,7 @@ export function GardenSteward() {
           tokenHash,
           type: verificationType,
           checkout: params.get("checkout") === "1",
+          setup: params.get("setup") === "1",
           verified: false,
         });
       });
@@ -240,6 +255,10 @@ export function GardenSteward() {
       if (stewardStatus === "welcome") {
         trackMetaCustomEvent("BasilCheckoutCompleted");
         setNotice("Purchase complete. Your Garden Membership is ready on this account.");
+      } else if (stewardStatus === "verification-sent") {
+        trackMetaCustomEvent("BasilCheckoutCompleted");
+        setPaidVerificationPending(true);
+        setNotice("Payment complete. Your preview garden is safely stored on the server.");
       } else if (stewardStatus === "unverified") {
         setNotice("The purchase could not be verified. Please check your Stripe receipt.");
       } else if (params.get("checkout") === "cancelled") {
@@ -379,10 +398,12 @@ export function GardenSteward() {
     clearAccountLinkFromAddress();
     savePendingVerification(null);
     setVerificationPending(null);
+    setPaidVerificationPending(false);
     trackMetaCustomEvent("BasilVerificationCompleted");
     void trackBasilFunnelEvent("verification_completed");
     setSession(data.session);
-    if (pendingLink.type === "recovery") {
+    await finalizePaidVerification(data.session);
+    if (pendingLink.type === "recovery" || pendingLink.setup) {
       setPendingLink({ ...pendingLink, verified: true });
       setPassword("");
       setPasswordConfirm("");
@@ -519,6 +540,10 @@ export function GardenSteward() {
     Boolean(verificationPending) &&
     !showAccountLink &&
     accountState.status !== "active";
+  const showPaidVerificationPending =
+    paidVerificationPending &&
+    !showAccountLink &&
+    accountState.status !== "active";
 
   return (
     <section className="cg-steward" aria-labelledby="garden-steward-title">
@@ -531,7 +556,7 @@ export function GardenSteward() {
 
       {notice ? <p className="cg-steward-notice" aria-live="polite">{notice}</p> : null}
 
-      {accountState.status !== "active" && !showAccountLink && !showVerificationPending ? (
+      {accountState.status !== "active" && !showAccountLink && !showVerificationPending && !showPaidVerificationPending ? (
         <div className="cg-pass-preview">
           <div className="cg-pass-ticket" aria-label="Basil Community Garden Membership">
             <div className="cg-pass-ticket-art" aria-hidden="true">
@@ -590,11 +615,11 @@ export function GardenSteward() {
         </div>
       ) : null}
 
-      {accountState.status === "loading" && !showAccountLink && !showVerificationPending ? (
+      {accountState.status === "loading" && !showAccountLink && !showVerificationPending && !showPaidVerificationPending ? (
         <p className="cg-steward-loading">Checking for a private Basil account…</p>
       ) : null}
 
-      {accountState.status === "error" && !showAccountLink && !showVerificationPending ? (
+      {accountState.status === "error" && !showAccountLink && !showVerificationPending && !showPaidVerificationPending ? (
         <div className="cg-steward-error" role="alert">
           <p>{accountState.message}</p>
           {session ? (
@@ -681,6 +706,32 @@ export function GardenSteward() {
         </div>
       ) : null}
 
+      {showPaidVerificationPending ? (
+        <div className="cg-sign-in cg-auth-confirm cg-verification-pending">
+          <p className="cg-auth-step">Payment complete</p>
+          <h3>Check your email to finish your Basil account</h3>
+          <p>
+            We sent a Basil verification link to the email used at Stripe checkout.
+            Your preview flowers, paths, and remaining Care are already stored safely
+            and will appear when you finish verification.
+          </p>
+          <p className="cg-auth-folder-reminder">
+            The message is from Basil by Goetz. If it is not in your inbox, check spam,
+            junk, promotions, and other filtered folders.
+          </p>
+          <button
+            type="button"
+            onClick={() => {
+              setPaidVerificationPending(false);
+              setAuthView("signin");
+              setNotice("After verification, sign in with the password you chose.");
+            }}
+          >
+            Return to sign in after verification
+          </button>
+        </div>
+      ) : null}
+
       {pendingLink?.verified ? (
         <div className="cg-sign-in cg-auth-confirm">
           <p className="cg-auth-step">Private password</p>
@@ -728,7 +779,7 @@ export function GardenSteward() {
         </div>
       ) : null}
 
-      {accountState.status === "signed-out" && !showAccountLink && !showVerificationPending ? (
+      {accountState.status === "signed-out" && !showAccountLink && !showVerificationPending && !showPaidVerificationPending ? (
         <div className="cg-sign-in">
           <ol className="cg-auth-steps" aria-label="Purchase steps">
             <li><span>1</span>Private account</li>
@@ -901,7 +952,7 @@ export function GardenSteward() {
         </div>
       ) : null}
 
-      {accountState.status === "free" && !showAccountLink && !showVerificationPending ? (
+      {accountState.status === "free" && !showAccountLink && !showVerificationPending && !showPaidVerificationPending ? (
         <div className="cg-pass-card">
           <div className="cg-signed-in-row">
             <span>Signed in privately as {accountState.email}</span>
@@ -1012,7 +1063,7 @@ export function GardenSteward() {
         </div>
       ) : null}
 
-      {session && !showAccountLink && !showVerificationPending ? (
+      {session && !showAccountLink && !showVerificationPending && !showPaidVerificationPending ? (
         <GardenHealthPanel session={session} />
       ) : null}
 

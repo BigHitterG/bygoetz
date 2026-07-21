@@ -6,6 +6,8 @@ type GardenMembershipOfferProps = {
   onClose: () => void;
   onJoin: () => void;
   onLater: () => void;
+  checkoutBusy?: boolean;
+  checkoutError?: string;
 };
 
 export function GardenMembershipOffer({
@@ -14,6 +16,8 @@ export function GardenMembershipOffer({
   onClose,
   onJoin,
   onLater,
+  checkoutBusy = false,
+  checkoutError = "",
 }: GardenMembershipOfferProps) {
   if (!open) return null;
 
@@ -51,17 +55,22 @@ export function GardenMembershipOffer({
           <span>Garden Membership</span>
           <strong>$6.99</strong>
         </div>
+        {checkoutError ? (
+          <p className="cg-steward-notice" role="alert">{checkoutError}</p>
+        ) : null}
         <button
           className="cg-membership-offer-join"
           type="button"
           onClick={onJoin}
+          disabled={checkoutBusy}
         >
-          Keep my garden · $6.99
+          {checkoutBusy ? "Saving your garden…" : "Keep my garden · $6.99"}
         </button>
         <button
           className="cg-membership-offer-later"
           type="button"
           onClick={onLater}
+          disabled={checkoutBusy}
         >
           Not yet · return to the free Community Garden
         </button>

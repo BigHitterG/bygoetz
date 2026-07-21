@@ -43,7 +43,10 @@ import {
   saveGardenOnboardingStep,
   type GardenOnboardingStep,
 } from "../lib/gardenOnboarding";
-import { trackBasilFunnelEvent } from "../lib/launchFunnel";
+import {
+  getBasilLaunchSessionId,
+  trackBasilFunnelEvent,
+} from "../lib/launchFunnel";
 
 const INITIAL_UI: GardenUiState = {
   action: null,
@@ -102,6 +105,8 @@ export function CommunityGardenApp() {
   const [memberGarden, setMemberGarden] = useState<MyGardenState | null>(null);
   const [inventoryOpen, setInventoryOpen] = useState(false);
   const [membershipOfferOpen, setMembershipOfferOpen] = useState(false);
+  const [membershipCheckoutBusy, setMembershipCheckoutBusy] = useState(false);
+  const [membershipCheckoutError, setMembershipCheckoutError] = useState("");
   const [guestPreviewReady, setGuestPreviewReady] = useState(false);
   const [accountChecked, setAccountChecked] = useState(false);
   const [onboardingStep, setOnboardingStep] =
@@ -133,6 +138,58 @@ export function CommunityGardenApp() {
     setGuestPreview(next);
     saveGuestGardenPreview(next);
   }, []);
+
+  const startMembershipCheckout = useCallback(async () => {
+    const pendingPreview = {
+      ...guestPreviewRef.current,
+      journey: {
+        world,
+        mapX: ui.mapX,
+        mapY: ui.mapY,
+        zoom: ui.zoom,
+        selectedTool: ui.selectedTool,
+      },
+    } satisfies GuestGardenPreview;
+    guestPreviewRef.current = pendingPreview;
+    setGuestPreview(pendingPreview);
+    preserveGuestGardenPreviewForCheckout(pendingPreview);
+    trackMetaCustomEvent("BasilGuestStateSaved", {
+      plants: pendingPreview.garden.plants.length,
+      paths: pendingPreview.garden.paths.length,
+    });
+    trackMetaCustomEvent("BasilCheckoutStarted");
+    setMembershipCheckoutBusy(true);
+    setMembershipCheckoutError("");
+
+    try {
+      const response = await fetch("/api/community-garden/checkout", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          ...(session
+            ? { authorization: `Bearer ${session.access_token}` }
+            : {}),
+        },
+        body: JSON.stringify({
+          launchSessionId: getBasilLaunchSessionId(),
+          preview: getGuestPreviewImport(pendingPreview),
+        }),
+      });
+      if (!response.ok) {
+        throw new Error(
+          await getResponseError(response, "Secure checkout could not start."),
+        );
+      }
+      const payload = (await response.json()) as { url?: string };
+      if (!payload.url) throw new Error("Stripe did not return a secure checkout page.");
+      window.location.assign(payload.url);
+    } catch (error) {
+      setMembershipCheckoutBusy(false);
+      setMembershipCheckoutError(
+        error instanceof Error ? error.message : "Secure checkout could not start.",
+      );
+    }
+  }, [session, ui.mapX, ui.mapY, ui.selectedTool, ui.zoom, world]);
 
   const loadMembership = useCallback(async (activeSession: Session) => {
     try {
@@ -961,35 +1018,14 @@ export function CommunityGardenApp() {
         open={membershipOfferOpen}
         planted={myGarden.preview?.plantingsUsed ?? 3}
         onClose={() => setMembershipOfferOpen(false)}
+        checkoutBusy={membershipCheckoutBusy}
+        checkoutError={membershipCheckoutError}
         onLater={() => {
           setMembershipOfferOpen(false);
           transitionOnboarding("complete");
           setWorld("community");
         }}
-        onJoin={() => {
-          const pendingPreview = {
-            ...guestPreviewRef.current,
-            journey: {
-              world,
-              mapX: ui.mapX,
-              mapY: ui.mapY,
-              zoom: ui.zoom,
-              selectedTool: ui.selectedTool,
-            },
-          } satisfies GuestGardenPreview;
-          guestPreviewRef.current = pendingPreview;
-          setGuestPreview(pendingPreview);
-          preserveGuestGardenPreviewForCheckout(pendingPreview);
-          trackMetaCustomEvent("BasilGuestStateSaved", {
-            plants: pendingPreview.garden.plants.length,
-            paths: pendingPreview.garden.paths.length,
-          });
-          trackMetaCustomEvent("BasilSignupStarted");
-          setMembershipOfferOpen(false);
-          setMenuSection("account");
-          setMenuOpen(true);
-          pendingGardenEntryRef.current = true;
-        }}
+        onJoin={() => void startMembershipCheckout()}
       />
     </main>
   );

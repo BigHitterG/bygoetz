@@ -75,6 +75,8 @@ Evidence/notes: `_____`
 
 Technical verification completed July 21, 2026: live route and endpoint, malformed-event rejection, unauthenticated checkout boundary, first-touch attribution, milestone idempotency, RLS/grants, aggregate RPC, build, and production runtime logs. A clean new-account verification plus real successful payment/restoration remains a manual gate; do not create a live charge solely for an automated analytics test.
 
+Purchase-flow correction prepared July 21, 2026: guest previews are persisted server-side before immediate Stripe-hosted Checkout; payment confirmation provisions the entitlement, imports the preview idempotently, and only then sends the Basil verification/password-setup email. Manual gate remains a fresh paid test opened across two browsers, confirming the three preview plants, paths, and Care survive exactly once.
+
 Gate evidence: `_____`  
 Commit/deployment: `_____`  
 Completion date: `_____`

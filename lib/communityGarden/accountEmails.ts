@@ -77,12 +77,14 @@ function getGardenAccountLink(
   tokenHash: string,
   verificationType: "signup" | "recovery",
   continueToCheckout: boolean,
+  requiresPassword?: boolean,
 ) {
   const link = new URL("/community-garden", origin);
   link.searchParams.set("steward", "confirm-account");
   link.searchParams.set("token_hash", tokenHash);
   link.searchParams.set("type", verificationType);
   if (continueToCheckout) link.searchParams.set("checkout", "1");
+  if (requiresPassword) link.searchParams.set("setup", "1");
   return link.toString();
 }
 
@@ -151,15 +153,24 @@ export async function sendGardenAccountEmail({
   password,
   requestedIntent,
   origin,
+  continueToCheckout: requestedContinueToCheckout,
+  paidPurchase = false,
+  requiresPassword = false,
+  idempotencyKey,
 }: {
   email: string;
   password?: string;
   requestedIntent: GardenAccountEmailIntent;
   origin: string;
+  continueToCheckout?: boolean;
+  paidPurchase?: boolean;
+  requiresPassword?: boolean;
+  idempotencyKey?: string;
 }) {
   const supabase = getSupabaseAdmin();
   let verificationType: "signup" | "recovery" = requestedIntent;
   let properties: { hashed_token: string };
+  let userId: string | null = null;
 
   if (requestedIntent === "signup" && password) {
     const signup = await supabase.auth.admin.generateLink({
@@ -170,6 +181,7 @@ export async function sendGardenAccountEmail({
 
     if (!signup.error && signup.data.properties) {
       properties = signup.data.properties;
+      userId = signup.data.user?.id ?? null;
     } else {
       const recovery = await supabase.auth.admin.generateLink({
         type: "recovery",
@@ -184,6 +196,7 @@ export async function sendGardenAccountEmail({
       }
       verificationType = "recovery";
       properties = recovery.data.properties;
+      userId = recovery.data.user?.id ?? null;
     }
   } else {
     const recovery = await supabase.auth.admin.generateLink({
@@ -191,31 +204,46 @@ export async function sendGardenAccountEmail({
       email,
     });
     if (recovery.error || !recovery.data.properties) {
-      return { sent: false as const };
+      return { sent: false as const, userId: null };
     }
     properties = recovery.data.properties;
+    userId = recovery.data.user?.id ?? null;
   }
 
-  const continueToCheckout = requestedIntent === "signup";
+  const continueToCheckout =
+    requestedContinueToCheckout ?? requestedIntent === "signup";
   const link = getGardenAccountLink(
     origin,
     properties.hashed_token,
     verificationType,
     continueToCheckout,
+    requiresPassword,
   );
   const isNewSignup = verificationType === "signup";
   const emailContent = renderGardenAccountEmail({
-    title: isNewSignup ? "Confirm your Basil account" : "Set your Basil password",
+    title: paidPurchase
+      ? "Your garden is saved — finish your Basil account"
+      : isNewSignup
+        ? "Confirm your Basil account"
+        : "Set your Basil password",
     intro: isNewSignup
-      ? "Confirm your email address, then continue directly to the secure $6.99 Community Garden Membership checkout."
+      ? paidPurchase
+        ? "Your $6.99 Garden Membership is paid and your preview garden is safely stored. Confirm this email, choose your Basil password, and continue with the garden you created."
+        : "Confirm your email address, then continue directly to the secure $6.99 Community Garden Membership checkout."
       : continueToCheckout
         ? "This email already has a Basil account. Set a password, then continue directly to the secure $6.99 Community Garden Membership checkout."
-        : "Open Basil to choose a new password for your private account.",
+        : paidPurchase
+          ? "Your $6.99 Garden Membership is paid and your preview garden is safely stored. Open Basil to confirm this email and choose the password for your private account."
+          : "Open Basil to choose a new password for your private account.",
     buttonLabel: isNewSignup
-      ? "Confirm account and continue"
+      ? paidPurchase
+        ? "Confirm email and choose password"
+        : "Confirm account and continue"
       : continueToCheckout
         ? "Set password and continue"
-        : "Reset Basil password",
+        : paidPurchase
+          ? "Confirm email and choose password"
+          : "Reset Basil password",
     link,
   });
 
@@ -229,7 +257,9 @@ export async function sendGardenAccountEmail({
         ? [process.env.RESEND_REPLY_TO_EMAIL]
         : undefined,
       subject: isNewSignup
-        ? "Confirm your Basil account"
+        ? paidPurchase
+          ? "Your Basil garden is saved — finish your account"
+          : "Confirm your Basil account"
         : continueToCheckout
           ? "Finish setting up your Basil account"
           : "Reset your Basil password",
@@ -238,7 +268,9 @@ export async function sendGardenAccountEmail({
     },
     {
       headers: {
-        "Idempotency-Key": `basil-auth-${verificationType}-${properties.hashed_token.slice(0, 32)}`,
+        "Idempotency-Key": idempotencyKey
+          ? `basil-${idempotencyKey}`.slice(0, 256)
+          : `basil-auth-${verificationType}-${properties.hashed_token.slice(0, 32)}`,
       },
     },
   );
@@ -247,5 +279,6 @@ export async function sendGardenAccountEmail({
   return {
     sent: true as const,
     accountStatus: isNewSignup ? ("new" as const) : ("existing" as const),
+    userId,
   };
 }
