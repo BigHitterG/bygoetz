@@ -12,6 +12,9 @@ import { getStripe } from "@/lib/stripe";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
 export async function POST(request: NextRequest) {
   const requestOrigin = request.headers.get("origin");
   const origin = process.env.NEXT_PUBLIC_SITE_URL ?? request.nextUrl.origin;
@@ -19,6 +22,14 @@ export async function POST(request: NextRequest) {
   if (requestOrigin && requestOrigin !== request.nextUrl.origin && requestOrigin !== origin) {
     return NextResponse.json({ error: "Invalid checkout origin." }, { status: 403 });
   }
+
+  const body = (await request.json().catch(() => ({}))) as {
+    launchSessionId?: unknown;
+  };
+  const launchSessionId =
+    typeof body.launchSessionId === "string" && UUID_PATTERN.test(body.launchSessionId)
+      ? body.launchSessionId
+      : null;
 
   const user = await getGardenUser(request);
   if (!user?.email) {
@@ -41,6 +52,7 @@ export async function POST(request: NextRequest) {
     entitlement_version: "1",
     user_id: user.id,
     garden_name: gardenName,
+    ...(launchSessionId ? { launch_session_id: launchSessionId } : {}),
   };
 
   const session = await getStripe().checkout.sessions.create({

@@ -3951,6 +3951,117 @@
   line-height: 1.35;
 }
 
+.cg-funnel-heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 16px;
+  border-top: 1px solid rgba(52, 35, 31, 0.22);
+  padding-top: 12px;
+}
+
+.cg-funnel-heading > div {
+  display: grid;
+  gap: 3px;
+}
+
+.cg-funnel-heading strong {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+}
+
+.cg-funnel-heading small,
+.cg-funnel-breakdowns small {
+  color: #6f4c3e;
+  font-size: 0.6rem;
+}
+
+.cg-funnel-heading > span {
+  color: var(--cg-red);
+  font-size: 0.7rem;
+  font-weight: 900;
+}
+
+.cg-funnel-steps {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 6px;
+  margin-top: 9px;
+}
+
+.cg-funnel-steps > div {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  border: 1px solid rgba(52, 35, 31, 0.28);
+  background: rgba(247, 216, 170, 0.38);
+  padding: 7px;
+}
+
+.cg-funnel-steps strong {
+  color: var(--cg-red);
+  font-size: 0.9rem;
+}
+
+.cg-funnel-steps span {
+  font-size: 0.58rem;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.cg-funnel-steps small {
+  color: #6f4c3e;
+  font-size: 0.5rem;
+}
+
+.cg-funnel-breakdowns {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 9px;
+}
+
+.cg-funnel-breakdowns > div {
+  min-width: 0;
+  border-left: 3px solid var(--cg-aqua);
+  background: rgba(255, 255, 255, 0.34);
+  padding: 8px 9px;
+}
+
+.cg-funnel-breakdowns > div > strong {
+  font-size: 0.6rem;
+  text-transform: uppercase;
+}
+
+.cg-funnel-breakdowns ul {
+  display: grid;
+  gap: 4px;
+  margin: 6px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cg-funnel-breakdowns li {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 6px;
+  font-family: system-ui, sans-serif;
+  font-size: 0.58rem;
+}
+
+.cg-funnel-breakdowns li span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cg-funnel-breakdowns li b {
+  color: var(--cg-red);
+  white-space: nowrap;
+}
+
 .cg-health-footer {
   margin-top: 12px;
   border-top: 1px solid rgba(52, 35, 31, 0.22);
@@ -3961,6 +4072,16 @@
   min-height: 34px;
   padding: 5px 10px;
   font-size: 0.68rem;
+}
+
+@media (max-width: 700px) {
+  .cg-funnel-steps {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .cg-funnel-breakdowns {
+    grid-template-columns: 1fr;
+  }
 }
 
 .cg-feedback-form {

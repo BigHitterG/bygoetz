@@ -176,6 +176,11 @@ type GardenCanvasProps = {
     mutation: MyGardenMutation,
   ) => Promise<MyGardenState>;
   onActionCompleted?: (mode: GardenWorldMode, action: GardenAction) => void;
+  onActionFailed?: (
+    mode: GardenWorldMode,
+    action: GardenAction,
+    error: unknown,
+  ) => void;
 };
 
 function plantKey(gridX: number, gridY: number) {
@@ -762,6 +767,7 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
       personalGarden,
       onPersonalGardenMutation,
       onActionCompleted,
+      onActionFailed,
     },
     ref,
   ) {
@@ -770,6 +776,7 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
     const onCommunityContributionRef = useRef(onCommunityContribution);
     const onPersonalGardenMutationRef = useRef(onPersonalGardenMutation);
     const onActionCompletedRef = useRef(onActionCompleted);
+    const onActionFailedRef = useRef(onActionFailed);
     const personalGardenRef = useRef(personalGarden);
     const worldSnapshotsRef = useRef<
       Partial<Record<GardenWorldMode, WorldSnapshot>>
@@ -841,6 +848,10 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
     useEffect(() => {
       onActionCompletedRef.current = onActionCompleted;
     }, [onActionCompleted]);
+
+    useEffect(() => {
+      onActionFailedRef.current = onActionFailed;
+    }, [onActionFailed]);
 
     useEffect(() => {
       personalGardenRef.current = personalGarden;
@@ -1438,6 +1449,7 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
             onActionCompletedRef.current?.(runtime.mode, actionState.action);
             runtime.connection = runtime.configured ? "online" : "offline";
           } catch (error) {
+            onActionFailedRef.current?.(runtime.mode, actionState.action, error);
             if (error instanceof GardenConnectionError) {
               runtime.connection = navigator.onLine ? "error" : "offline";
               console.warn("Basil garden action connection issue", {

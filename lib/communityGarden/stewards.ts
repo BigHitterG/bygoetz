@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import type Stripe from "stripe";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
+import { recordBasilFunnelEvent } from "./funnel";
 
 export const GARDEN_STEWARD_PRICE_CENTS = 699;
 export const GARDEN_STEWARD_CURRENCY = "usd";
@@ -97,6 +98,7 @@ function getPaidGardenSessionDetails(session: Stripe.Checkout.Session) {
 
   const userId = session.metadata.user_id ?? "";
   const gardenName = (session.metadata.garden_name ?? "").trim();
+  const launchSessionId = session.metadata.launch_session_id ?? null;
 
   if (
     !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(userId) ||
@@ -105,7 +107,15 @@ function getPaidGardenSessionDetails(session: Stripe.Checkout.Session) {
     throw new Error("The Basil checkout is missing a valid account.");
   }
 
-  return { userId, gardenName };
+  return {
+    userId,
+    gardenName,
+    launchSessionId:
+      launchSessionId &&
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(launchSessionId)
+        ? launchSessionId
+        : null,
+  };
 }
 
 export async function fulfillGardenStewardCheckout(session: Stripe.Checkout.Session) {
@@ -150,6 +160,22 @@ export async function fulfillGardenStewardCheckout(session: Stripe.Checkout.Sess
     .single();
 
   if (error) throw error;
+
+  if (details.launchSessionId) {
+    try {
+      await recordBasilFunnelEvent({
+        launchSessionId: details.launchSessionId,
+        event: "purchase_completed",
+        sourceKey: `stripe:${session.id}`,
+      });
+    } catch (funnelError) {
+      console.error("Basil purchase funnel recording failed", {
+        stripeSessionId: session.id,
+        message:
+          funnelError instanceof Error ? funnelError.message : "Unknown error",
+      });
+    }
+  }
 
   return {
     status: "fulfilled" as const,

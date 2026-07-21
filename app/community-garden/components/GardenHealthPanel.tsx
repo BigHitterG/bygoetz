@@ -153,8 +153,66 @@ export function GardenHealthPanel({ session }: { session: Session }) {
         </div>
       </div>
 
+      <div className="cg-funnel-heading">
+        <div>
+          <strong>Launch funnel</strong>
+          <small>
+            Anonymous first-touch sessions · last {health.funnel.windowDays} days
+          </small>
+        </div>
+        <span>{health.funnel.uniqueSessions} sessions</span>
+      </div>
+
+      <div className="cg-funnel-steps" aria-label="Basil launch funnel">
+        {health.funnel.steps.map((step) => (
+          <div key={step.event}>
+            <strong>{step.sessions}</strong>
+            <span>{step.label}</span>
+            <small>{step.conversionFromPrevious}% from prior</small>
+          </div>
+        ))}
+      </div>
+
+      <div className="cg-funnel-breakdowns">
+        <div>
+          <strong>Devices</strong>
+          {health.funnel.devices.length ? (
+            <ul>
+              {health.funnel.devices.map((device) => (
+                <li key={device.device}>
+                  <span>{device.device}</span><b>{device.sessions}</b>
+                </li>
+              ))}
+            </ul>
+          ) : <small>No launch sessions yet.</small>}
+        </div>
+        <div>
+          <strong>Campaign / creative</strong>
+          {health.funnel.attribution.length ? (
+            <ul>
+              {health.funnel.attribution.slice(0, 8).map((row) => (
+                <li key={`${row.source}:${row.medium}:${row.campaign}:${row.creative}`}>
+                  <span>{row.campaign} · {row.creative}</span>
+                  <b>{row.sessions} / {row.purchases}</b>
+                </li>
+              ))}
+            </ul>
+          ) : <small>No attributed sessions yet.</small>}
+        </div>
+        <div>
+          <strong>Recoverable failures</strong>
+          <ul>
+            <li><span>Garden actions</span><b>{health.funnel.failures.gardenActions}</b></li>
+            <li><span>Garden restorations</span><b>{health.funnel.failures.gardenRestorations}</b></li>
+            <li><span>Checkout canceled</span><b>{health.funnel.failures.checkoutCanceled}</b></li>
+          </ul>
+        </div>
+      </div>
+
       <div className="cg-health-footer">
-        <small>Measured {formatTime(health.measuredAt)}</small>
+        <small>
+          Measured {formatTime(health.measuredAt)} · raw funnel retention {health.funnel.retentionDays} days
+        </small>
         <button type="button" disabled={refreshing} onClick={() => void loadHealth()}>
           {refreshing ? "Refreshing…" : "Refresh"}
         </button>

@@ -1,5 +1,6 @@
 import type { User } from "@supabase/supabase-js";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
+import { getBasilLaunchFunnelAdmin, type BasilLaunchFunnel } from "./funnel";
 
 export type GardenDeviceClass = "phone" | "tablet" | "desktop" | "unknown";
 
@@ -38,6 +39,7 @@ export type CommunityGardenHealth = {
     plantCount: number | null;
     payloadBytes: number | null;
   };
+  funnel: BasilLaunchFunnel;
 };
 
 const DEFAULT_ADMIN_EMAILS = ["thomas.goetz.jr@gmail.com"];
@@ -102,14 +104,15 @@ export async function recordCommunityGardenHealth(input: {
 }
 
 export async function getCommunityGardenAdminHealth() {
-  const { data, error } = await getSupabaseAdmin().rpc(
-    "get_community_garden_admin_health",
-  );
+  const [{ data, error }, funnel] = await Promise.all([
+    getSupabaseAdmin().rpc("get_community_garden_admin_health"),
+    getBasilLaunchFunnelAdmin(),
+  ]);
   if (error) throw error;
   if (!data || typeof data !== "object") {
     throw new Error("The garden health summary was unavailable.");
   }
-  return data as CommunityGardenHealth;
+  return { ...(data as Omit<CommunityGardenHealth, "funnel">), funnel };
 }
 
 export function logGardenServerEvent(

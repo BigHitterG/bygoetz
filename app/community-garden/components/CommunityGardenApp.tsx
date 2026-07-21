@@ -43,6 +43,7 @@ import {
   saveGardenOnboardingStep,
   type GardenOnboardingStep,
 } from "../lib/gardenOnboarding";
+import { trackBasilFunnelEvent } from "../lib/launchFunnel";
 
 const INITIAL_UI: GardenUiState = {
   action: null,
@@ -181,6 +182,10 @@ export function CommunityGardenApp() {
               trackMetaCustomEvent("BasilGuestRestoreFailed", {
                 status: importResponse.status,
               });
+              void trackBasilFunnelEvent("garden_restoration_failed", {
+                failure_stage: "preview_import",
+                error_code: `http_${importResponse.status}`,
+              });
             }
           } catch (error) {
             // Keep the temporary preview available for a later retry.
@@ -191,6 +196,10 @@ export function CommunityGardenApp() {
               "Your saved garden is still safe. We will try restoring it again.",
             );
             trackMetaCustomEvent("BasilGuestRestoreFailed");
+            void trackBasilFunnelEvent("garden_restoration_failed", {
+              failure_stage: "preview_import",
+              error_code: "network_or_unknown",
+            });
           }
         }
       }
@@ -207,6 +216,25 @@ export function CommunityGardenApp() {
       setAccountChecked(true);
     }
   }, []);
+
+  useEffect(() => {
+    void trackBasilFunnelEvent("session_started");
+  }, []);
+
+  useEffect(() => {
+    if (ui.connection === "connecting") return;
+    void trackBasilFunnelEvent("garden_loaded");
+  }, [ui.connection]);
+
+  useEffect(() => {
+    if (!membershipOfferOpen) return;
+    void trackBasilFunnelEvent("paywall_viewed");
+  }, [membershipOfferOpen]);
+
+  useEffect(() => {
+    if (world !== "personal") return;
+    void trackBasilFunnelEvent("my_garden_entered");
+  }, [world]);
 
   useEffect(() => {
     queueMicrotask(() => {
@@ -579,6 +607,7 @@ export function CommunityGardenApp() {
           const used = updatedPreview.garden.preview?.plantingsUsed ?? 0;
           if (mutation.action === "plant") {
             if (used === 1) {
+              void trackBasilFunnelEvent("first_personal_plant");
               transitionOnboarding("complete", [
                 "personal-inventory",
                 "personal-seed",
@@ -589,12 +618,14 @@ export function CommunityGardenApp() {
             if (
               used >= (updatedPreview.garden.preview?.plantingLimit ?? 3)
             ) {
+              void trackBasilFunnelEvent("preview_limit_reached");
               setMembershipOfferOpen(true);
             }
           }
           return updatedPreview.garden;
         } catch (error) {
           if (error instanceof GuestPreviewLimitError) {
+            void trackBasilFunnelEvent("preview_limit_reached");
             transitionOnboarding("complete", [
               "personal-inventory",
               "personal-seed",
@@ -642,6 +673,7 @@ export function CommunityGardenApp() {
       "community-repeat",
       "my-garden",
     ]);
+    void trackBasilFunnelEvent("my_garden_entered");
     setWorld("personal");
   }
 
@@ -655,6 +687,11 @@ export function CommunityGardenApp() {
         communityOnboardingPlantingsRef.current = nextPlantings;
         setCommunityOnboardingPlantings(nextPlantings);
         saveCommunityOnboardingPlantings(nextPlantings);
+        if (nextPlantings === 1) {
+          void trackBasilFunnelEvent("first_community_plant");
+        } else if (nextPlantings === 3) {
+          void trackBasilFunnelEvent("third_community_plant");
+        }
         transitionOnboarding(
           nextPlantings >= 3 ? "my-garden" : "community-tile",
           ["plant", "select-seed", "community-tile", "community-repeat"],
@@ -669,10 +706,24 @@ export function CommunityGardenApp() {
     [transitionOnboarding],
   );
 
+  const handleGardenActionFailed = useCallback(
+    (mode: GardenWorldMode, action: GardenUiState["action"], error: unknown) => {
+      void trackBasilFunnelEvent("garden_action_failed", {
+        failure_stage: mode,
+        error_code:
+          error instanceof Error && /network|connect|offline/i.test(error.message)
+            ? "connection"
+            : action ?? "unknown",
+      });
+    },
+    [],
+  );
+
   function openInventoryForOnboarding() {
     transitionOnboarding("select-seed", ["plant"]);
     transitionOnboarding("personal-seed", ["personal-inventory"]);
     setInventoryOpen(true);
+    void trackBasilFunnelEvent("inventory_opened");
   }
 
   return (
@@ -686,6 +737,7 @@ export function CommunityGardenApp() {
           onCommunityContribution={claimCommunityContribution}
           onPersonalGardenMutation={mutateMyGarden}
           onActionCompleted={handleGardenActionCompleted}
+          onActionFailed={handleGardenActionFailed}
         />
 
         <header className="cg-titlebar">
@@ -802,6 +854,7 @@ export function CommunityGardenApp() {
             else setInventoryOpen(false);
           }}
           onSelectPlant={(plantType) => {
+            void trackBasilFunnelEvent("plant_selected");
             canvasRef.current?.selectPlant(plantType);
             const shouldGuideSpot =
               onboardingStep === "select-seed" ||
@@ -879,6 +932,7 @@ export function CommunityGardenApp() {
           onOpenInventory={openInventoryForOnboarding}
           onOpenMyGarden={() => {
             transitionOnboarding("personal-inventory", ["my-garden"]);
+            void trackBasilFunnelEvent("my_garden_entered");
             setWorld("personal");
           }}
         />
