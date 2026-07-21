@@ -24,6 +24,13 @@ export type BasilLaunchFunnel = {
     sessions: number;
     conversionFromPrevious: number;
   }>;
+  previewJourney: {
+    softPaywallViews: number;
+    softDeclines: number;
+    continuedAfterDecline: number;
+    hardPaywallViews: number;
+    expiredPreviews: number;
+  };
   devices: Array<{ device: GardenDeviceClass; sessions: number }>;
   attribution: Array<{
     source: string;

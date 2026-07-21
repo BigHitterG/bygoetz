@@ -947,6 +947,34 @@
   box-shadow: 2px 2px 0 rgba(52, 35, 31, 0.16);
 }
 
+.cg-preview-care-guide {
+  position: absolute;
+  right: max(12px, env(safe-area-inset-right));
+  top: max(148px, calc(env(safe-area-inset-top) + 142px));
+  z-index: 12;
+  display: grid;
+  width: min(210px, calc(100% - 24px));
+  gap: 3px;
+  border: 2px solid var(--cg-ink);
+  background: rgba(255, 244, 223, 0.97);
+  padding: 8px 10px;
+  pointer-events: none;
+  box-shadow: 3px 3px 0 rgba(52, 35, 31, 0.22);
+}
+
+.cg-preview-care-guide strong {
+  color: var(--cg-red);
+  font-size: 0.6rem;
+  text-transform: uppercase;
+}
+
+.cg-preview-care-guide span {
+  color: #6f4c3e;
+  font-size: 0.55rem;
+  font-weight: 750;
+  line-height: 1.35;
+}
+
 .cg-uproot-icon {
   position: relative;
   display: block;

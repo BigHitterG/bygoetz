@@ -10,16 +10,25 @@ import type { MyGardenMutation } from "./myGardenMutation";
 const STORAGE_KEY = "basil-guest-garden-preview-v1";
 const CHECKOUT_TRANSFER_KEY = "basil-guest-garden-checkout-v1";
 const CHECKOUT_TRANSFER_LIFETIME_MS = 7 * 24 * 60 * 60 * 1000;
+export const GUEST_PREVIEW_LIFETIME_MS = 24 * 60 * 60 * 1000;
 const QUICK_CARE_LIMIT = 20;
 const STEADY_ACTIONS_PER_CARE = 4;
 const ONBOARDING_PLANTING_BONUSES = 3;
-export const GUEST_PLANTING_LIMIT = 3;
+export const GUEST_SOFT_PAYWALL_PLANTINGS = 3;
+export const GUEST_PLANTING_LIMIT = 10;
 
 export type GuestGardenPreview = {
   garden: MyGardenState;
   quickCareEarned: number;
   onboardingPlantingBonuses: number;
   steadyActions: number;
+  access?: {
+    startedAt: string;
+    expiresAt: string;
+    softPaywallSeen: boolean;
+    softPaywallDeclined: boolean;
+    continuedAfterSoftPaywall: boolean;
+  };
   journey?: {
     world: "community" | "personal";
     mapX: number;
@@ -39,6 +48,13 @@ export class GuestPreviewLimitError extends Error {
   constructor() {
     super("Keep this garden growing with a Garden Membership.");
     this.name = "GuestPreviewLimitError";
+  }
+}
+
+export class GuestPreviewExpiredError extends Error {
+  constructor() {
+    super("This temporary garden is ready to be saved with a Garden Membership.");
+    this.name = "GuestPreviewExpiredError";
   }
 }
 
@@ -175,6 +191,21 @@ export function loadGuestGardenPreview() {
       0,
       QUICK_CARE_LIMIT,
     );
+    const now = Date.now();
+    const storedAccess =
+      parsed.access && typeof parsed.access === "object"
+        ? (parsed.access as Record<string, unknown>)
+        : null;
+    const storedStartedAt = storedAccess?.startedAt;
+    const startedAt =
+      typeof storedStartedAt === "string" && Number.isFinite(Date.parse(storedStartedAt))
+        ? new Date(storedStartedAt).toISOString()
+        : new Date(now).toISOString();
+    const storedExpiresAt = storedAccess?.expiresAt;
+    const expiresAt =
+      typeof storedExpiresAt === "string" && Number.isFinite(Date.parse(storedExpiresAt))
+        ? new Date(storedExpiresAt).toISOString()
+        : new Date(now + GUEST_PREVIEW_LIFETIME_MS).toISOString();
     return {
       quickCareEarned,
       onboardingPlantingBonuses: clampInteger(
@@ -183,6 +214,19 @@ export function loadGuestGardenPreview() {
         ONBOARDING_PLANTING_BONUSES,
       ),
       steadyActions: clampInteger(parsed.steadyActions, 0, 10000),
+      access:
+        plants.length > 0 || storedAccess
+          ? {
+              startedAt,
+              expiresAt,
+              softPaywallSeen:
+                storedAccess?.softPaywallSeen === true ||
+                plants.length >= GUEST_SOFT_PAYWALL_PLANTINGS,
+              softPaywallDeclined: storedAccess?.softPaywallDeclined === true,
+              continuedAfterSoftPaywall:
+                storedAccess?.continuedAfterSoftPaywall === true,
+            }
+          : undefined,
       journey:
         parsed.journey && typeof parsed.journey === "object"
           ? {
@@ -305,10 +349,54 @@ export function awardGuestCare(
   };
 }
 
+export function isGuestPreviewExpired(
+  preview: GuestGardenPreview,
+  now = Date.now(),
+) {
+  return Boolean(
+    preview.access &&
+      Number.isFinite(Date.parse(preview.access.expiresAt)) &&
+      Date.parse(preview.access.expiresAt) <= now,
+  );
+}
+
+export function markGuestSoftPaywallSeen(current: GuestGardenPreview) {
+  if (!current.access) return current;
+  return {
+    ...current,
+    access: { ...current.access, softPaywallSeen: true },
+  } satisfies GuestGardenPreview;
+}
+
+export function markGuestSoftPaywallDeclined(current: GuestGardenPreview) {
+  if (!current.access) return current;
+  return {
+    ...current,
+    access: {
+      ...current.access,
+      softPaywallSeen: true,
+      softPaywallDeclined: true,
+    },
+  } satisfies GuestGardenPreview;
+}
+
+export function markGuestPreviewContinued(current: GuestGardenPreview) {
+  if (!current.access?.softPaywallDeclined || current.access.continuedAfterSoftPaywall) {
+    return current;
+  }
+  return {
+    ...current,
+    access: { ...current.access, continuedAfterSoftPaywall: true },
+  } satisfies GuestGardenPreview;
+}
+
 export function mutateGuestGarden(
   current: GuestGardenPreview,
   mutation: MyGardenMutation,
 ) {
+  if (isGuestPreviewExpired(current)) {
+    throw new GuestPreviewExpiredError();
+  }
   const garden = current.garden;
   const preview = garden.preview ?? {
     plantingLimit: GUEST_PLANTING_LIMIT,
@@ -340,8 +428,18 @@ export function mutateGuestGarden(
     }
     const nextPlantingsUsed = preview.plantingsUsed + 1;
     const plantedAt = new Date().toISOString();
+    const access = current.access ?? {
+      startedAt: plantedAt,
+      expiresAt: new Date(
+        Date.parse(plantedAt) + GUEST_PREVIEW_LIFETIME_MS,
+      ).toISOString(),
+      softPaywallSeen: false,
+      softPaywallDeclined: false,
+      continuedAfterSoftPaywall: false,
+    };
     return {
       ...current,
+      access,
       garden: {
         ...garden,
         careBalance: garden.careBalance - garden.plantCost,
@@ -372,6 +470,10 @@ export function mutateGuestGarden(
         ...garden,
         careBalance: garden.careBalance + garden.uprootReturn,
         plants: garden.plants.filter((candidate) => candidate.id !== mutation.plantId),
+        preview: {
+          ...preview,
+          plantingsUsed: Math.max(0, preview.plantingsUsed - 1),
+        },
       },
     } satisfies GuestGardenPreview;
   }

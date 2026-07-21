@@ -24,8 +24,14 @@ import {
   clearGuestGardenPreview,
   createGuestGardenPreview,
   getGuestPreviewImport,
+  GUEST_SOFT_PAYWALL_PLANTINGS,
+  GuestPreviewExpiredError,
   GuestPreviewLimitError,
+  isGuestPreviewExpired,
   loadGuestGardenPreview,
+  markGuestPreviewContinued,
+  markGuestSoftPaywallDeclined,
+  markGuestSoftPaywallSeen,
   mutateGuestGarden,
   preserveGuestGardenPreviewForCheckout,
   saveGuestGardenPreview,
@@ -77,6 +83,8 @@ type AccountResponse =
   | { active: false }
   | { active: true; myGarden: MyGardenState };
 
+type MembershipOfferStage = "soft" | "hard" | "expired";
+
 async function getResponseError(response: Response, fallback: string) {
   try {
     const payload = (await response.json()) as { error?: string };
@@ -105,6 +113,8 @@ export function CommunityGardenApp() {
   const [memberGarden, setMemberGarden] = useState<MyGardenState | null>(null);
   const [inventoryOpen, setInventoryOpen] = useState(false);
   const [membershipOfferOpen, setMembershipOfferOpen] = useState(false);
+  const [membershipOfferStage, setMembershipOfferStage] =
+    useState<MembershipOfferStage>("soft");
   const [membershipCheckoutBusy, setMembershipCheckoutBusy] = useState(false);
   const [membershipCheckoutError, setMembershipCheckoutError] = useState("");
   const [guestPreviewReady, setGuestPreviewReady] = useState(false);
@@ -132,6 +142,11 @@ export function CommunityGardenApp() {
     !isGardenOnboardingFinished(onboardingStep) &&
     onboardingStep !== "my-garden" &&
     communityOnboardingPlantings < 3;
+  const showContinueGardenGuidance =
+    world === "personal" &&
+    !memberGarden &&
+    guestPreview.access?.softPaywallDeclined === true &&
+    guestPreview.access.continuedAfterSoftPaywall !== true;
 
   const commitGuestPreview = useCallback((next: GuestGardenPreview) => {
     guestPreviewRef.current = next;
@@ -285,8 +300,16 @@ export function CommunityGardenApp() {
 
   useEffect(() => {
     if (!membershipOfferOpen) return;
-    void trackBasilFunnelEvent("paywall_viewed");
-  }, [membershipOfferOpen]);
+    if (membershipOfferStage === "soft") {
+      void trackBasilFunnelEvent("paywall_viewed");
+      void trackBasilFunnelEvent("soft_paywall_viewed");
+    } else if (membershipOfferStage === "hard") {
+      void trackBasilFunnelEvent("preview_limit_reached");
+      void trackBasilFunnelEvent("hard_paywall_viewed");
+    } else {
+      void trackBasilFunnelEvent("preview_expired");
+    }
+  }, [membershipOfferOpen, membershipOfferStage]);
 
   useEffect(() => {
     if (world !== "personal") return;
@@ -542,6 +565,27 @@ export function CommunityGardenApp() {
     });
   }, [guestPreviewReady]);
 
+  useEffect(() => {
+    if (
+      !guestPreviewReady ||
+      memberGarden ||
+      world !== "personal" ||
+      guestPreview.garden.plants.length === 0 ||
+      !isGuestPreviewExpired(guestPreview)
+    ) {
+      return;
+    }
+    let canceled = false;
+    queueMicrotask(() => {
+      if (canceled) return;
+      setMembershipOfferStage("expired");
+      setMembershipOfferOpen(true);
+    });
+    return () => {
+      canceled = true;
+    };
+  }, [guestPreview, guestPreviewReady, memberGarden, world]);
+
   const onStateChange = useCallback((state: GardenUiState) => {
     setUi(state);
   }, []);
@@ -549,8 +593,13 @@ export function CommunityGardenApp() {
   const claimCommunityContribution = useCallback(
     (contribution: GardenContribution) => {
       if (!session || !memberGarden) {
+        const currentPreview = guestPreviewRef.current;
+        const continuedPreview = markGuestPreviewContinued(currentPreview);
+        if (continuedPreview !== currentPreview) {
+          void trackBasilFunnelEvent("preview_continued");
+        }
         const award = awardGuestCare(
-          guestPreviewRef.current,
+          continuedPreview,
           contribution.careValue,
           contribution.action,
         );
@@ -587,8 +636,13 @@ export function CommunityGardenApp() {
               },
             );
             if (response.status === 401 || response.status === 403) {
+              const currentPreview = guestPreviewRef.current;
+              const continuedPreview = markGuestPreviewContinued(currentPreview);
+              if (continuedPreview !== currentPreview) {
+                void trackBasilFunnelEvent("preview_continued");
+              }
               const award = awardGuestCare(
-                guestPreviewRef.current,
+                continuedPreview,
                 contribution.careValue,
                 contribution.action,
               );
@@ -656,11 +710,8 @@ export function CommunityGardenApp() {
     async (mutation: MyGardenMutation) => {
       if (!memberGarden) {
         try {
-          const updatedPreview = mutateGuestGarden(
-            guestPreviewRef.current,
-            mutation,
-          );
-          commitGuestPreview(updatedPreview);
+          const currentPreview = guestPreviewRef.current;
+          let updatedPreview = mutateGuestGarden(currentPreview, mutation);
           const used = updatedPreview.garden.preview?.plantingsUsed ?? 0;
           if (mutation.action === "plant") {
             if (used === 1) {
@@ -673,21 +724,34 @@ export function CommunityGardenApp() {
               setShowFreePlantingNotice(true);
             }
             if (
-              used >= (updatedPreview.garden.preview?.plantingLimit ?? 3)
+              used === GUEST_SOFT_PAYWALL_PLANTINGS &&
+              !currentPreview.access?.softPaywallSeen
             ) {
-              void trackBasilFunnelEvent("preview_limit_reached");
+              updatedPreview = markGuestSoftPaywallSeen(updatedPreview);
+              setMembershipOfferStage("soft");
+              setMembershipOfferOpen(true);
+            } else if (
+              used >= (updatedPreview.garden.preview?.plantingLimit ?? 10)
+            ) {
+              setMembershipOfferStage("hard");
               setMembershipOfferOpen(true);
             }
           }
+          commitGuestPreview(updatedPreview);
           return updatedPreview.garden;
         } catch (error) {
-          if (error instanceof GuestPreviewLimitError) {
-            void trackBasilFunnelEvent("preview_limit_reached");
+          if (
+            error instanceof GuestPreviewLimitError ||
+            error instanceof GuestPreviewExpiredError
+          ) {
             transitionOnboarding("complete", [
               "personal-inventory",
               "personal-seed",
               "personal-tile",
             ]);
+            setMembershipOfferStage(
+              error instanceof GuestPreviewExpiredError ? "expired" : "hard",
+            );
             setMembershipOfferOpen(true);
           }
           throw error;
@@ -783,6 +847,16 @@ export function CommunityGardenApp() {
     void trackBasilFunnelEvent("inventory_opened");
   }
 
+  function dismissMembershipOffer() {
+    if (membershipOfferStage === "soft") {
+      const declined = markGuestSoftPaywallDeclined(guestPreviewRef.current);
+      commitGuestPreview(declined);
+      void trackBasilFunnelEvent("soft_paywall_declined");
+    }
+    setMembershipOfferOpen(false);
+    transitionOnboarding("complete");
+  }
+
   return (
     <main className={`cg-root is-${world}-world`}>
       <section className="cg-game-frame" aria-label="Basil garden game">
@@ -857,7 +931,7 @@ export function CommunityGardenApp() {
 
         <button
           className={`cg-compact-support${
-            showMyGardenInvitation
+            showMyGardenInvitation || showContinueGardenGuidance
               ? " is-onboarding-highlight"
               : ""
           }`}
@@ -884,18 +958,34 @@ export function CommunityGardenApp() {
               Care <b>{myGarden.careBalance}</b>
             </small>
           </span>
-          {showMyGardenInvitation ? (
-            <strong className="cg-my-garden-notice" aria-label="My Garden is ready">
-              {myGarden.careBalance}
+          {showMyGardenInvitation || showContinueGardenGuidance ? (
+            <strong
+              className="cg-my-garden-notice"
+              aria-label={
+                showContinueGardenGuidance
+                  ? "Earn more Care in Community Garden"
+                  : "My Garden is ready"
+              }
+            >
+              {showContinueGardenGuidance ? "+" : myGarden.careBalance}
             </strong>
           ) : null}
         </button>
 
         {world === "personal" && myGarden.preview ? (
           <div className="cg-preview-progress" aria-live="polite">
-            Preview · {myGarden.preview.plantingsUsed} of{" "}
-            {myGarden.preview.plantingLimit} flowers
+            {guestPreview.access?.softPaywallDeclined
+              ? "Temporary · not saved"
+              : "Preview"}{" "}
+            · {myGarden.preview.plantingsUsed} of {myGarden.preview.plantingLimit} flowers
           </div>
+        ) : null}
+
+        {showContinueGardenGuidance ? (
+          <aside className="cg-preview-care-guide" role="status">
+            <strong>Continue growing</strong>
+            <span>Visit Community Garden to earn Care, then come back here.</span>
+          </aside>
         ) : null}
 
         <GardenInventory
@@ -1016,14 +1106,14 @@ export function CommunityGardenApp() {
 
       <GardenMembershipOffer
         open={membershipOfferOpen}
-        planted={myGarden.preview?.plantingsUsed ?? 3}
-        onClose={() => setMembershipOfferOpen(false)}
+        planted={myGarden.preview?.plantingsUsed ?? GUEST_SOFT_PAYWALL_PLANTINGS}
+        stage={membershipOfferStage}
+        onClose={dismissMembershipOffer}
         checkoutBusy={membershipCheckoutBusy}
         checkoutError={membershipCheckoutError}
         onLater={() => {
-          setMembershipOfferOpen(false);
-          transitionOnboarding("complete");
-          setWorld("community");
+          dismissMembershipOffer();
+          if (membershipOfferStage !== "soft") setWorld("community");
         }}
         onJoin={() => void startMembershipCheckout()}
       />

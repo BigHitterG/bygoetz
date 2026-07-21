@@ -1,7 +1,7 @@
 # Basil launch Phase 1: first-party funnel measurement
 
 Implemented: July 21, 2026  
-Scope: anonymous first-touch measurement only; no gameplay, paywall, price, or Meta Conversions API changes
+Scope: anonymous first-touch measurement; the later preview-continuation milestones remain privacy-compatible and Meta Conversions API is still excluded
 
 ## Session and attribution model
 
@@ -29,8 +29,13 @@ The client and server reject control characters and email-like attribution. No q
 | `third_community_plant` | The onboarding/community planting count reached three. |
 | `my_garden_entered` | The visitor entered My Garden. |
 | `first_personal_plant` | The visitor planted the first preview flower. |
-| `preview_limit_reached` | The three-flower preview limit was reached. |
+| `preview_limit_reached` | The ten-flower hard preview limit was reached. |
 | `paywall_viewed` | The existing Garden Membership offer became visible. |
+| `soft_paywall_viewed` | The first save offer appeared after three personal flowers. |
+| `soft_paywall_declined` | The visitor chose to keep playing the temporary preview. |
+| `preview_continued` | The visitor completed a Care-earning community action after declining. |
+| `hard_paywall_viewed` | The save-required offer appeared at ten personal flowers. |
+| `preview_expired` | A 24-hour temporary preview reached its save-required state. |
 | `signup_started` | The private account signup form was submitted. |
 | `verification_sent` | Basil accepted a verification or resend request. |
 | `verification_completed` | Supabase verified the email link and returned a session. |
@@ -65,6 +70,7 @@ The existing owner-only Garden Health panel now includes a rolling 30-day funnel
 - device-class totals
 - campaign and creative totals with purchases
 - garden action, restoration, and checkout-cancel failures
+- aggregate soft-offer, continuation, hard-limit, and expiry totals
 
 The existing admin-email authorization remains unchanged.
 

@@ -3,6 +3,7 @@
 type GardenMembershipOfferProps = {
   open: boolean;
   planted: number;
+  stage: "soft" | "hard" | "expired";
   onClose: () => void;
   onJoin: () => void;
   onLater: () => void;
@@ -13,6 +14,7 @@ type GardenMembershipOfferProps = {
 export function GardenMembershipOffer({
   open,
   planted,
+  stage,
   onClose,
   onJoin,
   onLater,
@@ -20,6 +22,19 @@ export function GardenMembershipOffer({
   checkoutError = "",
 }: GardenMembershipOfferProps) {
   if (!open) return null;
+
+  const isSoft = stage === "soft";
+  const isExpired = stage === "expired";
+  const title = isSoft
+    ? "Keep this garden growing"
+    : isExpired
+      ? "Save your temporary garden"
+      : "Your preview garden is full";
+  const description = isSoft
+    ? `You planted ${planted} flowers of your own. Save them now, or keep playing this 24-hour temporary preview up to ten flowers.`
+    : isExpired
+      ? "Your 24-hour preview has ended. Your work is still here and ready to save with Garden Membership."
+      : `You planted all ${planted} preview flowers. Join to save this garden and keep growing without the preview limit.`;
 
   return (
     <div
@@ -39,13 +54,11 @@ export function GardenMembershipOffer({
           <span className="is-two" />
           <span className="is-three" />
         </div>
-        <p className="cg-kicker">Your garden has begun</p>
-        <h2 id="membership-offer-title">Keep this garden growing</h2>
-        <p>
-          You planted {Math.min(3, planted)} preview flowers. Garden Membership
-          keeps them, saves your Care, and opens permanent planting, paths,
-          placeable garden items, and new land across your devices.
+        <p className="cg-kicker">
+          {isSoft ? "Your garden has begun" : "Your garden is ready to keep"}
         </p>
+        <h2 id="membership-offer-title">{title}</h2>
+        <p>{description}</p>
         <ul>
           <li>Keep these flowers and your remaining Care</li>
           <li>Grow and customize My Garden without the preview limit</li>
@@ -72,7 +85,7 @@ export function GardenMembershipOffer({
           onClick={onLater}
           disabled={checkoutBusy}
         >
-          Not yet · return to the free Community Garden
+          {isSoft ? "Keep growing for now" : "Return to Community Garden"}
         </button>
       </section>
     </div>

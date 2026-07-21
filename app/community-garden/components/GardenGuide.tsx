@@ -37,9 +37,9 @@ export function GardenGuide() {
         <div>
           <dt>Switch gardens</dt>
           <dd>
-            Use the bottom-left button to try My Garden. Plant three preview
-            flowers before deciding whether you want to keep it. Membership also
-            opens paths and placeable garden items in its Inventory.
+            Use the garden switch to try My Garden. After three flowers, you can
+            save it or keep building a temporary preview up to ten flowers.
+            Membership keeps the garden and opens permanent placeable items.
           </dd>
         </div>
       </dl>

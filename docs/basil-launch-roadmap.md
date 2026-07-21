@@ -81,9 +81,9 @@ Guest browser
 2. Contextual onboarding teaches the visitor to open inventory, choose a plant, and place three plants in the Community Garden.
 3. The first three unpaid community plantings each award two temporary Care. Later guest actions use the normal steady cadence of one Care per four qualifying actions.
 4. After three community plantings, My Garden becomes available. The visitor can enter a temporary private preview using the same game interface.
-5. The preview permits free paths and up to three personal flower plantings. The fourth personal planting attempt opens the current membership offer.
-6. The offer explains the one-time $6.99 Garden Membership. Choosing it immediately starts the secure purchase path; account verification is no longer placed before payment.
-7. Before leaving Basil, the app keeps its browser backup and sends a strictly validated preview containing remaining Care, up to three plants, and up to 64 paths to `/api/community-garden/checkout`.
+5. The preview permits free paths. After three personal flowers, a soft membership offer appears; declining keeps the visitor in My Garden and points them toward Community Garden to earn more Care.
+6. The temporary Community Garden → Care → My Garden loop continues until ten personal flowers. At ten flowers, further personal planting requires the one-time $6.99 Garden Membership. The preview becomes save-required after 24 hours, while its visible work remains recoverable for purchase.
+7. Before leaving Basil, the app keeps its browser backup and sends a strictly validated preview containing remaining Care, up to ten plants, and up to 64 paths to `/api/community-garden/checkout`.
 8. The server writes that preview to the RLS-protected, service-role-only `garden_pending_purchases` table with a random claim secret and seven-day expiry, then creates a one-time Stripe-hosted Checkout session for $6.99 USD. Stripe collects the receipt/account email on its hosted page; Basil never handles card details.
 9. Stripe metadata connects the checkout to the pending preview without putting the preview or email in metadata. The checkout route also records authoritative paywall and checkout milestones.
 10. A paid Stripe webhook or `/api/community-garden/claim` callback validates the signature/session, exact price, currency, payment status, pending record, and claim secret. Conditional activation locking plus provider purchase uniqueness make duplicate callbacks idempotent.
@@ -91,7 +91,7 @@ Guest browser
 12. Stripe returns the customer to a dedicated payment-complete screen explaining that the garden is safe and verification is the remaining step. The email link can open in another browser, verifies with Supabase `verifyOtp`, and requires the customer to choose their Basil password.
 13. After verification, `/api/community-garden/account` loads the already-persistent membership and exact preview garden. Browser storage remains a fallback and is cleared only after the authenticated garden is confirmed. Cancellation returns to the unchanged guest garden.
 
-The pending preview is now server-backed before Stripe, so cross-browser email verification no longer determines whether the paid garden survives. Pending purchase rows are private, bounded, and expire after seven days; cleanup is an operational retention task rather than a source of authority for completed entitlements.
+The pending preview is server-backed before Stripe, so cross-browser email verification does not determine whether the paid garden survives. Active unpaid play lasts 24 hours from the first personal flower; the local checkout recovery copy and private pending purchase use a bounded seven-day recovery window. Pending purchase rows are private and cleanup is not a source of authority for completed entitlements.
 
 ## Production dependencies
 

@@ -175,6 +175,16 @@ export function GardenHealthPanel({ session }: { session: Session }) {
 
       <div className="cg-funnel-breakdowns">
         <div>
+          <strong>Preview continuation</strong>
+          <ul>
+            <li><span>Soft offer viewed</span><b>{health.funnel.previewJourney.softPaywallViews}</b></li>
+            <li><span>Chose to keep playing</span><b>{health.funnel.previewJourney.softDeclines}</b></li>
+            <li><span>Earned Care afterward</span><b>{health.funnel.previewJourney.continuedAfterDecline}</b></li>
+            <li><span>Reached ten-flower limit</span><b>{health.funnel.previewJourney.hardPaywallViews}</b></li>
+            <li><span>24-hour previews expired</span><b>{health.funnel.previewJourney.expiredPreviews}</b></li>
+          </ul>
+        </div>
+        <div>
           <strong>Devices</strong>
           {health.funnel.devices.length ? (
             <ul>

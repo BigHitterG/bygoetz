@@ -53,7 +53,7 @@ export function normalizePendingGardenPreview(value: unknown): PendingGardenPrev
   if (!value || typeof value !== "object") return null;
   const record = value as Record<string, unknown>;
   if (!integerInRange(record.careBalance, 0, 20)) return null;
-  if (!Array.isArray(record.plants) || record.plants.length > 3) return null;
+  if (!Array.isArray(record.plants) || record.plants.length > 10) return null;
   if (!Array.isArray(record.paths) || record.paths.length > 64) return null;
 
   const plantTiles = new Set<string>();

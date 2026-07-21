@@ -89,7 +89,7 @@ export async function POST(request: NextRequest) {
         !Number.isInteger(payload.careBalance) ||
         Number(payload.careBalance) < 0 ||
         Number(payload.careBalance) > 20 ||
-        plants.length > 3 ||
+        plants.length > 10 ||
         paths.length > 64 ||
         !validPlants ||
         !validPaths

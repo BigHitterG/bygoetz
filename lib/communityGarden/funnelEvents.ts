@@ -9,6 +9,11 @@ export const BASIL_FUNNEL_EVENTS = [
   "first_personal_plant",
   "preview_limit_reached",
   "paywall_viewed",
+  "soft_paywall_viewed",
+  "soft_paywall_declined",
+  "preview_continued",
+  "hard_paywall_viewed",
+  "preview_expired",
   "signup_started",
   "verification_sent",
   "verification_completed",
@@ -31,4 +36,3 @@ export const BASIL_FUNNEL_METADATA_KEYS = ["failure_stage", "error_code"] as con
 export type BasilFunnelMetadata = Partial<
   Record<(typeof BASIL_FUNNEL_METADATA_KEYS)[number], string>
 >;
-
