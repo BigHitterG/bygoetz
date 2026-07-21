@@ -71,6 +71,11 @@ The existing admin-email authorization remains unchanged.
 ## Verification record
 
 - Migration: `basil_launch_funnel_measurement`
+- Production code commit: `214d64f0b2f35198669db56d1ae584b1635dda0d`
+- Production deployment: `dpl_GBMXdMwHd3zW9AqmqQcryEnnkXa7`, `READY`
+- Live route: HTTP 200 at `https://www.bygoetz.com/community-garden`
+- Live endpoint: first milestone returned `recorded: true`; a second milestone for the same launch session returned `recorded: false`; unsafe metadata returned HTTP 400; unauthenticated checkout returned HTTP 401 without creating a Stripe session.
+- The tagged live synthetic session was queried for attribution correctness and then deleted, including its event and rate bucket.
 - Database transaction test: milestones insert once; repeatable failures insert more than once; all synthetic rows rolled back.
 - Unsafe/free-form metadata is rejected by the server function and table constraints.
 - RLS/grant query: `anon` and `authenticated` cannot select; `service_role` can select.
@@ -78,4 +83,3 @@ The existing admin-email authorization remains unchanged.
 - Supabase advisors were rerun after DDL. The four new `RLS enabled, no policy` INFO notices are intentional because these are server-only tables with browser grants revoked. New-index `unused_index` INFO notices are expected before launch traffic.
 
 The production test must never complete a real card charge merely to verify analytics. `purchase_completed` is covered by the authoritative, idempotent Stripe fulfillment path and database transaction tests; a real test order remains part of the later launch-reliability gate.
-

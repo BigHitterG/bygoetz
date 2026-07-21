@@ -65,13 +65,15 @@ Evidence/notes: `_____`
 
 ## Phase 1 - First-party funnel measurement
 
-- [ ] Create a stable anonymous launch session ID without PII.
-- [ ] Preserve UTMs, referrer, landing path, and supported click IDs through verification and Stripe.
-- [ ] Record allowlisted, idempotent funnel milestones server-side.
-- [ ] Add aggregated campaign/device funnel counts to the private health panel.
-- [ ] Add retention and bounded-metadata rules.
-- [ ] Verify no password, email, token, payment detail, or garden text leaks into event metadata.
+- [x] Create a stable anonymous launch session ID without PII.
+- [x] Preserve UTMs, referrer, landing path, and supported click IDs through verification and Stripe metadata.
+- [x] Record allowlisted, idempotent funnel milestones server-side.
+- [x] Add aggregated campaign/device funnel counts to the private health panel.
+- [x] Add retention and bounded-metadata rules.
+- [x] Verify no password, email, token, payment detail, or garden text leaks into event metadata.
 - [ ] Verify incognito, refresh, verification, cancel, success, and duplicate callback paths.
+
+Technical verification completed July 21, 2026: live route and endpoint, malformed-event rejection, unauthenticated checkout boundary, first-touch attribution, milestone idempotency, RLS/grants, aggregate RPC, build, and production runtime logs. A clean new-account verification plus real successful payment/restoration remains a manual gate; do not create a live charge solely for an automated analytics test.
 
 Gate evidence: `_____`  
 Commit/deployment: `_____`  
