@@ -351,13 +351,21 @@ async function provisionPaidGardenAccount(input: {
     if (fulfillmentError) throw fulfillmentError;
     gardenSaved = true;
 
-    const verification = await sendPaidGardenVerificationEmail({
-      email: input.buyerEmail,
-      origin: process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.bygoetz.com",
-      idempotencyKey: input.session.id,
-    });
-    if (verification.userId !== userId) {
-      throw new Error("The Basil verification link belongs to another account.");
+    const { data: paidAccount, error: paidAccountError } =
+      await supabase.auth.admin.getUserById(userId);
+    if (paidAccountError || !paidAccount.user) {
+      throw paidAccountError ?? new Error("The paid Basil account could not be loaded.");
+    }
+    const needsVerification = !paidAccount.user.email_confirmed_at;
+    if (needsVerification) {
+      const verification = await sendPaidGardenVerificationEmail({
+        email: input.buyerEmail,
+        origin: process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.bygoetz.com",
+        idempotencyKey: input.session.id,
+      });
+      if (verification.userId !== userId) {
+        throw new Error("The Basil verification link belongs to another account.");
+      }
     }
 
     const { error: completeError } = await supabase
@@ -372,7 +380,7 @@ async function provisionPaidGardenAccount(input: {
       .eq("id", input.row.id);
     if (completeError) throw completeError;
 
-    if (input.row.launch_session_id) {
+    if (needsVerification && input.row.launch_session_id) {
       await recordBasilFunnelEvent({
         launchSessionId: input.row.launch_session_id,
         event: "verification_sent",
