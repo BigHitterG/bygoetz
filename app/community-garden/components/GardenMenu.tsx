@@ -1,18 +1,19 @@
 "use client";
 
-import { withSiteBasePath } from "@/lib/sitePath";
 import { GardenElements } from "./GardenElements";
+import { GardenFounder } from "./GardenFounder";
 import { GardenGuide } from "./GardenGuide";
 import { GardenSteward } from "./GardenSteward";
 import { PlantGlossary } from "./PlantGlossary";
 
-export type LibrarySection = "play" | "plants" | "elements" | "account";
+export type LibrarySection = "play" | "plants" | "elements" | "account" | "about";
 
 const LIBRARY_TABS = [
   { id: "play", label: "Play", icon: "play" },
   { id: "plants", label: "Plants", icon: "plants" },
   { id: "elements", label: "Elements", icon: "elements" },
   { id: "account", label: "Account", icon: "home" },
+  { id: "about", label: "About", icon: "about" },
 ] as const;
 
 type GardenMenuProps = {
@@ -69,11 +70,8 @@ export function GardenMenu({
           {section === "plants" ? <PlantGlossary /> : null}
           {section === "elements" ? <GardenElements /> : null}
           {section === "account" ? <GardenSteward /> : null}
+          {section === "about" ? <GardenFounder /> : null}
         </div>
-
-        <a className="cg-back-link" href={withSiteBasePath("/")}>
-          Back to By Goetz
-        </a>
       </aside>
     </div>
   );

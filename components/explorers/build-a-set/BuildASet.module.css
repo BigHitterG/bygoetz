@@ -936,10 +936,62 @@
 
 .perfectFor,
 .artistSection,
+.founderStory,
 .faq,
 .successPage {
   width: min(1180px, calc(100% - 32px));
   margin: 0 auto;
+}
+
+.founderStory {
+  display: grid;
+  justify-items: center;
+  border-top: 1px solid #d8d2c9;
+  border-bottom: 1px solid #d8d2c9;
+  padding: clamp(58px, 8vw, 104px) 0;
+  text-align: center;
+}
+
+.founderPortrait {
+  position: relative;
+  width: min(820px, 100%);
+  overflow: hidden;
+  aspect-ratio: 4 / 3;
+  background: #e8e8e3;
+  box-shadow: 0 24px 60px rgba(33, 29, 25, 0.14);
+}
+
+.founderPortrait img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 22%;
+}
+
+.founderLogo {
+  width: 138px;
+  height: auto;
+  margin: 24px auto -4px;
+  object-fit: contain;
+}
+
+.founderStoryCopy {
+  max-width: 760px;
+}
+
+.founderStoryCopy h2 {
+  margin: 8px 0 0;
+  font-size: clamp(2.4rem, 5vw, 4.6rem);
+  font-weight: 650;
+  line-height: 0.98;
+}
+
+.founderStoryCopy > p:not(.eyebrow) {
+  max-width: 690px;
+  margin: 20px auto 0;
+  color: #4d4943;
+  font-size: 1rem;
+  line-height: 1.7;
 }
 
 .perfectFor {
@@ -2298,6 +2350,34 @@
   .productHero {
     width: calc(100% - 24px);
     padding: 14px 0 8px;
+  }
+
+  .founderStory {
+    width: calc(100% - 24px);
+    padding: 44px 0 52px;
+  }
+
+  .founderPortrait {
+    width: 100%;
+  }
+
+  .founderLogo {
+    width: 112px;
+    margin-top: 18px;
+  }
+
+  .founderStoryCopy {
+    padding: 0 8px;
+  }
+
+  .founderStoryCopy h2 {
+    font-size: 2.25rem;
+  }
+
+  .founderStoryCopy > p:not(.eyebrow) {
+    margin-top: 16px;
+    font-size: 0.9rem;
+    line-height: 1.62;
   }
 
   .productHero h1 {

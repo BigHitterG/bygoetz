@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { trackMetaCustomEvent, trackMetaEvent } from "@/lib/analytics/metaPixel";
 import {
@@ -405,6 +406,46 @@ export function BuildASetPage({
         ) : null}
       </section>
 
+      <section className={styles.founderStory} aria-labelledby="explorers-founder-title">
+        <div className={styles.founderPortrait}>
+          <Image
+            src={withSiteBasePath("/images/about/tj-goetz-founder.jpg")}
+            alt="TJ Goetz holding a drink decorated with three blue droplets"
+            width={960}
+            height={1280}
+            sizes="(max-width: 620px) calc(100vw - 24px), 900px"
+            draggable={false}
+          />
+        </div>
+
+        <Image
+          className={styles.founderLogo}
+          src={withSiteBasePath("/concepts/images/Logo-01.png")}
+          alt="Goetz"
+          width={591}
+          height={417}
+          sizes="150px"
+          draggable={false}
+        />
+
+        <div className={styles.founderStoryCopy}>
+          <p className={styles.eyebrow}>Why I made The Explorers</p>
+          <h2 id="explorers-founder-title">Inspired by learning the world together.</h2>
+          <p>
+            This collection was inspired by my son. Watching him grow has made me
+            fascinated by how children learn, what they notice, and how much joy can
+            live inside something small. Through him, I get to relearn the world and
+            experience things I might otherwise have passed by.
+          </p>
+          <p>
+            One of my fondest memories is listening as he learned animal sounds. The
+            Explorers grew from that moment: a playful group of animals made to bring
+            curiosity, character, and a little discovery into the rooms where children
+            grow. Thank you for supporting the series and the story behind it.
+          </p>
+        </div>
+      </section>
+
       <section className={styles.qualityBand} aria-label="Product qualities">
         {[
           ["One coordinated series", "Created by Goetz as a collection"],
@@ -433,19 +474,6 @@ export function BuildASetPage({
               </span>
             ),
           )}
-        </div>
-      </section>
-
-      <section className={styles.artistSection}>
-        <img src={withSiteBasePath("/concepts/images/Logo-01.png")} alt="Goetz" />
-        <div>
-          <p className={styles.eyebrow}>Meet the artist</p>
-          <h2>Made as one original, expressive world.</h2>
-          <p>
-            Goetz created The Explorers Series with simple geometry, expressive black
-            linework, and bold primary color. Each character belongs together while
-            keeping a personality of its own.
-          </p>
         </div>
       </section>
 

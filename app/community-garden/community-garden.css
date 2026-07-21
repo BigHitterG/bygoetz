@@ -1231,7 +1231,7 @@
 .cg-library-tabs {
   display: grid;
   margin-top: 14px;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   border: 2px solid var(--cg-ink);
 }
 
@@ -1306,6 +1306,25 @@
   background: var(--cg-coral);
 }
 
+.cg-library-icon.is-about::before {
+  top: 0;
+  left: 7px;
+  width: 8px;
+  height: 8px;
+  border: 2px solid currentColor;
+  border-radius: 50%;
+}
+
+.cg-library-icon.is-about::after {
+  right: 2px;
+  bottom: 0;
+  left: 2px;
+  height: 8px;
+  border: 2px solid currentColor;
+  border-bottom: 0;
+  border-radius: 10px 10px 0 0;
+}
+
 .cg-library-icon.is-elements::before {
   left: 2px;
   top: 6px;
@@ -1350,6 +1369,83 @@
 
 .cg-library-panel {
   min-height: 280px;
+}
+
+.cg-founder {
+  display: grid;
+  justify-items: center;
+  padding: 20px 0 4px;
+  text-align: center;
+}
+
+.cg-founder-portrait {
+  position: relative;
+  width: min(100%, 520px);
+  overflow: hidden;
+  aspect-ratio: 4 / 3;
+  border: 3px solid var(--cg-ink);
+  background: #d9ddda;
+  box-shadow: 5px 5px 0 rgba(52, 35, 31, 0.24);
+}
+
+.cg-founder-portrait img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 22%;
+}
+
+.cg-founder-logo {
+  width: 118px;
+  height: auto;
+  margin: 16px auto -4px;
+  object-fit: contain;
+}
+
+.cg-founder-copy {
+  max-width: 500px;
+}
+
+.cg-founder-copy h3 {
+  margin: 0;
+  font-size: 1.35rem;
+  line-height: 1.1;
+}
+
+.cg-founder-copy > p:not(.cg-kicker) {
+  margin: 12px 0 0;
+  color: #5b4238;
+  font-family: system-ui, sans-serif;
+  font-size: 0.84rem;
+  line-height: 1.55;
+}
+
+.cg-founder-links {
+  display: grid;
+  width: min(100%, 500px);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.cg-founder-links a {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--cg-ink);
+  background: var(--cg-cream);
+  color: var(--cg-ink);
+  padding: 8px 12px;
+  font-size: 0.72rem;
+  font-weight: 900;
+  text-decoration: none;
+  box-shadow: 3px 3px 0 rgba(52, 35, 31, 0.2);
+}
+
+.cg-founder-links a:first-child {
+  background: var(--cg-coral);
+  color: #fff9e9;
 }
 
 .cg-library-section {
