@@ -37,6 +37,7 @@ import {
   getPlantDefinition,
   getPlantVisual,
   isPlantable,
+  PLANT_TYPES,
   type PlantRecord,
   type PlantType,
 } from "../lib/roseLifecycle";
@@ -120,6 +121,8 @@ type Runtime = {
   plants: Map<string, PlantRecord>;
   mapPlants: Map<string, GardenMapPlant>;
   communityPlants: Map<string, PlantRecord>;
+  recentCommunityPlants: Map<string, RecentCommunityPlant>;
+  recentCommunityPlantsLoaded: boolean;
   snapshotNextRefreshAt: number;
   effects: GardenEffect[];
   path: WorldPoint[];
@@ -148,6 +151,14 @@ type Runtime = {
   suggestedPlantingCell: SelectedCell;
 };
 
+type RecentCommunityPlant = {
+  plant: PlantRecord;
+  acceptedAt: number;
+};
+
+const RECENT_COMMUNITY_PLANTS_KEY = "basil-recent-community-plants-v1";
+const RECENT_COMMUNITY_PLANT_TTL_MS = 30 * 60 * 1000;
+
 type WorldSnapshot = {
   mary: WorldPoint;
   duck: WorldPoint;
@@ -169,6 +180,127 @@ type GardenCanvasProps = {
 
 function plantKey(gridX: number, gridY: number) {
   return `${gridX}:${gridY}`;
+}
+
+function persistRecentCommunityPlants(runtime: Runtime) {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(
+      RECENT_COMMUNITY_PLANTS_KEY,
+      JSON.stringify(Array.from(runtime.recentCommunityPlants.values())),
+    );
+  } catch {
+    // In-memory reconciliation still protects the current visit.
+  }
+}
+
+function ensureRecentCommunityPlantsLoaded(runtime: Runtime) {
+  if (runtime.recentCommunityPlantsLoaded) return;
+  runtime.recentCommunityPlantsLoaded = true;
+  if (typeof window === "undefined") return;
+  try {
+    const stored = JSON.parse(
+      window.localStorage.getItem(RECENT_COMMUNITY_PLANTS_KEY) ?? "[]",
+    ) as unknown;
+    if (!Array.isArray(stored)) return;
+    const oldestAcceptedAt = Date.now() - RECENT_COMMUNITY_PLANT_TTL_MS;
+    for (const candidate of stored.slice(-24)) {
+      if (!candidate || typeof candidate !== "object") continue;
+      const recent = candidate as Record<string, unknown>;
+      const plantValue = recent.plant;
+      const acceptedAt = Number(recent.acceptedAt);
+      if (
+        !plantValue ||
+        typeof plantValue !== "object" ||
+        !Number.isFinite(acceptedAt) ||
+        acceptedAt < oldestAcceptedAt
+      ) {
+        continue;
+      }
+      const plant = plantValue as Record<string, unknown>;
+      const gridX = Number(plant.grid_x);
+      const gridY = Number(plant.grid_y);
+      const plantType = plant.plant_type as PlantType;
+      if (
+        typeof plant.id !== "string" ||
+        !Number.isInteger(gridX) ||
+        !Number.isInteger(gridY) ||
+        !PLANT_TYPES.includes(plantType)
+      ) {
+        continue;
+      }
+      const normalized = {
+        ...plant,
+        grid_x: gridX,
+        grid_y: gridY,
+        plant_type: plantType,
+      } as PlantRecord;
+      runtime.recentCommunityPlants.set(plantKey(gridX, gridY), {
+        plant: normalized,
+        acceptedAt,
+      });
+    }
+  } catch {
+    // Ignore malformed or unavailable local storage.
+  }
+}
+
+function rememberRecentCommunityPlant(runtime: Runtime, plant: PlantRecord) {
+  ensureRecentCommunityPlantsLoaded(runtime);
+  runtime.recentCommunityPlants.set(plantKey(plant.grid_x, plant.grid_y), {
+    plant,
+    acceptedAt: Date.now(),
+  });
+  persistRecentCommunityPlants(runtime);
+}
+
+function overlayRecentCommunityPlants(runtime: Runtime) {
+  ensureRecentCommunityPlantsLoaded(runtime);
+  const oldestAcceptedAt = Date.now() - RECENT_COMMUNITY_PLANT_TTL_MS;
+  let changed = false;
+  for (const [key, recent] of runtime.recentCommunityPlants) {
+    if (recent.acceptedAt < oldestAcceptedAt) {
+      runtime.recentCommunityPlants.delete(key);
+      changed = true;
+      continue;
+    }
+    runtime.communityPlants.set(key, recent.plant);
+  }
+  if (changed) persistRecentCommunityPlants(runtime);
+}
+
+function reconcileCommunitySnapshot(
+  runtime: Runtime,
+  plants: PlantRecord[],
+  generatedAt: string,
+) {
+  ensureRecentCommunityPlantsLoaded(runtime);
+  const snapshotGeneratedAt = Date.parse(generatedAt);
+  const oldestAcceptedAt = Date.now() - RECENT_COMMUNITY_PLANT_TTL_MS;
+  const snapshotPlants = new Map(
+    plants.map((plant) => [plantKey(plant.grid_x, plant.grid_y), plant]),
+  );
+  let changed = false;
+
+  for (const [key, recent] of runtime.recentCommunityPlants) {
+    const snapshotIsNewEnough =
+      Number.isFinite(snapshotGeneratedAt) &&
+      snapshotGeneratedAt >= recent.acceptedAt;
+    if (recent.acceptedAt < oldestAcceptedAt) {
+      runtime.recentCommunityPlants.delete(key);
+      changed = true;
+      continue;
+    }
+    if (snapshotIsNewEnough) {
+      runtime.recentCommunityPlants.delete(key);
+      changed = true;
+      continue;
+    }
+    snapshotPlants.set(key, recent.plant);
+  }
+
+  runtime.communityPlants = snapshotPlants;
+  if (changed) persistRecentCommunityPlants(runtime);
 }
 
 function getCommunityBounds() {
@@ -666,6 +798,8 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
       plants: new Map(),
       mapPlants: new Map(),
       communityPlants: new Map(),
+      recentCommunityPlants: new Map(),
+      recentCommunityPlantsLoaded: false,
       snapshotNextRefreshAt: 0,
       effects: [],
       path: [{ ...start }],
@@ -792,6 +926,7 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
       const runtime = runtimeRef.current;
       const previousMode = runtime.mode;
       if (previousMode !== mode) {
+        runtime.requestId += 1;
         worldSnapshotsRef.current[previousMode] = {
           mary: { ...runtime.mary },
           duck: { ...runtime.duck },
@@ -880,6 +1015,7 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
       const gridX = Math.floor(runtime.mary.x / GARDEN_CONFIG.tileSize);
       const gridY = Math.floor(runtime.mary.y / GARDEN_CONFIG.tileSize);
       let bounds = getLoadedBounds(gridX, gridY);
+      overlayRecentCommunityPlants(runtime);
 
       const showLocalSnapshot = () => {
         runtime.plants = new Map(
@@ -930,11 +1066,10 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
         const snapshot = await fetchGardenSnapshot();
         if (requestId !== runtime.requestId) return;
 
-        runtime.communityPlants = new Map(
-          snapshot.plants.map((plant) => [
-            plantKey(plant.grid_x, plant.grid_y),
-            plant,
-          ]),
+        reconcileCommunitySnapshot(
+          runtime,
+          snapshot.plants,
+          snapshot.generatedAt,
         );
         runtime.mapRevision += 1;
         runtime.snapshotNextRefreshAt = Date.parse(snapshot.nextRefreshAt);
@@ -1257,6 +1392,9 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
                 plantKey(plant.grid_x, plant.grid_y),
                 plant,
               );
+              if (runtime.configured) {
+                rememberRecentCommunityPlant(runtime, plant);
+              }
               runtime.mapRevision += 1;
               runtime.selected = { ...selected, plantId: plant.id };
               runtime.effects.push({
@@ -1282,6 +1420,9 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
                 plantKey(plant.grid_x, plant.grid_y),
                 plant,
               );
+              if (runtime.configured) {
+                rememberRecentCommunityPlant(runtime, plant);
+              }
               runtime.effects.push({
                 kind: "water",
                 gridX: plant.grid_x,
