@@ -12,6 +12,7 @@ import {
 import type { MyGardenState } from "@/lib/communityGarden/myGarden";
 import { trackMetaCustomEvent } from "@/lib/analytics/metaPixel";
 import { getGardenAccountClient } from "../lib/supabaseAccount";
+import { GardenHealthPanel } from "./GardenHealthPanel";
 
 const PENDING_VERIFICATION_KEY = "basil-account-verification-pending-v1";
 
@@ -993,6 +994,10 @@ export function GardenSteward() {
             </div>
           ) : null}
         </div>
+      ) : null}
+
+      {session && !showAccountLink && !showVerificationPending ? (
+        <GardenHealthPanel session={session} />
       ) : null}
 
       <div className="cg-steward-privacy">

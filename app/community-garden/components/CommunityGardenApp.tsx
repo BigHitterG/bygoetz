@@ -57,6 +57,9 @@ const INITIAL_UI: GardenUiState = {
   mode: "community",
 };
 
+const HEALTH_PULSE_KEY = "basil-health-pulse-at-v1";
+const HEALTH_PULSE_INTERVAL_MS = 5 * 60 * 1000;
+
 type AccountResponse =
   | { active: false }
   | { active: true; myGarden: MyGardenState };
@@ -182,6 +185,33 @@ export function CommunityGardenApp() {
       setGuestPreview(storedPreview);
       setGuestPreviewReady(true);
     });
+  }, []);
+
+  useEffect(() => {
+    const sendPulse = () => {
+      if (document.visibilityState === "hidden") return;
+      const now = Date.now();
+      const lastPulse = Number(window.sessionStorage.getItem(HEALTH_PULSE_KEY));
+      if (Number.isFinite(lastPulse) && now - lastPulse < HEALTH_PULSE_INTERVAL_MS) {
+        return;
+      }
+      window.sessionStorage.setItem(HEALTH_PULSE_KEY, String(now));
+      void fetch("/api/community-garden/health/pulse", {
+        method: "POST",
+        cache: "no-store",
+        keepalive: true,
+      }).catch(() => {
+        window.sessionStorage.removeItem(HEALTH_PULSE_KEY);
+      });
+    };
+
+    sendPulse();
+    const interval = window.setInterval(sendPulse, HEALTH_PULSE_INTERVAL_MS);
+    document.addEventListener("visibilitychange", sendPulse);
+    return () => {
+      window.clearInterval(interval);
+      document.removeEventListener("visibilitychange", sendPulse);
+    };
   }, []);
 
   useEffect(() => {
