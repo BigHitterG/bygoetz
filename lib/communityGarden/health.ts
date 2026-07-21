@@ -40,7 +40,7 @@ export type CommunityGardenHealth = {
   };
 };
 
-const DEFAULT_ADMIN_EMAILS = ["thomas.getz.jr@gmail.com"];
+const DEFAULT_ADMIN_EMAILS = ["thomas.goetz.jr@gmail.com"];
 
 function gardenAdminEmails() {
   const configured = process.env.BASIL_ADMIN_EMAILS?.split(",") ?? [];
