@@ -363,18 +363,18 @@ function findSuggestedPlantingCell(runtime: Runtime): NonNullable<SelectedCell> 
   const originX = Math.floor(runtime.mary.x / GARDEN_CONFIG.tileSize);
   const originY = Math.floor(runtime.mary.y / GARDEN_CONFIG.tileSize);
   const offsets = [
-    [2, 0],
-    [2, 1],
     [-2, 0],
-    [-2, 1],
-    [1, 2],
+    [-2, -1],
     [-1, 2],
-    [1, -2],
     [-1, -2],
-    [3, 0],
-    [0, 3],
     [-3, 0],
     [0, -3],
+    [1, -2],
+    [0, 3],
+    [2, 0],
+    [2, 1],
+    [1, 2],
+    [3, 0],
   ] as const;
 
   for (const [offsetX, offsetY] of offsets) {

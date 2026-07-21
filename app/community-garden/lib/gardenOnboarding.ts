@@ -2,27 +2,26 @@ export type GardenOnboardingStep =
   | "plant"
   | "select-seed"
   | "community-tile"
+  | "community-repeat"
   | "my-garden"
   | "personal-inventory"
   | "personal-seed"
   | "personal-tile"
-  | "preview-free"
-  | "preview-full"
   | "complete"
   | "dismissed";
 
 const STORAGE_KEY = "basil-onboarding-v1";
+const COMMUNITY_PLANTINGS_KEY = "basil-onboarding-community-plantings-v1";
 
 const VALID_STEPS = new Set<GardenOnboardingStep>([
   "plant",
   "select-seed",
   "community-tile",
+  "community-repeat",
   "my-garden",
   "personal-inventory",
   "personal-seed",
   "personal-tile",
-  "preview-free",
-  "preview-full",
   "complete",
   "dismissed",
 ]);
@@ -32,6 +31,7 @@ export function loadGardenOnboardingStep(): GardenOnboardingStep | null {
   try {
     const value = window.localStorage.getItem(STORAGE_KEY);
     if (value === "preview") return "personal-inventory";
+    if (value === "preview-free" || value === "preview-full") return "complete";
     if (value === "select-seed") return "plant";
     if (value === "personal-seed") return "personal-inventory";
     return value && VALID_STEPS.has(value as GardenOnboardingStep)
@@ -39,6 +39,28 @@ export function loadGardenOnboardingStep(): GardenOnboardingStep | null {
       : null;
   } catch {
     return null;
+  }
+}
+
+export function loadCommunityOnboardingPlantings() {
+  if (typeof window === "undefined") return 0;
+  try {
+    const value = Number(window.localStorage.getItem(COMMUNITY_PLANTINGS_KEY));
+    return Number.isFinite(value) ? Math.min(3, Math.max(0, Math.floor(value))) : 0;
+  } catch {
+    return 0;
+  }
+}
+
+export function saveCommunityOnboardingPlantings(plantings: number) {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(
+      COMMUNITY_PLANTINGS_KEY,
+      String(Math.min(3, Math.max(0, Math.floor(plantings)))),
+    );
+  } catch {
+    // The in-memory count still guides this visit when storage is unavailable.
   }
 }
 

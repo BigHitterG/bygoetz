@@ -593,6 +593,12 @@
   font-size: 1rem;
 }
 
+.cg-compact-support:disabled {
+  cursor: default;
+  filter: grayscale(0.65);
+  opacity: 0.58;
+}
+
 .cg-my-garden-notice {
   position: absolute;
   right: -8px;
@@ -616,7 +622,7 @@
   position: absolute;
   right: max(12px, env(safe-area-inset-right));
   bottom: max(174px, calc(env(safe-area-inset-bottom) + 162px));
-  z-index: 11;
+  z-index: 13;
   display: grid;
   width: min(260px, calc(100% - 24px));
   gap: 6px;
@@ -624,6 +630,53 @@
   background: rgba(255, 244, 223, 0.97);
   padding: 12px 34px 12px 12px;
   box-shadow: 4px 4px 0 rgba(52, 35, 31, 0.22);
+}
+
+.cg-free-planting-notice {
+  position: absolute;
+  left: 50%;
+  bottom: max(184px, calc(env(safe-area-inset-bottom) + 172px));
+  z-index: 13;
+  display: grid;
+  width: min(250px, calc(100% - 24px));
+  gap: 4px;
+  border: 2px solid var(--cg-ink);
+  background: rgba(255, 244, 223, 0.97);
+  padding: 10px 12px;
+  pointer-events: none;
+  text-align: center;
+  transform: translateX(-50%);
+  box-shadow: 4px 4px 0 rgba(52, 35, 31, 0.22);
+  animation: cg-free-planting-notice 4.5s ease both;
+}
+
+.cg-free-planting-notice strong {
+  color: var(--cg-red);
+  font-size: 0.66rem;
+  text-transform: uppercase;
+}
+
+.cg-free-planting-notice span {
+  color: #6f4c3e;
+  font-size: 0.58rem;
+  font-weight: 750;
+  line-height: 1.35;
+}
+
+@keyframes cg-free-planting-notice {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, 8px);
+  }
+  10%,
+  82% {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -4px);
+  }
 }
 
 .cg-onboarding-card.is-my-garden {
@@ -4022,6 +4075,14 @@
 }
 
 @media (max-width: 520px) {
+  .cg-onboarding-card {
+    width: min(222px, calc(100% - 24px));
+  }
+
+  .cg-onboarding-card.is-my-garden {
+    width: min(210px, calc(100% - 24px));
+  }
+
   .cg-titlebar {
     width: calc(100% - 20px);
   }
@@ -4115,6 +4176,12 @@
   .cg-plot-expansion button {
     width: 100%;
     max-width: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cg-free-planting-notice {
+    animation: none;
   }
 }
 

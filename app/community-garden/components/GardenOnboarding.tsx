@@ -2,8 +2,7 @@ import type { GardenOnboardingStep } from "../lib/gardenOnboarding";
 
 type GardenOnboardingProps = {
   step: GardenOnboardingStep | null;
-  previewPlantings: number;
-  previewLimit: number;
+  communityPlantings: number;
   inventoryOpen: boolean;
   actionReady: boolean;
   onDismiss: () => void;
@@ -13,8 +12,7 @@ type GardenOnboardingProps = {
 
 export function GardenOnboarding({
   step,
-  previewPlantings,
-  previewLimit,
+  communityPlantings,
   inventoryOpen,
   actionReady,
   onDismiss,
@@ -27,8 +25,7 @@ export function GardenOnboarding({
     step === "dismissed" ||
     inventoryOpen ||
     step === "select-seed" ||
-    step === "personal-seed" ||
-    step === "preview-free"
+    step === "personal-seed"
   ) {
     return null;
   }
@@ -37,20 +34,31 @@ export function GardenOnboarding({
     step === "plant"
       ? {
           kicker: "A small beginning",
-          title: "Plant your first flower",
-          copy: "Open Inventory, choose a seed, then tap an open place in the Community Garden.",
+          title: "Plant three community flowers",
+          copy: "We will walk through all three. Open Inventory and choose your first seed.",
           action: "Open Inventory",
           onAction: onOpenInventory,
         }
       : step === "community-tile"
         ? {
-            kicker: "Your first planting",
+            kicker: `Community planting ${Math.min(3, communityPlantings + 1)} of 3`,
             title: actionReady ? "You are in place" : "Choose the glowing patch",
             copy: actionReady
               ? "Tap the Plant button below to add your flower."
               : "Tap the highlighted open ground. Your gardener will walk over to it.",
             action: null,
             onAction: null,
+          }
+      : step === "community-repeat"
+        ? {
+            kicker: `${communityPlantings} of 3 planted`,
+            title:
+              3 - communityPlantings === 1
+                ? "Plant one more community flower"
+                : `Plant ${Math.max(1, 3 - communityPlantings)} more community flowers`,
+            copy: "Your Care is growing. Open Inventory to choose the next flower.",
+            action: "Open Inventory",
+            onAction: onOpenInventory,
           }
       : step === "my-garden"
         ? {
@@ -78,18 +86,10 @@ export function GardenOnboarding({
                 action: null,
                 onAction: null,
               }
-            : step === "preview-full"
-              ? {
-                  kicker: "Three flowers planted",
-                  title: "Keep growing when you are ready",
-                  copy: "Choose another open spot and try to plant a fourth flower to unlock your full garden.",
-                  action: "Open Inventory",
-                  onAction: onOpenInventory,
-                }
         : {
-            kicker: "Your garden",
-            title: `${Math.max(0, previewLimit - previewPlantings)} flowers remain`,
-            copy: "Keep arranging your preview at your own pace.",
+            kicker: "Your garden preview",
+            title: "Choose your first flower",
+            copy: "Open Inventory and start making this garden your own.",
             action: "Open Inventory",
             onAction: onOpenInventory,
           };

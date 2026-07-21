@@ -174,20 +174,41 @@ function drawSuggestedPlantingCell(
     viewport,
     zoom,
   );
-  const pulse = 0.78 + Math.sin(now / 180) * 0.12;
-  const width = GARDEN_CONFIG.tileSize * zoom * 0.86;
-  const height = GARDEN_CONFIG.tileScreenHeight * zoom * 0.9;
+  const pulse = 0.84 + Math.sin(now / 180) * 0.12;
+  const width = GARDEN_CONFIG.tileSize * zoom;
+  const height = GARDEN_CONFIG.tileScreenHeight * zoom * 1.06;
   ctx.save();
   ctx.translate(Math.round(screen.x), Math.round(screen.y));
   ctx.globalAlpha = pulse;
-  ctx.fillStyle = "rgba(248, 205, 94, 0.28)";
+  ctx.fillStyle = "rgba(255, 217, 91, 0.42)";
   ctx.strokeStyle = "#b83136";
-  ctx.lineWidth = Math.max(2, Math.round(2 * zoom));
-  ctx.setLineDash([Math.max(4, 5 * zoom), Math.max(3, 4 * zoom)]);
+  ctx.lineWidth = Math.max(3, Math.round(3 * zoom));
+  ctx.setLineDash([Math.max(5, 6 * zoom), Math.max(3, 4 * zoom)]);
   ctx.beginPath();
   ctx.ellipse(0, 0, width / 2, height / 2, 0, 0, Math.PI * 2);
   ctx.fill();
   ctx.stroke();
+  ctx.setLineDash([]);
+  const labelWidth = Math.max(54, Math.round(62 * zoom));
+  const labelHeight = Math.max(18, Math.round(19 * zoom));
+  const labelY = -height / 2 - labelHeight - Math.max(5, 6 * zoom);
+  ctx.globalAlpha = 0.96;
+  ctx.fillStyle = "#fff4df";
+  ctx.strokeStyle = "#34231f";
+  ctx.lineWidth = 2;
+  ctx.fillRect(-labelWidth / 2, labelY, labelWidth, labelHeight);
+  ctx.strokeRect(-labelWidth / 2, labelY, labelWidth, labelHeight);
+  ctx.fillStyle = "#b83136";
+  ctx.font = `900 ${Math.max(8, Math.round(8 * zoom))}px monospace`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText("PLANT HERE", 0, labelY + labelHeight / 2 + 1);
+  ctx.beginPath();
+  ctx.moveTo(-4, labelY + labelHeight);
+  ctx.lineTo(0, labelY + labelHeight + 5);
+  ctx.lineTo(4, labelY + labelHeight);
+  ctx.fillStyle = "#34231f";
+  ctx.fill();
   ctx.restore();
 }
 
