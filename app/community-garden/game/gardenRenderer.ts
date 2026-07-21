@@ -36,6 +36,7 @@ export type RenderGardenState = {
   duck: WorldPoint;
   plants: PlantRecord[];
   selected: SelectedCell;
+  suggestedPlantingCell: SelectedCell;
   effects: GardenEffect[];
   moving: boolean;
   now: number;
@@ -156,6 +157,38 @@ function drawGroundMark(
   ctx.fillRect(x + 3 * scale, y + 7 * scale, 3 * scale, scale);
   ctx.fillRect(x + 7 * scale, y + 6 * scale, 2 * scale, scale);
   ctx.fillRect(x + 10 * scale, y + 8 * scale, 3 * scale, scale);
+}
+
+function drawSuggestedPlantingCell(
+  ctx: CanvasRenderingContext2D,
+  cell: SelectedCell,
+  camera: WorldPoint,
+  viewport: GardenViewport,
+  now: number,
+  zoom: number,
+) {
+  if (!cell) return;
+  const screen = worldToScreen(
+    gridToWorld(cell.gridX, cell.gridY),
+    camera,
+    viewport,
+    zoom,
+  );
+  const pulse = 0.78 + Math.sin(now / 180) * 0.12;
+  const width = GARDEN_CONFIG.tileSize * zoom * 0.86;
+  const height = GARDEN_CONFIG.tileScreenHeight * zoom * 0.9;
+  ctx.save();
+  ctx.translate(Math.round(screen.x), Math.round(screen.y));
+  ctx.globalAlpha = pulse;
+  ctx.fillStyle = "rgba(248, 205, 94, 0.28)";
+  ctx.strokeStyle = "#b83136";
+  ctx.lineWidth = Math.max(2, Math.round(2 * zoom));
+  ctx.setLineDash([Math.max(4, 5 * zoom), Math.max(3, 4 * zoom)]);
+  ctx.beginPath();
+  ctx.ellipse(0, 0, width / 2, height / 2, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+  ctx.restore();
 }
 
 function drawBoundaryTree(
@@ -1231,6 +1264,14 @@ export function renderGarden(ctx: CanvasRenderingContext2D, state: RenderGardenS
       state.personalGarden.height,
       state.personalGarden.nextExpansion,
     );
+    drawSuggestedPlantingCell(
+      ctx,
+      state.suggestedPlantingCell,
+      state.camera,
+      state.viewport,
+      state.now,
+      state.zoom,
+    );
     drawPersonalSoilPatches(
       ctx,
       visiblePlants,
@@ -1300,6 +1341,14 @@ export function renderGarden(ctx: CanvasRenderingContext2D, state: RenderGardenS
   ctx.drawImage(baseLayer, 0, 0);
   ctx.drawImage(soilLayer, 0, 0);
   ctx.drawImage(greenLayer, 0, 0);
+  drawSuggestedPlantingCell(
+    ctx,
+    state.suggestedPlantingCell,
+    state.camera,
+    state.viewport,
+    state.now,
+    state.zoom,
+  );
   drawDampSoil(ctx, visiblePlants, state.camera, state.viewport, state.now, state.zoom);
   visiblePlants.forEach((plant) =>
     drawPlant(

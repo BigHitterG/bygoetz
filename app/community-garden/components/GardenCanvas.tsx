@@ -87,6 +87,7 @@ export type GardenUiState = {
 
 export type GardenCanvasHandle = {
   performAction: () => Promise<void>;
+  suggestPlantingSpot: () => void;
   goToMapPosition: (mapX: number, mapY: number) => void;
   selectPlant: (plantType: PlantType) => void;
   selectPathTool: () => void;
@@ -144,6 +145,7 @@ type Runtime = {
   statusMessage: string;
   mode: GardenWorldMode;
   personalGarden: MyGardenState | null;
+  suggestedPlantingCell: SelectedCell;
 };
 
 type WorldSnapshot = {
@@ -162,6 +164,7 @@ type GardenCanvasProps = {
   onPersonalGardenMutation?: (
     mutation: MyGardenMutation,
   ) => Promise<MyGardenState>;
+  onActionCompleted?: (mode: GardenWorldMode, action: GardenAction) => void;
 };
 
 function plantKey(gridX: number, gridY: number) {
@@ -354,6 +357,39 @@ function getPersonalElement(runtime: Runtime, gridX: number, gridY: number) {
   return runtime.personalGarden?.elements.find(
     (element) => element.gridX === gridX && element.gridY === gridY,
   );
+}
+
+function findSuggestedPlantingCell(runtime: Runtime): NonNullable<SelectedCell> | null {
+  const originX = Math.floor(runtime.mary.x / GARDEN_CONFIG.tileSize);
+  const originY = Math.floor(runtime.mary.y / GARDEN_CONFIG.tileSize);
+  const offsets = [
+    [2, 0],
+    [2, 1],
+    [-2, 0],
+    [-2, 1],
+    [1, 2],
+    [-1, 2],
+    [1, -2],
+    [-1, -2],
+    [3, 0],
+    [0, 3],
+    [-3, 0],
+    [0, -3],
+  ] as const;
+
+  for (const [offsetX, offsetY] of offsets) {
+    const gridX = originX + offsetX;
+    const gridY = originY + offsetY;
+    if (!isWithinRuntime(runtime, gridX, gridY)) continue;
+    if (getPlantAt(runtime, gridX, gridY)) continue;
+    if (runtime.mode === "personal") {
+      if (hasPersonalPath(runtime, gridX, gridY)) continue;
+      if (getPersonalElement(runtime, gridX, gridY)) continue;
+    }
+    return { gridX, gridY };
+  }
+
+  return null;
 }
 
 function getDistanceToCell(runtime: Runtime, selected: NonNullable<SelectedCell>) {
@@ -593,6 +629,7 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
       mode,
       personalGarden,
       onPersonalGardenMutation,
+      onActionCompleted,
     },
     ref,
   ) {
@@ -600,6 +637,7 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
     const onStateChangeRef = useRef(onStateChange);
     const onCommunityContributionRef = useRef(onCommunityContribution);
     const onPersonalGardenMutationRef = useRef(onPersonalGardenMutation);
+    const onActionCompletedRef = useRef(onActionCompleted);
     const personalGardenRef = useRef(personalGarden);
     const worldSnapshotsRef = useRef<
       Partial<Record<GardenWorldMode, WorldSnapshot>>
@@ -651,6 +689,7 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
         : "Preview mode: shared planting is not connected.",
       mode,
       personalGarden,
+      suggestedPlantingCell: null,
     });
 
     useEffect(() => {
@@ -664,6 +703,10 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
     useEffect(() => {
       onPersonalGardenMutationRef.current = onPersonalGardenMutation;
     }, [onPersonalGardenMutation]);
+
+    useEffect(() => {
+      onActionCompletedRef.current = onActionCompleted;
+    }, [onActionCompleted]);
 
     useEffect(() => {
       personalGardenRef.current = personalGarden;
@@ -762,6 +805,7 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
       runtime.target = null;
       runtime.loadedChunkKey = "";
       runtime.effects = [];
+      runtime.suggestedPlantingCell = null;
       if (mode === "community") runtime.toolMode = "plant";
 
       const currentPersonalGarden = personalGardenRef.current;
@@ -934,6 +978,15 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
     useImperativeHandle(
       ref,
       () => ({
+        suggestPlantingSpot() {
+          const runtime = runtimeRef.current;
+          runtime.toolMode = "plant";
+          runtime.suggestedPlantingCell = findSuggestedPlantingCell(runtime);
+          runtime.statusMessage = runtime.suggestedPlantingCell
+            ? "Tap the glowing patch to walk over and plant."
+            : "Choose any open patch nearby to plant.";
+          publishUi();
+        },
         showCareReward(value, steadyProgress, steadyActionsRequired) {
           const runtime = runtimeRef.current;
           if (runtime.mode !== "community") return;
@@ -1238,6 +1291,10 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
               runtime.statusMessage = `The ${getPlantDefinition(plant.plant_type).name.toLowerCase()} looks brighter already.`;
               if (contribution) onCommunityContributionRef.current?.(contribution);
             }
+            if (actionState.action === "plant") {
+              runtime.suggestedPlantingCell = null;
+            }
+            onActionCompletedRef.current?.(runtime.mode, actionState.action);
             runtime.connection = runtime.configured ? "online" : "offline";
           } catch (error) {
             if (error instanceof GardenConnectionError) {
@@ -1380,6 +1437,7 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
           duck: runtime.duck,
           plants: Array.from(runtime.plants.values()),
           selected: runtime.selected,
+          suggestedPlantingCell: runtime.suggestedPlantingCell,
           effects: runtime.reducedMotion ? [] : runtime.effects,
           moving: runtime.reducedMotion ? false : runtime.moving,
           now: Date.now(),

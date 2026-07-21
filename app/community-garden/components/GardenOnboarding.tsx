@@ -5,6 +5,7 @@ type GardenOnboardingProps = {
   previewPlantings: number;
   previewLimit: number;
   inventoryOpen: boolean;
+  actionReady: boolean;
   onDismiss: () => void;
   onOpenInventory: () => void;
   onOpenMyGarden: () => void;
@@ -15,6 +16,7 @@ export function GardenOnboarding({
   previewPlantings,
   previewLimit,
   inventoryOpen,
+  actionReady,
   onDismiss,
   onOpenInventory,
   onOpenMyGarden,
@@ -23,7 +25,10 @@ export function GardenOnboarding({
     !step ||
     step === "complete" ||
     step === "dismissed" ||
-    inventoryOpen
+    inventoryOpen ||
+    step === "select-seed" ||
+    step === "personal-seed" ||
+    step === "preview-free"
   ) {
     return null;
   }
@@ -37,6 +42,16 @@ export function GardenOnboarding({
           action: "Open Inventory",
           onAction: onOpenInventory,
         }
+      : step === "community-tile"
+        ? {
+            kicker: "Your first planting",
+            title: actionReady ? "You are in place" : "Choose the glowing patch",
+            copy: actionReady
+              ? "Tap the Plant button below to add your flower."
+              : "Tap the highlighted open ground. Your gardener will walk over to it.",
+            action: null,
+            onAction: null,
+          }
       : step === "my-garden"
         ? {
             kicker: "Care earned",
@@ -45,13 +60,36 @@ export function GardenOnboarding({
             action: "Visit My Garden",
             onAction: onOpenMyGarden,
           }
+        : step === "personal-inventory"
+          ? {
+              kicker: "Your garden preview",
+              title: "Plant three flowers of your own",
+              copy: "Try your first one with the guide, then arrange the next two however you like.",
+              action: "Open Inventory",
+              onAction: onOpenInventory,
+            }
+          : step === "personal-tile"
+            ? {
+                kicker: "Your first flower",
+                title: actionReady ? "Ready to plant" : "Choose the glowing patch",
+                copy: actionReady
+                  ? "Tap the Plant button below. Your next two flowers are yours to arrange."
+                  : "Tap the highlighted ground and walk over to make this space your own.",
+                action: null,
+                onAction: null,
+              }
+            : step === "preview-full"
+              ? {
+                  kicker: "Three flowers planted",
+                  title: "Keep growing when you are ready",
+                  copy: "Choose another open spot and try to plant a fourth flower to unlock your full garden.",
+                  action: "Open Inventory",
+                  onAction: onOpenInventory,
+                }
         : {
-            kicker: "Your garden preview",
-            title:
-              previewLimit - previewPlantings === 1
-                ? "Plant 1 more flower"
-                : `Plant ${Math.max(0, previewLimit - previewPlantings)} more flowers`,
-            copy: "Try arranging three flowers here. Your preview stays free to explore, and you can return to the Community Garden anytime.",
+            kicker: "Your garden",
+            title: `${Math.max(0, previewLimit - previewPlantings)} flowers remain`,
+            copy: "Keep arranging your preview at your own pace.",
             action: "Open Inventory",
             onAction: onOpenInventory,
           };
@@ -72,13 +110,15 @@ export function GardenOnboarding({
       <p>{content.kicker}</p>
       <h2 id="cg-onboarding-title">{content.title}</h2>
       <span>{content.copy}</span>
-      <button
-        className="cg-onboarding-action"
-        type="button"
-        onClick={content.onAction}
-      >
-        {content.action}
-      </button>
+      {content.action && content.onAction ? (
+        <button
+          className="cg-onboarding-action"
+          type="button"
+          onClick={content.onAction}
+        >
+          {content.action}
+        </button>
+      ) : null}
     </aside>
   );
 }

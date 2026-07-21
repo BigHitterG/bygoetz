@@ -108,6 +108,8 @@ export function CommunityGardenApp() {
   const adLabel = process.env.NEXT_PUBLIC_COMMUNITY_GARDEN_AD_PLACEHOLDER;
   const myGarden = memberGarden ?? guestPreview.garden;
   const isPreview = !memberGarden;
+  const onboardingPlantActionReady =
+    ui.action === "plant" && ui.actionEnabled;
 
   const commitGuestPreview = useCallback((next: GuestGardenPreview) => {
     guestPreviewRef.current = next;
@@ -332,12 +334,12 @@ export function CommunityGardenApp() {
       next = "complete";
     } else if (!next) {
       const plantings = guestPreviewRef.current.garden.preview?.plantingsUsed ?? 0;
-      if (plantings >= 3) next = "complete";
+      if (plantings >= 3) next = "preview-full";
       else if (
         plantings > 0 ||
         guestPreviewRef.current.journey?.world === "personal"
       ) {
-        next = "preview";
+        next = plantings > 0 ? "preview-free" : "personal-inventory";
       } else if (guestPreviewRef.current.garden.lifetimeCare > 0) {
         next = "my-garden";
       } else {
@@ -355,6 +357,18 @@ export function CommunityGardenApp() {
     onboardingStep,
     ui.connection,
   ]);
+
+  useEffect(() => {
+    const shouldSuggestCommunity =
+      onboardingStep === "community-tile" && world === "community";
+    const shouldSuggestPersonal =
+      onboardingStep === "personal-tile" && world === "personal";
+    if (!shouldSuggestCommunity && !shouldSuggestPersonal) return;
+    const frame = window.requestAnimationFrame(() => {
+      canvasRef.current?.suggestPlantingSpot();
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [onboardingStep, world]);
 
   useEffect(() => {
     if (!guestPreviewReady || memberGarden) return;
@@ -414,7 +428,11 @@ export function CommunityGardenApp() {
   const claimCommunityContribution = useCallback(
     (contribution: GardenContribution) => {
       if (contribution.action === "plant") {
-        transitionOnboarding("my-garden", ["plant"]);
+        transitionOnboarding("my-garden", [
+          "plant",
+          "select-seed",
+          "community-tile",
+        ]);
       }
       if (!session || !memberGarden) {
         const award = awardGuestCare(
@@ -529,14 +547,32 @@ export function CommunityGardenApp() {
           commitGuestPreview(updatedPreview);
           const used = updatedPreview.garden.preview?.plantingsUsed ?? 0;
           const limit = updatedPreview.garden.preview?.plantingLimit ?? 3;
-          if (mutation.action === "plant" && used >= limit) {
-            transitionOnboarding("complete", ["preview"]);
-            setMembershipOfferOpen(true);
+          if (mutation.action === "plant") {
+            if (used >= limit) {
+              transitionOnboarding("preview-full", [
+                "personal-inventory",
+                "personal-seed",
+                "personal-tile",
+                "preview-free",
+              ]);
+            } else if (used > 0) {
+              transitionOnboarding("preview-free", [
+                "personal-inventory",
+                "personal-seed",
+                "personal-tile",
+              ]);
+            }
           }
           return updatedPreview.garden;
         } catch (error) {
           if (error instanceof GuestPreviewLimitError) {
-            transitionOnboarding("complete", ["preview"]);
+            transitionOnboarding("complete", [
+              "personal-inventory",
+              "personal-seed",
+              "personal-tile",
+              "preview-free",
+              "preview-full",
+            ]);
             setMembershipOfferOpen(true);
           }
           throw error;
@@ -571,8 +607,32 @@ export function CommunityGardenApp() {
     }
     setMenuOpen(false);
     setInventoryOpen(false);
-    transitionOnboarding("preview", ["plant", "my-garden"]);
+    transitionOnboarding("personal-inventory", [
+      "plant",
+      "select-seed",
+      "community-tile",
+      "my-garden",
+    ]);
     setWorld("personal");
+  }
+
+  const handleGardenActionCompleted = useCallback(
+    (mode: GardenWorldMode, action: GardenUiState["action"]) => {
+      if (mode === "community" && action === "plant") {
+        transitionOnboarding("my-garden", [
+          "plant",
+          "select-seed",
+          "community-tile",
+        ]);
+      }
+    },
+    [transitionOnboarding],
+  );
+
+  function openInventoryForOnboarding() {
+    transitionOnboarding("select-seed", ["plant"]);
+    transitionOnboarding("personal-seed", ["personal-inventory"]);
+    setInventoryOpen(true);
   }
 
   return (
@@ -585,6 +645,7 @@ export function CommunityGardenApp() {
           onStateChange={onStateChange}
           onCommunityContribution={claimCommunityContribution}
           onPersonalGardenMutation={mutateMyGarden}
+          onActionCompleted={handleGardenActionCompleted}
         />
 
         <header className="cg-titlebar">
@@ -646,7 +707,11 @@ export function CommunityGardenApp() {
         </div>
 
         <button
-          className="cg-compact-support"
+          className={`cg-compact-support${
+            world === "community" && onboardingStep === "my-garden"
+              ? " is-onboarding-highlight"
+              : ""
+          }`}
           type="button"
           aria-label={
             world === "personal" ? "Go to Community Garden" : "Go to My Garden"
@@ -694,10 +759,27 @@ export function CommunityGardenApp() {
           mode={world}
           open={inventoryOpen}
           selectedTool={ui.selectedTool}
-          onToggle={() => setInventoryOpen((current) => !current)}
+          guidePlantChoice={
+            onboardingStep === "select-seed" ||
+            onboardingStep === "personal-seed"
+          }
+          onToggle={() => {
+            if (!inventoryOpen) openInventoryForOnboarding();
+            else setInventoryOpen(false);
+          }}
           onSelectPlant={(plantType) => {
             canvasRef.current?.selectPlant(plantType);
+            const shouldGuideSpot =
+              onboardingStep === "select-seed" ||
+              onboardingStep === "personal-seed";
+            transitionOnboarding("community-tile", ["select-seed"]);
+            transitionOnboarding("personal-tile", ["personal-seed"]);
             setInventoryOpen(false);
+            if (shouldGuideSpot) {
+              window.requestAnimationFrame(() => {
+                canvasRef.current?.suggestPlantingSpot();
+              });
+            }
           }}
           onSelectPath={() => {
             canvasRef.current?.selectPathTool();
@@ -710,7 +792,13 @@ export function CommunityGardenApp() {
         />
 
         <button
-          className="cg-action-button"
+          className={`cg-action-button${
+            onboardingPlantActionReady &&
+            (onboardingStep === "community-tile" ||
+              onboardingStep === "personal-tile")
+              ? " is-onboarding-highlight"
+              : ""
+          }`}
           type="button"
           disabled={!ui.actionEnabled}
           onClick={() => void canvasRef.current?.performAction()}
@@ -753,10 +841,11 @@ export function CommunityGardenApp() {
           previewPlantings={myGarden.preview?.plantingsUsed ?? 0}
           previewLimit={myGarden.preview?.plantingLimit ?? 3}
           inventoryOpen={inventoryOpen}
+          actionReady={onboardingPlantActionReady}
           onDismiss={() => transitionOnboarding("dismissed")}
-          onOpenInventory={() => setInventoryOpen(true)}
+          onOpenInventory={openInventoryForOnboarding}
           onOpenMyGarden={() => {
-            transitionOnboarding("preview", ["my-garden"]);
+            transitionOnboarding("personal-inventory", ["my-garden"]);
             setWorld("personal");
           }}
         />
@@ -780,7 +869,7 @@ export function CommunityGardenApp() {
         onClose={() => setMembershipOfferOpen(false)}
         onLater={() => {
           setMembershipOfferOpen(false);
-          transitionOnboarding("complete", ["preview"]);
+          transitionOnboarding("complete");
           setWorld("community");
         }}
         onJoin={() => {

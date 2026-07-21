@@ -12,6 +12,7 @@ type GardenInventoryProps = {
   mode: GardenWorldMode;
   open: boolean;
   selectedTool: GardenTool;
+  guidePlantChoice?: boolean;
   onToggle: () => void;
   onSelectPlant: (plantType: PlantType) => void;
   onSelectPath: () => void;
@@ -22,6 +23,7 @@ export function GardenInventory({
   mode,
   open,
   selectedTool,
+  guidePlantChoice = false,
   onToggle,
   onSelectPlant,
   onSelectPath,
@@ -47,8 +49,18 @@ export function GardenInventory({
         <section className="cg-inventory-panel" aria-label="Garden inventory">
           <header>
             <strong>Inventory</strong>
-            <small>Choose, then place it on the map</small>
+            <small>
+              {guidePlantChoice
+                ? "Choose one flower to begin"
+                : "Choose, then place it on the map"}
+            </small>
           </header>
+
+          {guidePlantChoice ? (
+            <p className="cg-inventory-guide" role="status">
+              Tap any flower below
+            </p>
+          ) : null}
 
           <div className="cg-inventory-section">
             <p>Plants</p>
@@ -61,6 +73,7 @@ export function GardenInventory({
                     type="button"
                     aria-label={`Select ${plant.name} seeds`}
                     aria-pressed={selectedTool === plantType}
+                    className={guidePlantChoice ? "is-onboarding-choice" : undefined}
                     onClick={() => onSelectPlant(plantType)}
                   >
                     <span
