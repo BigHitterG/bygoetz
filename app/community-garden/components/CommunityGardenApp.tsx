@@ -113,7 +113,6 @@ export function CommunityGardenApp() {
   const communityOnboardingPlantingsRef = useRef(0);
   const adLabel = process.env.NEXT_PUBLIC_COMMUNITY_GARDEN_AD_PLACEHOLDER;
   const myGarden = memberGarden ?? guestPreview.garden;
-  const isPreview = !memberGarden;
   const onboardingPlantActionReady =
     ui.action === "plant" && ui.actionEnabled;
   const showMyGardenInvitation =
@@ -755,10 +754,10 @@ export function CommunityGardenApp() {
           disabled={world === "community" && myGardenTutorialLocked}
           aria-label={
             world === "personal"
-              ? "Go to Community Garden"
+              ? `Go to Community Garden. ${myGarden.careBalance} Care.`
               : myGardenTutorialLocked
                 ? `Plant ${3 - communityOnboardingPlantings} more community flowers before visiting My Garden`
-                : "Go to My Garden"
+                : `Go to My Garden. ${myGarden.careBalance} Care.`
           }
           onClick={switchWorld}
         >
@@ -766,31 +765,20 @@ export function CommunityGardenApp() {
             className={world === "personal" ? "cg-community-mark" : "cg-home-mark"}
             aria-hidden="true"
           />
-          {world === "personal" ? "Community Garden" : "My Garden"}
+          <span className="cg-garden-switch-copy">
+            <strong>
+              {world === "personal" ? "Community Garden" : "My Garden"}
+            </strong>
+            <small>
+              Care <b>{myGarden.careBalance}</b>
+            </small>
+          </span>
           {showMyGardenInvitation ? (
             <strong className="cg-my-garden-notice" aria-label="My Garden is ready">
               {myGarden.careBalance}
             </strong>
           ) : null}
         </button>
-
-        {world === "personal" ? (
-          <output
-            className="cg-care-button is-personal"
-            aria-label={`${myGarden.careBalance} Care`}
-          >
-            <span>Care</span>
-            <strong>{myGarden.careBalance}</strong>
-          </output>
-        ) : (
-          <output
-            className="cg-care-button is-community"
-            aria-label={`${myGarden.careBalance} ${isPreview ? "temporary " : ""}Care`}
-          >
-            <span>Care</span>
-            <strong>{myGarden.careBalance}</strong>
-          </output>
-        )}
 
         {world === "personal" && myGarden.preview ? (
           <div className="cg-preview-progress" aria-live="polite">
