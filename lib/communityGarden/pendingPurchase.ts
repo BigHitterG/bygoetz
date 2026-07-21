@@ -470,7 +470,7 @@ export async function fulfillPendingGardenCheckout(session: Stripe.Checkout.Sess
     ]);
   }
 
-  if (row.activation_sent_at && row.claimed_user_id) {
+  if (row.garden_saved_at && row.activation_sent_at && row.claimed_user_id) {
     return { status: "activation_sent" as const };
   }
   return provisionPaidGardenAccount({
