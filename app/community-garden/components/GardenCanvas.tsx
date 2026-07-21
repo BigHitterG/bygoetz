@@ -78,6 +78,7 @@ export type GardenUiState = {
   selectedPlantType: PlantType;
   selectedElementType: MyGardenElementType | null;
   selectedTool: GardenTool;
+  pathMapPoints: Array<{ x: number; y: number }>;
   plantMapPoints: Array<{ x: number; y: number; plantType: PlantType }>;
   nextMapUpdateAt: number | null;
   mode: GardenWorldMode;
@@ -639,6 +640,10 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
           plantType: plant.plant_type,
         }),
       );
+      const pathMapPoints = (runtime.personalGarden?.paths ?? []).map((path) => ({
+        x: getRuntimeMapPercentage(runtime, path.gridX, "x"),
+        y: getRuntimeMapPercentage(runtime, path.gridY, "y"),
+      }));
       const state: GardenUiState = {
         action: action.action,
         actionLabel: action.label,
@@ -668,6 +673,7 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
             : runtime.toolMode === "element"
               ? runtime.selectedElementType
               : runtime.selectedPlantType,
+        pathMapPoints,
         plantMapPoints,
         nextMapUpdateAt:
           runtime.mode === "community" && runtime.snapshotNextRefreshAt > 0
@@ -1177,8 +1183,11 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
         canvas.height = GARDEN_CONFIG.logicalHeight;
       };
       resizeCanvas();
-      const resizeObserver = new ResizeObserver(resizeCanvas);
-      resizeObserver.observe(canvas);
+      const resizeObserver =
+        typeof ResizeObserver === "undefined"
+          ? null
+          : new ResizeObserver(resizeCanvas);
+      resizeObserver?.observe(canvas);
       const scheduleResize = () => {
         window.requestAnimationFrame(() => {
           resizeCanvas();
@@ -1312,7 +1321,7 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
       return () => {
         cancelAnimationFrame(frameId);
         window.clearInterval(pollId);
-        resizeObserver.disconnect();
+        resizeObserver?.disconnect();
         window.removeEventListener("resize", scheduleResize);
         window.removeEventListener("orientationchange", scheduleResize);
         window.visualViewport?.removeEventListener("resize", scheduleResize);
@@ -1469,16 +1478,6 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
       }
     }
 
-    function onDoubleClick(event: ReactPointerEvent<HTMLCanvasElement>) {
-      event.preventDefault();
-      const runtime = runtimeRef.current;
-      runtime.zoom = clampZoom(runtime.zoom + GARDEN_CONFIG.cameraZoomStep);
-      publishUi();
-      const canvas = canvasRef.current;
-      if (!canvas) return;
-      canvas.focus({ preventScroll: true });
-    }
-
     function onKeyDown(event: ReactKeyboardEvent<HTMLCanvasElement>) {
       const directions: Record<string, [number, number]> = {
         ArrowUp: [0, -1],
@@ -1532,7 +1531,6 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
         onPointerCancel={onPointerCancel}
-        onDoubleClick={onDoubleClick}
         onKeyDown={onKeyDown}
         onContextMenu={(event) => event.preventDefault()}
       />

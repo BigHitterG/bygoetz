@@ -587,54 +587,55 @@ function drawPersonalDecorations(
   drawPixelShed(ctx, camera, viewport, zoom);
 }
 
-function drawPersonalElements(
+type PersonalGardenElement = NonNullable<
+  RenderGardenState["personalGarden"]
+>["elements"][number];
+
+function drawPersonalElement(
   ctx: CanvasRenderingContext2D,
-  elements: NonNullable<RenderGardenState["personalGarden"]>["elements"],
+  element: PersonalGardenElement,
   camera: WorldPoint,
   viewport: GardenViewport,
   zoom: number,
 ) {
-  const sorted = [...elements].sort((left, right) => left.gridY - right.gridY);
-  for (const element of sorted) {
-    const point = worldToScreen(
-      gridToWorld(element.gridX, element.gridY),
-      camera,
-      viewport,
-      zoom,
-    );
-    if (!isVisible(point, viewport)) continue;
-    ctx.save();
-    ctx.translate(Math.round(point.x), Math.round(point.y));
-    ctx.scale(zoom, zoom);
+  const point = worldToScreen(
+    gridToWorld(element.gridX, element.gridY),
+    camera,
+    viewport,
+    zoom,
+  );
+  if (!isVisible(point, viewport)) return;
+  ctx.save();
+  ctx.translate(Math.round(point.x), Math.round(point.y));
+  ctx.scale(zoom, zoom);
 
-    if (element.elementType === "stone_paver") {
-      ctx.fillStyle = "#817b70";
-      ctx.fillRect(-7, -5, 14, 9);
-      ctx.fillStyle = "#bdb6a9";
-      ctx.fillRect(-6, -4, 12, 7);
-      ctx.fillStyle = "#d8d1c4";
-      ctx.fillRect(-4, -3, 5, 2);
-    } else if (element.elementType === "birdhouse") {
-      ctx.fillStyle = "#704b39";
-      ctx.fillRect(-2, -20, 4, 21);
-      ctx.fillStyle = "#e0b76d";
-      ctx.fillRect(-8, -31, 16, 12);
-      ctx.fillStyle = "#954a45";
-      ctx.fillRect(-10, -35, 20, 5);
-      ctx.fillStyle = "#4a372e";
-      ctx.fillRect(-2, -28, 5, 5);
-    } else {
-      ctx.fillStyle = "#603b31";
-      ctx.fillRect(-10, -13, 20, 4);
-      ctx.fillRect(-10, -7, 20, 4);
-      ctx.fillRect(-8, -3, 3, 8);
-      ctx.fillRect(5, -3, 3, 8);
-      ctx.fillStyle = "#9e6445";
-      ctx.fillRect(-9, -12, 18, 2);
-      ctx.fillRect(-9, -6, 18, 2);
-    }
-    ctx.restore();
+  if (element.elementType === "stone_paver") {
+    ctx.fillStyle = "#817b70";
+    ctx.fillRect(-7, -5, 14, 9);
+    ctx.fillStyle = "#bdb6a9";
+    ctx.fillRect(-6, -4, 12, 7);
+    ctx.fillStyle = "#d8d1c4";
+    ctx.fillRect(-4, -3, 5, 2);
+  } else if (element.elementType === "birdhouse") {
+    ctx.fillStyle = "#704b39";
+    ctx.fillRect(-2, -20, 4, 21);
+    ctx.fillStyle = "#e0b76d";
+    ctx.fillRect(-8, -31, 16, 12);
+    ctx.fillStyle = "#954a45";
+    ctx.fillRect(-10, -35, 20, 5);
+    ctx.fillStyle = "#4a372e";
+    ctx.fillRect(-2, -28, 5, 5);
+  } else {
+    ctx.fillStyle = "#603b31";
+    ctx.fillRect(-10, -13, 20, 4);
+    ctx.fillRect(-10, -7, 20, 4);
+    ctx.fillRect(-8, -3, 3, 8);
+    ctx.fillRect(5, -3, 3, 8);
+    ctx.fillStyle = "#9e6445";
+    ctx.fillRect(-9, -12, 18, 2);
+    ctx.fillRect(-9, -6, 18, 2);
   }
+  ctx.restore();
 }
 
 function drawPersonalSoilPatches(
@@ -905,7 +906,7 @@ function drawCareReadyCue(
     (Math.PI * 2);
   ctx.save();
   ctx.globalAlpha = 0.48 + Math.sin(phase) * 0.1;
-  ctx.translate(7, -21);
+  ctx.translate(7, -12);
   ctx.fillStyle = "#fff4df";
   ctx.fillRect(-2, 0, 5, 1);
   ctx.fillRect(0, -2, 1, 5);
@@ -913,6 +914,54 @@ function drawCareReadyCue(
   ctx.fillRect(-1, 0, 3, 1);
   ctx.fillRect(0, -1, 1, 3);
   ctx.restore();
+}
+
+function drawPersonalDepthObjects(
+  ctx: CanvasRenderingContext2D,
+  plants: PlantRecord[],
+  elements: PersonalGardenElement[],
+  camera: WorldPoint,
+  viewport: GardenViewport,
+  now: number,
+  zoom: number,
+) {
+  const objects: Array<
+    | { kind: "plant"; gridX: number; gridY: number; plant: PlantRecord }
+    | {
+        kind: "element";
+        gridX: number;
+        gridY: number;
+        element: PersonalGardenElement;
+      }
+  > = [
+    ...plants.map((plant) => ({
+      kind: "plant" as const,
+      gridX: plant.grid_x,
+      gridY: plant.grid_y,
+      plant,
+    })),
+    ...elements.map((element) => ({
+      kind: "element" as const,
+      gridX: element.gridX,
+      gridY: element.gridY,
+      element,
+    })),
+  ];
+
+  objects.sort(
+    (left, right) =>
+      left.gridY - right.gridY ||
+      left.gridX - right.gridX ||
+      (left.kind === right.kind ? 0 : left.kind === "plant" ? -1 : 1),
+  );
+
+  for (const object of objects) {
+    if (object.kind === "plant") {
+      drawPlant(ctx, object.plant, camera, viewport, now, zoom);
+    } else {
+      drawPersonalElement(ctx, object.element, camera, viewport, zoom);
+    }
+  }
 }
 
 function drawDampSoil(
@@ -1189,16 +1238,15 @@ export function renderGarden(ctx: CanvasRenderingContext2D, state: RenderGardenS
       state.viewport,
       state.zoom,
     );
-    drawPersonalElements(
+    drawDampSoil(ctx, visiblePlants, state.camera, state.viewport, state.now, state.zoom);
+    drawPersonalDepthObjects(
       ctx,
+      visiblePlants,
       state.personalGarden.elements,
       state.camera,
       state.viewport,
+      state.now,
       state.zoom,
-    );
-    drawDampSoil(ctx, visiblePlants, state.camera, state.viewport, state.now, state.zoom);
-    visiblePlants.forEach((plant) =>
-      drawPlant(ctx, plant, state.camera, state.viewport, state.now, state.zoom),
     );
     drawDuck(ctx, state.duck, state.camera, state.viewport, state.moving, state.now, state.zoom);
     drawMary(ctx, state.mary, state.camera, state.viewport, state.moving, state.now, state.zoom);

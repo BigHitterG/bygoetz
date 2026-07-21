@@ -7,7 +7,8 @@ body {
   width: 100%;
   min-height: 100%;
   margin: 0;
-  overflow-x: hidden;
+  /* Clip horizontal spill without creating a scroll container that breaks sticky UI. */
+  overflow-x: clip;
   background: #fff;
 }
 

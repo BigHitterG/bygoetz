@@ -1,8 +1,17 @@
-import type { CSSProperties, MouseEvent } from "react";
+"use client";
+
+import {
+  useEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type MouseEvent,
+} from "react";
 import type { GardenUiState } from "./GardenCanvas";
 
 type GardenMapKeyProps = {
   ui: GardenUiState;
+  canExpand: boolean;
   onNavigate: (mapX: number, mapY: number) => void;
 };
 
@@ -13,7 +22,21 @@ type MapStyle = CSSProperties & {
   "--cg-map-height": string;
 };
 
-export function GardenMapKey({ ui, onNavigate }: GardenMapKeyProps) {
+const EXPANDED_MAP_SIZE = 600;
+const PLANT_COLORS = {
+  rose: "#b62f3d",
+  sunflower: "#d7a52f",
+  lavender: "#7876a8",
+} as const;
+
+export function GardenMapKey({
+  ui,
+  canExpand,
+  onNavigate,
+}: GardenMapKeyProps) {
+  const [expanded, setExpanded] = useState(false);
+  const expandedCanvasRef = useRef<HTMLCanvasElement>(null);
+  const expandedMapRef = useRef<HTMLButtonElement>(null);
   const mapStyle: MapStyle = {
     "--cg-map-x": `${ui.mapX}%`,
     "--cg-map-y": `${ui.mapY}%`,
@@ -21,16 +44,89 @@ export function GardenMapKey({ ui, onNavigate }: GardenMapKeyProps) {
     "--cg-map-height": `${ui.mapHeightPercentage}%`,
   };
 
-  function navigate(event: MouseEvent<HTMLButtonElement>) {
+  useEffect(() => {
+    if (!expanded) return;
+    expandedMapRef.current?.focus({ preventScroll: true });
+
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setExpanded(false);
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [expanded]);
+
+  useEffect(() => {
+    if (!expanded) return;
+    const canvas = expandedCanvasRef.current;
+    const ctx = canvas?.getContext("2d");
+    if (!canvas || !ctx) return;
+
+    ctx.imageSmoothingEnabled = false;
+    ctx.clearRect(0, 0, EXPANDED_MAP_SIZE, EXPANDED_MAP_SIZE);
+    ctx.fillStyle = "#eef1e4";
+    ctx.fillRect(0, 0, EXPANDED_MAP_SIZE, EXPANDED_MAP_SIZE);
+
+    ctx.strokeStyle = "rgba(101, 112, 74, 0.16)";
+    ctx.lineWidth = 1;
+    for (let index = 1; index < 20; index += 1) {
+      const coordinate = Math.round((index / 20) * EXPANDED_MAP_SIZE) + 0.5;
+      ctx.beginPath();
+      ctx.moveTo(coordinate, 0);
+      ctx.lineTo(coordinate, EXPANDED_MAP_SIZE);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(0, coordinate);
+      ctx.lineTo(EXPANDED_MAP_SIZE, coordinate);
+      ctx.stroke();
+    }
+
+    for (const path of ui.pathMapPoints) {
+      const x = Math.round((path.x / 100) * EXPANDED_MAP_SIZE);
+      const y = Math.round((path.y / 100) * EXPANDED_MAP_SIZE);
+      ctx.fillStyle = "#c7aa7c";
+      ctx.fillRect(x - 3, y - 3, 6, 6);
+    }
+
+    for (const plant of ui.plantMapPoints) {
+      const x = Math.round((plant.x / 100) * EXPANDED_MAP_SIZE);
+      const y = Math.round((plant.y / 100) * EXPANDED_MAP_SIZE);
+      ctx.fillStyle = PLANT_COLORS[plant.plantType];
+      ctx.fillRect(x - 2, y - 2, 4, 4);
+    }
+
+    const playerX = Math.round((ui.mapX / 100) * EXPANDED_MAP_SIZE);
+    const playerY = Math.round((ui.mapY / 100) * EXPANDED_MAP_SIZE);
+    ctx.fillStyle = "#fff4df";
+    ctx.fillRect(playerX - 6, playerY - 6, 12, 12);
+    ctx.fillStyle = "#1f6e8c";
+    ctx.fillRect(playerX - 4, playerY - 4, 8, 8);
+  }, [expanded, ui.mapX, ui.mapY, ui.pathMapPoints, ui.plantMapPoints]);
+
+  function getMapPosition(event: MouseEvent<HTMLButtonElement>) {
     const bounds = event.currentTarget.getBoundingClientRect();
-    onNavigate(
-      ((event.clientX - bounds.left) / bounds.width) * 100,
-      ((event.clientY - bounds.top) / bounds.height) * 100,
-    );
+    return {
+      mapX: ((event.clientX - bounds.left) / bounds.width) * 100,
+      mapY: ((event.clientY - bounds.top) / bounds.height) * 100,
+    };
+  }
+
+  function navigate(event: MouseEvent<HTMLButtonElement>) {
+    if (event.detail === 0) return;
+    const { mapX, mapY } = getMapPosition(event);
+    onNavigate(mapX, mapY);
+  }
+
+  function navigateFromExpandedMap(event: MouseEvent<HTMLButtonElement>) {
+    if (event.detail === 0) return;
+    const { mapX, mapY } = getMapPosition(event);
+    onNavigate(mapX, mapY);
+    setExpanded(false);
   }
 
   return (
-    <aside className={`cg-map-key is-${ui.mode}`}>
+    <aside
+      className={`cg-map-key is-${ui.mode}${expanded ? " is-expanded" : ""}`}
+    >
       <button
         className="cg-mini-map"
         type="button"
@@ -59,7 +155,73 @@ export function GardenMapKey({ ui, onNavigate }: GardenMapKeyProps) {
         ))}
         <span className="cg-map-player" title="You are here" aria-hidden="true" />
       </button>
+
+      {canExpand ? (
+        <button
+          className="cg-map-expand"
+          type="button"
+          aria-label="Expand the full Community Garden map"
+          aria-expanded={expanded}
+          onClick={() => setExpanded(true)}
+        >
+          Expand
+        </button>
+      ) : null}
+
+      {canExpand && expanded ? (
+        <div className="cg-expanded-map-backdrop" role="presentation">
+          <section
+            className="cg-expanded-map-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="cg-expanded-map-title"
+          >
+            <header>
+              <div>
+                <p>Garden Membership map</p>
+                <h2 id="cg-expanded-map-title">
+                  {ui.mode === "personal" ? "My Garden" : "Community Garden"}
+                </h2>
+              </div>
+              <button
+                className="cg-expanded-map-close"
+                type="button"
+                aria-label="Close full garden map"
+                onClick={() => setExpanded(false)}
+              >
+                ×
+              </button>
+            </header>
+            <p className="cg-expanded-map-help">
+              Choose any part of the map to travel there.
+            </p>
+            <button
+              ref={expandedMapRef}
+              className="cg-expanded-map-surface"
+              type="button"
+              onClick={navigateFromExpandedMap}
+              aria-label="Full Community Garden map. Tap a location to travel there."
+            >
+              <canvas
+                ref={expandedCanvasRef}
+                width={EXPANDED_MAP_SIZE}
+                height={EXPANDED_MAP_SIZE}
+                aria-hidden="true"
+              />
+              <span className="cg-expanded-map-north" aria-hidden="true">N</span>
+            </button>
+            <footer className="cg-expanded-map-legend" aria-label="Map legend">
+              <span className="is-player">You</span>
+              {ui.pathMapPoints.length > 0 ? (
+                <span className="is-path">Path</span>
+              ) : null}
+              <span className="is-rose">Rose</span>
+              <span className="is-sunflower">Sunflower</span>
+              <span className="is-lavender">Lavender</span>
+            </footer>
+          </section>
+        </div>
+      ) : null}
     </aside>
   );
 }
-

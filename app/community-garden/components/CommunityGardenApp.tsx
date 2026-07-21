@@ -48,6 +48,7 @@ const INITIAL_UI: GardenUiState = {
   selectedPlantType: "rose",
   selectedElementType: null,
   selectedTool: "rose",
+  pathMapPoints: [],
   plantMapPoints: [],
   nextMapUpdateAt: null,
   mode: "community",
@@ -481,6 +482,7 @@ export function CommunityGardenApp() {
         {world === "community" ? (
           <GardenMapKey
             ui={ui}
+            canExpand={Boolean(memberGarden)}
             onNavigate={(mapX, mapY) =>
               canvasRef.current?.goToMapPosition(mapX, mapY)
             }
@@ -531,7 +533,6 @@ export function CommunityGardenApp() {
           >
             <span>Care</span>
             <strong>{myGarden.careBalance}</strong>
-            <i aria-hidden="true">▼</i>
           </output>
         ) : (
           <output
