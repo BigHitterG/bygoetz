@@ -1,0 +1,234 @@
+# Basil launch roadmap
+
+Last audited: July 21, 2026  
+Launch scope: US-only web launch, one-time Garden Membership at $6.99  
+Phase 0 rule: documentation and launch decisions only; no gameplay or production behavior changes
+
+## Launch status
+
+Basil is live and suitable for controlled external testing, but paid advertising must wait for the Phase 0 manual gate and the measurement, policy, and reliability gates below. The initial ad budget is research money, not forecast profit.
+
+Phase 0 has established the technical baseline. It is not complete until the owner confirms domain ownership, the exact Meta assets, dashboard access for every production dependency, and the research budget in [the launch checklist](./basil-launch-checklist.md).
+
+## Production baseline
+
+| Item | Baseline |
+| --- | --- |
+| Public Basil URL | `https://www.bygoetz.com/community-garden` |
+| Live response | HTTP 200 on July 21, 2026 |
+| Git repository | `BigHitterG/bygoetz` |
+| Production branch | `main` |
+| Pre-launch production commit | `373d0dc4bd22abb87666a1f2a27b1c397a41e95c` (`Refine Basil onboarding guidance`) |
+| Vercel deployment | `dpl_CYrSjFxAwUnCh1fy4BbBVvyhcjg2` |
+| Deployment URL | `https://bygoetz-onzebeloj-bighittergs-projects.vercel.app` |
+| Deployment state | `READY`, production, Git source |
+| Deployment created | July 21, 2026 at 16:36:14 UTC |
+| Vercel project | `bygoetz` / `prj_MXqx7eJDGtvK0XOOB80zVSUnTxdo` |
+| Vercel team | `team_MfQH6rtXU5fa0YuFEjcK0e65` |
+| Runtime | Next.js, Node.js 24.x, primary function region `iad1` |
+| Current aliases | `www.bygoetz.com`, `bygoetz.com`, and Vercel project aliases |
+| Supabase project | `bygoetz` / `qripkmzrujarmmbgewub`, `ACTIVE_HEALTHY`, `us-east-1` |
+| Shared map at audit | 1,546 canonical plant rows; snapshot endpoint healthy |
+| Membership records at audit | 2 steward records and 2 active entitlement records; these may include test purchases and are not evidence of external conversion |
+
+`basilcommunitygarden.com` was available through Vercel for $11.25 for one year when checked on July 21, 2026. Availability is not ownership. Phase 0 does not purchase, attach, redirect, or advertise the domain.
+
+## Current architecture
+
+```text
+Guest browser
+  |-- GET /community-garden ----------------------> Vercel / Next.js
+  |-- GET /api/community-garden/snapshot --------> cached 10-minute snapshot
+  |-- POST /api/community-garden/action ----------> server validation + Supabase RPC
+  |-- local guest preview ------------------------> sessionStorage + 7-day localStorage transfer
+  |
+  `-- membership path
+       |-- account form --------------------------> /api/community-garden/auth/email
+       |                                             Supabase Auth admin link
+       |                                             Resend branded email
+       |-- email link ----------------------------> /community-garden?steward=confirm-account
+       |                                             Supabase verifyOtp + browser session
+       |-- POST /api/community-garden/checkout ---> Stripe Checkout, one-time $6.99 USD
+       |-- payment success -----------------------> /api/community-garden/claim
+       |                                             plus signed Stripe webhook backup
+       |-- entitlement ---------------------------> garden_stewards + garden_entitlements
+       `-- preview import ------------------------> persistent My Garden + Care in Supabase
+```
+
+### Public Community Garden
+
+- The world is a 160 by 160 logical map with 25,600 possible tiles. Supabase stores only occupied plant tiles.
+- A complete sparse canonical snapshot is generated in ten-minute rounds and served through `/api/community-garden/snapshot` with version-aware CDN/browser caching.
+- The browser keeps the snapshot locally while the player moves; walking does not issue a database read per tile.
+- Planting and watering submit immediately to `/api/community-garden/action`. Each request has a client-generated UUID idempotency key and is processed by the server-side `perform_idempotent_community_garden_action` RPC.
+- A signed, HTTP-only anonymous session cookie supports per-actor and per-network rate limits without storing a raw IP address or public identity.
+- The initiating browser immediately overlays a successful action locally. The next canonical snapshot can reconcile conflicts.
+- The current system uses HTTP snapshots and action requests, not a broad Supabase Realtime subscription.
+- Health pulses, action outcomes, snapshot outcomes, latency, and coarse device class feed the private Basil health panel.
+
+### Private My Garden and membership
+
+- Supabase Auth supplies private email/password accounts and persistent browser sessions. Email is not displayed as an in-game identity.
+- Paid access is stored in provider-neutral `garden_entitlements`; the current provider is Stripe.
+- My Garden plants, paths, placeable elements, plot progression, Care balance, Care receipts, and the Care ledger are server controlled.
+- Browser roles do not directly read or mutate private garden tables. The app authenticates the user, then server routes use the Supabase service role and controlled database functions.
+- The upgrade feedback queue is private, member-only input for human review. Feedback never triggers an automatic production change.
+
+## Complete guest-to-purchase funnel
+
+1. A signed-out visitor opens the public Community Garden and receives the current cached snapshot.
+2. Contextual onboarding teaches the visitor to open inventory, choose a plant, and place three plants in the Community Garden.
+3. The first three unpaid community plantings each award two temporary Care. Later guest actions use the normal steady cadence of one Care per four qualifying actions.
+4. After three community plantings, My Garden becomes available. The visitor can enter a temporary private preview using the same game interface.
+5. The preview permits free paths and up to three personal flower plantings. The fourth personal planting attempt opens the current membership offer.
+6. The offer explains the one-time $6.99 Garden Membership and sends the visitor to the Account section when they choose to continue.
+7. Before account creation, the app saves temporary plants, paths, Care, current world, camera position, zoom, and selected tool. The current tab uses `sessionStorage`; a seven-day `localStorage` transfer survives verification, checkout, return, and reasonable refreshes in the same browser profile.
+8. A new customer enters a private email, password, and password confirmation. `/api/community-garden/auth/email` rate-limits hashed email/IP requests, asks Supabase Auth to create a signup or recovery link, and sends Basil-branded email through Resend.
+9. The app shows a dedicated verification-pending state with the destination email, resend, change-email, spam-folder guidance, and return-to-sign-in actions.
+10. The emailed link returns to Basil with a token hash, verification type, and preserved checkout intent. The browser calls Supabase `verifyOtp`. A valid new signup receives a session and resumes checkout. An existing/recovery flow can require choosing a new password first.
+11. `/api/community-garden/checkout` verifies the authenticated account has no active membership and creates a one-time Stripe Checkout session for $6.99 USD.
+12. A successful payment returns through `/api/community-garden/claim`; Stripe payment verification creates or updates the steward and entitlement. The signed Stripe webhook provides a second fulfillment path. Upserts make repeated success callbacks idempotent. Cancellation returns to the unchanged guest garden.
+13. On return, `/api/community-garden/account` loads membership. If active, the client submits a one-time `import-preview` mutation. Supabase reconciles the guest Care, plants, and paths into the persistent garden. Local pending state is cleared only after the import succeeds; otherwise it remains available for retry. The saved garden view is restored when practical.
+
+Important limitation: the pending guest preview is browser-local. Opening verification in another browser or device can verify the account, but that other browser cannot import a preview stored only on the original device. The original browser can resume once its session updates or the user signs in there.
+
+## Production dependencies
+
+| Dependency | Current responsibility | Required configuration or access |
+| --- | --- | --- |
+| Vercel | Hosts Next.js pages and server routes, injects runtime secrets, serves CDN caches, records runtime logs, auto-deploys `main` through Git integration | Project access; production env access; domain/DNS access; deployment rollback access |
+| Supabase Database | Canonical public plants, ten-minute snapshots, idempotent action records, health aggregates, memberships, entitlements, Care, My Garden, and feedback | Project access; migrations; `NEXT_PUBLIC_SUPABASE_URL`; public client key; server-only service-role key |
+| Supabase Auth | Email/password identity, verification/recovery tokens, sessions | Auth dashboard access; permitted redirect URLs; password/security settings |
+| Resend | Sends custom Basil signup, verification, and password-recovery email | `RESEND_API_KEY`; verified `send.bygoetz.com` sender; `BASIL_AUTH_FROM_EMAIL`; optional reply-to |
+| Stripe | One-time $6.99 USD Checkout and authoritative paid status | Production account access; `STRIPE_SECRET_KEY`; `STRIPE_WEBHOOK_SECRET`; webhook endpoint; refunds/disputes access |
+| Meta | Browser PageView and custom funnel events when configured | Business Portfolio, Page, ad account, Events Manager dataset/Pixel, verified domain, Pixel ID; later CAPI token |
+| GitHub | Source control; pushes to `main` trigger Vercel production | Repository/admin access; branch/deploy discipline |
+| Browser storage | Temporary guest preview, verification-pending state, onboarding, camera/zoom/tool restoration | Same browser profile, storage available, seven-day checkout transfer window |
+
+The repository currently references these environment variable names without committing their values:
+
+- `NEXT_PUBLIC_SITE_URL`
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `SUPABASE_SERVICE_ROLE_KEY`
+- `STRIPE_SECRET_KEY`
+- `STRIPE_WEBHOOK_SECRET`
+- `RESEND_API_KEY`
+- `BASIL_AUTH_FROM_EMAIL`
+- `RESEND_REPLY_TO_EMAIL`
+- `BASIL_ADMIN_EMAILS`
+- `NEXT_PUBLIC_META_PIXEL_ID`
+
+## Current analytics and Meta events
+
+### First-party operational monitoring
+
+Basil has a restricted account-menu health panel for configured admin emails. Server-only Supabase tables record coarse sessions, device class, health pulses, snapshot/action counts, failures, and durations. They do not currently form a complete marketing funnel and do not preserve UTM attribution through account verification and Stripe.
+
+The project does not currently include Vercel Web Analytics or Speed Insights packages.
+
+### Meta implementation in source
+
+The root layout includes a conditional Meta Pixel. When `NEXT_PUBLIC_META_PIXEL_ID` exists, it loads the Pixel and sends `PageView` on route changes. Basil source currently emits these custom browser events:
+
+- `BasilOnboardingStep`
+- `BasilGuestStateSaved`
+- `BasilGuestRestoreStarted`
+- `BasilGuestStateRestored`
+- `BasilGuestRestoreFailed`
+- `BasilSignupStarted`
+- `BasilVerificationEmailSent`
+- `BasilVerificationEmailResent`
+- `BasilVerificationCompleted`
+- `BasilCheckoutStarted`
+- `BasilCheckoutCanceled`
+- `BasilCheckoutCompleted`
+- `BasilTabletLayoutLoaded`
+- `BasilOrientationChanged`
+
+The live HTML audited on July 21 did not include the Meta Pixel initialization script, so the production Pixel is not presently verifiably active. `BasilCheckoutCompleted` is a client-side custom event based on the return URL. Basil does not yet send a standard, server-authoritative Meta `Purchase` event with value/currency, does not use Conversions API, and does not deduplicate browser/server events. The existing standard `Purchase` component is used by Explorers, not Basil.
+
+## Known production risks
+
+Ordered by launch impact:
+
+1. **No trustworthy paid-acquisition measurement.** The live Pixel is not verifiably active, Basil lacks first-party funnel attribution, and purchase reporting is not server authoritative.
+2. **Required customer-facing policies are incomplete.** Basil needs specific Privacy, Terms, Refund, Support, and Account Deletion surfaces before ads direct strangers into account creation and payment.
+3. **External conversion is not validated.** The two current membership records may be owner/test records; they do not establish cold-audience conversion or support readiness.
+4. **Historical action errors need a clean observation window.** Seven-day Vercel history includes 33 `Unknown error` community-action failures across three estimated users on an older deployment and two `23505` planting conflicts on another older deployment. The current baseline deployment had no error-level runtime logs at audit time, but it had been live for less than one hour.
+5. **Guest restoration is device-local.** Cross-device verification works for the account, but the original preview is recoverable only from the browser profile that stored it unless a later phase adds a server-side temporary session.
+6. **Auth hardening is incomplete.** Supabase's leaked-password protection advisor is currently disabled. The app requires ten characters but does not yet have the additional compromised-password check.
+7. **Capacity targets are estimates, not load-test results.** The cached-snapshot architecture is designed for many readers, but the current Supabase plan and true action throughput have not been validated at launch traffic levels.
+8. **Operational ownership is not fully recorded.** Exact Meta assets, domain ownership, dashboard access, support ownership, and incident contacts still require manual confirmation.
+9. **The repository has two deployment stories.** Vercel Git integration is the real dynamic production host, while a GitHub Pages static-export workflow and README remain in the repository. This can confuse release ownership and is unsuitable for Basil API routes.
+10. **No independent client-performance analytics.** The private health system observes server operations but does not yet report real-user Core Web Vitals or client rendering failures.
+11. **The dedicated domain is not owned or configured.** Basil metadata, auth return links, Resend copy, Stripe returns, and canonical URLs all currently use `bygoetz.com`.
+
+Supabase security advisors also report informational `RLS enabled, no policy` notices for server-only tables. In the current design this is deliberate: browser grants are revoked and only the service role is granted table access. Those notices should be rechecked whenever access patterns change.
+
+## Remaining launch phases
+
+### Phase 1 - First-party funnel measurement
+
+Create a privacy-conscious, idempotent funnel event pipeline with an anonymous launch session ID, UTM/referrer persistence, device/campaign aggregates, and a private launch-health view. Do not send raw passwords, verification tokens, payment details, or unnecessary PII.
+
+Gate: an incognito guest-to-purchase test preserves attribution across verification and Stripe; milestone events do not duplicate; the private panel reports the funnel; no PII appears in event metadata.
+
+### Phase 2 - Customer trust and account control
+
+Publish Basil-specific Privacy, Terms, Refund, Support, and Account Deletion pages; link them from account creation, membership, checkout entry, and the menu. Implement a recoverable deletion workflow that removes private account/My Garden data while defining how anonymous public contributions are retained.
+
+Gate: every page is public, accurate, mobile-readable, and linked; support/refund ownership is confirmed; a test account can be deleted without exposing or orphaning private data.
+
+### Phase 3 - Meta measurement
+
+Activate the production Pixel and Conversions API. Map useful browser milestones, use a shared event ID for deduplication, and send `Purchase` only from authoritative paid fulfillment with value `6.99` and currency `USD`.
+
+Gate: Meta Test Events shows PageView, key funnel milestones, InitiateCheckout, CompleteRegistration, and exactly one deduplicated Purchase for a test order; canceled/unpaid sessions never purchase.
+
+### Phase 4 - Dedicated domain
+
+Attach the owned domain to the existing Vercel project without creating a second app or database. Keep the current URL working. Add a Basil-specific canonical base URL and update metadata, Supabase redirects, Resend links/copy, Stripe returns, origin validation, Meta domain verification, and policy links.
+
+Gate: the full guest, verification, sign-in, cancel, purchase, fulfillment, and restoration path succeeds on the new domain; the old route remains safe; unknown redirect origins are rejected.
+
+### Phase 5 - Reliability and device verification
+
+Add automated guest-onboarding and paid-funnel tests, structured failure monitoring, and focused phone/tablet/desktop checks. Test clean storage, slow networks, cross-tab verification, duplicate callbacks, cancel/success returns, snapshot reconciliation, and temporary disconnects. Use local or disposable load environments instead of burdening the production Supabase free tier.
+
+Gate: 20 clean automated guest runs, 10 complete test payment flows, and 72 hours without unexplained critical errors on the candidate deployment.
+
+### Phase 6 - Uncoached external beta
+
+Invite approximately 20 unrelated testers through ordinary social channels. Observe behavior without coaching and record the funnel instead of adding features mid-test.
+
+Gate: at least 15 load successfully, 12 plant once, 8 complete three community plants, 6 enter My Garden, 4 reach the paywall, no more than one person encounters a blocking failure, and at least one unrelated voluntary purchase is the preferred proof point.
+
+### Phase 7 - Ad package
+
+Produce three honest gameplay-first creative concepts in 9:16, 4:5, and 1:1 formats with controlled UTMs. Prepare one campaign, one ad set, and a written stop/continue rule. Do not imply features that are not live.
+
+Gate: every creative lands on the verified domain, attribution survives the full funnel, copy matches the $6.99 one-time offer, and technical/policy checks pass.
+
+### Phase 8 - First Meta research test
+
+Run a US-only Meta Sales campaign optimized for the authoritative Purchase event, broad Advantage+ audience/placements, ages 24-54, all genders, one ad set, and three to four creatives. Spend $10-15 per day with a hard total cap of $100-150.
+
+Gate: spend never exceeds the owner-approved cap; purchases reconcile between Stripe, Supabase, first-party events, and Meta; pause immediately for duplicate purchases, broken verification, lost guest work, entitlement failures, or major device breakage.
+
+### Phase 9 - Improve one measured bottleneck
+
+Change only the largest measured drop-off: creative click-through, first load, first plant, tutorial completion, My Garden entry, paywall comprehension, account verification, checkout, or return restoration.
+
+Gate: one hypothesis, one change set, and a before/after measurement. Do not bundle unrelated gameplay additions into launch optimization.
+
+### Phase 10 - PWA and stores, after web proof
+
+First add a careful installable PWA if retention warrants it. Do not cache authenticated mutations or checkout as offline writes. Evaluate Steam after the web loop supports meaningful repeat sessions; evaluate Apple/Google stores only after web demand justifies native billing, review, privacy, and maintenance obligations.
+
+Gate: retained web users and measured demand justify the platform cost. App-store work is not part of the initial launch.
+
+## Change-control rule
+
+Until the first measured ad test is complete, a launch phase may fix a blocker discovered by its gate, but it should not introduce unrelated gameplay, economy, map, art, or monetization changes. Update [the launch checklist](./basil-launch-checklist.md) after each phase with the date, owner, evidence, commit, deployment, and outstanding blockers.
+
