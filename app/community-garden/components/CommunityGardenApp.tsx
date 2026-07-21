@@ -12,7 +12,10 @@ import {
 } from "./GardenCanvas";
 import type { GardenWorldMode } from "../game/gardenRenderer";
 import { getGardenAccountClient } from "../lib/supabaseAccount";
-import type { GardenContribution } from "../lib/supabaseGarden";
+import {
+  fetchGardenRequest,
+  type GardenContribution,
+} from "../lib/supabaseGarden";
 import { GardenMapKey } from "./GardenMapKey";
 import { GardenMenu, type LibrarySection } from "./GardenMenu";
 import type { MyGardenMutation } from "../lib/myGardenMutation";
@@ -69,6 +72,7 @@ async function getResponseError(response: Response, fallback: string) {
 
 export function CommunityGardenApp() {
   const canvasRef = useRef<GardenCanvasHandle>(null);
+  const careClaimQueueRef = useRef<Promise<void>>(Promise.resolve());
   const pendingGardenEntryRef = useRef(false);
   const guestPreviewRef = useRef<GuestGardenPreview>(
     createGuestGardenPreview(),
@@ -303,7 +307,7 @@ export function CommunityGardenApp() {
   }, []);
 
   const claimCommunityContribution = useCallback(
-    async (contribution: GardenContribution) => {
+    (contribution: GardenContribution) => {
       if (!session || !memberGarden) {
         const award = awardGuestCare(
           guestPreviewRef.current,
@@ -323,66 +327,85 @@ export function CommunityGardenApp() {
         return;
       }
 
-      try {
-        const response = await fetch("/api/community-garden/care", {
-          method: "POST",
-          headers: {
-            authorization: `Bearer ${session.access_token}`,
-            "content-type": "application/json",
-          },
-          body: JSON.stringify({ receiptToken: contribution.receiptToken }),
+      const activeSession = session;
+      careClaimQueueRef.current = careClaimQueueRef.current
+        .catch(() => undefined)
+        .then(async () => {
+          try {
+            const response = await fetchGardenRequest(
+              "/api/community-garden/care",
+              {
+                method: "POST",
+                headers: {
+                  authorization: `Bearer ${activeSession.access_token}`,
+                  "content-type": "application/json",
+                },
+                body: JSON.stringify({
+                  receiptToken: contribution.receiptToken,
+                }),
+              },
+            );
+            if (response.status === 401 || response.status === 403) {
+              const award = awardGuestCare(
+                guestPreviewRef.current,
+                contribution.careValue,
+              );
+              commitGuestPreview(award.preview);
+              canvasRef.current?.showCareReward(award.awardedCare);
+              setCareAnnouncement(
+                `${award.awardedCare} temporary Care earned. A Garden Membership saves it.`,
+              );
+              return;
+            }
+            if (!response.ok) {
+              setCareAnnouncement(
+                "Care could not be saved. Please try another garden action.",
+              );
+              return;
+            }
+            const award = (await response.json()) as {
+              awardedCare: number;
+              careBalance: number;
+              lifetimeCare: number;
+              earningMode: "quick" | "steady";
+              steadyProgress: number;
+              steadyActionsRequired: number;
+            };
+            setMemberGarden((current) =>
+              current
+                ? {
+                    ...current,
+                    careBalance: award.careBalance,
+                    lifetimeCare: award.lifetimeCare,
+                  }
+                : current,
+            );
+            if (award.awardedCare > 0) {
+              canvasRef.current?.showCareReward(award.awardedCare);
+              setCareAnnouncement(
+                `${award.awardedCare} Care saved. Your balance is ${award.careBalance}.`,
+              );
+            } else {
+              canvasRef.current?.showCareReward(
+                0,
+                award.steadyProgress,
+                award.steadyActionsRequired,
+              );
+              setCareAnnouncement(
+                `Tending progress ${award.steadyProgress} of ${award.steadyActionsRequired}.`,
+              );
+            }
+          } catch (error) {
+            console.warn("Basil Care save was interrupted", {
+              online: navigator.onLine,
+              visibility: document.visibilityState,
+              message: error instanceof Error ? error.message : "Unknown error",
+            });
+            setCareAnnouncement(
+              "Care could not be saved. Please try another garden action.",
+            );
+          }
         });
-        if (response.status === 401 || response.status === 403) {
-          const award = awardGuestCare(
-            guestPreviewRef.current,
-            contribution.careValue,
-          );
-          commitGuestPreview(award.preview);
-          canvasRef.current?.showCareReward(award.awardedCare);
-          setCareAnnouncement(
-            `${award.awardedCare} temporary Care earned. A Garden Membership saves it.`,
-          );
-          return;
-        }
-        if (!response.ok) {
-          setCareAnnouncement("Care could not be saved. Please try another garden action.");
-          return;
-        }
-        const award = (await response.json()) as {
-          awardedCare: number;
-          careBalance: number;
-          lifetimeCare: number;
-          earningMode: "quick" | "steady";
-          steadyProgress: number;
-          steadyActionsRequired: number;
-        };
-        setMemberGarden((current) =>
-          current
-            ? {
-                ...current,
-                careBalance: award.careBalance,
-                lifetimeCare: award.lifetimeCare,
-              }
-            : current,
-        );
-        if (award.awardedCare > 0) {
-          canvasRef.current?.showCareReward(award.awardedCare);
-          setCareAnnouncement(
-            `${award.awardedCare} Care saved. Your balance is ${award.careBalance}.`,
-          );
-        } else {
-          canvasRef.current?.showCareReward(
-            0,
-            award.steadyProgress,
-            award.steadyActionsRequired,
-          );
-          setCareAnnouncement(
-            `Tending progress ${award.steadyProgress} of ${award.steadyActionsRequired}.`,
-          );
-        }
-      } catch {
-        setCareAnnouncement("Care could not be saved. Please try another garden action.");
-      }
     },
     [commitGuestPreview, memberGarden, session],
   );

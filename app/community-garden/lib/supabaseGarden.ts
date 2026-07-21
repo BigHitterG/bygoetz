@@ -27,6 +27,15 @@ type GardenActionResult = {
 };
 
 const SNAPSHOT_INTERVAL_MS = 10 * 60 * 1000;
+const GARDEN_REQUEST_TIMEOUT_MS = 10_000;
+const GARDEN_ACTION_ATTEMPTS = 2;
+
+export class GardenConnectionError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "GardenConnectionError";
+  }
+}
 
 export function isGardenConfigured() {
   return Boolean(
@@ -49,6 +58,29 @@ async function responseError(response: Response, fallback: string) {
   } catch {
     return fallback;
   }
+}
+
+export async function fetchGardenRequest(
+  input: RequestInfo | URL,
+  init: RequestInit,
+  timeoutMs = GARDEN_REQUEST_TIMEOUT_MS,
+) {
+  const controller = new AbortController();
+  const timeoutId = globalThis.setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    return await fetch(input, { ...init, signal: controller.signal });
+  } finally {
+    globalThis.clearTimeout(timeoutId);
+  }
+}
+
+function isAbortError(error: unknown) {
+  return error instanceof DOMException && error.name === "AbortError";
+}
+
+function isTransientStatus(status: number) {
+  return status === 408 || status === 425 || status === 429 || status >= 500;
 }
 
 function createActionId() {
@@ -76,10 +108,19 @@ export function getCurrentSnapshotVersion(now = Date.now()) {
 
 export async function fetchGardenSnapshot(): Promise<GardenSnapshot> {
   const version = getCurrentSnapshotVersion();
-  const response = await fetch(
-    `/api/community-garden/snapshot?version=${version}`,
-    { cache: "force-cache" },
-  );
+  let response: Response;
+  try {
+    response = await fetchGardenRequest(
+      `/api/community-garden/snapshot?version=${version}`,
+      { cache: "force-cache" },
+    );
+  } catch (error) {
+    throw new GardenConnectionError(
+      isAbortError(error)
+        ? "The shared garden took too long to refresh. It will try again shortly."
+        : "The shared garden connection was interrupted.",
+    );
+  }
   if (!response.ok) {
     throw new Error(
       await responseError(response, "The shared garden could not refresh."),
@@ -108,22 +149,29 @@ async function submitGardenAction(
 ): Promise<GardenActionResult> {
   const actionId = createActionId();
   const body = JSON.stringify({ ...payload, actionId });
-  let response: Response;
+  let response: Response | null = null;
+  let lastError: unknown = null;
 
-  try {
-    response = await fetch("/api/community-garden/action", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body,
-    });
-  } catch {
-    // A single retry uses the same action id, so a lost response cannot apply
-    // the action or award Care twice.
-    response = await fetch("/api/community-garden/action", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body,
-    });
+  for (let attempt = 0; attempt < GARDEN_ACTION_ATTEMPTS; attempt += 1) {
+    try {
+      response = await fetchGardenRequest("/api/community-garden/action", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body,
+      });
+      if (response.ok || !isTransientStatus(response.status)) break;
+    } catch (error) {
+      lastError = error;
+      response = null;
+    }
+  }
+
+  if (!response) {
+    throw new GardenConnectionError(
+      isAbortError(lastError)
+        ? "The garden is taking longer than usual. Please try again; this action will not be counted twice."
+        : "The garden connection was interrupted. Please try again.",
+    );
   }
 
   if (!response.ok) {

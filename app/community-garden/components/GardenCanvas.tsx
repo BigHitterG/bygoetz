@@ -42,6 +42,7 @@ import {
 } from "../lib/roseLifecycle";
 import {
   fetchGardenSnapshot,
+  GardenConnectionError,
   type GardenContribution,
   type GardenMapPlant,
   isGardenConfigured,
@@ -125,6 +126,15 @@ type Runtime = {
   loadedChunkKey: string;
   requestId: number;
   actionBusy: boolean;
+  pendingAction: GardenAction;
+  mapRevision: number;
+  cachedMapRevision: number;
+  cachedPlantMapPoints: Array<{
+    x: number;
+    y: number;
+    plantType: PlantType;
+  }>;
+  lastUiPublishAt: number;
   hasMoved: boolean;
   moving: boolean;
   reducedMotion: boolean;
@@ -295,6 +305,7 @@ function applyPersonalGarden(runtime: Runtime, garden: MyGardenState) {
   runtime.mapPlants = new Map(
     plants.map((plant) => [plantKey(plant.grid_x, plant.grid_y), plant]),
   );
+  runtime.mapRevision += 1;
 }
 
 function clampZoom(value: number) {
@@ -306,6 +317,28 @@ function clampZoom(value: number) {
 
 function getPlantAt(runtime: Runtime, gridX: number, gridY: number) {
   return runtime.plants.get(plantKey(gridX, gridY));
+}
+
+function getPendingActionLabel(action: NonNullable<GardenAction>) {
+  switch (action) {
+    case "plant":
+      return "Planting...";
+    case "water":
+      return "Watering...";
+    case "uproot":
+      return "Uprooting...";
+    case "expand":
+      return "Opening parcel...";
+    case "lay-path":
+    case "remove-path":
+      return "Updating path...";
+    case "place-element":
+      return "Placing item...";
+    case "remove-element":
+      return "Picking up item...";
+  }
+
+  return "Working...";
 }
 
 function hasPersonalPath(runtime: Runtime, gridX: number, gridY: number) {
@@ -328,6 +361,14 @@ function getDistanceToCell(runtime: Runtime, selected: NonNullable<SelectedCell>
 }
 
 function getActionState(runtime: Runtime) {
+  if (runtime.actionBusy && runtime.pendingAction) {
+    return {
+      action: runtime.pendingAction,
+      label: getPendingActionLabel(runtime.pendingAction),
+      enabled: false,
+    };
+  }
+
   if (!runtime.selected) {
     return { action: null as GardenAction, label: "Choose a spot", enabled: false };
   }
@@ -593,6 +634,11 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
       loadedChunkKey: "",
       requestId: 0,
       actionBusy: false,
+      pendingAction: null,
+      mapRevision: 0,
+      cachedMapRevision: -1,
+      cachedPlantMapPoints: [],
+      lastUiPublishAt: 0,
       hasMoved: false,
       moving: false,
       reducedMotion: false,
@@ -623,6 +669,7 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
 
     const publishUi = useCallback(() => {
       const runtime = runtimeRef.current;
+      runtime.lastUiPublishAt = Date.now();
       const action = getActionState(runtime);
       const selectedElement = runtime.selected
         ? getPersonalElement(
@@ -633,13 +680,17 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
         : undefined;
       const gridX = Math.floor(runtime.mary.x / GARDEN_CONFIG.tileSize);
       const gridY = Math.floor(runtime.mary.y / GARDEN_CONFIG.tileSize);
-      const plantMapPoints = Array.from(runtime.mapPlants.values()).map(
-        (plant) => ({
-          x: getRuntimeMapPercentage(runtime, plant.grid_x, "x"),
-          y: getRuntimeMapPercentage(runtime, plant.grid_y, "y"),
-          plantType: plant.plant_type,
-        }),
-      );
+      if (runtime.cachedMapRevision !== runtime.mapRevision) {
+        runtime.cachedPlantMapPoints = Array.from(runtime.mapPlants.values()).map(
+          (plant) => ({
+            x: getRuntimeMapPercentage(runtime, plant.grid_x, "x"),
+            y: getRuntimeMapPercentage(runtime, plant.grid_y, "y"),
+            plantType: plant.plant_type,
+          }),
+        );
+        runtime.cachedMapRevision = runtime.mapRevision;
+      }
+      const plantMapPoints = runtime.cachedPlantMapPoints;
       const pathMapPoints = (runtime.personalGarden?.paths ?? []).map((path) => ({
         x: getRuntimeMapPercentage(runtime, path.gridX, "x"),
         y: getRuntimeMapPercentage(runtime, path.gridY, "y"),
@@ -650,8 +701,10 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
         actionEnabled: action.enabled,
         connection: runtime.connection,
         message: runtime.statusMessage,
-        mapX: getRuntimeMapPercentage(runtime, gridX, "x"),
-        mapY: getRuntimeMapPercentage(runtime, gridY, "y"),
+        mapX:
+          Math.round(getRuntimeMapPercentage(runtime, gridX, "x") * 10) / 10,
+        mapY:
+          Math.round(getRuntimeMapPercentage(runtime, gridY, "y") * 10) / 10,
         mapWidthPercentage:
           runtime.mode === "personal" && runtime.personalGarden
             ? (runtime.personalGarden.width / runtime.personalGarden.maxWidth) * 100
@@ -681,7 +734,10 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
             : null,
         mode: runtime.mode,
       };
-      const key = JSON.stringify(state);
+      const key = JSON.stringify({
+        ...state,
+        plantMapPoints: runtime.mapRevision,
+      });
       if (key === lastUiKeyRef.current) return;
       lastUiKeyRef.current = key;
       onStateChangeRef.current(state);
@@ -738,6 +794,7 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
         runtime.personalGarden = null;
         runtime.plants = new Map();
         runtime.mapPlants = new Map();
+        runtime.mapRevision += 1;
         const saved = worldSnapshotsRef.current.community;
         if (saved) {
           runtime.mary = { ...saved.mary };
@@ -797,6 +854,7 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
             plant,
           ]),
         );
+        runtime.mapRevision += 1;
       };
 
       if (!runtime.configured) {
@@ -805,6 +863,7 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
           runtime.communityPlants = new Map(
             localPlants.map((plant) => [plantKey(plant.grid_x, plant.grid_y), plant]),
           );
+          runtime.mapRevision += 1;
         }
         showLocalSnapshot();
         publishUi();
@@ -831,6 +890,7 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
             plant,
           ]),
         );
+        runtime.mapRevision += 1;
         runtime.snapshotNextRefreshAt = Date.parse(snapshot.nextRefreshAt);
         showLocalSnapshot();
         runtime.connection = "online";
@@ -985,6 +1045,7 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
           if (!selected || !actionState.enabled || !actionState.action) return;
 
           runtime.actionBusy = true;
+          runtime.pendingAction = actionState.action;
           runtime.requestId += 1;
           const selectedDefinition = getPlantDefinition(runtime.selectedPlantType);
           runtime.statusMessage =
@@ -1118,6 +1179,7 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
                 plantKey(plant.grid_x, plant.grid_y),
                 plant,
               );
+              runtime.mapRevision += 1;
               runtime.selected = { ...selected, plantId: plant.id };
               runtime.effects.push({
                 kind: "plant",
@@ -1153,10 +1215,20 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
             }
             runtime.connection = runtime.configured ? "online" : "offline";
           } catch (error) {
+            if (error instanceof GardenConnectionError) {
+              runtime.connection = navigator.onLine ? "error" : "offline";
+              console.warn("Basil garden action connection issue", {
+                action: actionState.action,
+                online: navigator.onLine,
+                visibility: document.visibilityState,
+                message: error.message,
+              });
+            }
             runtime.statusMessage =
               error instanceof Error ? error.message : "That did not work. Please try again.";
           } finally {
             runtime.actionBusy = false;
+            runtime.pendingAction = null;
             publishUi();
           }
         },
@@ -1309,7 +1381,10 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
               }
             : undefined,
         });
-        publishUi();
+        const uiPublishInterval = runtime.moving || runtime.target ? 100 : 1_000;
+        if (wallClockNow - runtime.lastUiPublishAt >= uiPublishInterval) {
+          publishUi();
+        }
         frameId = requestAnimationFrame(tick);
       };
 
@@ -1350,6 +1425,7 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
           !runtime.actionBusy
         ) {
           runtime.actionBusy = true;
+          runtime.pendingAction = "expand";
           runtime.statusMessage = `Opening this parcel for ${cost} Care...`;
           publishUi();
           void onPersonalGardenMutationRef.current({ action: "expand" })
@@ -1366,6 +1442,7 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
             })
             .finally(() => {
               runtime.actionBusy = false;
+              runtime.pendingAction = null;
               publishUi();
             });
           return;
