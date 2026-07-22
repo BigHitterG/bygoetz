@@ -19,7 +19,7 @@ Use this file as the manual source of truth. Mark an item complete only when its
 
 | System | Status | Evidence or non-secret identifier | Owner / next action |
 | --- | --- | --- | --- |
-| `basilcommunitygarden.com` | Attached to the existing `bygoetz` project; SSL generation started July 22. | Vercel nameservers `ns1.vercel-dns.com` and `ns2.vercel-dns.com` | Confirm both certificates become valid after deployment. |
+| `basilcommunitygarden.com` | Attached to the existing `bygoetz` project; apex and `www` HTTPS verified July 22. | Vercel nameservers `ns1.vercel-dns.com` and `ns2.vercel-dns.com` | Both hosts return Basil with HSTS; the apex is canonical. |
 | Meta Business Portfolio | Confirmed read-only in Meta Business settings | `Thomas R Goetz` / `314343197818474` | Full-access owner account was visible. Keep this as the proposed Basil business owner. |
 | Facebook Page for Basil or By Goetz | Confirmed read-only | `Goetz` / `156574785247266`, owned by `Thomas R Goetz` | Proposed launch Page. `GetzLab` is also accessible but is not the proposed Basil identity. |
 | Meta ad account | Owner-selected | ByGoetz Ads Manager account `67385321`. Portfolio-owned alternative `555175360336933` is not selected. | Confirm billing and Page/Pixel permissions before Phase 3. |
@@ -124,8 +124,8 @@ Completion date: `_____`
 - [ ] Verify the domain in Meta.
 - [ ] Test signup, verification, recovery, cancel, success, fulfillment, and restoration on both entry URLs.
 
-Gate evidence: Local exact-host routing passed for Basil and ByGoetz; unknown checkout Origin returned 403. See `docs/basil-launch-phase-4.md`; Supabase/Meta configuration and live paid-flow verification remain open.
-Commit/deployment: `_____`  
+Gate evidence: Local exact-host routing and origin rejection passed. Live Basil apex, `www`, ByGoetz root, legacy route, policy canonical, HTTPS, and HSTS checks passed. See `docs/basil-launch-phase-4.md`; Supabase/Meta configuration and live paid-flow verification remain open.
+Commit/deployment: `06d18529e6e802fbd9c61424c62d49c2d6bfdde8` / `dpl_4WmnhPZRBZU5P1Qmd2B7nYf7jQM6`
 Completion date: `_____`
 
 ## Phase 5 - Reliability and device verification

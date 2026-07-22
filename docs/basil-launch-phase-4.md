@@ -41,15 +41,14 @@ second project.
 1. Attach `basilcommunitygarden.com` to the project. Completed July 22, 2026.
 2. Attach `www.basilcommunitygarden.com`. Completed July 22, 2026; it may remain a
    compatible host or be redirected to the apex after certificate issuance.
-3. Confirm the apex and `www` certificates are valid.
+3. Confirm the apex and `www` certificates are valid. Completed July 22, 2026.
 4. Add production environment variable
    `NEXT_PUBLIC_BASIL_URL=https://basilcommunitygarden.com`. Completed July 22, 2026.
 5. Keep `NEXT_PUBLIC_SITE_URL=https://www.bygoetz.com` unchanged.
 6. Redeploy production after the environment variable is saved.
 
 The domain reports Vercel nameservers and both hostnames are attached to the exact project.
-Vercel was generating both SSL certificates when last checked; both must become valid before
-launch.
+Both hostnames returned HTTPS 200 responses with HSTS on July 22, 2026.
 
 ### Supabase Auth
 
@@ -98,19 +97,19 @@ events from the Basil hostname and one deduplicated server/browser Purchase.
 
 ## Completion checks
 
-- [ ] Basil apex loads the game and does not show LazyGrid.
-- [ ] ByGoetz apex still shows LazyGrid.
-- [ ] Explorers routes are unchanged.
-- [ ] Legacy `/community-garden` loads safely.
+- [x] Basil apex loads the game and does not show LazyGrid.
+- [x] ByGoetz apex still shows LazyGrid.
+- [x] Explorers routes are unchanged.
+- [x] Legacy `/community-garden` loads safely.
 - [ ] Guest planting works on the Basil apex.
 - [ ] Verification email and password recovery return to the Basil apex.
 - [ ] Checkout cancel returns to the same guest preview.
 - [ ] A paid checkout returns to My Garden with the preview intact.
 - [ ] The verified account shows its entitlement and saved garden.
-- [ ] Unknown Origin requests receive HTTP 403.
-- [ ] Policy links and social preview use the Basil domain.
+- [x] Unknown Origin requests receive HTTP 403.
+- [x] Policy links and social preview use the Basil domain.
 - [ ] Pixel events attribute to the Basil domain.
-- [ ] HTTPS is valid for apex and `www`.
+- [x] HTTPS is valid for apex and `www`.
 
 ## Verification evidence
 
@@ -123,6 +122,26 @@ was requested with exact Host headers:
 
 This proves the application boundary before deployment; the remaining checklist items require
 the live certificates and external Auth/Meta configuration.
+
+Production deployment `dpl_4WmnhPZRBZU5P1Qmd2B7nYf7jQM6` from commit
+`06d18529e6e802fbd9c61424c62d49c2d6bfdde8` reached `READY` on July 22, 2026.
+Live checks then confirmed:
+
+- `https://basilcommunitygarden.com/` returned the Basil game, a Basil canonical URL,
+  HTTPS, and HSTS.
+- `https://www.basilcommunitygarden.com/` returned the same game and canonicalized to the
+  apex Basil URL.
+- `https://www.bygoetz.com/` still returned `Honeycomb Home`.
+- `https://www.bygoetz.com/community-garden` still returned Basil and used the dedicated
+  Basil canonical URL.
+- `https://www.bygoetz.com/explorers` still returned the Explorers experience.
+- `https://basilcommunitygarden.com/community-garden/privacy` returned the public Basil
+  privacy policy with the dedicated canonical URL.
+- `https://basilcommunitygarden.com/api/community-garden/snapshot` returned the shared
+  canonical garden snapshot successfully.
+
+The remaining gate items are the Supabase Auth allowlist, Meta domain verification, and one
+real verification/recovery/checkout restoration test on the new hostname.
 
 Phase 4 is complete only after these live checks pass. Domain attachment and external
 dashboard configuration are operational changes, not reasons to duplicate the application.
