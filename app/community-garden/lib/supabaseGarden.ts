@@ -3,6 +3,7 @@ import {
   type PlantRecord,
   type PlantType,
 } from "./roseLifecycle";
+import type { GardenBounds } from "./gardenConfig";
 
 export type GardenMapPlant = Pick<
   PlantRecord,
@@ -38,7 +39,13 @@ export type GardenSnapshot = {
 type GardenActionResult = {
   plant: PlantRecord;
   plants: PlantRecord[];
+  wateringClaimedPlantIds: string[];
   contribution: GardenContribution | null;
+};
+
+export type GardenWateringStatus = {
+  checkedAt: string;
+  readyPlantIds: string[];
 };
 
 const SNAPSHOT_INTERVAL_MS = 10 * 60 * 1000;
@@ -193,6 +200,44 @@ export async function fetchGardenSnapshot(): Promise<GardenSnapshot> {
   };
 }
 
+export async function fetchGardenWateringStatus(
+  bounds: GardenBounds,
+): Promise<GardenWateringStatus> {
+  const query = new URLSearchParams({
+    minX: String(bounds.minX),
+    maxX: String(bounds.maxX),
+    minY: String(bounds.minY),
+    maxY: String(bounds.maxY),
+  });
+  let response: Response;
+  try {
+    response = await fetchGardenRequest(
+      `/api/community-garden/watering-status?${query.toString()}`,
+      { cache: "no-store" },
+    );
+  } catch (error) {
+    throw new GardenConnectionError(
+      isAbortError(error)
+        ? "Watering opportunities took too long to refresh."
+        : "Watering opportunities could not refresh.",
+    );
+  }
+  if (!response.ok) {
+    throw new Error(
+      await responseError(response, "Watering opportunities could not refresh."),
+    );
+  }
+  const data = (await response.json()) as Record<string, unknown>;
+  return {
+    checkedAt: String(data.checkedAt ?? new Date().toISOString()),
+    readyPlantIds: Array.isArray(data.readyPlantIds)
+      ? data.readyPlantIds.filter(
+          (plantId): plantId is string => typeof plantId === "string",
+        )
+      : [],
+  };
+}
+
 async function submitRawGardenAction(
   payload: Omit<Record<string, unknown>, "actionId">,
 ) {
@@ -251,9 +296,15 @@ async function submitGardenAction(
         )
         .map(normalizePlant)
     : [plant];
+  const wateringClaimedPlantIds = Array.isArray(data.wateringClaimedPlantIds)
+    ? data.wateringClaimedPlantIds.filter(
+        (plantId): plantId is string => typeof plantId === "string",
+      )
+    : [];
   return {
     plant,
     plants: plants.length > 0 ? plants : [plant],
+    wateringClaimedPlantIds,
     contribution,
   };
 }

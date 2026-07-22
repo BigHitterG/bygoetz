@@ -44,6 +44,7 @@ import {
 import {
   clearGardenWeed,
   fetchGardenSnapshot,
+  fetchGardenWateringStatus,
   GardenConnectionError,
   type GardenContribution,
   type GardenMapPlant,
@@ -56,6 +57,7 @@ import {
 const WATERING_RANGE_TILES = 5;
 const WATERING_APPROACH_TILES = 4.25;
 const MAX_WATERING_TARGETS = 4;
+const WATERING_STATUS_REFRESH_MS = 10 * 60 * 1000;
 
 export type GardenConnection = "connecting" | "online" | "offline" | "error";
 export type GardenAction =
@@ -130,6 +132,10 @@ type Runtime = {
   clearedWeedsLoaded: boolean;
   recentCommunityPlants: Map<string, RecentCommunityPlant>;
   recentCommunityPlantsLoaded: boolean;
+  wateringCareReadyPlantIds: Set<string>;
+  wateringCareStatusLoaded: boolean;
+  wateringCareStatusBoundsKey: string;
+  wateringCareStatusNextRefreshAt: number;
   snapshotNextRefreshAt: number;
   effects: GardenEffect[];
   path: WorldPoint[];
@@ -652,6 +658,17 @@ function getWateringCluster(
   return targets;
 }
 
+function canEarnWateringCareInRuntime(runtime: Runtime, plant: PlantRecord) {
+  if (
+    runtime.mode === "community" &&
+    runtime.configured &&
+    runtime.wateringCareStatusLoaded
+  ) {
+    return runtime.wateringCareReadyPlantIds.has(plant.id);
+  }
+  return canEarnWateringCare(plant);
+}
+
 function getWateringApproachTarget(runtime: Runtime, gridX: number, gridY: number) {
   const center = gridToWorld(gridX, gridY);
   const dx = runtime.mary.x - center.x;
@@ -825,7 +842,9 @@ function getActionState(runtime: Runtime) {
         : `Water ${definition.name}`;
     return {
       action: "water" as GardenAction,
-      label: wateringTargets.some((target) => canEarnWateringCare(target))
+      label: wateringTargets.some((target) =>
+        canEarnWateringCareInRuntime(runtime, target),
+      )
         ? `${label} · Care`
         : label,
       enabled: inWateringRange && !runtime.actionBusy,
@@ -961,6 +980,10 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
       clearedWeedsLoaded: false,
       recentCommunityPlants: new Map(),
       recentCommunityPlantsLoaded: false,
+      wateringCareReadyPlantIds: new Set(),
+      wateringCareStatusLoaded: false,
+      wateringCareStatusBoundsKey: "",
+      wateringCareStatusNextRefreshAt: 0,
       snapshotNextRefreshAt: 0,
       effects: [],
       path: [{ ...start }],
@@ -1186,6 +1209,7 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
       const gridX = Math.floor(runtime.mary.x / GARDEN_CONFIG.tileSize);
       const gridY = Math.floor(runtime.mary.y / GARDEN_CONFIG.tileSize);
       let bounds = getLoadedBounds(gridX, gridY);
+      const requestId = ++runtime.requestId;
       overlayRecentCommunityPlants(runtime);
       ensureClearedWeedsLoaded(runtime);
 
@@ -1235,16 +1259,45 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
         return;
       }
 
+      const refreshWateringStatus = async () => {
+        const boundsKey = `${bounds.minX}:${bounds.maxX}:${bounds.minY}:${bounds.maxY}`;
+        if (
+          runtime.wateringCareStatusLoaded &&
+          runtime.wateringCareStatusBoundsKey === boundsKey &&
+          Date.now() < runtime.wateringCareStatusNextRefreshAt
+        ) {
+          return;
+        }
+        try {
+          const status = await fetchGardenWateringStatus(bounds);
+          if (requestId !== runtime.requestId) return;
+          runtime.wateringCareReadyPlantIds = new Set(status.readyPlantIds);
+          runtime.wateringCareStatusLoaded = true;
+          runtime.wateringCareStatusBoundsKey = boundsKey;
+          runtime.wateringCareStatusNextRefreshAt =
+            Date.now() + WATERING_STATUS_REFRESH_MS;
+          publishUi();
+        } catch {
+          // Shared hydration remains usable if the private Care cues cannot
+          // refresh. The existing flower timestamps provide a safe fallback.
+          if (requestId === runtime.requestId) {
+            runtime.wateringCareStatusLoaded = false;
+            runtime.wateringCareStatusNextRefreshAt =
+              Date.now() + GARDEN_CONFIG.pollIntervalMs;
+          }
+        }
+      };
+
       if (
         runtime.snapshotNextRefreshAt > 0 &&
         Date.now() < runtime.snapshotNextRefreshAt
       ) {
         showLocalSnapshot();
         publishUi();
+        await refreshWateringStatus();
         return;
       }
 
-      const requestId = ++runtime.requestId;
       try {
         const snapshot = await fetchGardenSnapshot();
         if (requestId !== runtime.requestId) return;
@@ -1292,6 +1345,7 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
           error instanceof Error ? error.message : "The garden could not refresh.";
       }
       publishUi();
+      await refreshWateringStatus();
     }, [publishUi]);
 
     useEffect(() => {
@@ -1632,6 +1686,7 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
                       ...target,
                       last_watered_at: wateredAt,
                     })),
+                    wateringClaimedPlantIds: [],
                     contribution: null,
                   };
               const { plants, contribution } = result;
@@ -1645,6 +1700,7 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
                 startedAt: effectStartedAt,
               });
               for (const [index, plant] of plants.entries()) {
+                runtime.wateringCareReadyPlantIds.delete(plant.id);
                 runtime.plants.set(plantKey(plant.grid_x, plant.grid_y), plant);
                 runtime.communityPlants.set(
                   plantKey(plant.grid_x, plant.grid_y),
@@ -1830,6 +1886,8 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
                   plantId: plant.id,
                 }))
               : [],
+          wateringCareReadyPlantIds: runtime.wateringCareReadyPlantIds,
+          wateringCareStatusLoaded: runtime.wateringCareStatusLoaded,
           suggestedPlantingCell: runtime.suggestedPlantingCell,
           tutorialDimmed: tutorialDimmedRef.current,
           effects: runtime.reducedMotion ? [] : runtime.effects,

@@ -114,7 +114,7 @@ export async function submitCommunityGardenAction(input: {
   plantIds?: string[];
 }) {
   const { data, error } = await getSupabaseAdmin().rpc(
-    "perform_idempotent_community_garden_action_v4",
+    "perform_idempotent_community_garden_action_v5",
     {
       p_action_id: input.actionId,
       p_actor_key: input.actorKey,
@@ -129,6 +129,30 @@ export async function submitCommunityGardenAction(input: {
   if (error) throw error;
   if (!data || typeof data !== "object") {
     throw new Error("The shared garden did not confirm that action.");
+  }
+  return data;
+}
+
+export async function loadCommunityGardenWateringStatus(input: {
+  actorKey: string;
+  minX: number;
+  maxX: number;
+  minY: number;
+  maxY: number;
+}) {
+  const { data, error } = await getSupabaseAdmin().rpc(
+    "get_community_garden_watering_status_v1",
+    {
+      p_actor_key: input.actorKey,
+      p_min_x: input.minX,
+      p_max_x: input.maxX,
+      p_min_y: input.minY,
+      p_max_y: input.maxY,
+    },
+  );
+  if (error) throw error;
+  if (!data || typeof data !== "object") {
+    throw new Error("The shared garden did not return watering opportunities.");
   }
   return data;
 }

@@ -51,6 +51,8 @@ export type RenderGardenState = {
   weeds: Array<{ id: string; grid_x: number; grid_y: number; spawned_at: string }>;
   selected: SelectedCell;
   wateringTargets: Array<NonNullable<SelectedCell>>;
+  wateringCareReadyPlantIds?: ReadonlySet<string>;
+  wateringCareStatusLoaded?: boolean;
   suggestedPlantingCell: SelectedCell;
   tutorialDimmed: boolean;
   effects: GardenEffect[];
@@ -1059,6 +1061,7 @@ function drawPlant(
   now: number,
   zoom: number,
   showCareCue = false,
+  careReady?: boolean,
 ) {
   const point = worldToScreen(
     gridToWorld(plant.grid_x, plant.grid_y),
@@ -1084,7 +1087,7 @@ function drawPlant(
 
   if (visual.state === "seed" || visual.state === "sprout") {
     drawSeedOrSprout(ctx, plant, visual.state);
-    if (showCareCue && canEarnWateringCare(plant, now)) {
+    if (showCareCue && (careReady ?? canEarnWateringCare(plant, now))) {
       drawCareReadyCue(ctx, now, plant);
     }
     ctx.restore();
@@ -1098,7 +1101,7 @@ function drawPlant(
   } else {
     drawRosePlant(ctx, plant, visual.state);
   }
-  if (showCareCue && canEarnWateringCare(plant, now)) {
+  if (showCareCue && (careReady ?? canEarnWateringCare(plant, now))) {
     drawCareReadyCue(ctx, now, plant);
   }
   ctx.restore();
@@ -1640,6 +1643,9 @@ export function renderGarden(ctx: CanvasRenderingContext2D, state: RenderGardenS
       state.now,
       state.zoom,
       true,
+      state.wateringCareStatusLoaded
+        ? state.wateringCareReadyPlantIds?.has(plant.id) ?? false
+        : undefined,
     ),
   );
   drawWateringTargets(

@@ -26,8 +26,9 @@ export function GardenGuide() {
           <dt>Care</dt>
           <dd>
             Open Inventory to choose a seed, select an open spot, and plant.
-            A white water drop means that watering can earn Care. Dark soil shows
-            recent shared watering and slowly dries as the plant approaches wilting.
+            A white water drop means that flower can offer you Care. When another
+            gardener has recently cared for it, the drop rests for a while. Dark
+            soil shows shared hydration and slowly dries as the plant approaches wilting.
           </dd>
         </div>
         <div>
@@ -66,12 +67,22 @@ export function GardenGuide() {
         <h4 id="garden-numbers-title">The garden numbers</h4>
         <div className="cg-ecology-grid">
           <article>
-            <p className="cg-ecology-number">Up to 4</p>
+            <p className="cg-ecology-number">4 at once</p>
             <h5>Watering</h5>
             <p>
               One watering action reaches a nearby square of up to four flowers.
-              Each flower can offer Care once every four hours. That timer is shared
-              by everyone, but watering still refreshes hydration when no Care is ready.
+              A cared-for flower normally rests for four hours. Watering still
+              refreshes shared hydration when no Care is ready.
+            </p>
+          </article>
+          <article>
+            <p className="cg-ecology-number">100 newest</p>
+            <h5>Your watering footprint</h5>
+            <p>
+              Your newest 100 Care-earning waterings show as cared for to everyone.
+              Keep watering beyond 100 and your oldest watering opportunity opens
+              for other gardeners. It does not reopen for you until your own
+              four-hour clock finishes.
             </p>
           </article>
           <article>

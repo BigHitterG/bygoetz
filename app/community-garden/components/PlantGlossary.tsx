@@ -8,7 +8,8 @@ export function PlantGlossary() {
       <p className="cg-library-intro">
         Every flower has two clocks: watering renews its care clock, while its
         maximum season continues from the day it was planted. Flowers return to
-        open ground; they never turn into weeds.
+        open ground; they never turn into weeds. Watering is shared, while each
+        gardener keeps their own four-hour Care cooldown.
       </p>
 
       <div className="cg-plant-entries">
