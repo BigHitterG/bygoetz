@@ -10,7 +10,10 @@ import {
   useState,
 } from "react";
 import type { MyGardenState } from "@/lib/communityGarden/myGarden";
-import { trackMetaCustomEvent } from "@/lib/analytics/metaPixel";
+import {
+  trackBasilMetaCheckout,
+  trackBasilMetaStandardEvent,
+} from "@/lib/analytics/basilMetaClient";
 import { getGardenAccountClient } from "../lib/supabaseAccount";
 import {
   getBasilLaunchSessionId,
@@ -242,7 +245,11 @@ export function GardenSteward() {
       setVerificationPending(null);
       setPaidVerificationPending(false);
       setSession(data.session);
-      trackMetaCustomEvent("BasilVerificationCompleted");
+      trackBasilMetaStandardEvent(
+        "CompleteRegistration",
+        "complete_registration",
+        { content_name: "Basil account" },
+      );
       void trackBasilFunnelEvent("verification_completed");
       await finalizePaidVerification(data.session);
       await loadAccount(data.session);
@@ -262,8 +269,6 @@ export function GardenSteward() {
   const beginCheckout = useCallback(async (activeSession: Session) => {
     setBusy("checkout");
     setNotice("");
-    trackMetaCustomEvent("BasilCheckoutStarted");
-    void trackBasilFunnelEvent("checkout_started");
     try {
       const response = await fetch("/api/community-garden/checkout", {
         method: "POST",
@@ -274,7 +279,8 @@ export function GardenSteward() {
         body: JSON.stringify({ launchSessionId: getBasilLaunchSessionId() }),
       });
       if (!response.ok) throw new Error(await getResponseError(response, "Checkout could not start."));
-      const payload = (await response.json()) as { url: string };
+      const payload = (await response.json()) as { url: string; metaEventId?: string };
+      if (payload.metaEventId) trackBasilMetaCheckout(payload.metaEventId);
       window.location.assign(payload.url);
     } catch (error) {
       console.error("Basil checkout session creation failed", {
@@ -331,16 +337,13 @@ export function GardenSteward() {
 
     queueMicrotask(() => {
       if (stewardStatus === "welcome") {
-        trackMetaCustomEvent("BasilCheckoutCompleted");
         setNotice("Purchase complete. Your Garden Membership is ready on this account.");
       } else if (stewardStatus === "verification-sent") {
-        trackMetaCustomEvent("BasilCheckoutCompleted");
         setPaidVerificationPending(true);
         setNotice("Payment complete. Your preview garden is safely stored on the server.");
       } else if (stewardStatus === "unverified") {
         setNotice("The purchase could not be verified. Please check your Stripe receipt.");
       } else if (params.get("checkout") === "cancelled") {
-        trackMetaCustomEvent("BasilCheckoutCanceled");
         void trackBasilFunnelEvent("checkout_canceled");
         setNotice("Checkout cancelled. The community garden is still free to play.");
       }
@@ -400,9 +403,6 @@ export function GardenSteward() {
       };
       setVerificationPending(pending);
       savePendingVerification(pending);
-      trackMetaCustomEvent("BasilVerificationEmailSent", {
-        account_status: payload.accountStatus ?? "new",
-      });
       void trackBasilFunnelEvent("verification_sent");
       setNotice(
         payload.message ??
@@ -488,7 +488,11 @@ export function GardenSteward() {
     savePendingVerification(null);
     setVerificationPending(null);
     setPaidVerificationPending(false);
-    trackMetaCustomEvent("BasilVerificationCompleted");
+    trackBasilMetaStandardEvent(
+      "CompleteRegistration",
+      "complete_registration",
+      { content_name: "Basil account" },
+    );
     void trackBasilFunnelEvent("verification_completed");
     setSession(data.session);
     await finalizePaidVerification(data.session);
@@ -602,7 +606,6 @@ export function GardenSteward() {
       setNotice(
         "A fresh Basil verification email was sent. Check spam, junk, promotions, and other filtered folders too.",
       );
-      trackMetaCustomEvent("BasilVerificationEmailResent");
       void trackBasilFunnelEvent("verification_sent");
     } catch (error) {
       setNotice(
@@ -638,7 +641,6 @@ export function GardenSteward() {
           payload.email ? ` to ${payload.email}` : ""
         }. Check spam, junk, and promotions too.`,
       );
-      trackMetaCustomEvent("BasilVerificationEmailResent");
       await refreshPaidPurchaseStatus();
     } catch (error) {
       setNotice(

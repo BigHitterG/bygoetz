@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getBasilPurchaseMetaEventId } from "@/lib/analytics/basilMetaServer";
 import { fulfillGardenStewardCheckout } from "@/lib/communityGarden/stewards";
 import {
   fulfillPendingGardenCheckout,
@@ -34,6 +35,12 @@ export async function GET(request: NextRequest) {
       "steward",
       pendingCheckout ? "verification-sent" : "welcome",
     );
+    if (result.status === "activation_sent" || result.status === "fulfilled") {
+      gardenUrl.searchParams.set(
+        "meta_purchase_event_id",
+        getBasilPurchaseMetaEventId(session.id),
+      );
+    }
     return NextResponse.redirect(gardenUrl);
   } catch (error) {
     console.error("Basil Garden Membership claim failed", error);

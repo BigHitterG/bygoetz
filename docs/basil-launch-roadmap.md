@@ -9,7 +9,7 @@ Phase 0 rule: documentation and launch decisions only; no gameplay or production
 
 Basil is live and suitable for controlled external testing, but paid advertising must wait for the Phase 0 manual gate and the measurement, policy, and reliability gates below. The owner has approved a $150 initial ad-research cap and accepts that this is research money, not forecast profit.
 
-Phase 0 has established the technical baseline. The owner selected the current ByGoetz Ads Manager account `67385321` for the launch. Phase 0 remains manually open until the owner confirms domain ownership and dashboard access for every production dependency in [the launch checklist](./basil-launch-checklist.md).
+Phase 0 has established the technical baseline. The owner selected the portfolio-owned ByGoetz Ads Manager account `555175360336933` for the launch. Account `67385321` is the owner's personal ad account and is not the Basil launch account. Phase 0 remains manually open until the owner confirms domain ownership and dashboard access for every production dependency in [the launch checklist](./basil-launch-checklist.md).
 
 ## Production baseline
 
@@ -102,7 +102,7 @@ The pending preview is server-backed before Stripe, so cross-browser email verif
 | Supabase Auth | Email/password identity, verification/recovery tokens, sessions | Auth dashboard access; permitted redirect URLs; password/security settings |
 | Resend | Sends custom Basil signup, verification, and password-recovery email | `RESEND_API_KEY`; verified `send.bygoetz.com` sender; `BASIL_AUTH_FROM_EMAIL`; optional reply-to |
 | Stripe | One-time $6.99 USD Checkout and authoritative paid status | Production account access; `STRIPE_SECRET_KEY`; `STRIPE_WEBHOOK_SECRET`; webhook endpoint; refunds/disputes access |
-| Meta | Browser PageView and custom funnel events when configured | Portfolio `Thomas R Goetz` (`314343197818474`), Page `Goetz` (`156574785247266`), active `ByGoetz Website Pixel` (`1421445296116963`), selected ByGoetz launch ad account `67385321`; portfolio-owned account `555175360336933` is not selected for this launch |
+| Meta | Browser PageView and selected funnel events plus server-authoritative Purchase | Portfolio `Thomas R Goetz` (`314343197818474`), Page `Goetz` (`156574785247266`), active `ByGoetz Website Pixel` (`1421445296116963`), selected portfolio-owned ByGoetz launch ad account `555175360336933`; personal account `67385321` is not selected for this launch |
 | GitHub | Source control; pushes to `main` trigger Vercel production | Repository/admin access; branch/deploy discipline |
 | Browser storage | Temporary guest preview, verification-pending state, onboarding, camera/zoom/tool restoration | Same browser profile, storage available, seven-day checkout transfer window |
 
@@ -124,36 +124,19 @@ The repository currently references these environment variable names without com
 
 ### First-party operational monitoring
 
-Basil has a restricted account-menu health panel for configured admin emails. Server-only Supabase tables record coarse sessions, device class, health pulses, snapshot/action counts, failures, and durations. They do not currently form a complete marketing funnel and do not preserve UTM attribution through account verification and Stripe.
+Basil has a restricted account-menu health panel for configured admin emails. Server-only Supabase tables record coarse sessions, device class, health pulses, snapshot/action counts, failures, durations, and the complete anonymous launch funnel. A random launch-session ID preserves first-touch UTM and available Meta click attribution through account verification and Stripe without storing account email in the funnel records.
 
 The project does not currently include Vercel Web Analytics or Speed Insights packages.
 
 ### Meta implementation in source
 
-The root layout includes a conditional Meta Pixel. When `NEXT_PUBLIC_META_PIXEL_ID` exists, it loads the Pixel and sends `PageView` on route changes. Basil source currently emits these custom browser events:
-
-- `BasilOnboardingStep`
-- `BasilGuestStateSaved`
-- `BasilGuestRestoreStarted`
-- `BasilGuestStateRestored`
-- `BasilGuestRestoreFailed`
-- `BasilSignupStarted`
-- `BasilVerificationEmailSent`
-- `BasilVerificationEmailResent`
-- `BasilVerificationCompleted`
-- `BasilCheckoutStarted`
-- `BasilCheckoutCanceled`
-- `BasilCheckoutCompleted`
-- `BasilTabletLayoutLoaded`
-- `BasilOrientationChanged`
-
-The live HTML audited on July 21 did not include the Meta Pixel initialization script, so the production Pixel is not presently verifiably active. `BasilCheckoutCompleted` is a client-side custom event based on the return URL. Basil does not yet send a standard, server-authoritative Meta `Purchase` event with value/currency, does not use Conversions API, and does not deduplicate browser/server events. The existing standard `Purchase` component is used by Explorers, not Basil.
+Phase 3 scopes the conditional Meta Pixel to the exact Basil game route. It maps PageView, ViewContent, CompleteRegistration, InitiateCheckout, Purchase, and four selected gameplay milestones. Conversions API Purchase originates only after verified Stripe fulfillment and uses the same opaque event ID as the browser for deduplication. A private Supabase delivery ledger prevents duplicate webhook, claim, refresh, and retry delivery. The production Pixel ID, explicit browser/server flags, and server-only access token are configured; the remaining activation gate is Meta Test Events verification described in `docs/basil-launch-phase-3.md`.
 
 ## Known production risks
 
 Ordered by launch impact:
 
-1. **No trustworthy paid-acquisition measurement.** An existing portfolio Pixel is receiving events, but the live Basil HTML is not verifiably initializing it, Basil lacks first-party funnel attribution, and purchase reporting is not server authoritative.
+1. **Meta activation is not yet end-to-end verified.** Production Pixel/CAPI credentials and server-authoritative Purchase code are configured, but the Meta Test Events gate and one controlled paid-flow check must be completed before ads start.
 2. **Required customer-facing policies are incomplete.** Basil needs specific Privacy, Terms, Refund, Support, and Account Deletion surfaces before ads direct strangers into account creation and payment.
 3. **External conversion is not validated.** The two current membership records may be owner/test records; they do not establish cold-audience conversion or support readiness.
 4. **Historical action errors need a clean observation window.** Seven-day Vercel history includes 33 `Unknown error` community-action failures across three estimated users on an older deployment and two `23505` planting conflicts on another older deployment. The current baseline deployment had no error-level runtime logs at audit time, but it had been live for less than one hour.

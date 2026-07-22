@@ -1,5 +1,6 @@
 import { createHash, createHmac, randomBytes } from "node:crypto";
 import type Stripe from "stripe";
+import { sendBasilPurchaseConversion } from "@/lib/analytics/basilMetaServer";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import {
   createPaidGardenSessionHandoff,
@@ -482,13 +483,44 @@ export async function fulfillPendingGardenCheckout(session: Stripe.Checkout.Sess
   }
 
   if (row.garden_saved_at && row.activation_sent_at && row.claimed_user_id) {
+    await sendBasilPurchaseConversion({
+      stripeSessionId: session.id,
+      launchSessionId: row.launch_session_id,
+      email: buyerEmail,
+      orderType: session.metadata?.order_type,
+      paymentStatus: session.payment_status,
+      amountTotal: session.amount_total,
+      currency: session.currency,
+    }).catch((metaError) => {
+      console.error("Basil Meta Purchase delivery could not start", {
+        event: "Purchase",
+        message: metaError instanceof Error ? metaError.message : "Unknown error",
+      });
+    });
     return { status: "activation_sent" as const };
   }
-  return provisionPaidGardenAccount({
+  const result = await provisionPaidGardenAccount({
     row,
     buyerEmail,
     session,
   });
+  if (result.status === "activation_sent") {
+    await sendBasilPurchaseConversion({
+      stripeSessionId: session.id,
+      launchSessionId: row.launch_session_id,
+      email: buyerEmail,
+      orderType: session.metadata?.order_type,
+      paymentStatus: session.payment_status,
+      amountTotal: session.amount_total,
+      currency: session.currency,
+    }).catch((metaError) => {
+      console.error("Basil Meta Purchase delivery could not start", {
+        event: "Purchase",
+        message: metaError instanceof Error ? metaError.message : "Unknown error",
+      });
+    });
+  }
+  return result;
 }
 
 async function getPendingAccountUser(row: PendingPurchaseRow) {

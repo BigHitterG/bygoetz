@@ -49,6 +49,7 @@ export default function BasilPrivacyPage() {
           <div><dt>Stripe</dt><dd>Checkout, payment processing, fraud prevention, receipts, and payment records. Stripe handles payment details under its own privacy terms.</dd></div>
           <div><dt>Resend</dt><dd>Account verification and password-recovery delivery, including the destination email and delivery information.</dd></div>
           <div><dt>Vercel</dt><dd>Website hosting, server execution, security, and operational logs.</dd></div>
+          <div><dt>Meta</dt><dd>Advertising measurement for Basil game visits, selected gameplay milestones, account verification, checkout starts, and completed purchases. The server-side Purchase signal includes a one-way hash of the purchaser email, an opaque launch-session hash, available Meta click attribution, purchase value, and currency.</dd></div>
         </dl>
         <p>
           Basil does not sell personal information. Providers may process information
@@ -59,11 +60,20 @@ export default function BasilPrivacyPage() {
       <section>
         <h2>Meta advertising</h2>
         <p>
-          Meta Pixel and Meta Conversions API are planned for a future, United
-          States-only advertising test, but are not active in Basil today. If activated,
-          Basil will update this notice and add any consent controls required for the
-          audience being served. The existing first-party funnel measurement is separate
-          from Meta and does not contain account email addresses.
+          Basil uses Meta Pixel on the Community Garden game page and Meta Conversions
+          API after a server-verified purchase for a United States-only advertising
+          test. Meta receives page views, the usable-garden view, verified registration,
+          checkout start, completed purchase, and a small set of tutorial milestones:
+          first plant, community tutorial completion, entry to My Garden, and paywall
+          view. Basil does not send every watering, planting, tile selection, or garden
+          position to Meta.
+        </p>
+        <p>
+          Purchase events include $6.99 USD, an opaque event ID used to prevent duplicate
+          counting, and server-side matching data described above. Meta may set or read
+          browser identifiers through its Pixel. The first-party Basil launch-session
+          record remains separate and does not store an account email address. Meta
+          processes advertising data under its own terms and privacy controls.
         </p>
       </section>
 
@@ -72,7 +82,7 @@ export default function BasilPrivacyPage() {
         <p>
           Basil uses this information to run the shared garden, save My Garden, provide
           membership, complete and recover purchases, send requested account emails,
-          prevent abuse, understand the launch funnel in aggregate, troubleshoot errors,
+          prevent abuse, understand the launch and advertising funnel in aggregate, troubleshoot errors,
           respond to feedback, and meet legal and accounting obligations.
         </p>
       </section>

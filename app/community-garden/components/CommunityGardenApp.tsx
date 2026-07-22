@@ -2,7 +2,12 @@
 
 import type { Session } from "@supabase/supabase-js";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { trackMetaCustomEvent } from "@/lib/analytics/metaPixel";
+import {
+  trackBasilMetaCheckout,
+  trackBasilMetaCustomMilestone,
+  trackBasilMetaPurchase,
+  trackBasilMetaStandardEvent,
+} from "@/lib/analytics/basilMetaClient";
 import type { MyGardenState } from "@/lib/communityGarden/myGarden";
 import { FutureAdSlot } from "./FutureAdSlot";
 import {
@@ -183,11 +188,6 @@ export function CommunityGardenApp() {
     guestPreviewRef.current = pendingPreview;
     setGuestPreview(pendingPreview);
     preserveGuestGardenPreviewForCheckout(pendingPreview);
-    trackMetaCustomEvent("BasilGuestStateSaved", {
-      plants: pendingPreview.garden.plants.length,
-      paths: pendingPreview.garden.paths.length,
-    });
-    trackMetaCustomEvent("BasilCheckoutStarted");
     setMembershipCheckoutBusy(true);
     setMembershipCheckoutError("");
 
@@ -254,8 +254,9 @@ export function CommunityGardenApp() {
           await getResponseError(response, "Secure checkout could not start."),
         );
       }
-      const payload = (await response.json()) as { url?: string };
+      const payload = (await response.json()) as { url?: string; metaEventId?: string };
       if (!payload.url) throw new Error("Stripe did not return a secure checkout page.");
+      if (payload.metaEventId) trackBasilMetaCheckout(payload.metaEventId);
       window.location.assign(payload.url);
     } catch (error) {
       setMembershipCheckoutBusy(false);
@@ -282,7 +283,6 @@ export function CommunityGardenApp() {
           preview.garden.paths.length > 0;
         if (hasTemporaryProgress) {
           setRestoreMessage("Restoring your garden...");
-          trackMetaCustomEvent("BasilGuestRestoreStarted");
           try {
             const importResponse = await fetch(
               "/api/community-garden/my-garden",
@@ -305,14 +305,10 @@ export function CommunityGardenApp() {
               guestPreviewRef.current = emptyPreview;
               setGuestPreview(emptyPreview);
               setRestoreMessage("");
-              trackMetaCustomEvent("BasilGuestStateRestored");
             } else {
               setRestoreMessage(
                 "Your saved garden is still safe. We will try restoring it again.",
               );
-              trackMetaCustomEvent("BasilGuestRestoreFailed", {
-                status: importResponse.status,
-              });
               void trackBasilFunnelEvent("garden_restoration_failed", {
                 failure_stage: "preview_import",
                 error_code: `http_${importResponse.status}`,
@@ -326,7 +322,6 @@ export function CommunityGardenApp() {
             setRestoreMessage(
               "Your saved garden is still safe. We will try restoring it again.",
             );
-            trackMetaCustomEvent("BasilGuestRestoreFailed");
             void trackBasilFunnelEvent("garden_restoration_failed", {
               failure_stage: "preview_import",
               error_code: "network_or_unknown",
@@ -355,10 +350,14 @@ export function CommunityGardenApp() {
   useEffect(() => {
     if (ui.connection === "connecting") return;
     void trackBasilFunnelEvent("garden_loaded");
+    trackBasilMetaStandardEvent("ViewContent", "view_content", {
+      content_name: "Basil Community Garden",
+    });
   }, [ui.connection]);
 
   useEffect(() => {
     if (!membershipOfferOpen) return;
+    trackBasilMetaCustomMilestone("BasilPaywallViewed", "paywall_viewed");
     if (membershipOfferStage === "soft") {
       void trackBasilFunnelEvent("paywall_viewed");
       void trackBasilFunnelEvent("soft_paywall_viewed");
@@ -373,6 +372,7 @@ export function CommunityGardenApp() {
   useEffect(() => {
     if (world !== "personal") return;
     void trackBasilFunnelEvent("my_garden_entered");
+    trackBasilMetaCustomMilestone("BasilMyGardenEntered", "my_garden_entered");
   }, [world]);
 
   useEffect(() => {
@@ -390,7 +390,6 @@ export function CommunityGardenApp() {
         if (isGardenOnboardingFinished(current)) return current;
         if (from && (!current || !from.includes(current))) return current;
         saveGardenOnboardingStep(next);
-        trackMetaCustomEvent("BasilOnboardingStep", { step: next });
         return next;
       });
     },
@@ -431,18 +430,10 @@ export function CommunityGardenApp() {
       root.style.setProperty("--basil-viewport-height", `${Math.round(height)}px`);
     };
     const onOrientationChange = () => {
-      trackMetaCustomEvent("BasilOrientationChanged", {
-        orientation: window.matchMedia("(orientation: portrait)").matches
-          ? "portrait"
-          : "landscape",
-      });
       updateViewport();
       window.setTimeout(updateViewport, 250);
     };
     updateViewport();
-    if (window.matchMedia("(min-width: 600px) and (max-width: 1180px)").matches) {
-      trackMetaCustomEvent("BasilTabletLayoutLoaded");
-    }
     window.addEventListener("resize", updateViewport);
     window.addEventListener("orientationchange", onOrientationChange);
     window.visualViewport?.addEventListener("resize", updateViewport);
@@ -456,6 +447,16 @@ export function CommunityGardenApp() {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
+    const purchaseEventId = params.get("meta_purchase_event_id");
+    if (purchaseEventId && trackBasilMetaPurchase(purchaseEventId)) {
+      params.delete("meta_purchase_event_id");
+      const query = params.toString();
+      window.history.replaceState(
+        null,
+        "",
+        `${window.location.pathname}${query ? `?${query}` : ""}${window.location.hash}`,
+      );
+    }
     if (params.has("steward") || params.has("checkout")) {
       queueMicrotask(() => {
         setMenuSection("account");
@@ -869,8 +870,13 @@ export function CommunityGardenApp() {
         saveCommunityOnboardingPlantings(nextPlantings);
         if (nextPlantings === 1) {
           void trackBasilFunnelEvent("first_community_plant");
+          trackBasilMetaCustomMilestone("BasilFirstPlant", "first_plant");
         } else if (nextPlantings === 3) {
           void trackBasilFunnelEvent("third_community_plant");
+          trackBasilMetaCustomMilestone(
+            "BasilCommunityTutorialCompleted",
+            "community_tutorial_completed",
+          );
         }
         transitionOnboarding(
           nextPlantings >= 3 ? "my-garden" : "community-tile",

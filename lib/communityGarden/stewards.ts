@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import type Stripe from "stripe";
+import { sendBasilPurchaseConversion } from "@/lib/analytics/basilMetaServer";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import { recordBasilFunnelEvent } from "./funnel";
 
@@ -175,6 +176,24 @@ export async function fulfillGardenStewardCheckout(session: Stripe.Checkout.Sess
           funnelError instanceof Error ? funnelError.message : "Unknown error",
       });
     }
+  }
+
+  const buyerEmail = session.customer_details?.email?.trim().toLowerCase();
+  if (buyerEmail) {
+    await sendBasilPurchaseConversion({
+      stripeSessionId: session.id,
+      launchSessionId: details.launchSessionId,
+      email: buyerEmail,
+      orderType: session.metadata?.order_type,
+      paymentStatus: session.payment_status,
+      amountTotal: session.amount_total,
+      currency: session.currency,
+    }).catch((metaError) => {
+      console.error("Basil Meta Purchase delivery could not start", {
+        event: "Purchase",
+        message: metaError instanceof Error ? metaError.message : "Unknown error",
+      });
+    });
   }
 
   return {

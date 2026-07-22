@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import type Stripe from "stripe";
+import { getBasilCheckoutMetaEventId } from "@/lib/analytics/basilMetaServer";
 import { getGardenUser } from "@/lib/communityGarden/auth";
 import {
   normalizeAccountEmail,
@@ -112,7 +113,10 @@ export async function POST(request: NextRequest) {
             reusable.row.stripe_session_id,
           );
           if (previousSession.status === "open" && previousSession.url) {
-            const response = NextResponse.json({ url: previousSession.url });
+            const response = NextResponse.json({
+              url: previousSession.url,
+              metaEventId: getBasilCheckoutMetaEventId(previousSession.id),
+            });
             response.cookies.set(
               PENDING_GARDEN_CLAIM_COOKIE,
               serializePendingGardenClaim(reusable.row.id, reusable.claimToken),
@@ -274,7 +278,10 @@ export async function POST(request: NextRequest) {
     ]);
   }
 
-  const response = NextResponse.json({ url: session.url });
+  const response = NextResponse.json({
+    url: session.url,
+    metaEventId: getBasilCheckoutMetaEventId(session.id),
+  });
   if (pendingPurchase) {
     response.cookies.set(
       PENDING_GARDEN_CLAIM_COOKIE,

@@ -14,7 +14,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test:meta": "node --experimental-strip-types tests/basil-meta.test.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "latest",
