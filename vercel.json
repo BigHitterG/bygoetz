@@ -1,0 +1,12 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/basil-newsletter?mode=first",
+      "schedule": "30 0 * * *"
+    },
+    {
+      "path": "/api/cron/basil-newsletter?mode=monthly",
+      "schedule": "30 17 * * *"
+    }
+  ]
+}

@@ -56,7 +56,7 @@ export default function BasilPrivacyPage() {
         <dl>
           <div><dt>Supabase</dt><dd>Authentication, account and garden database records, first-party funnel analytics, and server-side security controls.</dd></div>
           <div><dt>Stripe</dt><dd>Checkout, payment processing, fraud prevention, receipts, and payment records. Stripe handles payment details under its own privacy terms.</dd></div>
-          <div><dt>Resend</dt><dd>Account verification and password-recovery delivery, including the destination email and delivery information.</dd></div>
+          <div><dt>Resend</dt><dd>Account verification, password-recovery delivery, and the optional monthly Basil Garden Letter, including the destination email, subscription preference, and delivery information.</dd></div>
           <div><dt>Vercel</dt><dd>Website hosting, server execution, security, and operational logs.</dd></div>
           <div><dt>Meta</dt><dd>Advertising measurement for Basil game visits, selected gameplay milestones, account verification, checkout starts, and completed purchases. The server-side Purchase signal includes a one-way hash of the purchaser email, an opaque launch-session hash, available Meta click attribution, purchase value, and currency.</dd></div>
         </dl>
@@ -94,12 +94,19 @@ export default function BasilPrivacyPage() {
           prevent abuse, understand the launch and advertising funnel in aggregate, troubleshoot errors,
           respond to feedback, and meet legal and accounting obligations.
         </p>
+        <p>
+          Garden Members may receive a monthly community-garden letter. It contains
+          aggregate garden statistics rather than individual player histories. Every
+          issue includes an unsubscribe link, and the preference can also be changed in
+          the Basil account screen.
+        </p>
       </section>
 
       <section>
         <h2>Retention</h2>
         <ul>
           <li>Private account, My Garden, feedback, and entitlement records remain while the account is active and are removed through the deletion process.</li>
+          <li>Monthly-letter consent and delivery records remain while the account is active or as reasonably needed to honor an unsubscribe request and prevent duplicate sends.</li>
           <li>The anonymous launch session is designed to last 90 days in the browser; raw first-party funnel sessions and events are designed for 180-day retention.</li>
           <li>Pseudonymous daily Community Garden activity counters are designed for 35-day retention; action deduplication and personal watering-cooldown records are designed for approximately 24-hour retention. A flower&apos;s anonymous shared watering marker may remain with that flower until it returns to the soil.</li>
           <li>Temporary checkout handoffs expire after seven days; expired, unsuccessful handoffs are cleaned up as the system operates.</li>

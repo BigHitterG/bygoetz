@@ -58,6 +58,7 @@ type ActiveAccount = {
   };
   feedback: FeedbackItem[];
   myGarden: MyGardenState;
+  newsletterSubscribed: boolean;
 };
 
 type FreeAccount = { active: false; email: string };
@@ -581,6 +582,32 @@ export function GardenSteward() {
     await getGardenAccountClient()?.auth.signOut();
     setBusy(null);
     setNotice("Signed out on this device. Your purchase remains on your account.");
+  }
+
+  async function updateNewsletterPreference(subscribed: boolean) {
+    if (!session || accountState.status !== "active") return;
+    setBusy("newsletter");
+    setNotice("");
+    try {
+      const response = await fetch("/api/community-garden/newsletter/preference", {
+        method: "POST",
+        headers: {
+          authorization: `Bearer ${session.access_token}`,
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({ subscribed }),
+      });
+      if (!response.ok) throw new Error(await getResponseError(response, "The monthly-letter preference could not be saved."));
+      setAccountState((current) => current.status === "active" ? {
+        status: "active",
+        account: { ...current.account, newsletterSubscribed: subscribed },
+      } : current);
+      setNotice(subscribed ? "You’ll receive the monthly Basil Garden Letter." : "You’ve been unsubscribed from the monthly Basil Garden Letter.");
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "The monthly-letter preference could not be saved.");
+    } finally {
+      setBusy(null);
+    }
   }
 
   async function resendVerification() {
@@ -1160,6 +1187,24 @@ export function GardenSteward() {
               <div><dt>Sunflowers</dt><dd>{accountState.account.almanac.byType.sunflower}</dd></div>
               <div><dt>Lavender</dt><dd>{accountState.account.almanac.byType.lavender}</dd></div>
             </dl>
+          </div>
+
+          <div className="cg-newsletter-preference">
+            <div>
+              <strong>Monthly Garden Letter</strong>
+              <p>Receive a monthly snapshot of what the community has grown. Every letter includes an unsubscribe link.</p>
+            </div>
+            <button
+              type="button"
+              disabled={busy === "newsletter"}
+              onClick={() => void updateNewsletterPreference(!accountState.account.newsletterSubscribed)}
+            >
+              {busy === "newsletter"
+                ? "Saving…"
+                : accountState.account.newsletterSubscribed
+                  ? "Unsubscribe"
+                  : "Subscribe"}
+            </button>
           </div>
 
           <form className="cg-feedback-form" onSubmit={submitIdea}>

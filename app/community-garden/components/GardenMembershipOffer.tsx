@@ -245,7 +245,8 @@ export function GardenMembershipOffer({
         </button>
         <p className="cg-membership-legal-copy">
           By creating an account or purchasing, you agree to Basil&apos;s Terms and
-          acknowledge the Privacy and Refund policies.
+          acknowledge the Privacy and Refund policies. Garden Members receive the
+          monthly Basil Garden Letter and can unsubscribe at any time.
         </p>
         <BasilPolicyLinks compact />
       </section>
