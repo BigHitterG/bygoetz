@@ -41,7 +41,7 @@ The client and server reject control characters and email-like attribution. No q
 | `verification_completed` | Supabase verified the email link and returned a session. |
 | `checkout_started` | Basil began creating a Stripe Checkout session. |
 | `checkout_canceled` | Stripe returned to Basil through the cancel path. |
-| `purchase_completed` | Authoritative Stripe fulfillment confirmed a paid $6.99 membership. |
+| `purchase_completed` | Authoritative Stripe fulfillment confirmed a paid $9.99 membership. |
 | `garden_restoration_failed` | A saved guest preview could not yet be imported. |
 | `garden_action_failed` | A public or personal garden action failed. |
 

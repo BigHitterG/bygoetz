@@ -1,7 +1,7 @@
 # Basil launch roadmap
 
 Last audited: July 21, 2026  
-Launch scope: US-only web launch, one-time Garden Membership at $6.99  
+Launch scope: US-only web launch, one-time Garden Membership at $9.99
 Owner-approved initial Meta research cap: $150
 Phase 0 rule: documentation and launch decisions only; no gameplay or production behavior changes
 
@@ -49,7 +49,7 @@ Guest browser
        |                                             Resend branded email
        |-- email link ----------------------------> /community-garden?steward=confirm-account
        |                                             Supabase verifyOtp + browser session
-       |-- POST /api/community-garden/checkout ---> Stripe Checkout, one-time $6.99 USD
+       |-- POST /api/community-garden/checkout ---> Stripe Checkout, one-time $9.99 USD
        |-- payment success -----------------------> /api/community-garden/claim
        |                                             plus signed Stripe webhook backup
        |-- entitlement ---------------------------> garden_stewards + garden_entitlements
@@ -82,9 +82,9 @@ Guest browser
 3. The first three unpaid community plantings each award two temporary Care. Later guest actions use the normal steady cadence of one Care per four qualifying actions.
 4. After three community plantings, My Garden becomes available. The visitor can enter a temporary private preview using the same game interface.
 5. The preview permits free paths. After three personal flowers, a soft membership offer appears; declining keeps the visitor in My Garden and points them toward Community Garden to earn more Care.
-6. The temporary Community Garden → Care → My Garden loop continues until ten personal flowers. At ten flowers, further personal planting requires the one-time $6.99 Garden Membership. The preview becomes save-required after 24 hours, while its visible work remains recoverable for purchase.
+6. The temporary Community Garden → Care → My Garden loop continues until ten personal flowers. At ten flowers, further personal planting requires the one-time $9.99 Garden Membership. The preview becomes save-required after 24 hours, while its visible work remains recoverable for purchase.
 7. Before leaving Basil, the app keeps its browser backup and sends a strictly validated preview containing remaining Care, up to ten plants, and up to 64 paths to `/api/community-garden/checkout`.
-8. The server writes that preview to the RLS-protected, service-role-only `garden_pending_purchases` table with a random claim secret and seven-day expiry, then creates a one-time Stripe-hosted Checkout session for $6.99 USD. Stripe collects the receipt/account email on its hosted page; Basil never handles card details.
+8. The server writes that preview to the RLS-protected, service-role-only `garden_pending_purchases` table with a random claim secret and seven-day expiry, then creates a one-time Stripe-hosted Checkout session for $9.99 USD. Stripe collects the receipt/account email on its hosted page; Basil never handles card details.
 9. Stripe metadata connects the checkout to the pending preview without putting the preview or email in metadata. The checkout route also records authoritative paywall and checkout milestones.
 10. A paid Stripe webhook or `/api/community-garden/claim` callback validates the signature/session, exact price, currency, payment status, pending record, and claim secret. Conditional activation locking plus provider purchase uniqueness make duplicate callbacks idempotent.
 11. After payment, Basil creates or resolves the private Supabase account for the Stripe email, grants the entitlement, imports the preview server-side through `import_my_garden_preview`, and sends a Basil-branded verification/setup email through Resend.
@@ -101,7 +101,7 @@ The pending preview is server-backed before Stripe, so cross-browser email verif
 | Supabase Database | Canonical public plants, ten-minute snapshots, idempotent action records, health aggregates, memberships, entitlements, Care, My Garden, and feedback | Project access; migrations; `NEXT_PUBLIC_SUPABASE_URL`; public client key; server-only service-role key |
 | Supabase Auth | Email/password identity, verification/recovery tokens, sessions | Auth dashboard access; permitted redirect URLs; password/security settings |
 | Resend | Sends custom Basil signup, verification, and password-recovery email | `RESEND_API_KEY`; verified `send.bygoetz.com` sender; `BASIL_AUTH_FROM_EMAIL`; optional reply-to |
-| Stripe | One-time $6.99 USD Checkout and authoritative paid status | Production account access; `STRIPE_SECRET_KEY`; `STRIPE_WEBHOOK_SECRET`; webhook endpoint; refunds/disputes access |
+| Stripe | One-time $9.99 USD Checkout and authoritative paid status | Production account access; `STRIPE_SECRET_KEY`; `STRIPE_WEBHOOK_SECRET`; webhook endpoint; refunds/disputes access |
 | Meta | Browser PageView and selected funnel events plus server-authoritative Purchase | Portfolio `Thomas R Goetz` (`314343197818474`), Page `Goetz` (`156574785247266`), active `ByGoetz Website Pixel` (`1421445296116963`), selected portfolio-owned ByGoetz launch ad account `555175360336933`; personal account `67385321` is not selected for this launch |
 | GitHub | Source control; pushes to `main` trigger Vercel production | Repository/admin access; branch/deploy discipline |
 | Browser storage | Temporary guest preview, verification-pending state, onboarding, camera/zoom/tool restoration | Same browser profile, storage available, seven-day checkout transfer window |
@@ -166,7 +166,7 @@ Gate: every page is public, accurate, mobile-readable, and linked; support/refun
 
 ### Phase 3 - Meta measurement
 
-Activate the production Pixel and Conversions API. Map useful browser milestones, use a shared event ID for deduplication, and send `Purchase` only from authoritative paid fulfillment with value `6.99` and currency `USD`.
+Activate the production Pixel and Conversions API. Map useful browser milestones, use a shared event ID for deduplication, and send `Purchase` only from authoritative paid fulfillment with value `9.99` and currency `USD`.
 
 Gate: Meta Test Events shows PageView, key funnel milestones, InitiateCheckout, CompleteRegistration, and exactly one deduplicated Purchase for a test order; canceled/unpaid sessions never purchase.
 
@@ -192,7 +192,7 @@ Gate: at least 15 load successfully, 12 plant once, 8 complete three community p
 
 Produce three honest gameplay-first creative concepts in 9:16, 4:5, and 1:1 formats with controlled UTMs. Prepare one campaign, one ad set, and a written stop/continue rule. Do not imply features that are not live.
 
-Gate: every creative lands on the verified domain, attribution survives the full funnel, copy matches the $6.99 one-time offer, and technical/policy checks pass.
+Gate: every creative lands on the verified domain, attribution survives the full funnel, copy matches the $9.99 one-time offer, and technical/policy checks pass.
 
 ### Phase 8 - First Meta research test
 

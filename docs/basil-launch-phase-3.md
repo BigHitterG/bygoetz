@@ -26,7 +26,7 @@ Stripe webhook and claim fulfillment both use the same paid-session validation a
 
 - Basil Garden Membership order type
 - Stripe `payment_status=paid`
-- exactly 699 cents
+- exactly 999 cents
 - `usd`
 - successful entitlement/garden persistence
 
@@ -58,7 +58,7 @@ Server Purchase sends value/currency, a SHA-256-normalized email hash, an opaque
 2. Add its temporary Test Event code to Vercel Production as `META_TEST_EVENT_CODE`.
 3. Visit a clean Basil URL with UTM fields and the Test Events browser connection active.
 4. Confirm one each of PageView, ViewContent, the four selected tutorial events, CompleteRegistration, and InitiateCheckout.
-5. Complete a $6.99 test purchase and confirm browser/server Purchase share the event ID and deduplicate to one purchase.
+5. Complete a $9.99 test purchase and confirm browser/server Purchase share the event ID and deduplicate to one purchase.
 6. Cancel a separate checkout and confirm no Purchase.
 7. Refresh the successful return and confirm no additional Purchase.
 8. Remove `META_TEST_EVENT_CODE` and redeploy after validation.

@@ -17,15 +17,16 @@ test("Basil checkout and purchase IDs are deterministic and purpose-specific", (
   assert.notEqual(checkoutId, purchaseId);
 });
 
-test("only an authoritative paid $6.99 Basil checkout is Purchase-eligible", () => {
+test("only an authoritative paid $9.99 Basil checkout is Purchase-eligible", () => {
   const valid = {
     orderType: "basil_founding_gardener",
     paymentStatus: "paid",
-    amountTotal: 699,
+    amountTotal: 999,
     currency: "usd",
   };
   assert.equal(isBasilMetaPurchaseEligible(valid), true);
   assert.equal(isBasilMetaPurchaseEligible({ ...valid, paymentStatus: "unpaid" }), false);
+  assert.equal(isBasilMetaPurchaseEligible({ ...valid, amountTotal: 699 }), false);
   assert.equal(isBasilMetaPurchaseEligible({ ...valid, amountTotal: 0 }), false);
   assert.equal(isBasilMetaPurchaseEligible({ ...valid, currency: "eur" }), false);
   assert.equal(isBasilMetaPurchaseEligible({ ...valid, orderType: "explorers" }), false);
@@ -47,7 +48,7 @@ test("Purchase payload has exact value, shared ID, and no raw email", () => {
   assert.equal(payload.event_name, "Purchase");
   assert.equal(payload.event_id, eventId);
   assert.deepEqual(payload.custom_data, {
-    value: 6.99,
+    value: 9.99,
     currency: "USD",
     content_name: "Basil Garden Membership",
   });

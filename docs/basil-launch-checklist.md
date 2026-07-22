@@ -9,7 +9,7 @@ Use this file as the manual source of truth. Mark an item complete only when its
 ## Launch decisions
 
 - [x] Initial advertised market is US-only.
-- [x] Garden Membership price is frozen at a one-time $6.99 for the first measured test.
+- [x] Garden Membership price is frozen at a one-time $9.99 for the first measured test.
 - [x] Owner accepts an initial Meta research budget capped at $150.
 - [x] Owner accepts that the initial budget is research money and is not guaranteed profit.
 - [x] No app-store launch is included in the first web test.
@@ -57,7 +57,7 @@ The Meta assets above were inspected read-only in the owner's signed-in Meta ses
 - [x] Confirm the exact Meta business, Page, ad account, and dataset/Pixel. Launch ad account: `67385321`.
 - [ ] Confirm Stripe, Vercel, Supabase, Resend, and GitHub owner/admin access.
 - [x] Enter and accept the $150 initial research budget.
-- [x] Confirm the $6.99 price freeze and US-only scope with the launch owner.
+- [x] Confirm the $9.99 price freeze and US-only scope with the launch owner.
 
 Phase 0 completion date: `_____`  
 Owner approval: `_____`  
@@ -100,7 +100,7 @@ Completion date: `2026-07-21`
 - [ ] Confirm the production Pixel/dataset ID.
 - [ ] Confirm a server-only CAPI token in Vercel production configuration.
 - [ ] Send standard PageView, ViewContent, CompleteRegistration, and InitiateCheckout where accurate.
-- [ ] Send Purchase only from authoritative paid fulfillment with `$6.99 USD`.
+- [ ] Send Purchase only from authoritative paid fulfillment with `$9.99 USD`.
 - [ ] Deduplicate browser/server events with a shared event ID.
 - [ ] Preserve selected Basil custom milestones.
 - [ ] Confirm canceled, unpaid, refreshed, and duplicate sessions never create a false Purchase.
@@ -161,7 +161,7 @@ Completion date: `_____`
 
 - [ ] Prepare shared-world creative.
 - [ ] Prepare public-care-to-private-garden creative.
-- [ ] Prepare honest one-time-$6.99-offer creative.
+- [ ] Prepare honest one-time-$9.99-offer creative.
 - [ ] Export 9:16, 4:5, and 1:1 variants using authentic gameplay.
 - [ ] Assign controlled UTM values to each creative.
 - [ ] Document one campaign, one ad set, three to four ads, budget, and stop rules.

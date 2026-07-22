@@ -1,0 +1,4 @@
+export const GARDEN_MEMBERSHIP_PRICE_CENTS = 999;
+export const GARDEN_MEMBERSHIP_PRICE_USD = 9.99;
+export const GARDEN_MEMBERSHIP_PRICE_LABEL = "$9.99";
+export const GARDEN_MEMBERSHIP_CURRENCY = "usd" as const;

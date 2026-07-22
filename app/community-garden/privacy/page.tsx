@@ -69,7 +69,7 @@ export default function BasilPrivacyPage() {
           position to Meta.
         </p>
         <p>
-          Purchase events include $6.99 USD, an opaque event ID used to prevent duplicate
+          Purchase events include $9.99 USD, an opaque event ID used to prevent duplicate
           counting, and server-side matching data described above. Meta may set or read
           browser identifiers through its Pixel. The first-party Basil launch-session
           record remains separate and does not store an account email address. Meta

@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { getResend } from "@/lib/resend";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
+import { GARDEN_MEMBERSHIP_PRICE_LABEL } from "./membershipConfig";
 
 export type GardenAccountEmailIntent = "signup" | "recovery";
 export type GardenAccountVerificationType = "signup" | "recovery" | "magiclink";
@@ -229,12 +230,12 @@ export async function sendGardenAccountEmail({
         : "Set your Basil password",
     intro: isNewSignup
       ? paidPurchase
-        ? "Your $6.99 Garden Membership is paid and your preview garden is safely stored. Confirm this email, choose your Basil password, and continue with the garden you created."
-        : "Confirm your email address, then continue directly to the secure $6.99 Community Garden Membership checkout."
+        ? `Your ${GARDEN_MEMBERSHIP_PRICE_LABEL} Garden Membership is paid and your preview garden is safely stored. Confirm this email, choose your Basil password, and continue with the garden you created.`
+        : `Confirm your email address, then continue directly to the secure ${GARDEN_MEMBERSHIP_PRICE_LABEL} Community Garden Membership checkout.`
       : continueToCheckout
-        ? "This email already has a Basil account. Set a password, then continue directly to the secure $6.99 Community Garden Membership checkout."
+        ? `This email already has a Basil account. Set a password, then continue directly to the secure ${GARDEN_MEMBERSHIP_PRICE_LABEL} Community Garden Membership checkout.`
         : paidPurchase
-          ? "Your $6.99 Garden Membership is paid and your preview garden is safely stored. Open Basil to confirm this email and choose the password for your private account."
+          ? `Your ${GARDEN_MEMBERSHIP_PRICE_LABEL} Garden Membership is paid and your preview garden is safely stored. Open Basil to confirm this email and choose the password for your private account.`
           : "Open Basil to choose a new password for your private account.",
     buttonLabel: isNewSignup
       ? paidPurchase
@@ -321,7 +322,7 @@ export async function sendPaidGardenVerificationEmail({
   const emailContent = renderGardenAccountEmail({
     title: "Confirm your Basil account",
     intro:
-      "Your $6.99 Garden Membership is paid and your garden is safely stored. Confirm this email to finish your private Basil account and continue growing.",
+      `Your ${GARDEN_MEMBERSHIP_PRICE_LABEL} Garden Membership is paid and your garden is safely stored. Confirm this email to finish your private Basil account and continue growing.`,
     buttonLabel: "Confirm account and open my garden",
     link,
   });

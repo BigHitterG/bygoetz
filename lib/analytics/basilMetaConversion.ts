@@ -1,4 +1,9 @@
 import { createHash } from "node:crypto";
+import {
+  GARDEN_MEMBERSHIP_CURRENCY,
+  GARDEN_MEMBERSHIP_PRICE_CENTS,
+  GARDEN_MEMBERSHIP_PRICE_USD,
+} from "../communityGarden/membershipConfig.ts";
 
 const META_EVENT_ID_PATTERN = /^basil_purchase_[0-9a-f]{32}$/;
 
@@ -22,8 +27,8 @@ export function isBasilMetaPurchaseEligible(input: {
   return (
     input.orderType === "basil_founding_gardener" &&
     input.paymentStatus === "paid" &&
-    input.amountTotal === 699 &&
-    input.currency === "usd"
+    input.amountTotal === GARDEN_MEMBERSHIP_PRICE_CENTS &&
+    input.currency === GARDEN_MEMBERSHIP_CURRENCY
   );
 }
 
@@ -77,7 +82,7 @@ export function buildBasilPurchaseConversion(input: {
     event_source_url: input.sourceUrl,
     user_data: buildBasilMetaUserData(input),
     custom_data: {
-      value: 6.99,
+      value: GARDEN_MEMBERSHIP_PRICE_USD,
       currency: "USD",
       content_name: "Basil Garden Membership",
     },

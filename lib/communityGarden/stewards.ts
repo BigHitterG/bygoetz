@@ -3,9 +3,13 @@ import type Stripe from "stripe";
 import { sendBasilPurchaseConversion } from "@/lib/analytics/basilMetaServer";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import { recordBasilFunnelEvent } from "./funnel";
+import {
+  GARDEN_MEMBERSHIP_CURRENCY,
+  GARDEN_MEMBERSHIP_PRICE_CENTS,
+} from "./membershipConfig";
 
-export const GARDEN_STEWARD_PRICE_CENTS = 699;
-export const GARDEN_STEWARD_CURRENCY = "usd";
+export const GARDEN_STEWARD_PRICE_CENTS = GARDEN_MEMBERSHIP_PRICE_CENTS;
+export const GARDEN_STEWARD_CURRENCY = GARDEN_MEMBERSHIP_CURRENCY;
 export const GARDEN_STEWARD_ORDER_TYPE = "basil_founding_gardener";
 
 export const GARDEN_FEEDBACK_CATEGORIES = [

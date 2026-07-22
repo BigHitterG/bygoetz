@@ -109,10 +109,18 @@ export async function POST(request: NextRequest) {
           preview!,
         );
         if (reusable.row.stripe_session_id) {
-          const previousSession = await getStripe().checkout.sessions.retrieve(
+          const stripe = getStripe();
+          const previousSession = await stripe.checkout.sessions.retrieve(
             reusable.row.stripe_session_id,
           );
-          if (previousSession.status === "open" && previousSession.url) {
+          const matchesCurrentMembershipPrice =
+            previousSession.amount_total === GARDEN_STEWARD_PRICE_CENTS &&
+            previousSession.currency === GARDEN_STEWARD_CURRENCY;
+          if (
+            previousSession.status === "open" &&
+            previousSession.url &&
+            matchesCurrentMembershipPrice
+          ) {
             const response = NextResponse.json({
               url: previousSession.url,
               metaEventId: getBasilCheckoutMetaEventId(previousSession.id),
@@ -129,6 +137,9 @@ export async function POST(request: NextRequest) {
               },
             );
             return response;
+          }
+          if (previousSession.status === "open" && !matchesCurrentMembershipPrice) {
+            await stripe.checkout.sessions.expire(previousSession.id);
           }
         }
       } else {

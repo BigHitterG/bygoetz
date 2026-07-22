@@ -1,6 +1,7 @@
 "use client";
 
 import { getBasilLaunchSessionId } from "@/app/community-garden/lib/launchFunnel";
+import { GARDEN_MEMBERSHIP_PRICE_USD } from "@/lib/communityGarden/membershipConfig";
 import { trackMetaCustomEvent, trackMetaEvent } from "./metaPixel";
 
 export type BasilMetaMilestone =
@@ -41,7 +42,11 @@ export function trackBasilMetaCheckout(eventId: string) {
   if (!/^basil_checkout_[0-9a-f]{32}$/.test(eventId)) return;
   trackMetaEvent(
     "InitiateCheckout",
-    { value: 6.99, currency: "USD", content_name: "Basil Garden Membership" },
+    {
+      value: GARDEN_MEMBERSHIP_PRICE_USD,
+      currency: "USD",
+      content_name: "Basil Garden Membership",
+    },
     eventId,
   );
 }
@@ -50,7 +55,11 @@ export function trackBasilMetaPurchase(eventId: string) {
   if (!PURCHASE_EVENT_ID_PATTERN.test(eventId)) return false;
   trackMetaEvent(
     "Purchase",
-    { value: 6.99, currency: "USD", content_name: "Basil Garden Membership" },
+    {
+      value: GARDEN_MEMBERSHIP_PRICE_USD,
+      currency: "USD",
+      content_name: "Basil Garden Membership",
+    },
     eventId,
   );
   return true;

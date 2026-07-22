@@ -10,6 +10,7 @@ import {
   useState,
 } from "react";
 import type { MyGardenState } from "@/lib/communityGarden/myGarden";
+import { GARDEN_MEMBERSHIP_PRICE_LABEL } from "@/lib/communityGarden/membershipConfig";
 import {
   trackBasilMetaCheckout,
   trackBasilMetaStandardEvent,
@@ -674,7 +675,7 @@ export function GardenSteward() {
 
   return (
     <section className="cg-steward" aria-labelledby="garden-steward-title">
-      <p className="cg-kicker">One time · $6.99</p>
+      <p className="cg-kicker">One time · {GARDEN_MEMBERSHIP_PRICE_LABEL}</p>
       <h2 id="garden-steward-title">Community Garden Membership</h2>
       <p className="cg-steward-lead">
         Keep playing the Community Garden for free and try three flowers in My
@@ -735,7 +736,7 @@ export function GardenSteward() {
           <div className="cg-pass-offer">
             <div>
               <span>One-time membership</span>
-              <strong>$6.99</strong>
+              <strong>{GARDEN_MEMBERSHIP_PRICE_LABEL}</strong>
             </div>
             <p>No subscription. Community play stays free for everyone.</p>
           </div>
@@ -1004,7 +1005,8 @@ export function GardenSteward() {
               <h3>Create a private account</h3>
               <p>
                 Use the same email on your other devices. We will send one confirmation
-                from Basil by Goetz, then take you to the $6.99 Stripe checkout.
+                from Basil by Goetz, then take you to the{" "}
+                {GARDEN_MEMBERSHIP_PRICE_LABEL} Stripe checkout.
               </p>
               <form onSubmit={sendAccountEmail}>
                 <label htmlFor="basil-signup-email">Email address</label>
@@ -1103,7 +1105,7 @@ export function GardenSteward() {
           </div>
           <div className="cg-pass-price">
             <span>Garden Membership</span>
-            <strong>$6.99</strong>
+            <strong>{GARDEN_MEMBERSHIP_PRICE_LABEL}</strong>
             <small>once, not a subscription</small>
           </div>
           <ul>
@@ -1121,7 +1123,9 @@ export function GardenSteward() {
             disabled={busy === "checkout" || !session}
             onClick={() => session && void beginCheckout(session)}
           >
-            {busy === "checkout" ? "Opening secure checkout…" : "Keep My Garden · $6.99"}
+            {busy === "checkout"
+              ? "Opening secure checkout…"
+              : `Keep My Garden · ${GARDEN_MEMBERSHIP_PRICE_LABEL}`}
           </button>
         </div>
       ) : null}

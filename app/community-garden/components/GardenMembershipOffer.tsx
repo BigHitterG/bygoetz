@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useState } from "react";
+import { GARDEN_MEMBERSHIP_PRICE_LABEL } from "@/lib/communityGarden/membershipConfig";
 import { BasilPolicyLinks } from "./BasilPolicyLinks";
 
 export type GardenMembershipCredentials = {
@@ -109,7 +110,7 @@ export function GardenMembershipOffer({
         </ul>
         <div className="cg-membership-offer-price">
           <span>Garden Membership</span>
-          <strong>$6.99</strong>
+          <strong>{GARDEN_MEMBERSHIP_PRICE_LABEL}</strong>
         </div>
         {accountReady ? (
           <div className="cg-membership-offer-account">
@@ -126,7 +127,9 @@ export function GardenMembershipOffer({
               onClick={() => onJoin({ email: "", password: "" })}
               disabled={checkoutBusy}
             >
-              {checkoutBusy ? "Saving your garden…" : "Pay & keep my garden · $6.99"}
+              {checkoutBusy
+                ? "Saving your garden…"
+                : `Pay & keep my garden · ${GARDEN_MEMBERSHIP_PRICE_LABEL}`}
             </button>
           </div>
         ) : (
@@ -192,7 +195,9 @@ export function GardenMembershipOffer({
             type="submit"
             disabled={checkoutBusy}
           >
-            {checkoutBusy ? "Saving your garden…" : "Create account & pay · $6.99"}
+            {checkoutBusy
+              ? "Saving your garden…"
+              : `Create account & pay · ${GARDEN_MEMBERSHIP_PRICE_LABEL}`}
           </button>
         </form>
         )}
