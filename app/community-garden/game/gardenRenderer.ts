@@ -1226,7 +1226,7 @@ function drawWateringTargets(
     ctx.translate(Math.round(point.x), Math.round(point.y));
     ctx.scale(zoom, zoom);
     ctx.globalAlpha = 0.92;
-    ctx.fillStyle = "#397f9f";
+    ctx.fillStyle = "#8ed8ee";
     ctx.fillRect(-8, -8, 6, 2);
     ctx.fillRect(2, -8, 6, 2);
     ctx.fillRect(-8, 6, 6, 2);
