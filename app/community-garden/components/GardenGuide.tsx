@@ -76,11 +76,12 @@ export function GardenGuide() {
           </article>
           <article>
             <p className="cg-ecology-number">100 newest</p>
-            <h5>Your public footprint</h5>
+            <h5>Your ecological footprint</h5>
             <p>
-              Your newest 100 community plantings remain. If you keep planting, only
-              your exact oldest overflow returns during the next ten-minute garden
-              update. New planting stays; another player&apos;s flowers are not selected.
+              In the long run, your footprint in the Community Garden is your newest
+              100 flowers. You can always keep planting. Each new flower beyond that
+              lets one of your oldest flowers return to the earth during a ten-minute
+              garden update, opening space for someone else. Your new flower stays.
             </p>
           </article>
           <article>
@@ -129,9 +130,10 @@ export function GardenGuide() {
         <h4>Why did a flower leave?</h4>
         <p>
           It either reached its no-water return time, reached its maximum season,
-          or was among your own oldest plantings after your public footprint passed
-          100. It did not become a weed. My Garden is private and is not affected by
-          the public-footprint rule.
+          or returned to the earth as one of your oldest flowers after your ecological
+          footprint passed 100. It did not become a weed, and another player&apos;s
+          footprint did not remove it. My Garden is private and is not affected by
+          this footprint rule.
         </p>
       </div>
     </section>

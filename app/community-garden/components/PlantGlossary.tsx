@@ -102,7 +102,9 @@ export function PlantGlossary() {
         </table>
         <p className="cg-table-note">
           A flower can leave at whichever arrives first: its no-water return time,
-          maximum season, or your own oldest overflow beyond 100 public plantings.
+          maximum season, or its turn to return as one of your oldest flowers after
+          your Community Garden ecological footprint passes 100. Continued planting
+          always keeps your newest flowers and reopens older ground for others.
         </p>
       </div>
     </section>
