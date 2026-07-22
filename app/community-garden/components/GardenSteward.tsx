@@ -17,6 +17,7 @@ import {
   trackBasilFunnelEvent,
 } from "../lib/launchFunnel";
 import { GardenHealthPanel } from "./GardenHealthPanel";
+import { BasilPolicyLinks } from "./BasilPolicyLinks";
 
 const PENDING_VERIFICATION_KEY = "basil-account-verification-pending-v1";
 
@@ -1216,6 +1217,7 @@ export function GardenSteward() {
           you sign out. Future verified store purchases can attach to this same account.
         </p>
       </div>
+      <BasilPolicyLinks compact />
     </section>
   );
 }

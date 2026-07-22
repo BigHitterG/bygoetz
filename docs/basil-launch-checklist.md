@@ -83,17 +83,17 @@ Completion date: `_____`
 
 ## Phase 2 - Privacy, terms, refunds, support, deletion
 
-- [ ] Publish Basil Privacy Policy.
-- [ ] Publish Basil Terms.
-- [ ] Publish one-time digital membership Refund Policy.
-- [ ] Publish Support/contact page with response owner.
-- [ ] Publish Account Deletion instructions and implement the secure workflow.
-- [ ] Link all pages from menu/account/signup/membership/purchase entry.
-- [ ] Test mobile readability and deletion recovery/failure behavior.
+- [x] Publish Basil Privacy Policy.
+- [x] Publish Basil Terms.
+- [x] Publish one-time digital membership Refund Policy.
+- [x] Publish Support/contact page with response owner.
+- [x] Publish Account Deletion instructions and implement the secure workflow.
+- [x] Link all pages from menu/account/signup/membership/purchase entry.
+- [ ] Complete an owner-visible mobile readability pass and disposable signed-in deletion test.
 
-Gate evidence: `_____`  
+Gate evidence: [Phase 2 audit and validation](./basil-launch-phase-2.md). Owner language approval and a disposable signed-in deletion test remain manual launch gates.
 Commit/deployment: `_____`  
-Completion date: `_____`
+Completion date: `2026-07-21`
 
 ## Phase 3 - Meta Pixel and Conversions API
 

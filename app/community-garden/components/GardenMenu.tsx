@@ -5,6 +5,7 @@ import { GardenFounder } from "./GardenFounder";
 import { GardenGuide } from "./GardenGuide";
 import { GardenSteward } from "./GardenSteward";
 import { PlantGlossary } from "./PlantGlossary";
+import { BasilPolicyLinks } from "./BasilPolicyLinks";
 
 export type LibrarySection = "play" | "plants" | "elements" | "account" | "about";
 
@@ -72,6 +73,7 @@ export function GardenMenu({
           {section === "account" ? <GardenSteward /> : null}
           {section === "about" ? <GardenFounder /> : null}
         </div>
+        <BasilPolicyLinks compact />
       </aside>
     </div>
   );

@@ -7,11 +7,12 @@ import { trackMetaEvent } from "@/lib/analytics/metaPixel";
 
 export function MetaPixel() {
   const pixelId = process.env.NEXT_PUBLIC_META_PIXEL_ID;
+  const trackingEnabled = process.env.NEXT_PUBLIC_META_TRACKING_ENABLED === "true";
   const pathname = usePathname();
   const lastTrackedPath = useRef<string | null>(null);
 
   useEffect(() => {
-    if (!pixelId || lastTrackedPath.current === pathname) return;
+    if (!trackingEnabled || !pixelId || lastTrackedPath.current === pathname) return;
 
     let attempts = 0;
     const trackPage = () => {
@@ -26,9 +27,9 @@ export function MetaPixel() {
     };
 
     trackPage();
-  }, [pathname, pixelId]);
+  }, [pathname, pixelId, trackingEnabled]);
 
-  if (!pixelId) return null;
+  if (!trackingEnabled || !pixelId) return null;
 
   return (
     <>

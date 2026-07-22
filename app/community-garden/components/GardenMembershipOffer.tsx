@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useState } from "react";
+import { BasilPolicyLinks } from "./BasilPolicyLinks";
 
 export type GardenMembershipCredentials = {
   email: string;
@@ -203,6 +204,11 @@ export function GardenMembershipOffer({
         >
           {isSoft ? "Keep growing for now" : "Return to Community Garden"}
         </button>
+        <p className="cg-membership-legal-copy">
+          By creating an account or purchasing, you agree to Basil&apos;s Terms and
+          acknowledge the Privacy and Refund policies.
+        </p>
+        <BasilPolicyLinks compact />
       </section>
     </div>
   );

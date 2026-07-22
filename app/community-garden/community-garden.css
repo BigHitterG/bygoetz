@@ -4257,6 +4257,289 @@
   line-height: 1.45;
 }
 
+.cg-policy-links {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px 14px;
+  font-family: "Courier New", ui-monospace, monospace;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.cg-policy-links a {
+  color: #604238;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.cg-policy-links.is-compact {
+  margin-top: 14px;
+  border-top: 1px solid rgba(52, 35, 31, 0.25);
+  padding-top: 12px;
+  font-size: 0.64rem;
+}
+
+.cg-membership-legal-copy {
+  margin: 8px 0 0;
+  color: #6f4c3e;
+  font-family: system-ui, sans-serif;
+  font-size: 0.62rem;
+  line-height: 1.4;
+  text-align: center;
+}
+
+.cg-legal-page {
+  --cg-ink: #34231f;
+  --cg-cream: #fff4df;
+  --cg-paper: #f8e6cd;
+  --cg-red: #b62f3d;
+  --cg-olive: #65704a;
+  min-height: 100dvh;
+  background:
+    linear-gradient(rgba(255, 244, 223, 0.92), rgba(248, 230, 205, 0.95)),
+    repeating-linear-gradient(0deg, transparent 0 31px, rgba(52, 35, 31, 0.05) 32px);
+  color: var(--cg-ink);
+  padding: clamp(18px, 4vw, 44px) max(16px, env(safe-area-inset-right)) 48px max(16px, env(safe-area-inset-left));
+  font-family: "Courier New", ui-monospace, monospace;
+}
+
+.cg-legal-header,
+.cg-legal-copy,
+.cg-legal-footer {
+  width: min(780px, 100%);
+  margin-inline: auto;
+}
+
+.cg-legal-header {
+  border: 3px solid var(--cg-ink);
+  background: rgba(255, 244, 223, 0.97);
+  padding: clamp(18px, 4vw, 32px);
+  box-shadow: 6px 6px 0 rgba(52, 35, 31, 0.23);
+}
+
+.cg-legal-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 24px;
+  text-decoration: none;
+  text-transform: uppercase;
+}
+
+.cg-legal-brand > span:last-child {
+  display: grid;
+}
+
+.cg-legal-brand strong {
+  font-size: 1.35rem;
+  line-height: 1;
+}
+
+.cg-legal-brand small {
+  margin-top: 4px;
+  color: #6f4c3e;
+  font-size: 0.56rem;
+  font-weight: 900;
+}
+
+.cg-legal-flower {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  place-items: center;
+  border: 2px solid var(--cg-ink);
+  background: var(--cg-red);
+  color: var(--cg-cream);
+  font-size: 1.35rem;
+}
+
+.cg-legal-header h1 {
+  max-width: 680px;
+  margin: 0;
+  font-size: clamp(2rem, 7vw, 4rem);
+  line-height: 0.95;
+  text-transform: uppercase;
+}
+
+.cg-legal-date {
+  margin: 14px 0;
+  color: #6f4c3e;
+  font-size: 0.72rem;
+}
+
+.cg-legal-draft {
+  border-left: 4px solid var(--cg-olive);
+  background: rgba(101, 112, 74, 0.1);
+  padding: 10px 12px;
+  font-family: system-ui, sans-serif;
+  font-size: 0.76rem;
+  line-height: 1.45;
+}
+
+.cg-legal-copy {
+  padding: 20px 0;
+}
+
+.cg-legal-copy section,
+.cg-delete-form,
+.cg-delete-success,
+.cg-delete-signed-out {
+  margin-top: 16px;
+  border: 2px solid rgba(52, 35, 31, 0.65);
+  background: rgba(255, 250, 240, 0.92);
+  padding: clamp(16px, 3.5vw, 26px);
+}
+
+.cg-legal-copy h2 {
+  margin: 0 0 10px;
+  font-size: clamp(1rem, 3.5vw, 1.3rem);
+  text-transform: uppercase;
+}
+
+.cg-legal-copy p,
+.cg-legal-copy li,
+.cg-legal-copy dd {
+  color: #513b33;
+  font-family: system-ui, sans-serif;
+  font-size: 0.94rem;
+  line-height: 1.65;
+}
+
+.cg-legal-copy p:last-child,
+.cg-legal-copy ul:last-child,
+.cg-legal-copy dl:last-child {
+  margin-bottom: 0;
+}
+
+.cg-legal-copy a {
+  color: #8f2631;
+  font-weight: 750;
+  text-decoration: underline;
+}
+
+.cg-legal-copy ul {
+  padding-left: 22px;
+}
+
+.cg-legal-copy li + li {
+  margin-top: 8px;
+}
+
+.cg-legal-copy dl {
+  display: grid;
+  gap: 12px;
+}
+
+.cg-legal-copy dl div {
+  border-left: 3px solid var(--cg-olive);
+  padding-left: 12px;
+}
+
+.cg-legal-copy dt {
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.cg-legal-copy dd {
+  margin: 3px 0 0;
+}
+
+.cg-legal-footer {
+  display: grid;
+  justify-items: center;
+  gap: 18px;
+  border-top: 2px solid rgba(52, 35, 31, 0.4);
+  padding-top: 24px;
+  text-align: center;
+}
+
+.cg-legal-footer > a {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  border: 2px solid var(--cg-ink);
+  background: var(--cg-red);
+  color: var(--cg-cream);
+  padding: 8px 14px;
+  font-weight: 900;
+}
+
+.cg-legal-footer small {
+  color: #6f4c3e;
+}
+
+.cg-delete-form {
+  display: grid;
+  gap: 10px;
+}
+
+.cg-delete-form label {
+  margin-top: 5px;
+  font-size: 0.75rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.cg-delete-form input {
+  min-height: 48px;
+  border: 2px solid var(--cg-ink);
+  border-radius: 0;
+  background: #fff;
+  padding: 9px 11px;
+  font: 1rem system-ui, sans-serif;
+}
+
+.cg-delete-warning {
+  border-left: 5px solid var(--cg-red);
+  background: rgba(182, 47, 61, 0.08);
+  padding: 14px;
+}
+
+.cg-delete-warning h2 {
+  color: var(--cg-red);
+}
+
+.cg-delete-form button,
+.cg-legal-action {
+  display: inline-flex;
+  min-height: 48px;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--cg-ink);
+  border-radius: 0;
+  background: var(--cg-red);
+  color: #fff9e9 !important;
+  padding: 10px 14px;
+  font: 900 0.82rem "Courier New", ui-monospace, monospace;
+  text-align: center;
+  text-decoration: none !important;
+  text-transform: uppercase;
+}
+
+.cg-delete-form button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.cg-delete-email,
+.cg-delete-error,
+.cg-delete-status {
+  font-family: system-ui, sans-serif;
+}
+
+.cg-delete-error {
+  border: 2px solid var(--cg-red);
+  background: #fff1f1;
+  color: #7c1e2a !important;
+  padding: 10px;
+}
+
+.cg-delete-success {
+  border-color: var(--cg-olive);
+}
+
 .cg-support-button,
 .cg-back-link {
   display: inline-flex;
