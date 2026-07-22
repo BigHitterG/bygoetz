@@ -2,16 +2,22 @@
 
 import { usePathname } from "next/navigation";
 import Script from "next/script";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useSyncExternalStore } from "react";
 import { trackBasilMetaStandardEvent } from "@/lib/analytics/basilMetaClient";
 import { flushMetaEventQueue } from "@/lib/analytics/metaPixel";
+import { isBasilHostname } from "@/lib/communityGarden/urls";
 
 export function MetaPixel() {
   const pixelId = process.env.NEXT_PUBLIC_META_PIXEL_ID;
   const trackingEnabled = process.env.NEXT_PUBLIC_META_TRACKING_ENABLED === "true";
   const pathname = usePathname();
   const lastTrackedPath = useRef<string | null>(null);
-  const isBasilGame = pathname === "/community-garden";
+  const isBasilHostRoot = useSyncExternalStore(
+    () => () => undefined,
+    () => pathname === "/" && isBasilHostname(window.location.hostname),
+    () => false,
+  );
+  const isBasilGame = pathname === "/community-garden" || isBasilHostRoot;
 
   useEffect(() => {
     if (!trackingEnabled || !pixelId || !isBasilGame || lastTrackedPath.current === pathname) return;

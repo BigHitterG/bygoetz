@@ -6,13 +6,16 @@ import {
   validateAccountPassword,
   type GardenAccountEmailIntent,
 } from "@/lib/communityGarden/accountEmails";
+import {
+  getBasilOrigin,
+  hasAllowedBasilRequestOrigin,
+} from "@/lib/communityGarden/urls";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function POST(request: NextRequest) {
-  const requestOrigin = request.headers.get("origin");
-  if (requestOrigin && requestOrigin !== request.nextUrl.origin) {
+  if (!hasAllowedBasilRequestOrigin(request)) {
     return NextResponse.json({ error: "Invalid account request origin." }, { status: 403 });
   }
 
@@ -58,7 +61,7 @@ export async function POST(request: NextRequest) {
       email,
       password: typeof password === "string" ? password : undefined,
       requestedIntent: intent,
-      origin: process.env.NEXT_PUBLIC_SITE_URL ?? request.nextUrl.origin,
+      origin: getBasilOrigin(),
     });
 
     return NextResponse.json(

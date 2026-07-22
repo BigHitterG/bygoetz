@@ -1,6 +1,6 @@
 # Basil launch roadmap
 
-Last audited: July 21, 2026  
+Last audited: July 22, 2026
 Launch scope: US-only web launch, one-time Garden Membership at $9.99
 Owner-approved initial Meta research cap: $150
 Phase 0 rule: documentation and launch decisions only; no gameplay or production behavior changes
@@ -15,7 +15,8 @@ Phase 0 has established the technical baseline. The owner selected the portfolio
 
 | Item | Baseline |
 | --- | --- |
-| Public Basil URL | `https://www.bygoetz.com/community-garden` |
+| Primary Basil URL | `https://basilcommunitygarden.com` (Phase 4 attachment pending) |
+| Compatibility URL | `https://www.bygoetz.com/community-garden` (remains functional) |
 | Live response | HTTP 200 on July 21, 2026 |
 | Git repository | `BigHitterG/bygoetz` |
 | Production branch | `main` |
@@ -32,13 +33,14 @@ Phase 0 has established the technical baseline. The owner selected the portfolio
 | Shared map at audit | 1,546 canonical plant rows; snapshot endpoint healthy |
 | Membership records at audit | 2 steward records and 2 active entitlement records; these may include test purchases and are not evidence of external conversion |
 
-`basilcommunitygarden.com` was available through Vercel for $11.25 for one year when checked on July 21, 2026. Availability is not ownership. Phase 0 does not purchase, attach, redirect, or advertise the domain.
+DNS for `basilcommunitygarden.com` is delegated to Vercel nameservers, but Phase 4 must still confirm ownership and attach the domain to the existing `bygoetz` Vercel project. The ByGoetz root continues to serve LazyGrid and the rest of the portfolio.
 
 ## Current architecture
 
 ```text
 Guest browser
-  |-- GET /community-garden ----------------------> Vercel / Next.js
+  |-- GET basilcommunitygarden.com/ -------------> host rewrite to /community-garden
+  |-- GET bygoetz.com/community-garden ----------> compatibility route
   |-- GET /api/community-garden/snapshot --------> cached 10-minute snapshot
   |-- POST /api/community-garden/action ----------> server validation + Supabase RPC
   |-- local guest preview ------------------------> sessionStorage + 7-day localStorage transfer
@@ -109,6 +111,7 @@ The pending preview is server-backed before Stripe, so cross-browser email verif
 The repository currently references these environment variable names without committing their values:
 
 - `NEXT_PUBLIC_SITE_URL`
+- `NEXT_PUBLIC_BASIL_URL`
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 - `SUPABASE_SERVICE_ROLE_KEY`
@@ -146,7 +149,7 @@ Ordered by launch impact:
 8. **Operational ownership is not fully resolved.** Meta Business, Page, Pixel, and launch ad account are recorded; domain ownership, remaining dashboard access, support ownership, and incident contacts still require manual confirmation.
 9. **The repository has two deployment stories.** Vercel Git integration is the real dynamic production host, while a GitHub Pages static-export workflow and README remain in the repository. This can confuse release ownership and is unsuitable for Basil API routes.
 10. **No independent client-performance analytics.** The private health system observes server operations but does not yet report real-user Core Web Vitals or client rendering failures.
-11. **The dedicated domain is not owned or configured.** Basil metadata, auth return links, Resend copy, Stripe returns, and canonical URLs all currently use `bygoetz.com`.
+11. **The dedicated domain requires final dashboard configuration.** Phase 4 code now separates Basil from the global ByGoetz URL; Vercel attachment, production environment configuration, Supabase redirect settings, and Meta domain verification must still be confirmed before the domain gate is green.
 
 Supabase security advisors also report informational `RLS enabled, no policy` notices for server-only tables. In the current design this is deliberate: browser grants are revoked and only the service role is granted table access. Those notices should be rechecked whenever access patterns change.
 

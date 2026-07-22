@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { getBasilUrl } from "@/lib/communityGarden/urls";
 import { BasilPolicyLinks } from "./BasilPolicyLinks";
 
 type BasilPolicyPageProps = {
@@ -12,7 +13,7 @@ export function BasilPolicyPage({ eyebrow, title, children }: BasilPolicyPagePro
   return (
     <main className="cg-legal-page">
       <header className="cg-legal-header">
-        <Link className="cg-legal-brand" href="/community-garden" aria-label="Return to Basil">
+        <Link className="cg-legal-brand" href={getBasilUrl()} aria-label="Return to Basil">
           <span aria-hidden="true" className="cg-legal-flower">✿</span>
           <span><strong>Basil</strong><small>Community Garden</small></span>
         </Link>
@@ -26,7 +27,7 @@ export function BasilPolicyPage({ eyebrow, title, children }: BasilPolicyPagePro
       <article className="cg-legal-copy">{children}</article>
       <footer className="cg-legal-footer">
         <BasilPolicyLinks />
-        <Link href="/community-garden">Return to the garden</Link>
+        <Link href={getBasilUrl()}>Return to the garden</Link>
         <small>© 2026 Basil by Goetz</small>
       </footer>
     </main>

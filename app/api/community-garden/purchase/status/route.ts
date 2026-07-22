@@ -6,13 +6,13 @@ import {
   PENDING_GARDEN_CLAIM_COOKIE,
   resendPendingGardenVerification,
 } from "@/lib/communityGarden/pendingPurchase";
+import { hasAllowedBasilRequestOrigin } from "@/lib/communityGarden/urls";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 function invalidOrigin(request: NextRequest) {
-  const origin = request.headers.get("origin");
-  return Boolean(origin && origin !== request.nextUrl.origin);
+  return !hasAllowedBasilRequestOrigin(request);
 }
 
 function pendingClaim(request: NextRequest) {

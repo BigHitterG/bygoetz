@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { getResend } from "@/lib/resend";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import { GARDEN_MEMBERSHIP_PRICE_LABEL } from "./membershipConfig";
+import { getBasilGameUrlForOrigin } from "./urls";
 
 export type GardenAccountEmailIntent = "signup" | "recovery";
 export type GardenAccountVerificationType = "signup" | "recovery" | "magiclink";
@@ -81,7 +82,7 @@ function getGardenAccountLink(
   continueToCheckout: boolean,
   requiresPassword?: boolean,
 ) {
-  const link = new URL("/community-garden", origin);
+  const link = new URL(getBasilGameUrlForOrigin(origin));
   link.searchParams.set("steward", "confirm-account");
   link.searchParams.set("token_hash", tokenHash);
   link.searchParams.set("type", verificationType);
@@ -137,7 +138,7 @@ function renderGardenAccountEmail({
                     </td>
                   </tr>
                 </table>
-                <p style="margin-top:22px;margin-right:0;margin-bottom:0;margin-left:0;color:#6f4c3e;font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:18px;">If you did not request this, you can safely ignore this email. This link opens bygoetz.com and is used only for your private Basil account.</p>
+                <p style="margin-top:22px;margin-right:0;margin-bottom:0;margin-left:0;color:#6f4c3e;font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:18px;">If you did not request this, you can safely ignore this email. This link opens basilcommunitygarden.com and is used only for your private Basil account.</p>
               </td>
             </tr>
           </table>

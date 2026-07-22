@@ -6,11 +6,15 @@ import {
   submitGardenFeedback,
   type GardenFeedbackCategory,
 } from "@/lib/communityGarden/stewards";
+import { hasAllowedBasilRequestOrigin } from "@/lib/communityGarden/urls";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function POST(request: NextRequest) {
+  if (!hasAllowedBasilRequestOrigin(request)) {
+    return NextResponse.json({ error: "Invalid feedback origin." }, { status: 403 });
+  }
   const user = await getGardenUser(request);
   const steward = user ? await getGardenStewardByUserId(user.id) : null;
 

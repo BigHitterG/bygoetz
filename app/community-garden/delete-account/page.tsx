@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
+import { getBasilUrl } from "@/lib/communityGarden/urls";
 import { BasilPolicyPage } from "../components/BasilPolicyPage";
 import { DeleteBasilAccount } from "./DeleteBasilAccount";
 
 export const metadata: Metadata = {
   title: "Account and Data Deletion | Basil Community Garden",
   description: "Permanently remove a private Basil account and My Garden.",
+  alternates: { canonical: getBasilUrl("/community-garden/delete-account") },
 };
 
 export default function BasilDeleteAccountPage() {

@@ -14,6 +14,7 @@ import {
   type MyGardenPlantType,
 } from "@/lib/communityGarden/myGarden";
 import { getGardenStewardByUserId } from "@/lib/communityGarden/stewards";
+import { hasAllowedBasilRequestOrigin } from "@/lib/communityGarden/urls";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -27,8 +28,7 @@ function isGridCoordinate(value: unknown, minimum: number, maximum: number) {
 }
 
 export async function POST(request: NextRequest) {
-  const requestOrigin = request.headers.get("origin");
-  if (requestOrigin && requestOrigin !== request.nextUrl.origin) {
+  if (!hasAllowedBasilRequestOrigin(request)) {
     return NextResponse.json({ error: "Invalid My Garden request origin." }, { status: 403 });
   }
 

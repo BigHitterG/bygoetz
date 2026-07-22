@@ -19,7 +19,7 @@ Use this file as the manual source of truth. Mark an item complete only when its
 
 | System | Status | Evidence or non-secret identifier | Owner / next action |
 | --- | --- | --- | --- |
-| `basilcommunitygarden.com` | Not confirmed owned. Available for $11.25/year through Vercel at audit time. | `https://vercel.com/domains/search?q=basilcommunitygarden.com` | Owner purchases at normal price; do not attach or redirect yet. |
+| `basilcommunitygarden.com` | Attached to the existing `bygoetz` project; SSL generation started July 22. | Vercel nameservers `ns1.vercel-dns.com` and `ns2.vercel-dns.com` | Confirm both certificates become valid after deployment. |
 | Meta Business Portfolio | Confirmed read-only in Meta Business settings | `Thomas R Goetz` / `314343197818474` | Full-access owner account was visible. Keep this as the proposed Basil business owner. |
 | Facebook Page for Basil or By Goetz | Confirmed read-only | `Goetz` / `156574785247266`, owned by `Thomas R Goetz` | Proposed launch Page. `GetzLab` is also accessible but is not the proposed Basil identity. |
 | Meta ad account | Owner-selected | ByGoetz Ads Manager account `67385321`. Portfolio-owned alternative `555175360336933` is not selected. | Confirm billing and Page/Pixel permissions before Phase 3. |
@@ -112,17 +112,19 @@ Completion date: `_____`
 
 ## Phase 4 - Dedicated Basil domain
 
-- [ ] Attach the owned domain to the existing Vercel project.
-- [ ] Keep `www.bygoetz.com/community-garden` working.
-- [ ] Add a Basil-specific canonical/site URL instead of repurposing global URL behavior.
-- [ ] Update canonical and social metadata.
+- [x] Attach the apex and `www` hostnames to the existing Vercel project.
+- [x] Keep `www.bygoetz.com/community-garden` implemented as a working compatibility route.
+- [x] Keep the ByGoetz root/LazyGrid unchanged and route only the Basil hostname root to the game.
+- [x] Add a Basil-specific canonical/site URL instead of repurposing global URL behavior.
+- [x] Add production-only `NEXT_PUBLIC_BASIL_URL` while preserving `NEXT_PUBLIC_SITE_URL` for ByGoetz.
+- [x] Update canonical and social metadata.
 - [ ] Update Supabase Auth redirect allowlist.
-- [ ] Update Resend links and copy.
-- [ ] Update Stripe success/cancel URLs and origin validation.
+- [x] Update Resend verification/recovery links and copy.
+- [x] Update Stripe success/cancel URLs, cross-domain preview recovery, and strict origin validation.
 - [ ] Verify the domain in Meta.
 - [ ] Test signup, verification, recovery, cancel, success, fulfillment, and restoration on both entry URLs.
 
-Gate evidence: `_____`  
+Gate evidence: Local exact-host routing passed for Basil and ByGoetz; unknown checkout Origin returned 403. See `docs/basil-launch-phase-4.md`; Supabase/Meta configuration and live paid-flow verification remain open.
 Commit/deployment: `_____`  
 Completion date: `_____`
 

@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
+import { getBasilUrl } from "@/lib/communityGarden/urls";
 import { BasilPolicyPage } from "../components/BasilPolicyPage";
 
 export const metadata: Metadata = {
   title: "Privacy Policy | Basil Community Garden",
   description: "How Basil by Goetz handles account, garden, payment, and analytics data.",
+  alternates: { canonical: getBasilUrl("/community-garden/privacy") },
 };
 
 export default function BasilPrivacyPage() {
@@ -39,6 +41,13 @@ export default function BasilPrivacyPage() {
           preview, and checkout recovery. A secure, HTTP-only cookie can connect a
           temporary garden to a Stripe return. These are used to make the game and
           purchase flow work, restore work after a refresh, and avoid duplicate events.
+        </p>
+        <p>
+          Basil is available primarily at basilcommunitygarden.com and remains compatible
+          with the Basil route on bygoetz.com. Browser sessions are scoped to the domain
+          where you signed in, so an existing member may need to sign in once on the new
+          Basil domain. A purchase preview is also saved server-side before checkout so a
+          domain change or email verification does not discard the garden being purchased.
         </p>
       </section>
 

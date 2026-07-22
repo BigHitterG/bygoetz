@@ -2,6 +2,7 @@ import { createHmac } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { getGardenUser } from "@/lib/communityGarden/auth";
 import { PENDING_GARDEN_CLAIM_COOKIE } from "@/lib/communityGarden/pendingPurchase";
+import { hasAllowedBasilRequestOrigin } from "@/lib/communityGarden/urls";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 
 export const runtime = "nodejs";
@@ -53,13 +54,7 @@ function responseWithClearedClaim(body: Record<string, unknown>, status = 200) {
 }
 
 export async function DELETE(request: NextRequest) {
-  const requestOrigin = request.headers.get("origin");
-  const configuredOrigin = process.env.NEXT_PUBLIC_SITE_URL;
-  if (
-    requestOrigin &&
-    requestOrigin !== request.nextUrl.origin &&
-    requestOrigin !== configuredOrigin
-  ) {
+  if (!hasAllowedBasilRequestOrigin(request)) {
     return NextResponse.json({ error: "Invalid account deletion origin." }, { status: 403 });
   }
 

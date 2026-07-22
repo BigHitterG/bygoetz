@@ -26,6 +26,10 @@ import {
   GARDEN_STEWARD_PRICE_CENTS,
   getGardenStewardByUserId,
 } from "@/lib/communityGarden/stewards";
+import {
+  getBasilUrl,
+  hasAllowedBasilRequestOrigin,
+} from "@/lib/communityGarden/urls";
 import { getStripe } from "@/lib/stripe";
 
 export const runtime = "nodejs";
@@ -35,10 +39,7 @@ const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 export async function POST(request: NextRequest) {
-  const requestOrigin = request.headers.get("origin");
-  const origin = process.env.NEXT_PUBLIC_SITE_URL ?? request.nextUrl.origin;
-
-  if (requestOrigin && requestOrigin !== request.nextUrl.origin && requestOrigin !== origin) {
+  if (!hasAllowedBasilRequestOrigin(request)) {
     return NextResponse.json({ error: "Invalid checkout origin." }, { status: 403 });
   }
 
@@ -243,10 +244,10 @@ export async function POST(request: NextRequest) {
       ],
       metadata,
       payment_intent_data: { metadata },
-      success_url:
-        origin +
+      success_url: getBasilUrl(
         "/api/community-garden/claim?session_id={CHECKOUT_SESSION_ID}",
-      cancel_url: origin + "/community-garden?checkout=cancelled",
+      ),
+      cancel_url: getBasilUrl("/?checkout=cancelled"),
     });
   } catch (error) {
     if (createdAccountUserId) {

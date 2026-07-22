@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { FormEvent, useEffect, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
+import { getBasilUrl } from "@/lib/communityGarden/urls";
 import { getGardenAccountClient } from "../lib/supabaseAccount";
 
 const CONFIRMATION = "DELETE MY GARDEN";
@@ -104,7 +105,7 @@ export function DeleteBasilAccount() {
           Your private account, My Garden, feedback, entitlement, and active sessions
           were removed. Anonymous contributions may remain in the shared Community Garden.
         </p>
-        <Link className="cg-legal-action" href="/community-garden">Return to free community play</Link>
+        <Link className="cg-legal-action" href={getBasilUrl()}>Return to free community play</Link>
       </div>
     );
   }
@@ -114,7 +115,7 @@ export function DeleteBasilAccount() {
       <div className="cg-delete-signed-out">
         <h2>Sign in first</h2>
         <p>Open Basil, choose <strong>Menu → Account</strong>, and sign in. Then return to this page.</p>
-        <Link className="cg-legal-action" href="/community-garden">Open Basil Account</Link>
+        <Link className="cg-legal-action" href={getBasilUrl()}>Open Basil Account</Link>
       </div>
     );
   }
@@ -159,7 +160,7 @@ export function DeleteBasilAccount() {
       >
         {busy ? "Permanently deleting…" : "Permanently delete my account"}
       </button>
-      <Link href="/community-garden">Cancel and return to Basil</Link>
+      <Link href={getBasilUrl()}>Cancel and return to Basil</Link>
     </form>
   );
 }

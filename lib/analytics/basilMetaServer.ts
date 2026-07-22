@@ -1,6 +1,7 @@
 import "server-only";
 
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
+import { getBasilUrl } from "@/lib/communityGarden/urls";
 import {
   buildBasilPurchaseConversion,
   getBasilCheckoutMetaEventId,
@@ -93,7 +94,7 @@ export async function sendBasilPurchaseConversion(input: {
     )
       ? process.env.META_GRAPH_API_VERSION!
       : "v25.0";
-    const sourceUrl = `${process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.bygoetz.com"}/community-garden`;
+    const sourceUrl = getBasilUrl();
     const requestBody: Record<string, unknown> = {
       data: [
         buildBasilPurchaseConversion({

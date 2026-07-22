@@ -9,6 +9,7 @@ import {
   useState,
 } from "react";
 import { withSiteBasePath } from "@/lib/sitePath";
+import { getBasilOrigin } from "@/lib/communityGarden/urls";
 import conceptDrawing from "../public/concepts/images/551F39B2-861F-4C86-A128-FFDC16CEB303.png";
 import centerLogo from "../public/concepts/images/Logo-01.png";
 import styles from "./HoneycombHome.module.css";
@@ -64,7 +65,7 @@ const COMMUNITY_GARDEN_BUBBLE = { q: -1, r: 0 };
 const COMMUNITY_GARDEN_LINK_ID = "community-garden";
 const LINKED_BUBBLE_ROUTES: Record<string, string> = {
   [EXPLORERS_LINK_ID]: "/explorers",
-  [COMMUNITY_GARDEN_LINK_ID]: "/community-garden",
+  [COMMUNITY_GARDEN_LINK_ID]: getBasilOrigin(),
 };
 
 function axialDistance(q: number, r: number) {

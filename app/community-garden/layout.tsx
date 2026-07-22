@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
+import { getBasilOrigin, getBasilUrl } from "@/lib/communityGarden/urls";
 import "./community-garden.css";
 
 export const metadata: Metadata = {
+  metadataBase: new URL(getBasilOrigin()),
   title: "Basil | Community Garden",
   description:
     "Basil is a free shared online garden where every visitor can plant, water, and help a living landscape grow.",
@@ -14,10 +16,10 @@ export const metadata: Metadata = {
     description:
       "Plant, water, and care for a living garden shared by everyone.",
     type: "website",
-    url: "https://www.bygoetz.com/community-garden",
+    url: getBasilUrl(),
     images: [
       {
-        url: "https://www.bygoetz.com/community-garden/basil-social-1200.jpg",
+        url: getBasilUrl("/community-garden/basil-social-1200.jpg"),
         width: 1200,
         height: 630,
         alt: "Basil Community Garden with Mary, a duck, herbs, and flowers",
@@ -28,7 +30,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Basil | Community Garden",
     description: "Plant, water, and care for a living garden shared by everyone.",
-    images: ["https://www.bygoetz.com/community-garden/basil-social-1200.jpg"],
+    images: [getBasilUrl("/community-garden/basil-social-1200.jpg")],
   },
 };
 

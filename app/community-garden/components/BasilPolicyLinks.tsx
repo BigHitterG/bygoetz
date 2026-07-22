@@ -1,15 +1,16 @@
 import Link from "next/link";
+import { getBasilUrl } from "@/lib/communityGarden/urls";
 
 type BasilPolicyLinksProps = {
   compact?: boolean;
 };
 
 const LINKS = [
-  ["Privacy", "/community-garden/privacy"],
-  ["Terms", "/community-garden/terms"],
-  ["Refunds", "/community-garden/refunds"],
-  ["Support", "/community-garden/support"],
-  ["Delete account", "/community-garden/delete-account"],
+  ["Privacy", getBasilUrl("/community-garden/privacy")],
+  ["Terms", getBasilUrl("/community-garden/terms")],
+  ["Refunds", getBasilUrl("/community-garden/refunds")],
+  ["Support", getBasilUrl("/community-garden/support")],
+  ["Delete account", getBasilUrl("/community-garden/delete-account")],
 ] as const;
 
 export function BasilPolicyLinks({ compact = false }: BasilPolicyLinksProps) {

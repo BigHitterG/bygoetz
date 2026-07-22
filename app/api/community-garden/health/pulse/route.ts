@@ -9,11 +9,15 @@ import {
   attachGardenSession,
   getGardenActor,
 } from "@/lib/communityGarden/publicGardenServer";
+import { hasAllowedBasilRequestOrigin } from "@/lib/communityGarden/urls";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function POST(request: NextRequest) {
+  if (!hasAllowedBasilRequestOrigin(request)) {
+    return NextResponse.json({ error: "Invalid garden pulse origin." }, { status: 403 });
+  }
   const startedAt = Date.now();
   const requestId = request.headers.get("x-vercel-id");
   const deviceClass = getGardenDeviceClass(request.headers.get("user-agent"));

@@ -1,14 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getGardenUser } from "@/lib/communityGarden/auth";
 import { recordBasilFunnelEvent } from "@/lib/communityGarden/funnel";
+import { hasAllowedBasilRequestOrigin } from "@/lib/communityGarden/urls";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function POST(request: NextRequest) {
-  const requestOrigin = request.headers.get("origin");
-  if (requestOrigin && requestOrigin !== request.nextUrl.origin) {
+  if (!hasAllowedBasilRequestOrigin(request)) {
     return NextResponse.json({ error: "Invalid verification origin." }, { status: 403 });
   }
 

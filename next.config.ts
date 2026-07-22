@@ -8,6 +8,26 @@ const basePath =
 
 const nextConfig = {
   ...(isGitHubPagesBuild ? { output: "export", trailingSlash: true } : {}),
+  ...(!isGitHubPagesBuild
+    ? {
+        async rewrites() {
+          return {
+            beforeFiles: [
+              {
+                source: "/",
+                has: [{ type: "host", value: "basilcommunitygarden.com" }],
+                destination: "/community-garden",
+              },
+              {
+                source: "/",
+                has: [{ type: "host", value: "www.basilcommunitygarden.com" }],
+                destination: "/community-garden",
+              },
+            ],
+          };
+        },
+      }
+    : {}),
   images: { unoptimized: true },
   basePath,
   assetPrefix: basePath,

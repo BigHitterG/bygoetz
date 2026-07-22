@@ -14,6 +14,7 @@ import {
   GARDEN_STEWARD_ORDER_TYPE,
   GARDEN_STEWARD_PRICE_CENTS,
 } from "./stewards";
+import { getBasilOrigin } from "./urls";
 
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -295,6 +296,13 @@ export function isPendingGardenCheckout(session: Stripe.Checkout.Session) {
   return Boolean(pendingMetadata(session));
 }
 
+export function getPendingGardenClaimCookieValue(session: Stripe.Checkout.Session) {
+  const metadata = pendingMetadata(session);
+  return metadata
+    ? serializePendingGardenClaim(metadata.pendingId, metadata.claimToken)
+    : null;
+}
+
 async function provisionPaidGardenAccount(input: {
   row: PendingPurchaseRow;
   buyerEmail: string;
@@ -364,7 +372,7 @@ async function provisionPaidGardenAccount(input: {
     if (needsVerification) {
       const verification = await sendPaidGardenVerificationEmail({
         email: input.buyerEmail,
-        origin: process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.bygoetz.com",
+        origin: getBasilOrigin(),
         idempotencyKey: input.session.id,
       });
       if (verification.userId !== userId) {
@@ -563,7 +571,7 @@ export async function resendPendingGardenVerification(
   if (!email) throw new Error("The purchased Basil account has no email address.");
   const verification = await sendPaidGardenVerificationEmail({
     email,
-    origin: process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.bygoetz.com",
+    origin: getBasilOrigin(),
     idempotencyKey: `${pending.row.id}-${resendKey}`,
   });
   if (verification.userId !== pending.row.claimed_user_id) {

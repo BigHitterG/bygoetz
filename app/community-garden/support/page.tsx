@@ -1,7 +1,11 @@
 import type { Metadata } from "next";
+import { getBasilUrl } from "@/lib/communityGarden/urls";
 import { BasilPolicyPage } from "../components/BasilPolicyPage";
 
-export const metadata: Metadata = { title: "Support | Basil Community Garden" };
+export const metadata: Metadata = {
+  title: "Support | Basil Community Garden",
+  alternates: { canonical: getBasilUrl("/community-garden/support") },
+};
 
 export default function BasilSupportPage() {
   return (

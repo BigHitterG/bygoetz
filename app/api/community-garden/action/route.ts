@@ -10,6 +10,7 @@ import {
   logGardenServerEvent,
   recordCommunityGardenHealth,
 } from "@/lib/communityGarden/health";
+import { hasAllowedBasilRequestOrigin } from "@/lib/communityGarden/urls";
 
 const ACTION_ID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -42,6 +43,9 @@ function errorMessage(error: unknown) {
 }
 
 export async function POST(request: NextRequest) {
+  if (!hasAllowedBasilRequestOrigin(request)) {
+    return NextResponse.json({ error: "Invalid garden action origin." }, { status: 403 });
+  }
   const startedAt = Date.now();
   const requestId = request.headers.get("x-vercel-id");
   const deviceClass = getGardenDeviceClass(request.headers.get("user-agent"));

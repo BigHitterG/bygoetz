@@ -2,13 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { getGardenUser } from "@/lib/communityGarden/auth";
 import { claimGardenCare } from "@/lib/communityGarden/myGarden";
 import { getGardenStewardByUserId } from "@/lib/communityGarden/stewards";
+import { hasAllowedBasilRequestOrigin } from "@/lib/communityGarden/urls";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function POST(request: NextRequest) {
-  const requestOrigin = request.headers.get("origin");
-  if (requestOrigin && requestOrigin !== request.nextUrl.origin) {
+  if (!hasAllowedBasilRequestOrigin(request)) {
     return NextResponse.json({ error: "Invalid Care request origin." }, { status: 403 });
   }
 

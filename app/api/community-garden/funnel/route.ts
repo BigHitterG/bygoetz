@@ -14,6 +14,7 @@ import {
   getGardenErrorCode,
   logGardenServerEvent,
 } from "@/lib/communityGarden/health";
+import { hasAllowedBasilRequestOrigin } from "@/lib/communityGarden/urls";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -73,13 +74,7 @@ function parseMetadata(value: unknown): BasilFunnelMetadata | null {
 }
 
 export async function POST(request: NextRequest) {
-  const requestOrigin = request.headers.get("origin");
-  const productionOrigin = process.env.NEXT_PUBLIC_SITE_URL;
-  if (
-    requestOrigin &&
-    requestOrigin !== request.nextUrl.origin &&
-    requestOrigin !== productionOrigin
-  ) {
+  if (!hasAllowedBasilRequestOrigin(request)) {
     return NextResponse.json({ error: "Invalid funnel origin." }, { status: 403 });
   }
   const contentLength = Number(request.headers.get("content-length") ?? 0);

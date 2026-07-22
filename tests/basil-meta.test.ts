@@ -43,7 +43,7 @@ test("Purchase payload has exact value, shared ID, and no raw email", () => {
       first_arrival_at: "2026-07-21T12:00:00.000Z",
       meta_click_id: "safe-click-id",
     },
-    sourceUrl: "https://www.bygoetz.com/community-garden",
+    sourceUrl: "https://basilcommunitygarden.com/",
   });
   assert.equal(payload.event_name, "Purchase");
   assert.equal(payload.event_id, eventId);
@@ -63,7 +63,7 @@ test("invalid browser/server Purchase event IDs are rejected", () => {
       eventId: "purchase-from-return-url",
       eventTime: 1,
       email: "test@example.com",
-      sourceUrl: "https://www.bygoetz.com/community-garden",
+      sourceUrl: "https://basilcommunitygarden.com/",
     }),
   );
 });
