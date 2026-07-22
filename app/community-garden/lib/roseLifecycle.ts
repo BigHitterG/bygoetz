@@ -32,6 +32,7 @@ export type PlantDefinition = {
   character: string;
   realWorldLifespan: string;
   gameLifespan: string;
+  absoluteLifespan: string;
   careNote: string;
   colorRadius: number;
   lifecycle: PlantLifecycle;
@@ -48,6 +49,7 @@ export const PLANT_CATALOG: Record<PlantType, PlantDefinition> = {
     character: "A steady source of color with a balanced care rhythm.",
     realWorldLifespan: "Usually 6-10 years; some types live 50+ years",
     gameLifespan: "102 hours without care",
+    absoluteLifespan: "14 days from planting",
     careNote: "Blooms near hour 24 and begins wilting after 72 hours without water.",
     colorRadius: 58,
     lifecycle: {
@@ -68,6 +70,7 @@ export const PLANT_CATALOG: Record<PlantType, PlantDefinition> = {
     character: "A bright annual that grows quickly and asks for frequent care.",
     realWorldLifespan: "One growing season, commonly 70-120 days",
     gameLifespan: "66 hours without care",
+    absoluteLifespan: "7 days from planting",
     careNote: "Blooms near hour 14 and begins wilting after 42 hours without water.",
     colorRadius: 52,
     lifecycle: {
@@ -88,6 +91,7 @@ export const PLANT_CATALOG: Record<PlantType, PlantDefinition> = {
     character: "A slow-growing perennial that rewards patient, lasting care.",
     realWorldLifespan: "About 10-15 years with good care",
     gameLifespan: "168 hours without care",
+    absoluteLifespan: "21 days from planting",
     careNote: "Blooms near hour 36 and begins wilting after 120 hours without water.",
     colorRadius: 48,
     lifecycle: {

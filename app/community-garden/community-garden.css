@@ -1420,6 +1420,26 @@
   box-shadow: 6px -2px 0 #706e9d, 12px 1px 0 #9a91bb;
 }
 
+.cg-plant-glyph.is-weed::before {
+  left: 5px;
+  top: 9px;
+  width: 4px;
+  height: 17px;
+  background: #60794e;
+  box-shadow: 6px -5px 0 #738e58, 12px 1px 0 #4e6a42;
+  transform: rotate(-18deg);
+}
+
+.cg-plant-glyph.is-weed::after {
+  left: 2px;
+  top: 3px;
+  width: 8px;
+  height: 7px;
+  background: #8ba361;
+  box-shadow: 7px 2px 0 #718d55, 14px 6px 0 #9aae69;
+  transform: rotate(20deg);
+}
+
 .cg-action-button:disabled {
   cursor: default;
   filter: grayscale(0.75);
@@ -2001,6 +2021,76 @@
   font-weight: 750;
 }
 
+.cg-ecology-guide {
+  border-top: 1px solid rgba(52, 35, 31, 0.2);
+  padding: 16px 0 4px;
+}
+
+.cg-ecology-guide > h4,
+.cg-care-rates > h4 {
+  margin: 0 0 10px;
+  font-size: 0.76rem;
+  text-transform: uppercase;
+}
+
+.cg-ecology-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px;
+}
+
+.cg-ecology-grid article {
+  border: 1px solid rgba(52, 35, 31, 0.28);
+  background: rgba(255, 244, 223, 0.58);
+  padding: 10px;
+}
+
+.cg-ecology-grid h5 {
+  margin: 3px 0 6px;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+}
+
+.cg-ecology-grid .cg-ecology-number {
+  color: var(--cg-red);
+  font-family: "Courier New", ui-monospace, monospace;
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.cg-care-rates {
+  margin-top: 14px;
+  border: 2px solid rgba(52, 35, 31, 0.48);
+  background: rgba(228, 198, 151, 0.3);
+  padding: 12px;
+}
+
+.cg-care-rates dl {
+  margin: 0 0 9px;
+}
+
+.cg-care-rates dl > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  border-top: 1px solid rgba(52, 35, 31, 0.18);
+  padding: 6px 0;
+  color: #5b4238;
+  font-family: system-ui, sans-serif;
+  font-size: 0.72rem;
+}
+
+.cg-care-rates dt {
+  font-weight: 700;
+}
+
+.cg-care-rates dd {
+  margin: 0;
+  color: var(--cg-red);
+  font-weight: 850;
+  text-align: right;
+}
+
 .cg-guide-future {
   margin-top: 12px !important;
   color: #6f4c3e !important;
@@ -2033,6 +2123,11 @@
   border: 2px solid rgba(52, 35, 31, 0.58);
   background: rgba(255, 244, 223, 0.72);
   padding: 12px;
+}
+
+.cg-plant-entry.is-weed,
+.cg-life-table tr.is-weed {
+  background: rgba(139, 163, 97, 0.16);
 }
 
 .cg-plant-entry-heading {
@@ -4691,6 +4786,10 @@
   }
 
   .cg-plant-entries {
+    grid-template-columns: 1fr;
+  }
+
+  .cg-ecology-grid {
     grid-template-columns: 1fr;
   }
 

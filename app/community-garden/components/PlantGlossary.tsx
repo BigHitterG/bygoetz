@@ -1,25 +1,4 @@
-import {
-  getPlantDefinition,
-  PLANT_TYPES,
-} from "../lib/roseLifecycle";
-
-const FUTURE_PLANTS = [
-  {
-    name: "Tulip",
-    realWorld: "Perennial bulb; may return for several years",
-    gameWorld: "84 hours proposed",
-  },
-  {
-    name: "Coneflower",
-    realWorld: "Perennial; commonly lives 3 or more years",
-    gameWorld: "132 hours proposed",
-  },
-  {
-    name: "Garden sage",
-    realWorld: "Woody perennial; often productive for 3-5 years",
-    gameWorld: "144 hours proposed",
-  },
-] as const;
+import { getPlantDefinition, PLANT_TYPES } from "../lib/roseLifecycle";
 
 export function PlantGlossary() {
   return (
@@ -27,8 +6,9 @@ export function PlantGlossary() {
       <p className="cg-kicker">Living collection</p>
       <h3 id="plant-glossary-title">Plant Encyclopedia</h3>
       <p className="cg-library-intro">
-        Every plant has its own compressed rhythm. Watering renews its care clock,
-        while its maturity continues from the day it was planted.
+        Every flower has two clocks: watering renews its care clock, while its
+        maximum season continues from the day it was planted. Flowers return to
+        open ground; they never turn into weeds.
       </p>
 
       <div className="cg-plant-entries">
@@ -50,14 +30,46 @@ export function PlantGlossary() {
                   <dd>{plant.realWorldLifespan}</dd>
                 </div>
                 <div>
-                  <dt>Shared garden</dt>
+                  <dt>Without water</dt>
                   <dd>{plant.gameLifespan}</dd>
+                </div>
+                <div>
+                  <dt>Maximum season</dt>
+                  <dd>{plant.absoluteLifespan}</dd>
                 </div>
               </dl>
               <p className="cg-care-note">{plant.careNote}</p>
             </article>
           );
         })}
+        <article className="cg-plant-entry is-weed">
+          <div className="cg-plant-entry-heading">
+            <span className="cg-plant-glyph is-weed" aria-hidden="true" />
+            <div>
+              <h4>Weed</h4>
+              <p>Garden pressure</p>
+            </div>
+          </div>
+          <p>
+            Separate volunteer growth that appears only on open tiles in a busy
+            community patch. A weed is not the remains of a flower.
+          </p>
+          <dl>
+            <div>
+              <dt>Appears</dt>
+              <dd>From 140 plants in a 16 by 16 patch</dd>
+            </div>
+            <div>
+              <dt>Patch limit</dt>
+              <dd>Up to 12 weeds</dd>
+            </div>
+            <div>
+              <dt>Maximum time</dt>
+              <dd>36 hours, or sooner if the patch recovers</dd>
+            </div>
+          </dl>
+          <p className="cg-care-note">Pull a weed to reopen its tile and earn Care.</p>
+        </article>
       </div>
 
       <div className="cg-life-table-wrap">
@@ -66,8 +78,8 @@ export function PlantGlossary() {
           <thead>
             <tr>
               <th scope="col">Plant</th>
-              <th scope="col">Real-world life</th>
-              <th scope="col">In-game life</th>
+              <th scope="col">Without water</th>
+              <th scope="col">Maximum season</th>
             </tr>
           </thead>
           <tbody>
@@ -76,23 +88,21 @@ export function PlantGlossary() {
               return (
                 <tr key={plant.type}>
                   <th scope="row">{plant.name}</th>
-                  <td>{plant.realWorldLifespan}</td>
                   <td>{plant.gameLifespan}</td>
+                  <td>{plant.absoluteLifespan}</td>
                 </tr>
               );
             })}
-            {FUTURE_PLANTS.map((plant) => (
-              <tr className="is-future" key={plant.name}>
-                <th scope="row">{plant.name}</th>
-                <td>{plant.realWorld}</td>
-                <td>{plant.gameWorld}</td>
-              </tr>
-            ))}
+            <tr className="is-weed">
+              <th scope="row">Weed</th>
+              <td>Not a flower care clock</td>
+              <td>Up to 36 hours</td>
+            </tr>
           </tbody>
         </table>
         <p className="cg-table-note">
-          Real lifespans vary by variety, weather, soil, and care. Proposed plants
-          are field notes, not yet available to plant.
+          A flower can leave at whichever arrives first: its no-water return time,
+          maximum season, or your own oldest overflow beyond 100 public plantings.
         </p>
       </div>
     </section>

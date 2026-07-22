@@ -26,8 +26,8 @@ export function GardenGuide() {
           <dt>Care</dt>
           <dd>
             Open Inventory to choose a seed, select an open spot, and plant.
-            Dark soil shows recent shared watering and slowly dries as the plant
-            approaches wilting.
+            A white water drop means that watering can earn Care. Dark soil shows
+            recent shared watering and slowly dries as the plant approaches wilting.
           </dd>
         </div>
         <div>
@@ -57,7 +57,66 @@ export function GardenGuide() {
         <p>
           Water renews a plant&apos;s care clock. Without care it wilts, returns
           to the soil, and leaves room for something new. Everyone sees the same
-          care and drying cycle.
+          care and drying cycle. Water cannot extend a flower beyond its maximum
+          season listed in Plants.
+        </p>
+      </div>
+
+      <div className="cg-ecology-guide" aria-labelledby="garden-numbers-title">
+        <h4 id="garden-numbers-title">The garden numbers</h4>
+        <div className="cg-ecology-grid">
+          <article>
+            <p className="cg-ecology-number">Up to 4</p>
+            <h5>Watering</h5>
+            <p>
+              One watering action reaches a nearby square of up to four flowers.
+              Each flower can offer Care once every four hours. That timer is shared
+              by everyone, but watering still refreshes hydration when no Care is ready.
+            </p>
+          </article>
+          <article>
+            <p className="cg-ecology-number">100 newest</p>
+            <h5>Your public footprint</h5>
+            <p>
+              Your newest 100 community plantings remain. If you keep planting, only
+              your exact oldest overflow returns during the next ten-minute garden
+              update. New planting stays; another player&apos;s flowers are not selected.
+            </p>
+          </article>
+          <article>
+            <p className="cg-ecology-number">140 / 180</p>
+            <h5>Patch pressure</h5>
+            <p>
+              A 16 by 16 patch becomes busy at 140 plants and rests from new planting
+              at 180. Busy patches can grow up to 12 weeds on open tiles. Flowers do
+              not turn into weeds.
+            </p>
+          </article>
+          <article>
+            <p className="cg-ecology-number">36 hours</p>
+            <h5>Weeds</h5>
+            <p>
+              A weed is a temporary sign that a patch is crowded. Pull it to earn
+              Care and reopen its tile. It lasts no more than 36 hours and may clear
+              sooner when the patch becomes healthy.
+            </p>
+          </article>
+        </div>
+      </div>
+
+      <div className="cg-care-rates">
+        <h4>Daily Care rhythm</h4>
+        <dl>
+          <div><dt>First helpful action</dt><dd>+4 Care</dd></div>
+          <div><dt>Through 100 Care</dt><dd>+1 each</dd></div>
+          <div><dt>101-200 Care</dt><dd>+1 every 4 helpful actions</dd></div>
+          <div><dt>201-300 Care</dt><dd>+1 every 20 helpful actions</dd></div>
+          <div><dt>Daily limit</dt><dd>300 Care</dd></div>
+        </dl>
+        <p>
+          The slower rhythm lets long sessions continue while keeping one gardener
+          from consuming the whole shared landscape. The counter starts fresh each
+          day.
         </p>
       </div>
 
@@ -67,10 +126,12 @@ export function GardenGuide() {
         and keeps My Garden available across devices.
       </p>
       <div className="cg-play-notes">
-        <h4>How this world decides</h4>
+        <h4>Why did a flower leave?</h4>
         <p>
-          Care is the vote. Plants that are watered remain; plants the community
-          stops maintaining slowly return to open ground.
+          It either reached its no-water return time, reached its maximum season,
+          or was among your own oldest plantings after your public footprint passed
+          100. It did not become a weed. My Garden is private and is not affected by
+          the public-footprint rule.
         </p>
       </div>
     </section>
