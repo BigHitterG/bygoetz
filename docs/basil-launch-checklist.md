@@ -1,8 +1,8 @@
 # Basil launch checklist
 
 Companion document: [Basil launch roadmap](./basil-launch-roadmap.md)  
-Last updated: July 21, 2026  
-Current phase: Phase 1 - First-party funnel measurement
+Last updated: July 22, 2026
+Current phase: Phase 5 - Reliability and device verification
 
 Use this file as the manual source of truth. Mark an item complete only when its owner has verified it and add evidence that does not contain secrets. Never record passwords, private API keys, payment details, verification tokens, or service-role credentials here.
 
@@ -132,14 +132,19 @@ Completion date: `_____`
 
 - [ ] Run 20 clean automated guest onboarding flows.
 - [ ] Run 10 complete test payment/fulfillment/restoration flows.
-- [ ] Test phone, tablet portrait/landscape, desktop Chrome, and Safari where available.
+- [x] Run 20 guest checkout-state preservation cases against the production normalizer.
+- [x] Verify payment idempotency contracts and ten duplicate-return simulations.
+- [x] Verify phone, tablet portrait/landscape, and desktop first render in clean Chromium contexts.
+- [ ] Test real iPad Safari, desktop Safari, and complete touch interactions.
 - [ ] Test clean storage, slow network, refresh, rotation, cross-tab verification, and temporary disconnect.
 - [ ] Test duplicate action IDs, duplicate callbacks, checkout cancel, and snapshot reconciliation.
 - [ ] Separate expected tile conflicts from unexplained errors in monitoring.
 - [ ] Observe the candidate for 72 hours without unexplained critical errors.
-- [ ] Keep synthetic load off the production Supabase free tier; use local/disposable infrastructure.
+- [x] Keep synthetic load off the production Supabase free tier; use local/disposable infrastructure.
+- [x] Validate the load runner against its in-process target at 5, 20, and 50 workers.
+- [ ] Run measured 5/20/50 tests against a disposable Supabase/Vercel deployment.
 
-Gate evidence: `_____`  
+Gate evidence: Local evidence and exact remaining external gates are in `docs/basil-launch-phase-5.md`.
 Commit/deployment: `_____`  
 Completion date: `_____`
 

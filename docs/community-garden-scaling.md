@@ -65,10 +65,10 @@ The controls are intentionally generous before they become restrictive:
 | Control | Rule | Purpose |
 | --- | --- | --- |
 | First daily action | +4 Care | Preserve the satisfying daily return |
-| 0-100 Care | +1 per meaningful action | Fast normal play |
-| 101-200 Care | +1 per 4 meaningful actions | Gentle diminishing return |
-| 201-300 Care | +1 per 20 meaningful actions | Long-session tail without rapid map capture |
-| Daily Care | Hard stop at 300 | A cookie bot cannot farm indefinitely |
+| 0-200 Care | +1 per meaningful action | Fast normal play |
+| 201-400 Care | +1 per 4 meaningful actions | Gentle diminishing return |
+| 401-600 Care | +1 per 20 meaningful actions | Long-session tail without rapid map capture |
+| Daily Care | Configurable hard stop; currently 600 | A cookie bot cannot farm indefinitely |
 | Daily mutations | Hard stop at 3,000 per session; 12,000 per pseudonymous network | Bounds malicious non-rewarded planting/watering |
 | Live contributor footprint | 100 soft / 125 hard | The newest 100 remain; only that contributor's exact oldest overflow is scheduled to succeed at the next ecology round |
 | Region size | 16 by 16 tiles | Local pressure without splitting the public garden into separate maps |
@@ -79,7 +79,9 @@ The controls are intentionally generous before they become restrictive:
 A meaningful watering action is one that reaches the existing four-hour Care
 window. Repeated watering can still animate and hydrate, but it does not advance
 Care pacing. Special flowers retain their small bonus, subject to the same
-300-Care ceiling.
+600-Care ceiling. With the separate 3,000-mutation actor limit, ordinary
+single-reward actions reach about 500 Care; legitimate cluster and special
+rewards can advance faster but never exceed the configured ceiling.
 
 Care receipts are now tied to the anonymous signed garden session and unique
 action ID. A replay, another browser, or another account cannot claim the same
@@ -119,6 +121,10 @@ Use this sequence:
 5. On a local Supabase stack or disposable test project, test 5, 20, and 50 virtual users in short runs.
 6. After real traffic exists, measure cache hit rate, database CPU, action latency, error rate, and action volume before raising test levels.
 7. Use a paid or disposable load-test environment for 100, 500, and 1,000-user simulations.
+
+The checked-in `scripts/basil-load-test.mjs` runner refuses the Basil and
+ByGoetz production hostnames. Remote execution also requires the explicit
+`BASIL_DISPOSABLE_LOAD_TEST=I_ACCEPT_TEST_COSTS` acknowledgement.
 
 ## Measurements and thresholds
 

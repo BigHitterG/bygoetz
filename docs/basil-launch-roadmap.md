@@ -9,13 +9,13 @@ Phase 0 rule: documentation and launch decisions only; no gameplay or production
 
 Basil is live and suitable for controlled external testing, but paid advertising must wait for the Phase 0 manual gate and the measurement, policy, and reliability gates below. The owner has approved a $150 initial ad-research cap and accepts that this is research money, not forecast profit.
 
-Phase 0 has established the technical baseline. The owner selected the portfolio-owned ByGoetz Ads Manager account `555175360336933` for the launch. Account `67385321` is the owner's personal ad account and is not the Basil launch account. Phase 0 remains manually open until the owner confirms domain ownership and dashboard access for every production dependency in [the launch checklist](./basil-launch-checklist.md).
+Phase 0 has established the technical baseline. The owner selected the ByGoetz Ads Manager account `67385321` for the launch. Account `555175360336933` remains an unused portfolio-owned alternative. Phase 0 remains manually open until the owner confirms dashboard access for every production dependency in [the launch checklist](./basil-launch-checklist.md).
 
 ## Production baseline
 
 | Item | Baseline |
 | --- | --- |
-| Primary Basil URL | `https://basilcommunitygarden.com` (Phase 4 attachment pending) |
+| Primary Basil URL | `https://basilcommunitygarden.com` (attached and HTTPS verified July 22, 2026) |
 | Compatibility URL | `https://www.bygoetz.com/community-garden` (remains functional) |
 | Live response | HTTP 200 on July 21, 2026 |
 | Git repository | `BigHitterG/bygoetz` |
@@ -184,6 +184,8 @@ Gate: the full guest, verification, sign-in, cancel, purchase, fulfillment, and 
 Add automated guest-onboarding and paid-funnel tests, structured failure monitoring, and focused phone/tablet/desktop checks. Test clean storage, slow networks, cross-tab verification, duplicate callbacks, cancel/success returns, snapshot reconciliation, and temporary disconnects. Use local or disposable load environments instead of burdening the production Supabase free tier.
 
 Gate: 20 clean automated guest runs, 10 complete test payment flows, and 72 hours without unexplained critical errors on the candidate deployment.
+
+Local Phase 5 evidence is recorded in [the Phase 5 report](./basil-launch-phase-5.md). The safe test harness, reliability contracts, commons matrix, and Chromium device first-render checks pass. Disposable-database measurements, complete UI/payment runs, Safari checks, and the 72-hour observation remain open.
 
 ### Phase 6 - Uncoached external beta
 

@@ -17,7 +17,10 @@
     "typecheck": "tsc --noEmit",
     "test:meta": "node --experimental-strip-types tests/basil-meta.test.ts",
     "test:phase4": "node --experimental-strip-types tests/basil-urls.test.ts",
-    "test:commons": "node --experimental-strip-types tests/basil-commons.test.ts"
+    "test:commons": "node --experimental-strip-types tests/basil-commons.test.ts",
+    "test:phase5": "node --experimental-strip-types tests/basil-phase5-reliability.test.ts",
+    "test:load:mock": "node scripts/basil-load-test.mjs --mock --users 5 --seconds 3",
+    "test:browser:phase5": "node scripts/basil-browser-check.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "latest",
