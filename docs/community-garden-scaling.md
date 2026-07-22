@@ -70,7 +70,7 @@ The controls are intentionally generous before they become restrictive:
 | 201-300 Care | +1 per 20 meaningful actions | Long-session tail without rapid map capture |
 | Daily Care | Hard stop at 300 | A cookie bot cannot farm indefinitely |
 | Daily mutations | Hard stop at 3,000 per session; 12,000 per pseudonymous network | Bounds malicious non-rewarded planting/watering |
-| Live contributor footprint | 100 soft / 125 hard | New work remains; that contributor's oldest work succeeds first |
+| Live contributor footprint | 100 soft / 125 hard | The newest 100 remain; only that contributor's exact oldest overflow is scheduled to succeed at the next ecology round |
 | Region size | 16 by 16 tiles | Local pressure without splitting the public garden into separate maps |
 | Region pressure | Healthy below 140; busy at 140; resting at 180 | Steers new planting toward open parts of the same map |
 | Absolute lifespan | Sunflower 7 days; rose 14 days; lavender 21 days | Watering cannot make one person's footprint permanent |
