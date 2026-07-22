@@ -212,9 +212,27 @@ function drawSuggestedPlantingHighlight(
 function drawTutorialDimmer(
   ctx: CanvasRenderingContext2D,
   viewport: GardenViewport,
+  mary: WorldPoint,
+  camera: WorldPoint,
+  zoom: number,
 ) {
+  const maryScreen = worldToScreen(mary, camera, viewport, zoom);
+  const innerRadius = Math.max(30, 38 * zoom);
+  const outerRadius = Math.max(viewport.width, viewport.height) * 0.82;
+  const vignette = ctx.createRadialGradient(
+    maryScreen.x,
+    maryScreen.y,
+    innerRadius,
+    maryScreen.x,
+    maryScreen.y,
+    outerRadius,
+  );
+  vignette.addColorStop(0, "rgba(52, 35, 31, 0.05)");
+  vignette.addColorStop(0.2, "rgba(52, 35, 31, 0.13)");
+  vignette.addColorStop(0.56, "rgba(52, 35, 31, 0.3)");
+  vignette.addColorStop(1, "rgba(52, 35, 31, 0.4)");
   ctx.save();
-  ctx.fillStyle = "rgba(52, 35, 31, 0.22)";
+  ctx.fillStyle = vignette;
   ctx.fillRect(0, 0, viewport.width, viewport.height);
   ctx.restore();
 }
@@ -237,6 +255,7 @@ function drawSuggestedPlantingLabel(
   mary: WorldPoint,
   camera: WorldPoint,
   viewport: GardenViewport,
+  now: number,
   zoom: number,
 ) {
   if (!cell) return;
@@ -281,7 +300,7 @@ function drawSuggestedPlantingLabel(
   });
   if (!chosen) return;
   const labelX = chosen.x;
-  const labelY = chosen.y;
+  const labelY = chosen.y + Math.sin(now / 210) * 2;
 
   ctx.save();
   ctx.translate(Math.round(screen.x), Math.round(screen.y));
@@ -1464,7 +1483,13 @@ export function renderGarden(ctx: CanvasRenderingContext2D, state: RenderGardenS
     );
     drawDuck(ctx, state.duck, state.camera, state.viewport, state.moving, state.now, state.zoom);
     if (state.tutorialDimmed) {
-      drawTutorialDimmer(ctx, state.viewport);
+      drawTutorialDimmer(
+        ctx,
+        state.viewport,
+        state.mary,
+        state.camera,
+        state.zoom,
+      );
       drawSuggestedPlantingHighlight(
         ctx,
         state.suggestedPlantingCell,
@@ -1481,6 +1506,7 @@ export function renderGarden(ctx: CanvasRenderingContext2D, state: RenderGardenS
       state.mary,
       state.camera,
       state.viewport,
+      state.now,
       state.zoom,
     );
     drawEffects(ctx, state.effects, state.camera, state.viewport, state.now, state.zoom);
@@ -1562,7 +1588,13 @@ export function renderGarden(ctx: CanvasRenderingContext2D, state: RenderGardenS
   );
   drawDuck(ctx, state.duck, state.camera, state.viewport, state.moving, state.now, state.zoom);
   if (state.tutorialDimmed) {
-    drawTutorialDimmer(ctx, state.viewport);
+    drawTutorialDimmer(
+      ctx,
+      state.viewport,
+      state.mary,
+      state.camera,
+      state.zoom,
+    );
     drawSuggestedPlantingHighlight(
       ctx,
       state.suggestedPlantingCell,
@@ -1579,6 +1611,7 @@ export function renderGarden(ctx: CanvasRenderingContext2D, state: RenderGardenS
     state.mary,
     state.camera,
     state.viewport,
+    state.now,
     state.zoom,
   );
   drawEffects(ctx, state.effects, state.camera, state.viewport, state.now, state.zoom);

@@ -155,6 +155,11 @@ export function CommunityGardenApp() {
     !memberGarden &&
     guestPreview.access?.softPaywallDeclined === true &&
     guestPreview.access.continuedAfterSoftPaywall !== true;
+  const showCommunityJoin =
+    world === "community" &&
+    accountChecked &&
+    !memberGarden &&
+    guestPreview.access?.softPaywallDeclined === true;
 
   const commitGuestPreview = useCallback((next: GuestGardenPreview) => {
     guestPreviewRef.current = next;
@@ -1120,6 +1125,20 @@ export function CommunityGardenApp() {
           />
           <span>{ui.actionLabel}</span>
         </button>
+
+        {showCommunityJoin ? (
+          <button
+            className="cg-community-join"
+            type="button"
+            aria-label="Join Garden Membership"
+            onClick={() => {
+              setMembershipOfferStage("soft");
+              setMembershipOfferOpen(true);
+            }}
+          >
+            Join
+          </button>
+        ) : null}
 
         <p className="cg-sr-status" aria-live="polite">{ui.message}</p>
         <p className="cg-sr-status" aria-live="polite">{careAnnouncement}</p>
