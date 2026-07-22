@@ -1045,7 +1045,7 @@ function drawCareReadyCue(
     (now / 1600 + Math.abs(plant.grid_x * 7 + plant.grid_y * 11)) %
     (Math.PI * 2);
   ctx.save();
-  ctx.globalAlpha = 0.48 + Math.sin(phase) * 0.1;
+  ctx.globalAlpha = 0.68 + Math.sin(phase) * 0.12;
   ctx.translate(7, -12);
   ctx.fillStyle = "#fff4df";
   ctx.fillRect(-2, 0, 5, 1);
@@ -1225,14 +1225,36 @@ function drawWateringTargets(
     ctx.save();
     ctx.translate(Math.round(point.x), Math.round(point.y));
     ctx.scale(zoom, zoom);
-    ctx.globalAlpha = 0.86;
+    ctx.globalAlpha = 0.94;
     ctx.fillStyle = "#fff4dc";
-    ctx.fillRect(-8, 3, 4, 2);
-    ctx.fillRect(4, 3, 4, 2);
-    ctx.fillStyle = "#4f94b0";
-    ctx.fillRect(-7, 3, 3, 1);
-    ctx.fillRect(4, 3, 3, 1);
-    ctx.fillRect(-1, -9, 2, 3);
+    ctx.fillRect(-7, -22, 14, 3);
+    ctx.fillRect(-10, -20, 4, 3);
+    ctx.fillRect(6, -20, 4, 3);
+    ctx.fillRect(-12, -18, 3, 7);
+    ctx.fillRect(9, -18, 3, 7);
+    ctx.fillRect(-13, -12, 3, 14);
+    ctx.fillRect(10, -12, 3, 14);
+    ctx.fillRect(-11, 1, 4, 4);
+    ctx.fillRect(7, 1, 4, 4);
+    ctx.fillRect(-8, 4, 16, 3);
+
+    ctx.fillStyle = "#397f9f";
+    ctx.fillRect(-6, -21, 12, 2);
+    ctx.fillRect(-9, -19, 3, 2);
+    ctx.fillRect(6, -19, 3, 2);
+    ctx.fillRect(-11, -17, 2, 6);
+    ctx.fillRect(9, -17, 2, 6);
+    ctx.fillRect(-12, -11, 2, 12);
+    ctx.fillRect(10, -11, 2, 12);
+    ctx.fillRect(-10, 1, 3, 3);
+    ctx.fillRect(7, 1, 3, 3);
+    ctx.fillRect(-7, 4, 14, 2);
+
+    ctx.fillStyle = "#8bc5d6";
+    ctx.fillRect(-5, -20, 10, 1);
+    ctx.fillRect(-10, -16, 1, 5);
+    ctx.fillRect(9, -16, 1, 5);
+    ctx.fillRect(-6, 4, 12, 1);
     ctx.restore();
   }
 }
