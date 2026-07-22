@@ -12,6 +12,7 @@ import type { GardenUiState } from "./GardenCanvas";
 type GardenMapKeyProps = {
   ui: GardenUiState;
   canExpand: boolean;
+  disabled?: boolean;
   onNavigate: (mapX: number, mapY: number) => void;
 };
 
@@ -32,11 +33,13 @@ const PLANT_COLORS = {
 export function GardenMapKey({
   ui,
   canExpand,
+  disabled = false,
   onNavigate,
 }: GardenMapKeyProps) {
   const [expanded, setExpanded] = useState(false);
   const expandedCanvasRef = useRef<HTMLCanvasElement>(null);
   const expandedMapRef = useRef<HTMLButtonElement>(null);
+  const mapExpanded = expanded && !disabled;
   const mapStyle: MapStyle = {
     "--cg-map-x": `${ui.mapX}%`,
     "--cg-map-y": `${ui.mapY}%`,
@@ -45,7 +48,7 @@ export function GardenMapKey({
   };
 
   useEffect(() => {
-    if (!expanded) return;
+    if (!mapExpanded) return;
     expandedMapRef.current?.focus({ preventScroll: true });
 
     const closeOnEscape = (event: KeyboardEvent) => {
@@ -53,10 +56,10 @@ export function GardenMapKey({
     };
     window.addEventListener("keydown", closeOnEscape);
     return () => window.removeEventListener("keydown", closeOnEscape);
-  }, [expanded]);
+  }, [mapExpanded]);
 
   useEffect(() => {
-    if (!expanded) return;
+    if (!mapExpanded) return;
     const canvas = expandedCanvasRef.current;
     const ctx = canvas?.getContext("2d");
     if (!canvas || !ctx) return;
@@ -100,7 +103,7 @@ export function GardenMapKey({
     ctx.fillRect(playerX - 6, playerY - 6, 12, 12);
     ctx.fillStyle = "#1f6e8c";
     ctx.fillRect(playerX - 4, playerY - 4, 8, 8);
-  }, [expanded, ui.mapX, ui.mapY, ui.pathMapPoints, ui.plantMapPoints]);
+  }, [mapExpanded, ui.mapX, ui.mapY, ui.pathMapPoints, ui.plantMapPoints]);
 
   function getMapPosition(event: MouseEvent<HTMLButtonElement>) {
     const bounds = event.currentTarget.getBoundingClientRect();
@@ -125,15 +128,18 @@ export function GardenMapKey({
 
   return (
     <aside
-      className={`cg-map-key is-${ui.mode}${expanded ? " is-expanded" : ""}`}
+      className={`cg-map-key is-${ui.mode}${mapExpanded ? " is-expanded" : ""}${disabled ? " is-disabled" : ""}`}
     >
       <button
         className="cg-mini-map"
         type="button"
+        disabled={disabled}
         style={mapStyle}
         onClick={navigate}
         aria-label={
-          ui.mode === "personal"
+          disabled
+            ? "Garden overview. Finish this tutorial step before using map travel."
+            : ui.mode === "personal"
             ? "My Garden overview. Select a point to walk there. Colored marks show your flowers."
             : "Community Garden overview. Select a point to travel there. Colored marks show planted flowers."
         }
@@ -160,15 +166,16 @@ export function GardenMapKey({
         <button
           className="cg-map-expand"
           type="button"
+          disabled={disabled}
           aria-label="Expand the full Community Garden map"
-          aria-expanded={expanded}
+          aria-expanded={mapExpanded}
           onClick={() => setExpanded(true)}
         >
           Expand
         </button>
       ) : null}
 
-      {canExpand && expanded ? (
+      {canExpand && mapExpanded ? (
         <div className="cg-expanded-map-backdrop" role="presentation">
           <section
             className="cg-expanded-map-dialog"

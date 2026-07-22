@@ -1022,6 +1022,7 @@ export function CommunityGardenApp() {
           <GardenMapKey
             ui={ui}
             canExpand={Boolean(memberGarden)}
+            disabled={tutorialMapDimmed}
             onNavigate={(mapX, mapY) =>
               canvasRef.current?.goToMapPosition(mapX, mapY)
             }

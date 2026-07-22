@@ -245,6 +245,19 @@
   font: inherit;
 }
 
+.cg-map-key.is-disabled .cg-mini-map {
+  cursor: default;
+}
+
+.cg-map-key.is-disabled .cg-mini-map:disabled {
+  opacity: 0.72;
+}
+
+.cg-map-key.is-disabled .cg-map-expand:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
 .cg-map-expand {
   position: absolute;
   right: 6px;
@@ -743,9 +756,15 @@
 }
 
 .cg-onboarding-card.is-community-tile,
-.cg-onboarding-card.is-personal-tile,
-.cg-onboarding-card.is-community-water {
+.cg-onboarding-card.is-personal-tile {
   bottom: max(108px, calc(env(safe-area-inset-bottom) + 96px));
+}
+
+.cg-onboarding-card.is-community-water {
+  right: auto;
+  bottom: max(108px, calc(env(safe-area-inset-bottom) + 96px));
+  left: max(12px, env(safe-area-inset-left));
+  pointer-events: none;
 }
 
 .cg-onboarding-card::after {
