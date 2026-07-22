@@ -258,3 +258,10 @@ export function canEarnWateringCare(
   );
 }
 
+export function isSpecialWateringFlower(
+  plant: Pick<PlantRecord, "id">,
+) {
+  const firstByte = Number.parseInt(plant.id.slice(0, 2), 16);
+  return Number.isFinite(firstByte) && firstByte % 64 === 0;
+}
+

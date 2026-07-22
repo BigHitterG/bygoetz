@@ -3,6 +3,7 @@ import type { MyGardenElementType } from "../lib/myGardenCatalog";
 import {
   canEarnWateringCare,
   getPlantVisual,
+  isSpecialWateringFlower,
   type PlantRecord,
 } from "../lib/roseLifecycle";
 import { getTerrainTile, terrainNoise } from "./terrainGenerator";
@@ -1076,13 +1077,31 @@ function drawCareReadyCue(
     (Math.PI * 2);
   ctx.save();
   ctx.globalAlpha = 0.82 + Math.sin(phase) * 0.1;
-  ctx.translate(7, -12);
+  if (isSpecialWateringFlower(plant)) {
+    ctx.translate(7, -12);
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(-3, -1, 7, 3);
+    ctx.fillRect(-1, -3, 3, 7);
+    ctx.fillStyle = "#c94f4c";
+    ctx.fillRect(-1, 0, 3, 1);
+    ctx.fillRect(0, -1, 1, 3);
+    ctx.restore();
+    return;
+  }
+
+  ctx.translate(8, -14);
   ctx.fillStyle = "#ffffff";
-  ctx.fillRect(-3, -1, 7, 3);
-  ctx.fillRect(-1, -3, 3, 7);
-  ctx.fillStyle = "#c94f4c";
-  ctx.fillRect(-1, 0, 3, 1);
-  ctx.fillRect(0, -1, 1, 3);
+  ctx.fillRect(-1, -5, 3, 2);
+  ctx.fillRect(-3, -3, 7, 4);
+  ctx.fillRect(-4, 0, 9, 5);
+  ctx.fillRect(-3, 4, 7, 2);
+  ctx.fillStyle = "#4f9fbd";
+  ctx.fillRect(0, -4, 1, 2);
+  ctx.fillRect(-2, -2, 5, 3);
+  ctx.fillRect(-3, 1, 7, 3);
+  ctx.fillRect(-2, 4, 5, 1);
+  ctx.fillStyle = "#c9efff";
+  ctx.fillRect(-1, -1, 2, 2);
   ctx.restore();
 }
 

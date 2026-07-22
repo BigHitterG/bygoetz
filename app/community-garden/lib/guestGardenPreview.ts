@@ -300,7 +300,9 @@ export function awardGuestCare(
   const value = clampInteger(requestedCare, 0, 5);
   const today = new Date().toISOString().slice(0, 10);
   const earningMode = current.dailyCareDate === today ? "standard" : "daily";
-  const awardedCare = value > 0 ? (earningMode === "daily" ? 4 : 1) : 0;
+  const specialBonus = Math.max(0, value - 1);
+  const awardedCare =
+    value > 0 ? (earningMode === "daily" ? 4 : 1) + specialBonus : 0;
 
   return {
     awardedCare,
