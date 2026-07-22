@@ -1076,8 +1076,8 @@ function drawCareReadyCue(
     (now / 1600 + Math.abs(plant.grid_x * 7 + plant.grid_y * 11)) %
     (Math.PI * 2);
   ctx.save();
-  ctx.globalAlpha = 0.82 + Math.sin(phase) * 0.1;
   if (isSpecialWateringFlower(plant)) {
+    ctx.globalAlpha = 0.82 + Math.sin(phase) * 0.1;
     ctx.translate(7, -12);
     ctx.fillStyle = "#ffffff";
     ctx.fillRect(-3, -1, 7, 3);
@@ -1089,19 +1089,20 @@ function drawCareReadyCue(
     return;
   }
 
-  ctx.translate(8, -14);
+  ctx.globalAlpha = 0.72 + Math.sin(phase) * 0.08;
+  ctx.translate(8, -13);
   ctx.fillStyle = "#ffffff";
-  ctx.fillRect(-1, -5, 3, 2);
-  ctx.fillRect(-3, -3, 7, 4);
-  ctx.fillRect(-4, 0, 9, 5);
-  ctx.fillRect(-3, 4, 7, 2);
-  ctx.fillStyle = "#4f9fbd";
-  ctx.fillRect(0, -4, 1, 2);
+  ctx.fillRect(-1, -4, 3, 2);
   ctx.fillRect(-2, -2, 5, 3);
-  ctx.fillRect(-3, 1, 7, 3);
+  ctx.fillRect(-3, 0, 7, 4);
   ctx.fillRect(-2, 4, 5, 1);
+  ctx.fillStyle = "#4f9fbd";
+  ctx.fillRect(0, -3, 1, 2);
+  ctx.fillRect(-1, -1, 3, 2);
+  ctx.fillRect(-2, 1, 5, 3);
+  ctx.fillRect(-1, 4, 3, 1);
   ctx.fillStyle = "#c9efff";
-  ctx.fillRect(-1, -1, 2, 2);
+  ctx.fillRect(-1, 0, 2, 1);
   ctx.restore();
 }
 
