@@ -541,6 +541,31 @@ function getWateringCluster(
   const first = getPlantAt(runtime, selected.gridX, selected.gridY);
   if (!first || getPlantVisual(first).state === "expired") return [];
 
+  const squareOrigins = [
+    [selected.gridX, selected.gridY],
+    [selected.gridX - 1, selected.gridY],
+    [selected.gridX, selected.gridY - 1],
+    [selected.gridX - 1, selected.gridY - 1],
+  ] as const;
+  for (const [originX, originY] of squareOrigins) {
+    const square = [
+      getPlantAt(runtime, originX, originY),
+      getPlantAt(runtime, originX + 1, originY),
+      getPlantAt(runtime, originX, originY + 1),
+      getPlantAt(runtime, originX + 1, originY + 1),
+    ];
+    if (
+      square.every(
+        (plant): plant is PlantRecord =>
+          Boolean(plant) &&
+          getPlantVisual(plant as PlantRecord).state !== "expired" &&
+          getPlantVisual(plant as PlantRecord).state !== "dead",
+      )
+    ) {
+      return square;
+    }
+  }
+
   const targets: PlantRecord[] = [];
   const visited = new Set<string>();
   const queue = [{ gridX: first.grid_x, gridY: first.grid_y }];
