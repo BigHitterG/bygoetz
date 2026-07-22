@@ -4150,6 +4150,73 @@
   line-height: 1.35;
 }
 
+.cg-economy-panel {
+  margin-top: 14px;
+  border: 1px solid rgba(52, 35, 31, 0.3);
+  background: rgba(255, 255, 255, 0.3);
+  padding: 0 10px 10px;
+}
+
+.cg-economy-panel form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 7px;
+  margin-top: 10px;
+}
+
+.cg-economy-panel label {
+  width: 100%;
+  color: #6f4c3e;
+  font-size: 0.58rem;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.cg-economy-panel input {
+  width: 112px;
+  min-height: 36px;
+  border: 2px solid var(--cg-ink);
+  border-radius: 0;
+  background: var(--cg-paper);
+  padding: 6px 8px;
+  color: var(--cg-ink);
+  font: 800 0.75rem/1 system-ui, sans-serif;
+}
+
+.cg-economy-panel button {
+  min-height: 36px;
+  padding: 6px 10px;
+  font-size: 0.64rem;
+}
+
+.cg-economy-panel > p,
+.cg-economy-panel > small {
+  margin: 9px 0 0;
+  color: #6f4c3e;
+  font-size: 0.62rem;
+  line-height: 1.5;
+}
+
+.cg-economy-panel > ul {
+  display: grid;
+  gap: 3px;
+  margin: 9px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cg-economy-panel > ul li {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  font: 0.6rem/1.4 system-ui, sans-serif;
+}
+
+.cg-economy-panel > ul time {
+  color: #6f4c3e;
+}
+
 .cg-funnel-heading {
   display: flex;
   align-items: end;

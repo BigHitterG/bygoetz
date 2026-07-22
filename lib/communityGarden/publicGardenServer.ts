@@ -114,7 +114,7 @@ export async function submitCommunityGardenAction(input: {
   plantIds?: string[];
 }) {
   const { data, error } = await getSupabaseAdmin().rpc(
-    "perform_idempotent_community_garden_action_v5",
+    "perform_idempotent_community_garden_action_v6",
     {
       p_action_id: input.actionId,
       p_actor_key: input.actorKey,

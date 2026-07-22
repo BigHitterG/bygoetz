@@ -1,6 +1,10 @@
 import type { User } from "@supabase/supabase-js";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import { getBasilLaunchFunnelAdmin, type BasilLaunchFunnel } from "./funnel";
+import {
+  getCommunityGardenEconomy,
+  type CommunityGardenEconomyAdmin,
+} from "./economy";
 
 export type GardenDeviceClass = "phone" | "tablet" | "desktop" | "unknown";
 
@@ -54,6 +58,7 @@ export type CommunityGardenHealth = {
     gardenOccupancyPercent: number;
     expansionRecommended: boolean;
   };
+  economy: CommunityGardenEconomyAdmin;
   funnel: BasilLaunchFunnel;
 };
 
@@ -121,10 +126,11 @@ export async function recordCommunityGardenHealth(input: {
 }
 
 export async function getCommunityGardenAdminHealth() {
-  const [{ data, error }, { data: commons, error: commonsError }, funnel] = await Promise.all([
+  const [{ data, error }, { data: commons, error: commonsError }, funnel, economy] = await Promise.all([
     getSupabaseAdmin().rpc("get_community_garden_admin_health"),
     getSupabaseAdmin().rpc("get_community_garden_commons_health"),
     getBasilLaunchFunnelAdmin(),
+    getCommunityGardenEconomy(),
   ]);
   if (error) throw error;
   if (commonsError) throw commonsError;
@@ -135,8 +141,9 @@ export async function getCommunityGardenAdminHealth() {
     throw new Error("The garden commons summary was unavailable.");
   }
   return {
-    ...(data as Omit<CommunityGardenHealth, "funnel" | "commons">),
+    ...(data as Omit<CommunityGardenHealth, "funnel" | "commons" | "economy">),
     commons,
+    economy,
     funnel,
   } as CommunityGardenHealth;
 }

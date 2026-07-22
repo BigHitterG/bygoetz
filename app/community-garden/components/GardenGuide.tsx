@@ -1,3 +1,11 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import {
+  DEFAULT_DAILY_CARE_LIMIT,
+  type CommunityGardenEconomy,
+} from "@/lib/communityGarden/economyPolicy";
+
 const LIFE_STAGES = [
   { name: "Seed", className: "is-seed" },
   { name: "Sprout", className: "is-sprout" },
@@ -8,6 +16,28 @@ const LIFE_STAGES = [
 ] as const;
 
 export function GardenGuide() {
+  const [economy, setEconomy] = useState<CommunityGardenEconomy>({
+    dailyCareLimit: DEFAULT_DAILY_CARE_LIMIT,
+    fullRewardLimit: Math.floor(DEFAULT_DAILY_CARE_LIMIT / 3),
+    moderateRewardLimit: Math.floor((DEFAULT_DAILY_CARE_LIMIT * 2) / 3),
+    moderateActionsRequired: 4,
+    longActionsRequired: 20,
+    updatedAt: new Date(0).toISOString(),
+  });
+
+  useEffect(() => {
+    const controller = new AbortController();
+    void fetch("/api/community-garden/economy", {
+      signal: controller.signal,
+    })
+      .then(async (response) => {
+        if (!response.ok) return;
+        setEconomy((await response.json()) as CommunityGardenEconomy);
+      })
+      .catch(() => undefined);
+    return () => controller.abort();
+  }, []);
+
   return (
     <section className="cg-guide cg-library-section" aria-labelledby="garden-guide-title">
       <p className="cg-kicker">A shared living artwork</p>
@@ -120,10 +150,18 @@ export function GardenGuide() {
         <h4>Daily Care rhythm</h4>
         <dl>
           <div><dt>First helpful action</dt><dd>+4 Care</dd></div>
-          <div><dt>Through 100 Care</dt><dd>+1 each</dd></div>
-          <div><dt>101-200 Care</dt><dd>+1 every 4 helpful actions</dd></div>
-          <div><dt>201-300 Care</dt><dd>+1 every 20 helpful actions</dd></div>
-          <div><dt>Daily limit</dt><dd>300 Care</dd></div>
+          <div>
+            <dt>Through {economy.fullRewardLimit} Care</dt><dd>+1 each</dd>
+          </div>
+          <div>
+            <dt>{economy.fullRewardLimit + 1}-{economy.moderateRewardLimit} Care</dt>
+            <dd>+1 every {economy.moderateActionsRequired} helpful actions</dd>
+          </div>
+          <div>
+            <dt>{economy.moderateRewardLimit + 1}-{economy.dailyCareLimit} Care</dt>
+            <dd>+1 every {economy.longActionsRequired} helpful actions</dd>
+          </div>
+          <div><dt>Daily limit</dt><dd>{economy.dailyCareLimit} Care</dd></div>
         </dl>
         <p>
           The slower rhythm lets long sessions continue while keeping one gardener

@@ -2,6 +2,11 @@
 
 import type { Session } from "@supabase/supabase-js";
 import { useCallback, useEffect, useState } from "react";
+import {
+  DEFAULT_DAILY_CARE_LIMIT,
+  MAX_DAILY_CARE_LIMIT,
+  MIN_DAILY_CARE_LIMIT,
+} from "@/lib/communityGarden/economyPolicy";
 import type { CommunityGardenHealth } from "@/lib/communityGarden/health";
 
 type HealthState =
@@ -34,6 +39,9 @@ function formatTime(value: string | null) {
 export function GardenHealthPanel({ session }: { session: Session }) {
   const [state, setState] = useState<HealthState>({ status: "checking" });
   const [refreshing, setRefreshing] = useState(false);
+  const [dailyCareLimit, setDailyCareLimit] = useState(DEFAULT_DAILY_CARE_LIMIT);
+  const [economySaving, setEconomySaving] = useState(false);
+  const [economyMessage, setEconomyMessage] = useState<string | null>(null);
 
   const loadHealth = useCallback(async () => {
     setRefreshing(true);
@@ -52,10 +60,12 @@ export function GardenHealthPanel({ session }: { session: Session }) {
         } | null;
         throw new Error(payload?.error ?? "Garden health could not be loaded.");
       }
+      const health = (await response.json()) as CommunityGardenHealth;
       setState({
         status: "ready",
-        health: (await response.json()) as CommunityGardenHealth,
+        health,
       });
+      setDailyCareLimit(health.economy.dailyCareLimit);
     } catch (error) {
       setState({
         status: "error",
@@ -68,6 +78,35 @@ export function GardenHealthPanel({ session }: { session: Session }) {
       setRefreshing(false);
     }
   }, [session.access_token]);
+
+  const saveEconomy = useCallback(async (nextLimit: number) => {
+    setEconomySaving(true);
+    setEconomyMessage(null);
+    try {
+      const response = await fetch("/api/community-garden/admin/economy", {
+        method: "POST",
+        headers: {
+          authorization: `Bearer ${session.access_token}`,
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({ dailyCareLimit: nextLimit }),
+      });
+      const payload = (await response.json().catch(() => null)) as {
+        error?: string;
+      } | null;
+      if (!response.ok) {
+        throw new Error(payload?.error ?? "The Care settings could not be updated.");
+      }
+      setEconomyMessage(`Daily Care is now ${nextLimit}.`);
+      await loadHealth();
+    } catch (error) {
+      setEconomyMessage(
+        error instanceof Error ? error.message : "The Care settings could not be updated.",
+      );
+    } finally {
+      setEconomySaving(false);
+    }
+  }, [loadHealth, session.access_token]);
 
   useEffect(() => {
     queueMicrotask(() => void loadHealth());
@@ -170,6 +209,64 @@ export function GardenHealthPanel({ session }: { session: Session }) {
               : `${health.commons.scheduledSuccession} succeeding · ${health.commons.weeds} weeds`}
           </small>
         </div>
+      </div>
+
+      <div className="cg-economy-panel">
+        <div className="cg-funnel-heading">
+          <div>
+            <strong>Care economy</strong>
+            <small>Server-controlled daily rewards</small>
+          </div>
+          <span>{health.economy.dailyCareLimit} Care</span>
+        </div>
+        <form
+          onSubmit={(event) => {
+            event.preventDefault();
+            void saveEconomy(dailyCareLimit);
+          }}
+        >
+          <label htmlFor="cg-daily-care-limit">Daily Care limit</label>
+          <input
+            id="cg-daily-care-limit"
+            type="number"
+            min={MIN_DAILY_CARE_LIMIT}
+            max={MAX_DAILY_CARE_LIMIT}
+            step={50}
+            value={dailyCareLimit}
+            onChange={(event) => setDailyCareLimit(Number(event.target.value))}
+          />
+          <button type="submit" disabled={economySaving}>
+            {economySaving ? "Saving..." : "Save limit"}
+          </button>
+          <button
+            type="button"
+            disabled={economySaving || dailyCareLimit === DEFAULT_DAILY_CARE_LIMIT}
+            onClick={() => {
+              setDailyCareLimit(DEFAULT_DAILY_CARE_LIMIT);
+              void saveEconomy(DEFAULT_DAILY_CARE_LIMIT);
+            }}
+          >
+            Reset to {DEFAULT_DAILY_CARE_LIMIT}
+          </button>
+        </form>
+        <p>
+          Full rewards through {health.economy.fullRewardLimit} Care; one reward every{" "}
+          {health.economy.moderateActionsRequired} actions through{" "}
+          {health.economy.moderateRewardLimit}; then one every{" "}
+          {health.economy.longActionsRequired} actions. The 100-flower and 100-watering
+          footprints do not change.
+        </p>
+        {economyMessage ? <small role="status">{economyMessage}</small> : null}
+        {health.economy.auditHistory.length ? (
+          <ul aria-label="Recent Care economy changes">
+            {health.economy.auditHistory.slice(0, 5).map((entry) => (
+              <li key={`${entry.changedAt}:${entry.newDailyCareLimit}`}>
+                <span>{entry.previousDailyCareLimit} to {entry.newDailyCareLimit}</span>
+                <time dateTime={entry.changedAt}>{formatTime(entry.changedAt)}</time>
+              </li>
+            ))}
+          </ul>
+        ) : null}
       </div>
 
       <div className="cg-funnel-heading">

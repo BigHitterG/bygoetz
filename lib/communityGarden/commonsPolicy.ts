@@ -1,5 +1,7 @@
 export const BASIL_COMMONS_POLICY = {
-  dailyCareLimit: 300,
+  dailyCareLimit: 600,
+  fullCareLimit: 200,
+  moderateCareLimit: 400,
   dailyMutationLimit: 3_000,
   networkMutationLimit: 12_000,
   contributorSoftFootprint: 100,
@@ -33,12 +35,16 @@ export function calculateCommonsCareAward(
     award = 4 + specialBonus;
     phase = "daily";
     progress = 0;
-  } else if (state.careEarned < 100) {
+  } else if (state.careEarned < BASIL_COMMONS_POLICY.fullCareLimit) {
     award = 1 + specialBonus;
     progress = 0;
   } else {
-    actionsRequired = state.careEarned < 200 ? 4 : 20;
-    phase = state.careEarned < 200 ? "taper4" : "taper20";
+    actionsRequired =
+      state.careEarned < BASIL_COMMONS_POLICY.moderateCareLimit ? 4 : 20;
+    phase =
+      state.careEarned < BASIL_COMMONS_POLICY.moderateCareLimit
+        ? "taper4"
+        : "taper20";
     progress += 1;
     award = specialBonus;
     if (progress >= actionsRequired) {
