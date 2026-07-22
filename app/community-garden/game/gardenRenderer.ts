@@ -45,6 +45,7 @@ export type RenderGardenState = {
   selected: SelectedCell;
   wateringTargets: Array<NonNullable<SelectedCell>>;
   suggestedPlantingCell: SelectedCell;
+  tutorialDimmed: boolean;
   effects: GardenEffect[];
   moving: boolean;
   now: number;
@@ -205,6 +206,16 @@ function drawSuggestedPlantingHighlight(
   ctx.ellipse(0, 0, width / 2, height / 2, 0, 0, Math.PI * 2);
   ctx.fill();
   ctx.stroke();
+  ctx.restore();
+}
+
+function drawTutorialDimmer(
+  ctx: CanvasRenderingContext2D,
+  viewport: GardenViewport,
+) {
+  ctx.save();
+  ctx.fillStyle = "rgba(52, 35, 31, 0.22)";
+  ctx.fillRect(0, 0, viewport.width, viewport.height);
   ctx.restore();
 }
 
@@ -1452,6 +1463,17 @@ export function renderGarden(ctx: CanvasRenderingContext2D, state: RenderGardenS
       state.zoom,
     );
     drawDuck(ctx, state.duck, state.camera, state.viewport, state.moving, state.now, state.zoom);
+    if (state.tutorialDimmed) {
+      drawTutorialDimmer(ctx, state.viewport);
+      drawSuggestedPlantingHighlight(
+        ctx,
+        state.suggestedPlantingCell,
+        state.camera,
+        state.viewport,
+        state.now,
+        state.zoom,
+      );
+    }
     drawMary(ctx, state.mary, state.camera, state.viewport, state.moving, state.now, state.zoom);
     drawSuggestedPlantingLabel(
       ctx,
@@ -1539,6 +1561,17 @@ export function renderGarden(ctx: CanvasRenderingContext2D, state: RenderGardenS
     state.zoom,
   );
   drawDuck(ctx, state.duck, state.camera, state.viewport, state.moving, state.now, state.zoom);
+  if (state.tutorialDimmed) {
+    drawTutorialDimmer(ctx, state.viewport);
+    drawSuggestedPlantingHighlight(
+      ctx,
+      state.suggestedPlantingCell,
+      state.camera,
+      state.viewport,
+      state.now,
+      state.zoom,
+    );
+  }
   drawMary(ctx, state.mary, state.camera, state.viewport, state.moving, state.now, state.zoom);
   drawSuggestedPlantingLabel(
     ctx,

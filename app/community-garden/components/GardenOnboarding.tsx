@@ -53,9 +53,9 @@ export function GardenOnboarding({
           }
       : step === "my-garden"
         ? {
-            kicker: "Care earned",
+            kicker: "Community planting 3 of 3",
             title: "See what your Care can grow",
-            copy: "Your public garden work also helps a garden of your own. You can try it before joining.",
+            copy: "Three flowers are planted. My Garden is now ready to try.",
             action: "Visit My Garden",
             onAction: onOpenMyGarden,
           }

@@ -148,6 +148,8 @@ export function CommunityGardenApp() {
     communityOnboardingPlantings < 3;
   const onboardingInventoryLocked =
     Boolean(onboardingStep) && !isGardenOnboardingFinished(onboardingStep);
+  const tutorialMapDimmed =
+    Boolean(onboardingStep) && !isGardenOnboardingFinished(onboardingStep);
   const showContinueGardenGuidance =
     world === "personal" &&
     !memberGarden &&
@@ -916,6 +918,7 @@ export function CommunityGardenApp() {
           ref={canvasRef}
           mode={world}
           personalGarden={myGarden}
+          tutorialDimmed={tutorialMapDimmed}
           onStateChange={onStateChange}
           onCommunityContribution={claimCommunityContribution}
           onPersonalGardenMutation={mutateMyGarden}
@@ -1019,7 +1022,7 @@ export function CommunityGardenApp() {
                   : "My Garden is ready"
               }
             >
-              {showContinueGardenGuidance ? "+" : myGarden.careBalance}
+              {showContinueGardenGuidance ? "+" : "!"}
             </strong>
           ) : null}
         </button>

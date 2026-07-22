@@ -172,6 +172,7 @@ type GardenCanvasProps = {
   onCommunityContribution?: (contribution: GardenContribution) => void;
   mode: GardenWorldMode;
   personalGarden: MyGardenState | null;
+  tutorialDimmed?: boolean;
   onPersonalGardenMutation?: (
     mutation: MyGardenMutation,
   ) => Promise<MyGardenState>;
@@ -853,6 +854,7 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
       onCommunityContribution,
       mode,
       personalGarden,
+      tutorialDimmed = false,
       onPersonalGardenMutation,
       onActionCompleted,
       onActionFailed,
@@ -865,6 +867,7 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
     const onPersonalGardenMutationRef = useRef(onPersonalGardenMutation);
     const onActionCompletedRef = useRef(onActionCompleted);
     const onActionFailedRef = useRef(onActionFailed);
+    const tutorialDimmedRef = useRef(tutorialDimmed);
     const personalGardenRef = useRef(personalGarden);
     const worldSnapshotsRef = useRef<
       Partial<Record<GardenWorldMode, WorldSnapshot>>
@@ -940,6 +943,10 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
     useEffect(() => {
       onActionFailedRef.current = onActionFailed;
     }, [onActionFailed]);
+
+    useEffect(() => {
+      tutorialDimmedRef.current = tutorialDimmed;
+    }, [tutorialDimmed]);
 
     useEffect(() => {
       personalGardenRef.current = personalGarden;
@@ -1718,6 +1725,7 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
                 }))
               : [],
           suggestedPlantingCell: runtime.suggestedPlantingCell,
+          tutorialDimmed: tutorialDimmedRef.current,
           effects: runtime.reducedMotion ? [] : runtime.effects,
           moving: runtime.reducedMotion ? false : runtime.moving,
           now: Date.now(),
