@@ -11,7 +11,12 @@ import { getTerrainTile, terrainNoise } from "./terrainGenerator";
 export type WorldPoint = { x: number; y: number };
 export type GardenViewport = { width: number; height: number };
 export type GardenWorldMode = "community" | "personal";
-export type SelectedCell = { gridX: number; gridY: number; plantId?: string } | null;
+export type SelectedCell = {
+  gridX: number;
+  gridY: number;
+  plantId?: string;
+  weedId?: string;
+} | null;
 export type GardenEffect =
   | {
       kind: "plant" | "water" | "uproot" | "path";
@@ -43,6 +48,7 @@ export type RenderGardenState = {
   mary: WorldPoint;
   duck: WorldPoint;
   plants: PlantRecord[];
+  weeds: Array<{ id: string; grid_x: number; grid_y: number; spawned_at: string }>;
   selected: SelectedCell;
   wateringTargets: Array<NonNullable<SelectedCell>>;
   suggestedPlantingCell: SelectedCell;
@@ -167,6 +173,37 @@ function drawGroundMark(
   ctx.fillRect(x + 3 * scale, y + 7 * scale, 3 * scale, scale);
   ctx.fillRect(x + 7 * scale, y + 6 * scale, 2 * scale, scale);
   ctx.fillRect(x + 10 * scale, y + 8 * scale, 3 * scale, scale);
+}
+
+function drawWeed(
+  ctx: CanvasRenderingContext2D,
+  weed: { grid_x: number; grid_y: number },
+  camera: WorldPoint,
+  viewport: GardenViewport,
+  zoom: number,
+) {
+  const point = worldToScreen(
+    gridToWorld(weed.grid_x, weed.grid_y),
+    camera,
+    viewport,
+    zoom,
+  );
+  if (!isVisible(point, viewport)) return;
+  ctx.save();
+  ctx.translate(Math.round(point.x), Math.round(point.y));
+  ctx.scale(zoom, zoom);
+  ctx.fillStyle = "#756448";
+  ctx.fillRect(-5, 3, 10, 2);
+  ctx.fillStyle = "#56734e";
+  ctx.fillRect(-1, -5, 2, 9);
+  ctx.fillRect(-5, -2, 4, 2);
+  ctx.fillRect(1, -1, 5, 2);
+  ctx.fillStyle = "#7f9a61";
+  ctx.fillRect(-4, -4, 3, 2);
+  ctx.fillRect(2, -5, 3, 2);
+  ctx.fillStyle = "#eee7cf";
+  ctx.fillRect(-1, -7, 2, 2);
+  ctx.restore();
 }
 
 function getSuggestedPlantingScreen(
@@ -1548,7 +1585,10 @@ export function renderGarden(ctx: CanvasRenderingContext2D, state: RenderGardenS
     (plant) => getPlantVisual(plant, state.now).state !== "expired",
   );
   const occupiedCells = new Set(
-    visiblePlants.map((plant) => terrainCellKey(plant.grid_x, plant.grid_y)),
+    [
+      ...visiblePlants.map((plant) => terrainCellKey(plant.grid_x, plant.grid_y)),
+      ...state.weeds.map((weed) => terrainCellKey(weed.grid_x, weed.grid_y)),
+    ],
   );
   ctx.imageSmoothingEnabled = false;
   ctx.clearRect(0, 0, state.viewport.width, state.viewport.height);
@@ -1588,6 +1628,9 @@ export function renderGarden(ctx: CanvasRenderingContext2D, state: RenderGardenS
     state.zoom,
   );
   drawDampSoil(ctx, visiblePlants, state.camera, state.viewport, state.now, state.zoom);
+  state.weeds.forEach((weed) =>
+    drawWeed(ctx, weed, state.camera, state.viewport, state.zoom),
+  );
   visiblePlants.forEach((plant) =>
     drawPlant(
       ctx,

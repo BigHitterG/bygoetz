@@ -151,6 +151,25 @@ export function GardenHealthPanel({ session }: { session: Session }) {
           <span>{formatTime(health.lastErrorAt)}</span>
           <small>Action or snapshot only</small>
         </div>
+        <div>
+          <strong>Commons today</strong>
+          <span>{health.commons.careAwardedToday} Care · {health.commons.mutationsToday} actions</span>
+          <small>{health.commons.activeContributorsToday} anonymous contributors</small>
+        </div>
+        <div>
+          <strong>Region pressure</strong>
+          <span>{health.commons.busyRegions} busy · {health.commons.restingRegions} resting</span>
+          <small>Densest region: {health.commons.densestRegionPlants} / 180 plants</small>
+        </div>
+        <div>
+          <strong>Garden capacity</strong>
+          <span>{health.commons.gardenOccupancyPercent}% occupied</span>
+          <small>
+            {health.commons.expansionRecommended
+              ? "Expansion threshold reached"
+              : `${health.commons.scheduledSuccession} succeeding · ${health.commons.weeds} weeds`}
+          </small>
+        </div>
       </div>
 
       <div className="cg-funnel-heading">

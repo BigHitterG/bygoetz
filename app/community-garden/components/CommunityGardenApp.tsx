@@ -673,14 +673,28 @@ export function CommunityGardenApp() {
         const award = awardGuestCare(
           continuedPreview,
           contribution.careValue,
+          contribution.earningPhase,
         );
         commitGuestPreview(award.preview);
-        canvasRef.current?.showCareReward(
-          award.awardedCare,
-          award.earningMode === "daily",
-        );
+        if (award.awardedCare > 0) {
+          canvasRef.current?.showCareReward(
+            award.awardedCare,
+            award.earningMode === "daily",
+          );
+          setCareAnnouncement(
+            `${award.awardedCare} temporary Care earned. Your preview balance is ${award.preview.garden.careBalance}.`,
+          );
+        } else {
+          setCareAnnouncement(
+            `Care is growing · ${contribution.tierProgress} of ${contribution.actionsRequired} helpful actions.`,
+          );
+        }
+        return;
+      }
+
+      if (!contribution.receiptToken || contribution.careValue <= 0) {
         setCareAnnouncement(
-          `${award.awardedCare} temporary Care earned. Your preview balance is ${award.preview.garden.careBalance}.`,
+          `Care is growing · ${contribution.tierProgress} of ${contribution.actionsRequired} helpful actions.`,
         );
         return;
       }
@@ -712,6 +726,7 @@ export function CommunityGardenApp() {
               const award = awardGuestCare(
                 continuedPreview,
                 contribution.careValue,
+                contribution.earningPhase,
               );
               commitGuestPreview(award.preview);
               canvasRef.current?.showCareReward(

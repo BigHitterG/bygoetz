@@ -8,10 +8,22 @@ export type GardenMapPlant = Pick<
   PlantRecord,
   "grid_x" | "grid_y" | "plant_type"
 >;
+export type GardenWeed = {
+  id: string;
+  grid_x: number;
+  grid_y: number;
+  spawned_at: string;
+};
 export type GardenContribution = {
-  action: "plant" | "water";
-  receiptToken: string;
+  action: "plant" | "water" | "weed";
+  receiptToken?: string;
   careValue: number;
+  specialFlower?: boolean;
+  earningPhase: "daily" | "full" | "taper4" | "taper20";
+  dailyCareEarned: number;
+  dailyCareLimit: number;
+  tierProgress: number;
+  actionsRequired: number;
 };
 export type GardenSnapshot = {
   version: number;
@@ -19,6 +31,7 @@ export type GardenSnapshot = {
   nextRefreshAt: string;
   plantCount: number;
   plants: PlantRecord[];
+  weeds: GardenWeed[];
   spawnPoints: Array<{ gridX: number; gridY: number }>;
 };
 
@@ -148,19 +161,41 @@ export async function fetchGardenSnapshot(): Promise<GardenSnapshot> {
           : [];
       })
     : [];
+  const weeds = Array.isArray(data.weeds)
+    ? data.weeds.flatMap((value) => {
+        if (!value || typeof value !== "object") return [];
+        const weed = value as Record<string, unknown>;
+        const gridX = Number(weed.grid_x);
+        const gridY = Number(weed.grid_y);
+        if (
+          typeof weed.id !== "string" ||
+          !Number.isInteger(gridX) ||
+          !Number.isInteger(gridY)
+        ) {
+          return [];
+        }
+        return [{
+          id: weed.id,
+          grid_x: gridX,
+          grid_y: gridY,
+          spawned_at: String(weed.spawned_at ?? data.generatedAt),
+        }];
+      })
+    : [];
   return {
     version: Number(data.version),
     generatedAt: String(data.generatedAt),
     nextRefreshAt: String(data.nextRefreshAt),
     plantCount: Number(data.plantCount ?? plants.length),
     plants,
+    weeds,
     spawnPoints,
   };
 }
 
-async function submitGardenAction(
+async function submitRawGardenAction(
   payload: Omit<Record<string, unknown>, "actionId">,
-): Promise<GardenActionResult> {
+) {
   const actionId = createActionId();
   const body = JSON.stringify({ ...payload, actionId });
   let response: Response | null = null;
@@ -192,7 +227,14 @@ async function submitGardenAction(
     throw new Error(await responseError(response, "That did not work."));
   }
 
-  const data = (await response.json()) as Record<string, unknown>;
+  return (await response.json()) as Record<string, unknown>;
+}
+
+async function submitGardenAction(
+  payload: Omit<Record<string, unknown>, "actionId">,
+): Promise<GardenActionResult> {
+  const data = await submitRawGardenAction(payload);
+
   if (!data.plant || typeof data.plant !== "object") {
     throw new Error("The garden did not return a plant.");
   }
@@ -231,4 +273,18 @@ export function plantGardenPlant(
 
 export function waterGardenPlants(plantIds: string[]) {
   return submitGardenAction({ action: "water", plantIds: plantIds.slice(0, 4) });
+}
+
+export async function clearGardenWeed(weedId: string) {
+  const data = await submitRawGardenAction({ action: "weed", weedId });
+  if (typeof data.removedWeedId !== "string") {
+    throw new Error("The garden did not confirm that weed was cleared.");
+  }
+  return {
+    removedWeedId: data.removedWeedId,
+    contribution:
+      data.contribution && typeof data.contribution === "object"
+        ? (data.contribution as GardenContribution)
+        : null,
+  };
 }

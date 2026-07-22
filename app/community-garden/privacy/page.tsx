@@ -23,7 +23,7 @@ export default function BasilPrivacyPage() {
       <section>
         <h2>Information Basil handles</h2>
         <ul>
-          <li><strong>Anonymous community play:</strong> tile actions such as planting and watering, an anonymous garden-session identifier, timestamps, and coarse operational data needed to maintain the shared map and prevent duplicate rewards.</li>
+          <li><strong>Anonymous community play:</strong> tile actions such as planting, watering, and pulling weeds; a pseudonymous signed garden-session key; timestamps; short-lived action records; and daily activity totals needed to maintain the shared map, pace Care, limit automated abuse, and prevent duplicate rewards. Basil stores a one-way network key for these safeguards rather than a raw IP address.</li>
           <li><strong>Private accounts:</strong> your email address, encrypted password credentials managed by Supabase Auth, verification state, and session information. Basil does not create a public username.</li>
           <li><strong>My Garden:</strong> private plants, paths, objects, Care balance and ledger activity, expansion state, and membership entitlement.</li>
           <li><strong>Feedback:</strong> the category and message you choose to submit through the account area, plus its review status.</li>
@@ -101,6 +101,7 @@ export default function BasilPrivacyPage() {
         <ul>
           <li>Private account, My Garden, feedback, and entitlement records remain while the account is active and are removed through the deletion process.</li>
           <li>The anonymous launch session is designed to last 90 days in the browser; raw first-party funnel sessions and events are designed for 180-day retention.</li>
+          <li>Pseudonymous daily Community Garden activity counters are designed for 35-day retention; action deduplication records are designed for 24-hour retention.</li>
           <li>Temporary checkout handoffs expire after seven days; expired, unsuccessful handoffs are cleaned up as the system operates.</li>
           <li>Account-email rate-limit records contain hashes rather than the email text and are cleaned after approximately seven days.</li>
           <li>Operational logs and aggregated health records are kept only as reasonably needed for security and reliability, subject to provider settings.</li>

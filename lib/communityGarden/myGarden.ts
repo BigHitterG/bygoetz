@@ -247,10 +247,15 @@ export async function getMyGarden(stewardId: string): Promise<MyGardenState> {
   };
 }
 
-export async function claimGardenCare(stewardId: string, receiptToken: string) {
+export async function claimGardenCare(
+  stewardId: string,
+  receiptToken: string,
+  actorKey: string,
+) {
   const { data, error } = await getSupabaseAdmin().rpc("claim_garden_care", {
     p_steward_id: stewardId,
     p_receipt_token: receiptToken,
+    p_actor_key: actorKey,
   });
   if (error) {
     throw new Error(
@@ -265,6 +270,7 @@ export async function claimGardenCare(stewardId: string, receiptToken: string) {
     careBalance: Number(result.care_balance ?? 0),
     lifetimeCare: Number(result.lifetime_care ?? 0),
     earningMode: result.earning_phase === "daily" ? "daily" : "standard",
+    earningPhase: String(result.earning_phase ?? "full"),
   };
 }
 

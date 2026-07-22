@@ -296,13 +296,12 @@ export function preserveGuestGardenPreviewForCheckout(
 export function awardGuestCare(
   current: GuestGardenPreview,
   requestedCare: number,
+  earningPhase: "daily" | "full" | "taper4" | "taper20" = "full",
 ): GuestCareAward {
-  const value = clampInteger(requestedCare, 0, 5);
+  const value = clampInteger(requestedCare, 0, 6);
   const today = new Date().toISOString().slice(0, 10);
-  const earningMode = current.dailyCareDate === today ? "standard" : "daily";
-  const specialBonus = Math.max(0, value - 1);
-  const awardedCare =
-    value > 0 ? (earningMode === "daily" ? 4 : 1) + specialBonus : 0;
+  const earningMode = earningPhase === "daily" ? "daily" : "standard";
+  const awardedCare = value;
 
   return {
     awardedCare,

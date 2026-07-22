@@ -19,7 +19,7 @@ The current Community Garden is a 160 by 160 world:
 4. Planting and watering are sent immediately through a server endpoint. The response is applied to the initiating player's local map immediately.
 5. Every action has a client-generated unique ID. Retrying the same request cannot plant, water, or award Care twice.
 6. Server-issued anonymous session keys support short-window rate limiting without storing a raw IP address or creating a public username.
-7. The canonical database still uses the existing planting, watering, lifespan, and Care rules.
+7. The canonical database applies the commons controls below in the same transaction as planting, watering, or pulling a weed.
 8. Only two full snapshots and 24 hours of action-deduplication records are retained.
 
 This is intentionally not a queue. A queue would add moving parts and confirmation delay before measured action traffic requires it.
@@ -57,6 +57,54 @@ The Phase 1 design can serve 5,000 mostly-reading simultaneous sessions because 
 - This is an entry-placement aid, not a new region system. The garden remains one 160 by 160 map with the same planting and watering rules.
 
 No visible countdown is required. A future ecological or storytelling timer can be added as a product feature without becoming part of action correctness.
+
+## Commons controls (implemented)
+
+The controls are intentionally generous before they become restrictive:
+
+| Control | Rule | Purpose |
+| --- | --- | --- |
+| First daily action | +4 Care | Preserve the satisfying daily return |
+| 0-100 Care | +1 per meaningful action | Fast normal play |
+| 101-200 Care | +1 per 4 meaningful actions | Gentle diminishing return |
+| 201-300 Care | +1 per 20 meaningful actions | Long-session tail without rapid map capture |
+| Daily Care | Hard stop at 300 | A cookie bot cannot farm indefinitely |
+| Daily mutations | Hard stop at 3,000 per session; 12,000 per pseudonymous network | Bounds malicious non-rewarded planting/watering |
+| Live contributor footprint | 100 soft / 125 hard | New work remains; that contributor's oldest work succeeds first |
+| Region size | 16 by 16 tiles | Local pressure without splitting the public garden into separate maps |
+| Region pressure | Healthy below 140; busy at 140; resting at 180 | Steers new planting toward open parts of the same map |
+| Absolute lifespan | Sunflower 7 days; rose 14 days; lavender 21 days | Watering cannot make one person's footprint permanent |
+| Ecology round | Every ten-minute snapshot | Applies expiry, succession, pressure, and bounded weeds together |
+
+A meaningful watering action is one that reaches the existing four-hour Care
+window. Repeated watering can still animate and hydrate, but it does not advance
+Care pacing. Special flowers retain their small bonus, subject to the same
+300-Care ceiling.
+
+Care receipts are now tied to the anonymous signed garden session and unique
+action ID. A replay, another browser, or another account cannot claim the same
+reward. The browser never decides the reward value.
+
+## Natural pressure and weeds
+
+Each region can hold 256 tiles, but new planting pauses at 180 live plants.
+Busy regions grow at most 12 small weeds during the ten-minute ecology cycle.
+Pulling a weed is a normal meaningful Care action. Weeds vanish when the region
+returns to healthy density, so they regulate pressure without becoming permanent
+clutter.
+
+The private Garden Health panel reports daily anonymous contributors, awarded
+Care, mutations, busy/resting regions, the densest region, weeds, scheduled
+succession, whole-map occupancy, and the 65% expansion threshold. Expansion is
+not automatic: the owner gets a measured signal before increasing world bounds.
+
+## Privacy and retention
+
+- Actor and network keys are one-way HMACs; raw IP addresses are not stored.
+- Daily actor/network counters are retained for 35 days.
+- Idempotency action rows remain limited to 24 hours.
+- Claimed Care receipts are pruned after 30 days; the private member Care ledger remains the auditable balance source.
+- Contributor keys never appear in public snapshots.
 
 ## Free-tier-safe verification
 

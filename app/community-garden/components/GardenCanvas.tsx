@@ -42,10 +42,12 @@ import {
   type PlantType,
 } from "../lib/roseLifecycle";
 import {
+  clearGardenWeed,
   fetchGardenSnapshot,
   GardenConnectionError,
   type GardenContribution,
   type GardenMapPlant,
+  type GardenWeed,
   isGardenConfigured,
   plantGardenPlant,
   waterGardenPlants,
@@ -59,6 +61,7 @@ export type GardenConnection = "connecting" | "online" | "offline" | "error";
 export type GardenAction =
   | "plant"
   | "water"
+  | "weed"
   | "uproot"
   | "expand"
   | "lay-path"
@@ -121,6 +124,10 @@ type Runtime = {
   plants: Map<string, PlantRecord>;
   mapPlants: Map<string, GardenMapPlant>;
   communityPlants: Map<string, PlantRecord>;
+  weeds: Map<string, GardenWeed>;
+  communityWeeds: Map<string, GardenWeed>;
+  recentlyClearedWeeds: Map<string, number>;
+  clearedWeedsLoaded: boolean;
   recentCommunityPlants: Map<string, RecentCommunityPlant>;
   recentCommunityPlantsLoaded: boolean;
   snapshotNextRefreshAt: number;
@@ -158,6 +165,42 @@ type RecentCommunityPlant = {
 
 const RECENT_COMMUNITY_PLANTS_KEY = "basil-recent-community-plants-v1";
 const RECENT_COMMUNITY_PLANT_TTL_MS = 30 * 60 * 1000;
+const RECENT_CLEARED_WEEDS_KEY = "basil-recent-cleared-weeds-v1";
+
+function ensureClearedWeedsLoaded(runtime: Runtime) {
+  if (runtime.clearedWeedsLoaded) return;
+  runtime.clearedWeedsLoaded = true;
+  if (typeof window === "undefined") return;
+  try {
+    const entries = JSON.parse(
+      window.localStorage.getItem(RECENT_CLEARED_WEEDS_KEY) ?? "[]",
+    ) as unknown;
+    if (!Array.isArray(entries)) return;
+    const cutoff = Date.now() - RECENT_COMMUNITY_PLANT_TTL_MS;
+    for (const entry of entries) {
+      if (!Array.isArray(entry) || typeof entry[0] !== "string") continue;
+      const clearedAt = Number(entry[1]);
+      if (Number.isFinite(clearedAt) && clearedAt >= cutoff) {
+        runtime.recentlyClearedWeeds.set(entry[0], clearedAt);
+      }
+    }
+  } catch {
+    // A stale weed can be retried safely because server actions are idempotent.
+  }
+}
+
+function rememberClearedWeed(runtime: Runtime, weedId: string) {
+  runtime.recentlyClearedWeeds.set(weedId, Date.now());
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(
+      RECENT_CLEARED_WEEDS_KEY,
+      JSON.stringify(Array.from(runtime.recentlyClearedWeeds.entries()).slice(-48)),
+    );
+  } catch {
+    // The current in-memory session still hides the cleared weed.
+  }
+}
 
 type WorldSnapshot = {
   mary: WorldPoint;
@@ -461,12 +504,18 @@ function getPlantAt(runtime: Runtime, gridX: number, gridY: number) {
   return runtime.plants.get(plantKey(gridX, gridY));
 }
 
+function getWeedAt(runtime: Runtime, gridX: number, gridY: number) {
+  return runtime.weeds.get(plantKey(gridX, gridY));
+}
+
 function getPendingActionLabel(action: NonNullable<GardenAction>) {
   switch (action) {
     case "plant":
       return "Planting...";
     case "water":
       return "Watering...";
+    case "weed":
+      return "Pulling weed...";
     case "uproot":
       return "Uprooting...";
     case "expand":
@@ -520,6 +569,7 @@ function findSuggestedPlantingCell(runtime: Runtime): NonNullable<SelectedCell> 
     const gridY = originY + offsetY;
     if (!isWithinRuntime(runtime, gridX, gridY)) continue;
     if (getPlantAt(runtime, gridX, gridY)) continue;
+    if (getWeedAt(runtime, gridX, gridY)) continue;
     if (runtime.mode === "personal") {
       if (hasPersonalPath(runtime, gridX, gridY)) continue;
       if (getPersonalElement(runtime, gridX, gridY)) continue;
@@ -629,6 +679,7 @@ function getActionState(runtime: Runtime) {
   }
 
   const plant = getPlantAt(runtime, runtime.selected.gridX, runtime.selected.gridY);
+  const weed = getWeedAt(runtime, runtime.selected.gridX, runtime.selected.gridY);
   const visual = plant ? getPlantVisual(plant) : null;
   const nearby = getDistanceToCell(runtime, runtime.selected) <= GARDEN_CONFIG.tileSize * 1.8;
 
@@ -751,6 +802,14 @@ function getActionState(runtime: Runtime) {
     };
   }
 
+  if (weed) {
+    return {
+      action: "weed" as GardenAction,
+      label: "Pull weed · Care",
+      enabled: nearby && !runtime.actionBusy,
+    };
+  }
+
   if (plant && visual && visual.state !== "expired") {
     const definition = getPlantDefinition(plant.plant_type);
     if (visual.state === "dead") {
@@ -767,7 +826,7 @@ function getActionState(runtime: Runtime) {
     return {
       action: "water" as GardenAction,
       label: wateringTargets.some((target) => canEarnWateringCare(target))
-        ? `${label} · +1 Care`
+        ? `${label} · Care`
         : label,
       enabled: inWateringRange && !runtime.actionBusy,
     };
@@ -896,6 +955,10 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
       plants: new Map(),
       mapPlants: new Map(),
       communityPlants: new Map(),
+      weeds: new Map(),
+      communityWeeds: new Map(),
+      recentlyClearedWeeds: new Map(),
+      clearedWeedsLoaded: false,
       recentCommunityPlants: new Map(),
       recentCommunityPlantsLoaded: false,
       snapshotNextRefreshAt: 0,
@@ -1052,6 +1115,7 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
       const currentPersonalGarden = personalGardenRef.current;
       if (mode === "personal" && currentPersonalGarden) {
         applyPersonalGarden(runtime, currentPersonalGarden);
+        runtime.weeds = new Map();
         const saved = worldSnapshotsRef.current.personal;
         if (saved) {
           runtime.mary = {
@@ -1080,6 +1144,7 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
       } else {
         runtime.personalGarden = null;
         runtime.plants = new Map();
+        runtime.weeds = new Map();
         runtime.mapPlants = new Map();
         runtime.mapRevision += 1;
         const saved = worldSnapshotsRef.current.community;
@@ -1122,6 +1187,7 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
       const gridY = Math.floor(runtime.mary.y / GARDEN_CONFIG.tileSize);
       let bounds = getLoadedBounds(gridX, gridY);
       overlayRecentCommunityPlants(runtime);
+      ensureClearedWeedsLoaded(runtime);
 
       const showLocalSnapshot = () => {
         runtime.plants = new Map(
@@ -1141,6 +1207,17 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
             plantKey(plant.grid_x, plant.grid_y),
             plant,
           ]),
+        );
+        runtime.weeds = new Map(
+          Array.from(runtime.communityWeeds.values())
+            .filter(
+              (weed) =>
+                weed.grid_x >= bounds.minX &&
+                weed.grid_x <= bounds.maxX &&
+                weed.grid_y >= bounds.minY &&
+                weed.grid_y <= bounds.maxY,
+            )
+            .map((weed) => [plantKey(weed.grid_x, weed.grid_y), weed]),
         );
         runtime.mapRevision += 1;
       };
@@ -1176,6 +1253,11 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
           runtime,
           snapshot.plants,
           snapshot.generatedAt,
+        );
+        runtime.communityWeeds = new Map(
+          snapshot.weeds
+            .filter((weed) => !runtime.recentlyClearedWeeds.has(weed.id))
+            .map((weed) => [plantKey(weed.grid_x, weed.grid_y), weed]),
         );
         runtime.mapRevision += 1;
         runtime.snapshotNextRefreshAt = Date.parse(snapshot.nextRefreshAt);
@@ -1379,6 +1461,8 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
               ? `Planting ${selectedDefinition.name.toLowerCase()}...`
               : actionState.action === "uproot"
                 ? "Uprooting the plant..."
+                : actionState.action === "weed"
+                  ? "Pulling a weed to help this patch recover..."
                 : "Watering the plant...";
           publishUi();
 
@@ -1475,6 +1559,9 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
             } else if (actionState.action === "plant") {
               const existing = getPlantAt(runtime, selected.gridX, selected.gridY);
               if (!isPlantable(existing)) throw new Error("Another plant is already here.");
+              if (getWeedAt(runtime, selected.gridX, selected.gridY)) {
+                throw new Error("Pull this weed before planting here.");
+              }
               const result = runtime.configured
                 ? await plantGardenPlant(
                     selected.gridX,
@@ -1509,6 +1596,24 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
               });
               runtime.statusMessage = `A new ${selectedDefinition.name.toLowerCase()} has taken root.`;
               if (contribution) onCommunityContributionRef.current?.(contribution);
+            } else if (actionState.action === "weed") {
+              const weed = getWeedAt(runtime, selected.gridX, selected.gridY);
+              if (!weed) throw new Error("That weed has already been cleared.");
+              const result = await clearGardenWeed(weed.id);
+              runtime.weeds.delete(plantKey(weed.grid_x, weed.grid_y));
+              runtime.communityWeeds.delete(plantKey(weed.grid_x, weed.grid_y));
+              rememberClearedWeed(runtime, weed.id);
+              runtime.effects.push({
+                kind: "uproot",
+                gridX: weed.grid_x,
+                gridY: weed.grid_y,
+                startedAt: Date.now(),
+              });
+              runtime.selected = { gridX: weed.grid_x, gridY: weed.grid_y };
+              runtime.statusMessage = "The patch has room to breathe again.";
+              if (result.contribution) {
+                onCommunityContributionRef.current?.(result.contribution);
+              }
             } else {
               const current = getPlantAt(runtime, selected.gridX, selected.gridY);
               if (!current) throw new Error("That plant is no longer here.");
@@ -1707,6 +1812,7 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
           mary: runtime.mary,
           duck: runtime.duck,
           plants: Array.from(runtime.plants.values()),
+          weeds: Array.from(runtime.weeds.values()),
           selected: runtime.selected,
           wateringTargets:
             runtime.mode === "community" &&
@@ -1834,12 +1940,15 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
       }
 
       const plant = getPlantAt(runtime, gridX, gridY);
-      runtime.selected = { gridX, gridY, plantId: plant?.id };
+      const weed = getWeedAt(runtime, gridX, gridY);
+      runtime.selected = { gridX, gridY, plantId: plant?.id, weedId: weed?.id };
       runtime.target =
         runtime.mode === "community" && plant
           ? getWateringApproachTarget(runtime, gridX, gridY)
           : getAdjacentTarget(runtime, gridX, gridY);
-      runtime.statusMessage = plant
+      runtime.statusMessage = weed
+        ? "Walking over to pull this weed..."
+        : plant
         ? runtime.target
           ? `Walking into watering range of the ${getPlantDefinition(plant.plant_type).name.toLowerCase()}...`
           : "Choose Water to care for the highlighted flowers."

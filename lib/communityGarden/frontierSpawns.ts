@@ -2,7 +2,7 @@ const WORLD_MIN = -96;
 const WORLD_MAX = 63;
 const CHUNK_SIZE = 16;
 const MIN_NEIGHBORHOOD_PLANTS = 18;
-const MAX_CHUNK_PLANTS = 208;
+const MAX_CHUNK_PLANTS = 140;
 const SPAWN_COUNT = 12;
 const SPAWN_SEPARATION = 10;
 
@@ -224,10 +224,10 @@ export function computeFrontierSpawnPoints(
   }
 
   if (spawnPoints.length > 0) return spawnPoints;
-  const fallback = chooseOpenCell(
-    chunks.get(chunkKey(0, 0)) ?? { chunkX: 0, chunkY: 0, plants: 0 },
-    occupied,
-    version,
-  );
+  const fallbackChunk = Array.from(chunks.values())
+    .filter((chunk) => chunk.plants < 180)
+    .sort((left, right) => left.plants - right.plants)[0] ??
+    chunks.get(chunkKey(0, 0)) ?? { chunkX: 0, chunkY: 0, plants: 0 };
+  const fallback = chooseOpenCell(fallbackChunk, occupied, version);
   return [fallback ?? { gridX: 0, gridY: 0 }];
 }

@@ -39,6 +39,21 @@ export type CommunityGardenHealth = {
     plantCount: number | null;
     payloadBytes: number | null;
   };
+  commons: {
+    careCap: number;
+    mutationCap: number;
+    activeContributorsToday: number;
+    contributorsAtCareCap: number;
+    careAwardedToday: number;
+    mutationsToday: number;
+    busyRegions: number;
+    restingRegions: number;
+    densestRegionPlants: number;
+    scheduledSuccession: number;
+    weeds: number;
+    gardenOccupancyPercent: number;
+    expansionRecommended: boolean;
+  };
   funnel: BasilLaunchFunnel;
 };
 
@@ -77,6 +92,8 @@ export function getGardenErrorCode(error: unknown) {
   if (/^[a-z0-9_-]{1,80}$/i.test(code)) return code;
 
   const message = "message" in error ? String(error.message).toLowerCase() : "";
+  if (message.includes("full day") || message.includes("reached today")) return "daily_cap";
+  if (message.includes("patch is resting")) return "region_capacity";
   if (message.includes("breather") || message.includes("rate")) return "rate_limited";
   if (message.includes("already") || message.includes("no longer")) return "tile_conflict";
   if (message.includes("timeout")) return "timeout";
@@ -104,15 +121,24 @@ export async function recordCommunityGardenHealth(input: {
 }
 
 export async function getCommunityGardenAdminHealth() {
-  const [{ data, error }, funnel] = await Promise.all([
+  const [{ data, error }, { data: commons, error: commonsError }, funnel] = await Promise.all([
     getSupabaseAdmin().rpc("get_community_garden_admin_health"),
+    getSupabaseAdmin().rpc("get_community_garden_commons_health"),
     getBasilLaunchFunnelAdmin(),
   ]);
   if (error) throw error;
+  if (commonsError) throw commonsError;
   if (!data || typeof data !== "object") {
     throw new Error("The garden health summary was unavailable.");
   }
-  return { ...(data as Omit<CommunityGardenHealth, "funnel">), funnel };
+  if (!commons || typeof commons !== "object") {
+    throw new Error("The garden commons summary was unavailable.");
+  }
+  return {
+    ...(data as Omit<CommunityGardenHealth, "funnel" | "commons">),
+    commons,
+    funnel,
+  } as CommunityGardenHealth;
 }
 
 export function logGardenServerEvent(

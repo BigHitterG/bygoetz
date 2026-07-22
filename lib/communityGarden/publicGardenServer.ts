@@ -91,9 +91,10 @@ export async function loadCommunityGardenSnapshot() {
   if (cached) return cached;
 
   const plants = Array.isArray(snapshot.plants) ? snapshot.plants : [];
+  const weeds = Array.isArray(snapshot.weeds) ? snapshot.weeds : [];
   const enrichedSnapshot: Record<string, unknown> = {
     ...snapshot,
-    spawnPoints: computeFrontierSpawnPoints(plants, version),
+    spawnPoints: computeFrontierSpawnPoints([...plants, ...weeds], version),
   };
   snapshotCache.set(version, enrichedSnapshot);
   for (const cachedVersion of snapshotCache.keys()) {
@@ -106,14 +107,14 @@ export async function submitCommunityGardenAction(input: {
   actionId: string;
   actorKey: string;
   networkKey: string;
-  action: "plant" | "water";
+  action: "plant" | "water" | "weed";
   gridX?: number;
   gridY?: number;
   plantType?: string;
   plantIds?: string[];
 }) {
   const { data, error } = await getSupabaseAdmin().rpc(
-    "perform_idempotent_community_garden_action_v2",
+    "perform_idempotent_community_garden_action_v3",
     {
       p_action_id: input.actionId,
       p_actor_key: input.actorKey,

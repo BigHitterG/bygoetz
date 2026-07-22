@@ -23,6 +23,7 @@ type ActionBody = {
   plantType?: unknown;
   plantId?: unknown;
   plantIds?: unknown;
+  weedId?: unknown;
 };
 
 function errorMessage(error: unknown) {
@@ -35,6 +36,10 @@ function errorMessage(error: unknown) {
     message.includes("no longer") ||
     message.includes("Choose") ||
     message.includes("breather") ||
+    message.includes("full day") ||
+    message.includes("reached today") ||
+    message.includes("resting") ||
+    message.includes("Pull this weed") ||
     message.includes("not available")
   ) {
     return message;
@@ -87,7 +92,7 @@ export async function POST(request: NextRequest) {
     if (
       typeof body.actionId !== "string" ||
       !ACTION_ID_PATTERN.test(body.actionId) ||
-      (body.action !== "plant" && body.action !== "water")
+      (body.action !== "plant" && body.action !== "water" && body.action !== "weed")
     ) {
       recordResult("action_error", "invalid_action");
       const response = NextResponse.json(
@@ -114,10 +119,26 @@ export async function POST(request: NextRequest) {
       : legacyPlantId
         ? [legacyPlantId]
         : [];
+    if (
+      body.action === "weed" &&
+      typeof body.weedId === "string" &&
+      ACTION_ID_PATTERN.test(body.weedId)
+    ) {
+      plantIds.push(body.weedId);
+    }
     if (body.action === "water" && plantIds.length === 0) {
       recordResult("action_error", "invalid_water_targets");
       const response = NextResponse.json(
         { error: "Choose between one and four flowers to water." },
+        { status: 400 },
+      );
+      attachGardenSession(response, actor.session);
+      return response;
+    }
+    if (body.action === "weed" && plantIds.length !== 1) {
+      recordResult("action_error", "invalid_weed_target");
+      const response = NextResponse.json(
+        { error: "Choose one weed to pull." },
         { status: 400 },
       );
       attachGardenSession(response, actor.session);
