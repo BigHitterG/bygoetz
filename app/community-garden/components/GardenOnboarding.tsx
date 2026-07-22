@@ -4,8 +4,8 @@ type GardenOnboardingProps = {
   step: GardenOnboardingStep | null;
   communityPlantings: number;
   inventoryOpen: boolean;
-  actionReady: boolean;
-  onDismiss: () => void;
+  plantActionReady: boolean;
+  waterActionReady: boolean;
   onOpenInventory: () => void;
   onOpenMyGarden: () => void;
 };
@@ -14,8 +14,8 @@ export function GardenOnboarding({
   step,
   communityPlantings,
   inventoryOpen,
-  actionReady,
-  onDismiss,
+  plantActionReady,
+  waterActionReady,
   onOpenInventory,
   onOpenMyGarden,
 }: GardenOnboardingProps) {
@@ -30,12 +30,14 @@ export function GardenOnboarding({
     return null;
   }
 
+  const actionReady =
+    step === "community-water" ? waterActionReady : plantActionReady;
   const content =
     step === "plant"
       ? {
-          kicker: "A small beginning",
-          title: "Plant three community flowers",
-          copy: "Open Inventory and choose your plant once. You will use it for all three plantings.",
+          kicker: "One garden, shared everywhere",
+          title: "Add your flowers to the community",
+          copy: "This shared landscape is shaped by gardeners wherever they are. Choose one plant, then add it three times.",
           action: "Open Inventory",
           onAction: onOpenInventory,
         }
@@ -77,6 +79,18 @@ export function GardenOnboarding({
                 action: null,
                 onAction: null,
               }
+            : step === "community-water"
+              ? {
+                  kicker: "One more garden skill",
+                  title: actionReady
+                    ? "Water the highlighted flowers"
+                    : "Choose the blue watering square",
+                  copy: actionReady
+                    ? "Tap Water below. The red inner corners point back toward Mary, showing the spray direction."
+                    : "Tap the highlighted flowers. Mary will move into range and the Water button will light up.",
+                  action: null,
+                  onAction: null,
+                }
         : {
             kicker: "Your garden preview",
             title: "Choose your first flower",
@@ -87,17 +101,9 @@ export function GardenOnboarding({
 
   return (
     <aside
-      className={`cg-onboarding-card is-${step}${actionReady ? " is-action-ready" : ""}`}
+      className={`cg-onboarding-card is-required is-${step}${actionReady ? " is-action-ready" : ""}`}
       aria-labelledby="cg-onboarding-title"
     >
-      <button
-        className="cg-onboarding-dismiss"
-        type="button"
-        aria-label="Dismiss garden guide"
-        onClick={onDismiss}
-      >
-        ×
-      </button>
       <p>{content.kicker}</p>
       <h2 id="cg-onboarding-title">{content.title}</h2>
       <span>{content.copy}</span>

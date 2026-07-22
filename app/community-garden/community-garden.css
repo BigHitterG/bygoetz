@@ -654,14 +654,31 @@
   bottom: max(174px, calc(env(safe-area-inset-bottom) + 162px));
   z-index: 13;
   display: grid;
-  width: min(260px, calc(100% - 24px));
+  width: min(290px, calc(100% - 24px));
   gap: 6px;
   border: 2px solid var(--cg-ink);
   background: rgba(255, 244, 223, 0.97);
-  padding: 12px 34px 12px 12px;
+  padding: 14px;
   box-shadow:
-    4px 4px 0 rgba(52, 35, 31, 0.28),
-    0 0 0 3px rgba(255, 244, 223, 0.46);
+    5px 5px 0 rgba(52, 35, 31, 0.34),
+    0 0 0 4px rgba(255, 244, 223, 0.62),
+    0 0 0 7px rgba(184, 49, 54, 0.18);
+}
+
+.cg-onboarding-card.is-required {
+  animation: cg-onboarding-card-pulse 1.65s ease-in-out infinite;
+}
+
+@keyframes cg-onboarding-card-pulse {
+  0%,
+  100% {
+    filter: brightness(1);
+    transform: translateY(0);
+  }
+  50% {
+    filter: brightness(1.035);
+    transform: translateY(-4px);
+  }
 }
 
 .cg-free-planting-notice {
@@ -726,7 +743,8 @@
 }
 
 .cg-onboarding-card.is-community-tile,
-.cg-onboarding-card.is-personal-tile {
+.cg-onboarding-card.is-personal-tile,
+.cg-onboarding-card.is-community-water {
   bottom: max(108px, calc(env(safe-area-inset-bottom) + 96px));
 }
 
@@ -748,6 +766,7 @@
 .cg-onboarding-card.is-personal-inventory::after,
 .cg-onboarding-card.is-community-tile.is-action-ready::after,
 .cg-onboarding-card.is-personal-tile.is-action-ready::after,
+.cg-onboarding-card.is-community-water.is-action-ready::after,
 .cg-onboarding-card.is-my-garden::after {
   display: block;
 }
@@ -780,14 +799,14 @@
 }
 
 .cg-onboarding-card h2 {
-  font-size: 0.83rem;
+  font-size: 0.9rem;
   line-height: 1.1;
   text-transform: uppercase;
 }
 
 .cg-onboarding-card > span {
   color: #6f4c3e;
-  font-size: 0.62rem;
+  font-size: 0.66rem;
   font-weight: 700;
   line-height: 1.38;
 }
@@ -3600,12 +3619,220 @@
 }
 
 .cg-membership-offer {
-  width: min(100%, 430px);
+  width: min(100%, 520px);
+  max-height: min(94dvh, 850px);
+  overflow-y: auto;
   border: 3px solid var(--cg-ink);
   background: var(--cg-cream);
   color: var(--cg-ink);
   padding: 18px;
   box-shadow: 7px 7px 0 rgba(0, 0, 0, 0.28);
+}
+
+.cg-membership-vision {
+  display: grid;
+  grid-template-columns: minmax(0, 0.72fr) 24px minmax(0, 1.28fr);
+  gap: 8px;
+  align-items: center;
+}
+
+.cg-membership-vision-panel {
+  display: grid;
+  min-width: 0;
+  gap: 5px;
+}
+
+.cg-membership-vision-panel > strong,
+.cg-membership-vision-panel > span {
+  font-size: 0.56rem;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.cg-membership-vision-panel > span {
+  color: #6f4c3e;
+  font-family: system-ui, sans-serif;
+  font-size: 0.58rem;
+  font-weight: 750;
+  text-transform: none;
+}
+
+.cg-membership-vision-arrow {
+  color: var(--cg-red);
+  font-size: 1.4rem;
+  font-weight: 900;
+  text-align: center;
+}
+
+.cg-membership-mini-garden {
+  position: relative;
+  height: 94px;
+  overflow: hidden;
+  border: 2px solid var(--cg-ink);
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.08) 1px, transparent 1px),
+    linear-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px),
+    #8fb97a;
+  background-size: 18px 18px;
+  box-shadow: 3px 3px 0 rgba(52, 35, 31, 0.18);
+}
+
+.is-preview .cg-membership-mini-garden {
+  height: 74px;
+  opacity: 0.76;
+}
+
+.is-member .cg-membership-mini-garden::after {
+  position: absolute;
+  right: -2px;
+  bottom: -2px;
+  width: 42%;
+  height: 45%;
+  border: 2px dashed #c99536;
+  background: rgba(255, 250, 240, 0.7);
+  content: "MORE LAND";
+  color: #7a552e;
+  font-size: 0.42rem;
+  font-weight: 900;
+  line-height: 42px;
+  text-align: center;
+}
+
+.cg-membership-mini-garden i {
+  position: absolute;
+  display: block;
+}
+
+.cg-membership-mini-garden .is-flower {
+  left: 22%;
+  top: 50%;
+  z-index: 3;
+  width: 10px;
+  height: 10px;
+  border: 2px solid var(--cg-ink);
+  background: var(--cg-red);
+  box-shadow: 13px 5px 0 -1px var(--cg-red), 26px -2px 0 -1px var(--cg-red);
+}
+
+.cg-membership-mini-garden .is-gold {
+  left: 39%;
+  top: 61%;
+  background: var(--cg-gold);
+  box-shadow: 13px -7px 0 -1px var(--cg-gold), 27px 1px 0 -1px var(--cg-gold);
+}
+
+.cg-membership-mini-garden .is-purple {
+  left: 54%;
+  top: 42%;
+  background: #8c83ad;
+  box-shadow: 12px 6px 0 -1px #8c83ad, 25px -4px 0 -1px #8c83ad;
+}
+
+.cg-membership-mini-garden .is-far {
+  left: 63%;
+  top: 70%;
+}
+
+.cg-membership-mini-garden .is-house {
+  left: 7px;
+  top: 7px;
+  z-index: 4;
+  width: 31px;
+  height: 27px;
+  border: 2px solid var(--cg-ink);
+  background: #d69b62;
+  box-shadow: inset 9px 10px 0 #f0d184;
+}
+
+.cg-membership-mini-garden .is-house::before {
+  position: absolute;
+  left: -4px;
+  top: -9px;
+  width: 25px;
+  height: 16px;
+  border-top: 3px solid var(--cg-ink);
+  border-left: 3px solid var(--cg-ink);
+  background: #a54f45;
+  content: "";
+  transform: rotate(45deg);
+}
+
+.cg-membership-mini-garden .is-path {
+  left: 31px;
+  top: 29px;
+  width: 70px;
+  height: 9px;
+  background: repeating-linear-gradient(90deg, #d4c4a8 0 9px, #7e7161 10px 12px);
+  transform: rotate(18deg);
+}
+
+.cg-membership-mini-garden .is-bench {
+  right: 17%;
+  top: 13px;
+  z-index: 5;
+  width: 34px;
+  height: 13px;
+  border: 2px solid var(--cg-ink);
+  background: #a86f48;
+  box-shadow: inset 0 4px 0 #d39466;
+}
+
+.cg-membership-mini-garden .is-birdhouse {
+  right: 8px;
+  top: 11px;
+  z-index: 5;
+  width: 12px;
+  height: 28px;
+  border-top: 14px solid #e5be73;
+  border-left: 2px solid transparent;
+  border-right: 2px solid transparent;
+  background: #714d3c;
+}
+
+.cg-membership-benefits {
+  display: grid;
+  margin: 13px 0;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.cg-membership-benefits article {
+  display: grid;
+  min-width: 0;
+  gap: 4px;
+  border: 1px solid rgba(52, 35, 31, 0.34);
+  background: #fffaf0;
+  padding: 8px;
+}
+
+.cg-membership-benefits article > span {
+  width: 28px;
+  height: 22px;
+  border: 2px solid var(--cg-ink);
+  background: #9fc688;
+  box-shadow: 4px 4px 0 #d8e6bd;
+}
+
+.cg-membership-benefits article > span.is-build {
+  background: repeating-linear-gradient(90deg, #b49b77 0 5px, #776451 6px 8px);
+}
+
+.cg-membership-benefits article > span.is-future {
+  border-radius: 50% 50% 40% 40%;
+  background: #8c83ad;
+  box-shadow: 5px 3px 0 -2px var(--cg-gold), 8px -3px 0 -3px var(--cg-red);
+}
+
+.cg-membership-benefits strong {
+  font-size: 0.58rem;
+  text-transform: uppercase;
+}
+
+.cg-membership-benefits small {
+  color: #6f4c3e;
+  font-family: system-ui, sans-serif;
+  font-size: 0.58rem;
+  line-height: 1.3;
 }
 
 .cg-membership-offer-art {

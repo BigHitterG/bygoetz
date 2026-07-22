@@ -18,6 +18,7 @@ type GardenInventoryProps = {
   selectedTool: GardenTool;
   guidePlantChoice?: boolean;
   onboardingLocked?: boolean;
+  toggleLocked?: boolean;
   onToggle: () => void;
   onSelectPlant: (plantType: PlantType) => void;
   onSelectPath: () => void;
@@ -30,6 +31,7 @@ export function GardenInventory({
   selectedTool,
   guidePlantChoice = false,
   onboardingLocked = false,
+  toggleLocked = false,
   onToggle,
   onSelectPlant,
   onSelectPath,
@@ -145,6 +147,7 @@ export function GardenInventory({
         aria-expanded={open}
         aria-label={`${open ? "Close" : "Open"} inventory. ${selectedName} selected.`}
         onClick={onToggle}
+        disabled={toggleLocked}
       >
         <span className={selectedClass} aria-hidden="true" />
         <span>

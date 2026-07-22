@@ -140,31 +140,45 @@ export function CommunityGardenApp() {
   const myGarden = memberGarden ?? guestPreview.garden;
   const onboardingPlantActionReady =
     ui.action === "plant" && ui.actionEnabled;
+  const onboardingWaterActionReady =
+    ui.action === "water" && ui.actionEnabled;
   const showMyGardenInvitation =
     world === "community" &&
     !memberGarden &&
     communityOnboardingPlantings >= 3 &&
+    onboardingStep !== "community-water" &&
     !isGardenOnboardingFinished(onboardingStep);
   const myGardenTutorialLocked =
     !memberGarden &&
     Boolean(onboardingStep) &&
     !isGardenOnboardingFinished(onboardingStep) &&
     onboardingStep !== "my-garden" &&
-    communityOnboardingPlantings < 3;
+    (communityOnboardingPlantings < 3 || onboardingStep === "community-water");
   const onboardingInventoryLocked =
     Boolean(onboardingStep) && !isGardenOnboardingFinished(onboardingStep);
   const tutorialMapDimmed =
     Boolean(onboardingStep) && !isGardenOnboardingFinished(onboardingStep);
+  const tutorialActionAllowed =
+    !tutorialMapDimmed ||
+    ((onboardingStep === "community-tile" || onboardingStep === "personal-tile") &&
+      ui.action === "plant") ||
+    (onboardingStep === "community-water" && ui.action === "water");
   const showContinueGardenGuidance =
     world === "personal" &&
     !memberGarden &&
     guestPreview.access?.softPaywallDeclined === true &&
     guestPreview.access.continuedAfterSoftPaywall !== true;
-  const showCommunityJoin =
-    world === "community" &&
+  const showMembershipShortcut =
     accountChecked &&
     !memberGarden &&
     guestPreview.access?.softPaywallDeclined === true;
+  const showMyGardenGrowthNudge =
+    world === "community" &&
+    showMembershipShortcut &&
+    isGardenOnboardingFinished(onboardingStep) &&
+    (myGarden.preview?.plantingsUsed ?? 0) <
+      (myGarden.preview?.plantingLimit ?? 10) &&
+    myGarden.careBalance >= myGarden.plantCost;
 
   const commitGuestPreview = useCallback((next: GuestGardenPreview) => {
     guestPreviewRef.current = next;
@@ -396,6 +410,11 @@ export function CommunityGardenApp() {
     [],
   );
 
+  const setOnboardingDirectly = useCallback((next: GardenOnboardingStep) => {
+    saveGardenOnboardingStep(next);
+    setOnboardingStep(next);
+  }, []);
+
   useEffect(() => {
     const sendPulse = () => {
       if (document.visibilityState === "hidden") return;
@@ -547,7 +566,8 @@ export function CommunityGardenApp() {
     } else if (
       !memberGarden &&
       !isGardenOnboardingFinished(next) &&
-      storedCommunityPlantings >= 3
+      storedCommunityPlantings >= 3 &&
+      next !== "community-water"
     ) {
       next = "my-garden";
     } else if (next === "community-repeat") {
@@ -579,9 +599,12 @@ export function CommunityGardenApp() {
       onboardingStep === "community-tile" && world === "community";
     const shouldSuggestPersonal =
       onboardingStep === "personal-tile" && world === "personal";
-    if (!shouldSuggestCommunity && !shouldSuggestPersonal) return;
+    const shouldSuggestWatering =
+      onboardingStep === "community-water" && world === "community";
+    if (!shouldSuggestCommunity && !shouldSuggestPersonal && !shouldSuggestWatering) return;
     const frame = window.requestAnimationFrame(() => {
-      canvasRef.current?.suggestPlantingSpot();
+      if (shouldSuggestWatering) canvasRef.current?.suggestWateringSpot();
+      else canvasRef.current?.suggestPlantingSpot();
     });
     return () => window.cancelAnimationFrame(frame);
   }, [onboardingStep, world]);
@@ -902,9 +925,18 @@ export function CommunityGardenApp() {
             canvasRef.current?.suggestPlantingSpot();
           });
         }
+      } else if (
+        mode === "community" &&
+        action === "water" &&
+        onboardingStep === "community-water"
+      ) {
+        transitionOnboarding("complete", ["community-water"]);
+        setCareAnnouncement(
+          "Watering learned. Explore freely, earn Care, and return to My Garden whenever you are ready.",
+        );
       }
     },
-    [transitionOnboarding],
+    [onboardingStep, transitionOnboarding],
   );
 
   const handleGardenActionFailed = useCallback(
@@ -929,12 +961,20 @@ export function CommunityGardenApp() {
 
   function dismissMembershipOffer() {
     if (membershipOfferStage === "soft") {
+      const isFirstDecline =
+        guestPreviewRef.current.access?.softPaywallDeclined !== true;
       const declined = markGuestSoftPaywallDeclined(guestPreviewRef.current);
       commitGuestPreview(declined);
       void trackBasilFunnelEvent("soft_paywall_declined");
+      if (isFirstDecline) {
+        setInventoryOpen(false);
+        setWorld("community");
+        setOnboardingDirectly("community-water");
+      }
+    } else {
+      transitionOnboarding("complete");
     }
     setMembershipOfferOpen(false);
-    transitionOnboarding("complete");
   }
 
   return (
@@ -1012,7 +1052,7 @@ export function CommunityGardenApp() {
 
         <button
           className={`cg-compact-support${
-            showMyGardenInvitation || showContinueGardenGuidance
+            showMyGardenInvitation || showContinueGardenGuidance || showMyGardenGrowthNudge
               ? " is-onboarding-highlight"
               : ""
           }`}
@@ -1039,12 +1079,14 @@ export function CommunityGardenApp() {
               Care <b>{myGarden.careBalance}</b>
             </small>
           </span>
-          {showMyGardenInvitation || showContinueGardenGuidance ? (
+          {showMyGardenInvitation || showContinueGardenGuidance || showMyGardenGrowthNudge ? (
             <strong
               className="cg-my-garden-notice"
               aria-label={
                 showContinueGardenGuidance
                   ? "Earn more Care in Community Garden"
+                  : showMyGardenGrowthNudge
+                    ? "Care is ready to use in My Garden"
                   : "My Garden is ready"
               }
             >
@@ -1074,6 +1116,11 @@ export function CommunityGardenApp() {
           open={inventoryOpen}
           selectedTool={ui.selectedTool}
           onboardingLocked={onboardingInventoryLocked}
+          toggleLocked={
+            onboardingInventoryLocked &&
+            onboardingStep !== "plant" &&
+            onboardingStep !== "personal-inventory"
+          }
           guidePlantChoice={
             onboardingStep === "select-seed" ||
             onboardingStep === "personal-seed"
@@ -1117,14 +1164,15 @@ export function CommunityGardenApp() {
 
         <button
           className={`cg-action-button${
-            onboardingPlantActionReady &&
-            (onboardingStep === "community-tile" ||
-              onboardingStep === "personal-tile")
+            (onboardingPlantActionReady &&
+              (onboardingStep === "community-tile" ||
+                onboardingStep === "personal-tile")) ||
+            (onboardingWaterActionReady && onboardingStep === "community-water")
               ? " is-onboarding-highlight"
               : ""
           }`}
           type="button"
-          disabled={!ui.actionEnabled}
+          disabled={!ui.actionEnabled || !tutorialActionAllowed}
           onClick={() => void canvasRef.current?.performAction()}
         >
           <span
@@ -1147,17 +1195,17 @@ export function CommunityGardenApp() {
           <span>{ui.actionLabel}</span>
         </button>
 
-        {showCommunityJoin ? (
+        {showMembershipShortcut ? (
           <button
             className="cg-community-join"
             type="button"
-            aria-label="Join Garden Membership"
+            aria-label={session ? "Upgrade Garden Membership" : "Join Garden Membership"}
             onClick={() => {
               setMembershipOfferStage("soft");
               setMembershipOfferOpen(true);
             }}
           >
-            Join
+            {session ? "Upgrade" : "Join"}
           </button>
         ) : null}
 
@@ -1178,8 +1226,8 @@ export function CommunityGardenApp() {
           step={onboardingStep}
           communityPlantings={communityOnboardingPlantings}
           inventoryOpen={inventoryOpen}
-          actionReady={onboardingPlantActionReady}
-          onDismiss={() => transitionOnboarding("dismissed")}
+          plantActionReady={onboardingPlantActionReady}
+          waterActionReady={onboardingWaterActionReady}
           onOpenInventory={openInventoryForOnboarding}
           onOpenMyGarden={() => {
             transitionOnboarding("personal-inventory", ["my-garden"]);

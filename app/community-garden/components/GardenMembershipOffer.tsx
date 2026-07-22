@@ -93,21 +93,55 @@ export function GardenMembershipOffer({
         aria-labelledby="membership-offer-title"
         onPointerDown={(event) => event.stopPropagation()}
       >
-        <div className="cg-membership-offer-art" aria-hidden="true">
-          <span className="is-one" />
-          <span className="is-two" />
-          <span className="is-three" />
+        <div className="cg-membership-vision" aria-label="Preview garden compared with an expanded member garden">
+          <section className="cg-membership-vision-panel is-preview">
+            <strong>Preview</strong>
+            <div className="cg-membership-mini-garden" aria-hidden="true">
+              <i className="is-flower is-red" />
+              <i className="is-flower is-gold" />
+              <i className="is-flower is-purple" />
+            </div>
+            <span>A small beginning</span>
+          </section>
+          <span className="cg-membership-vision-arrow" aria-hidden="true">→</span>
+          <section className="cg-membership-vision-panel is-member">
+            <strong>Garden Membership</strong>
+            <div className="cg-membership-mini-garden" aria-hidden="true">
+              <i className="is-house" />
+              <i className="is-path" />
+              <i className="is-flower is-red" />
+              <i className="is-flower is-gold" />
+              <i className="is-flower is-purple" />
+              <i className="is-flower is-red is-far" />
+              <i className="is-bench" />
+              <i className="is-birdhouse" />
+              <i className="is-expansion" />
+            </div>
+            <span>Build outward and make it yours</span>
+          </section>
         </div>
         <p className="cg-kicker">
           {isSoft ? "Your garden has begun" : "Your garden is ready to keep"}
         </p>
         <h2 id="membership-offer-title">{title}</h2>
         <p>{description}</p>
-        <ul>
-          <li>Keep these flowers and your remaining Care</li>
-          <li>Grow and customize My Garden without the preview limit</li>
-          <li>One payment · no subscription</li>
-        </ul>
+        <div className="cg-membership-benefits" aria-label="Garden Membership benefits">
+          <article>
+            <span className="is-land" aria-hidden="true" />
+            <strong>More land</strong>
+            <small>Open new plots as your garden grows.</small>
+          </article>
+          <article>
+            <span className="is-build" aria-hidden="true" />
+            <strong>Build freely</strong>
+            <small>Keep flowers, paths, furniture and Care.</small>
+          </article>
+          <article>
+            <span className="is-future" aria-hidden="true" />
+            <strong>Future tools</strong>
+            <small>Make My Garden your long-term home.</small>
+          </article>
+        </div>
         <div className="cg-membership-offer-price">
           <span>Garden Membership</span>
           <strong>{GARDEN_MEMBERSHIP_PRICE_LABEL}</strong>

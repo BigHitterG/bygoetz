@@ -9,6 +9,7 @@ export type GardenOnboardingStep =
   | "personal-inventory"
   | "personal-seed"
   | "personal-tile"
+  | "community-water"
   | "complete"
   | "dismissed";
 
@@ -38,6 +39,7 @@ const VALID_STEPS = new Set<GardenOnboardingStep>([
   "personal-inventory",
   "personal-seed",
   "personal-tile",
+  "community-water",
   "complete",
   "dismissed",
 ]);

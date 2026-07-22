@@ -54,6 +54,7 @@ export type RenderGardenState = {
   wateringCareReadyPlantIds?: ReadonlySet<string>;
   wateringCareStatusLoaded?: boolean;
   suggestedPlantingCell: SelectedCell;
+  suggestedWateringCell: SelectedCell;
   tutorialDimmed: boolean;
   effects: GardenEffect[];
   moving: boolean;
@@ -249,6 +250,36 @@ function drawSuggestedPlantingHighlight(
   ctx.restore();
 }
 
+function drawSuggestedWateringHighlight(
+  ctx: CanvasRenderingContext2D,
+  cell: SelectedCell,
+  camera: WorldPoint,
+  viewport: GardenViewport,
+  now: number,
+  zoom: number,
+) {
+  if (!cell) return;
+  const screen = getSuggestedPlantingScreen(cell, camera, viewport, zoom);
+  const pulse = 0.78 + Math.sin(now / 170) * 0.18;
+  ctx.save();
+  ctx.translate(Math.round(screen.x), Math.round(screen.y));
+  ctx.scale(zoom, zoom);
+  ctx.globalAlpha = pulse;
+  ctx.fillStyle = "rgba(142, 216, 238, 0.32)";
+  ctx.strokeStyle = "#8ed8ee";
+  ctx.lineWidth = 3;
+  ctx.setLineDash([5, 3]);
+  ctx.fillRect(-9, -9, 18, 18);
+  ctx.strokeRect(-9, -9, 18, 18);
+  ctx.setLineDash([]);
+  ctx.fillStyle = "#fff4df";
+  ctx.fillRect(-2, -18, 4, 7);
+  ctx.fillRect(-4, -15, 8, 6);
+  ctx.fillStyle = "#5aaac8";
+  ctx.fillRect(-1, -17, 2, 5);
+  ctx.restore();
+}
+
 function drawTutorialDimmer(
   ctx: CanvasRenderingContext2D,
   viewport: GardenViewport,
@@ -269,8 +300,8 @@ function drawTutorialDimmer(
   );
   vignette.addColorStop(0, "rgba(52, 35, 31, 0.05)");
   vignette.addColorStop(0.2, "rgba(52, 35, 31, 0.13)");
-  vignette.addColorStop(0.56, "rgba(52, 35, 31, 0.3)");
-  vignette.addColorStop(1, "rgba(52, 35, 31, 0.4)");
+  vignette.addColorStop(0.56, "rgba(52, 35, 31, 0.36)");
+  vignette.addColorStop(1, "rgba(52, 35, 31, 0.5)");
   ctx.save();
   ctx.fillStyle = vignette;
   ctx.fillRect(0, 0, viewport.width, viewport.height);
@@ -1303,6 +1334,8 @@ function drawWateringTargets(
   camera: WorldPoint,
   viewport: GardenViewport,
   zoom: number,
+  mary: WorldPoint,
+  selected: SelectedCell,
 ) {
   for (const target of targets) {
     const point = worldToScreen(
@@ -1325,6 +1358,15 @@ function drawWateringTargets(
     ctx.fillRect(-8, 1, 2, 5);
     ctx.fillRect(6, -6, 2, 5);
     ctx.fillRect(6, 1, 2, 5);
+    if (selected?.gridX === target.gridX && selected.gridY === target.gridY) {
+      const targetWorld = gridToWorld(target.gridX, target.gridY);
+      const cornerX = mary.x <= targetWorld.x ? -6 : 6;
+      const cornerY = mary.y <= targetWorld.y ? -6 : 6;
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = "#c53f43";
+      ctx.fillRect(cornerX < 0 ? cornerX : cornerX - 4, cornerY, 5, 2);
+      ctx.fillRect(cornerX, cornerY < 0 ? cornerY : cornerY - 4, 2, 5);
+    }
     ctx.restore();
   }
 }
@@ -1409,8 +1451,16 @@ function drawEffects(
         viewport,
         zoom,
       );
+      const targetWorld = gridToWorld(effect.gridX, effect.gridY);
+      const directionX = targetWorld.x - effect.fromX;
+      const directionY = targetWorld.y - effect.fromY;
+      const directionLength = Math.max(1, Math.hypot(directionX, directionY));
+      const extendedTarget = {
+        x: targetWorld.x + (directionX / directionLength) * 18,
+        y: targetWorld.y + (directionY / directionLength) * 18,
+      };
       const to = worldToScreen(
-        gridToWorld(effect.gridX, effect.gridY),
+        extendedTarget,
         camera,
         viewport,
         zoom,
@@ -1630,6 +1680,14 @@ export function renderGarden(ctx: CanvasRenderingContext2D, state: RenderGardenS
     state.now,
     state.zoom,
   );
+  drawSuggestedWateringHighlight(
+    ctx,
+    state.suggestedWateringCell,
+    state.camera,
+    state.viewport,
+    state.now,
+    state.zoom,
+  );
   drawDampSoil(ctx, visiblePlants, state.camera, state.viewport, state.now, state.zoom);
   state.weeds.forEach((weed) =>
     drawWeed(ctx, weed, state.camera, state.viewport, state.zoom),
@@ -1654,6 +1712,8 @@ export function renderGarden(ctx: CanvasRenderingContext2D, state: RenderGardenS
     state.camera,
     state.viewport,
     state.zoom,
+    state.mary,
+    state.selected,
   );
   drawDuck(ctx, state.duck, state.camera, state.viewport, state.moving, state.now, state.zoom);
   if (state.tutorialDimmed) {
@@ -1667,6 +1727,14 @@ export function renderGarden(ctx: CanvasRenderingContext2D, state: RenderGardenS
     drawSuggestedPlantingHighlight(
       ctx,
       state.suggestedPlantingCell,
+      state.camera,
+      state.viewport,
+      state.now,
+      state.zoom,
+    );
+    drawSuggestedWateringHighlight(
+      ctx,
+      state.suggestedWateringCell,
       state.camera,
       state.viewport,
       state.now,
