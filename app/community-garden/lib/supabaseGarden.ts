@@ -24,6 +24,7 @@ export type GardenSnapshot = {
 
 type GardenActionResult = {
   plant: PlantRecord;
+  plants: PlantRecord[];
   contribution: GardenContribution | null;
 };
 
@@ -199,8 +200,18 @@ async function submitGardenAction(
     data.contribution && typeof data.contribution === "object"
       ? (data.contribution as GardenContribution)
       : null;
+  const plant = normalizePlant(data.plant as Record<string, unknown>);
+  const plants = Array.isArray(data.plants)
+    ? data.plants
+        .filter(
+          (candidate): candidate is Record<string, unknown> =>
+            Boolean(candidate) && typeof candidate === "object",
+        )
+        .map(normalizePlant)
+    : [plant];
   return {
-    plant: normalizePlant(data.plant as Record<string, unknown>),
+    plant,
+    plants: plants.length > 0 ? plants : [plant],
     contribution,
   };
 }
@@ -218,6 +229,6 @@ export function plantGardenPlant(
   });
 }
 
-export function waterGardenPlant(plantId: string) {
-  return submitGardenAction({ action: "water", plantId });
+export function waterGardenPlants(plantIds: string[]) {
+  return submitGardenAction({ action: "water", plantIds: plantIds.slice(0, 4) });
 }

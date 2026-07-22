@@ -11,17 +11,13 @@ const STORAGE_KEY = "basil-guest-garden-preview-v1";
 const CHECKOUT_TRANSFER_KEY = "basil-guest-garden-checkout-v1";
 const CHECKOUT_TRANSFER_LIFETIME_MS = 7 * 24 * 60 * 60 * 1000;
 export const GUEST_PREVIEW_LIFETIME_MS = 24 * 60 * 60 * 1000;
-const QUICK_CARE_LIMIT = 20;
-const STEADY_ACTIONS_PER_CARE = 4;
-const ONBOARDING_PLANTING_BONUSES = 3;
+const PREVIEW_CARE_TRANSFER_LIMIT = 20;
 export const GUEST_SOFT_PAYWALL_PLANTINGS = 3;
 export const GUEST_PLANTING_LIMIT = 10;
 
 export type GuestGardenPreview = {
   garden: MyGardenState;
-  quickCareEarned: number;
-  onboardingPlantingBonuses: number;
-  steadyActions: number;
+  dailyCareDate: string | null;
   access?: {
     startedAt: string;
     expiresAt: string;
@@ -41,7 +37,7 @@ export type GuestGardenPreview = {
 export type GuestCareAward = {
   preview: GuestGardenPreview;
   awardedCare: number;
-  steadyProgress: number;
+  earningMode: "daily" | "standard";
 };
 
 export class GuestPreviewLimitError extends Error {
@@ -118,13 +114,11 @@ function normalizePaths(value: unknown) {
 
 export function createGuestGardenPreview(): GuestGardenPreview {
   return {
-    quickCareEarned: 0,
-    onboardingPlantingBonuses: 0,
-    steadyActions: 0,
+    dailyCareDate: null,
     garden: {
       careBalance: 0,
       lifetimeCare: 0,
-      dailyCareLimit: QUICK_CARE_LIMIT,
+      dailyCareLimit: PREVIEW_CARE_TRANSFER_LIMIT,
       plotLevel: 1,
       minX: 0,
       minY: 0,
@@ -186,11 +180,6 @@ export function loadGuestGardenPreview() {
     );
     const careBalance = clampInteger(gardenRecord.careBalance, 0, 100);
     const lifetimeCare = clampInteger(gardenRecord.lifetimeCare, careBalance, 500);
-    const quickCareEarned = clampInteger(
-      parsed.quickCareEarned,
-      0,
-      QUICK_CARE_LIMIT,
-    );
     const now = Date.now();
     const storedAccess =
       parsed.access && typeof parsed.access === "object"
@@ -207,13 +196,11 @@ export function loadGuestGardenPreview() {
         ? new Date(storedExpiresAt).toISOString()
         : new Date(now + GUEST_PREVIEW_LIFETIME_MS).toISOString();
     return {
-      quickCareEarned,
-      onboardingPlantingBonuses: clampInteger(
-        parsed.onboardingPlantingBonuses ?? Math.ceil(quickCareEarned / 2),
-        0,
-        ONBOARDING_PLANTING_BONUSES,
-      ),
-      steadyActions: clampInteger(parsed.steadyActions, 0, 10000),
+      dailyCareDate:
+        typeof parsed.dailyCareDate === "string" &&
+        /^\d{4}-\d{2}-\d{2}$/.test(parsed.dailyCareDate)
+          ? parsed.dailyCareDate
+          : null,
       access:
         plants.length > 0 || storedAccess
           ? {
@@ -309,43 +296,18 @@ export function preserveGuestGardenPreviewForCheckout(
 export function awardGuestCare(
   current: GuestGardenPreview,
   requestedCare: number,
-  action: "plant" | "water",
 ): GuestCareAward {
   const value = clampInteger(requestedCare, 0, 5);
-  let awardedCare = 0;
-  let quickCareEarned = current.quickCareEarned;
-  let onboardingPlantingBonuses = current.onboardingPlantingBonuses;
-  let steadyActions = current.steadyActions;
-  let steadyProgress = steadyActions % STEADY_ACTIONS_PER_CARE;
-
-  if (
-    action === "plant" &&
-    value > 0 &&
-    onboardingPlantingBonuses < ONBOARDING_PLANTING_BONUSES
-  ) {
-    awardedCare = 2;
-    quickCareEarned = Math.min(QUICK_CARE_LIMIT, quickCareEarned + awardedCare);
-    onboardingPlantingBonuses += 1;
-  } else if (value > 0 && quickCareEarned < QUICK_CARE_LIMIT) {
-    // Keep the first session moving: after the three +2 planting bonuses,
-    // every legitimate community action earns +1 until the quick-care bank is full.
-    awardedCare = 1;
-    quickCareEarned += 1;
-    steadyProgress = 0;
-  } else if (value > 0) {
-    steadyActions += 1;
-    steadyProgress = steadyActions % STEADY_ACTIONS_PER_CARE;
-    awardedCare = steadyProgress === 0 ? 1 : 0;
-  }
+  const today = new Date().toISOString().slice(0, 10);
+  const earningMode = current.dailyCareDate === today ? "standard" : "daily";
+  const awardedCare = value > 0 ? (earningMode === "daily" ? 4 : 1) : 0;
 
   return {
     awardedCare,
-    steadyProgress,
+    earningMode,
     preview: {
       ...current,
-      quickCareEarned,
-      onboardingPlantingBonuses,
-      steadyActions,
+      dailyCareDate: value > 0 ? today : current.dailyCareDate,
       garden: {
         ...current.garden,
         careBalance: current.garden.careBalance + awardedCare,
@@ -507,7 +469,11 @@ export function mutateGuestGarden(
 
 export function getGuestPreviewImport(preview: GuestGardenPreview) {
   return {
-    careBalance: clampInteger(preview.garden.careBalance, 0, QUICK_CARE_LIMIT),
+    careBalance: clampInteger(
+      preview.garden.careBalance,
+      0,
+      PREVIEW_CARE_TRANSFER_LIMIT,
+    ),
     plants: normalizePlants(preview.garden.plants).map(
       ({ gridX, gridY, plantType }) => ({ gridX, gridY, plantType }),
     ),

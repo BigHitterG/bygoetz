@@ -665,18 +665,14 @@ export function CommunityGardenApp() {
         const award = awardGuestCare(
           continuedPreview,
           contribution.careValue,
-          contribution.action,
         );
         commitGuestPreview(award.preview);
         canvasRef.current?.showCareReward(
           award.awardedCare,
-          award.steadyProgress,
-          4,
+          award.earningMode === "daily",
         );
         setCareAnnouncement(
-          award.awardedCare > 0
-            ? `${award.awardedCare} temporary Care earned. Your preview balance is ${award.preview.garden.careBalance}.`
-            : `Tending progress ${award.steadyProgress} of 4 toward another temporary Care.`,
+          `${award.awardedCare} temporary Care earned. Your preview balance is ${award.preview.garden.careBalance}.`,
         );
         return;
       }
@@ -708,10 +704,12 @@ export function CommunityGardenApp() {
               const award = awardGuestCare(
                 continuedPreview,
                 contribution.careValue,
-                contribution.action,
               );
               commitGuestPreview(award.preview);
-              canvasRef.current?.showCareReward(award.awardedCare);
+              canvasRef.current?.showCareReward(
+                award.awardedCare,
+                award.earningMode === "daily",
+              );
               setCareAnnouncement(
                 `${award.awardedCare} temporary Care earned. A Garden Membership saves it.`,
               );
@@ -727,9 +725,7 @@ export function CommunityGardenApp() {
               awardedCare: number;
               careBalance: number;
               lifetimeCare: number;
-              earningMode: "quick" | "steady";
-              steadyProgress: number;
-              steadyActionsRequired: number;
+              earningMode: "daily" | "standard";
             };
             setMemberGarden((current) =>
               current
@@ -740,21 +736,13 @@ export function CommunityGardenApp() {
                   }
                 : current,
             );
-            if (award.awardedCare > 0) {
-              canvasRef.current?.showCareReward(award.awardedCare);
-              setCareAnnouncement(
-                `${award.awardedCare} Care saved. Your balance is ${award.careBalance}.`,
-              );
-            } else {
-              canvasRef.current?.showCareReward(
-                0,
-                award.steadyProgress,
-                award.steadyActionsRequired,
-              );
-              setCareAnnouncement(
-                `Tending progress ${award.steadyProgress} of ${award.steadyActionsRequired}.`,
-              );
-            }
+            canvasRef.current?.showCareReward(
+              award.awardedCare,
+              award.earningMode === "daily",
+            );
+            setCareAnnouncement(
+              `${award.awardedCare} Care saved. Your balance is ${award.careBalance}.`,
+            );
           } catch (error) {
             console.warn("Basil Care save was interrupted", {
               online: navigator.onLine,

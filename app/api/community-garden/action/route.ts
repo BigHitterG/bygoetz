@@ -21,6 +21,7 @@ type ActionBody = {
   gridY?: unknown;
   plantType?: unknown;
   plantId?: unknown;
+  plantIds?: unknown;
 };
 
 function errorMessage(error: unknown) {
@@ -93,6 +94,32 @@ export async function POST(request: NextRequest) {
       return response;
     }
 
+    const legacyPlantId =
+      typeof body.plantId === "string" && ACTION_ID_PATTERN.test(body.plantId)
+        ? body.plantId
+        : null;
+    const plantIds = Array.isArray(body.plantIds)
+      ? Array.from(
+          new Set(
+            body.plantIds.filter(
+              (plantId): plantId is string =>
+                typeof plantId === "string" && ACTION_ID_PATTERN.test(plantId),
+            ),
+          ),
+        ).slice(0, 4)
+      : legacyPlantId
+        ? [legacyPlantId]
+        : [];
+    if (body.action === "water" && plantIds.length === 0) {
+      recordResult("action_error", "invalid_water_targets");
+      const response = NextResponse.json(
+        { error: "Choose between one and four flowers to water." },
+        { status: 400 },
+      );
+      attachGardenSession(response, actor.session);
+      return response;
+    }
+
     const data = await submitCommunityGardenAction({
       actionId: body.actionId,
       actorKey: actor.actorKey,
@@ -102,7 +129,7 @@ export async function POST(request: NextRequest) {
       gridY: typeof body.gridY === "number" ? body.gridY : undefined,
       plantType:
         typeof body.plantType === "string" ? body.plantType : undefined,
-      plantId: typeof body.plantId === "string" ? body.plantId : undefined,
+      plantIds,
     });
     const response = NextResponse.json(data);
     response.headers.set("Cache-Control", "no-store");

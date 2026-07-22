@@ -9,7 +9,6 @@ export {
 export const MY_GARDEN_PLANT_COST = 2;
 export const MY_GARDEN_UPROOT_RETURN = 1;
 export const GARDEN_DAILY_CARE_LIMIT = 20;
-export const GARDEN_STEADY_ACTIONS_PER_CARE = 4;
 
 export const MY_GARDEN_PLANT_TYPES = [
   "rose",
@@ -265,11 +264,7 @@ export async function claimGardenCare(stewardId: string, receiptToken: string) {
     awardedCare: Number(result.awarded_care ?? 0),
     careBalance: Number(result.care_balance ?? 0),
     lifetimeCare: Number(result.lifetime_care ?? 0),
-    earningMode: result.earning_phase === "steady" ? "steady" : "quick",
-    steadyProgress: Number(result.steady_progress ?? 0),
-    steadyActionsRequired: Number(
-      result.steady_actions_required ?? GARDEN_STEADY_ACTIONS_PER_CARE,
-    ),
+    earningMode: result.earning_phase === "daily" ? "daily" : "standard",
   };
 }
 

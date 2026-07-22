@@ -48,8 +48,12 @@ import {
   type GardenMapPlant,
   isGardenConfigured,
   plantGardenPlant,
-  waterGardenPlant,
+  waterGardenPlants,
 } from "../lib/supabaseGarden";
+
+const WATERING_RANGE_TILES = 5;
+const WATERING_APPROACH_TILES = 4.25;
+const MAX_WATERING_TARGETS = 4;
 
 export type GardenConnection = "connecting" | "online" | "offline" | "error";
 export type GardenAction =
@@ -93,11 +97,7 @@ export type GardenCanvasHandle = {
   selectPlant: (plantType: PlantType) => void;
   selectPathTool: () => void;
   selectElement: (elementType: MyGardenElementType) => void;
-  showCareReward: (
-    value: number,
-    steadyProgress?: number,
-    steadyActionsRequired?: number,
-  ) => void;
+  showCareReward: (value: number, dailyBonus?: boolean) => void;
   zoomIn: () => void;
   zoomOut: () => void;
   restoreView: (
@@ -534,6 +534,61 @@ function getDistanceToCell(runtime: Runtime, selected: NonNullable<SelectedCell>
   return Math.hypot(runtime.mary.x - point.x, runtime.mary.y - point.y);
 }
 
+function getWateringCluster(
+  runtime: Runtime,
+  selected: NonNullable<SelectedCell>,
+) {
+  const first = getPlantAt(runtime, selected.gridX, selected.gridY);
+  if (!first || getPlantVisual(first).state === "expired") return [];
+
+  const targets: PlantRecord[] = [];
+  const visited = new Set<string>();
+  const queue = [{ gridX: first.grid_x, gridY: first.grid_y }];
+  const neighbors = [
+    [-1, 0],
+    [1, 0],
+    [0, -1],
+    [0, 1],
+    [-1, -1],
+    [1, -1],
+    [-1, 1],
+    [1, 1],
+  ] as const;
+
+  while (queue.length > 0 && targets.length < MAX_WATERING_TARGETS) {
+    const cell = queue.shift();
+    if (!cell) break;
+    const key = plantKey(cell.gridX, cell.gridY);
+    if (visited.has(key)) continue;
+    visited.add(key);
+
+    const plant = getPlantAt(runtime, cell.gridX, cell.gridY);
+    if (!plant) continue;
+    const visual = getPlantVisual(plant);
+    if (visual.state === "expired" || visual.state === "dead") continue;
+    targets.push(plant);
+
+    for (const [offsetX, offsetY] of neighbors) {
+      queue.push({ gridX: cell.gridX + offsetX, gridY: cell.gridY + offsetY });
+    }
+  }
+
+  return targets;
+}
+
+function getWateringApproachTarget(runtime: Runtime, gridX: number, gridY: number) {
+  const center = gridToWorld(gridX, gridY);
+  const dx = runtime.mary.x - center.x;
+  const dy = runtime.mary.y - center.y;
+  const distance = Math.hypot(dx, dy);
+  if (distance <= GARDEN_CONFIG.tileSize * WATERING_RANGE_TILES) return null;
+  const scale = (GARDEN_CONFIG.tileSize * WATERING_APPROACH_TILES) / distance;
+  return {
+    x: clampRuntimeCoordinate(runtime, center.x + dx * scale, "x"),
+    y: clampRuntimeCoordinate(runtime, center.y + dy * scale, "y"),
+  };
+}
+
 function getActionState(runtime: Runtime) {
   if (runtime.actionBusy && runtime.pendingAction) {
     return {
@@ -675,12 +730,20 @@ function getActionState(runtime: Runtime) {
     if (visual.state === "dead") {
       return { action: null as GardenAction, label: "This spot is resting", enabled: false };
     }
+    const wateringTargets = getWateringCluster(runtime, runtime.selected);
+    const inWateringRange =
+      getDistanceToCell(runtime, runtime.selected) <=
+      GARDEN_CONFIG.tileSize * WATERING_RANGE_TILES;
+    const label =
+      wateringTargets.length > 1
+        ? `Water ${wateringTargets.length} flowers`
+        : `Water ${definition.name}`;
     return {
       action: "water" as GardenAction,
-      label: canEarnWateringCare(plant)
-        ? `Water ${definition.name} · +1 Care`
-        : `Water ${definition.name}`,
-      enabled: nearby && !runtime.actionBusy,
+      label: wateringTargets.some((target) => canEarnWateringCare(target))
+        ? `${label} · +1 Care`
+        : label,
+      enabled: inWateringRange && !runtime.actionBusy,
     };
   }
 
@@ -1133,7 +1196,7 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
             : "Choose any open patch nearby to plant.";
           publishUi();
         },
-        showCareReward(value, steadyProgress, steadyActionsRequired) {
+        showCareReward(value, dailyBonus = false) {
           const runtime = runtimeRef.current;
           if (runtime.mode !== "community") return;
           runtime.effects.push({
@@ -1141,14 +1204,12 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
             x: runtime.mary.x,
             y: runtime.mary.y,
             value,
-            steadyProgress,
-            steadyActionsRequired,
+            dailyBonus,
             startedAt: Date.now(),
           });
-          runtime.statusMessage =
-            value > 0
-              ? `${value} Care earned.`
-              : `Steady tending ${steadyProgress ?? 0} of ${steadyActionsRequired ?? 4} toward the next Care.`;
+          runtime.statusMessage = dailyBonus
+            ? `${value} daily Care earned.`
+            : `${value} Care earned.`;
           publishUi();
         },
         zoomIn() {
@@ -1419,28 +1480,53 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
             } else {
               const current = getPlantAt(runtime, selected.gridX, selected.gridY);
               if (!current) throw new Error("That plant is no longer here.");
+              const wateringTargets = getWateringCluster(runtime, selected);
+              if (wateringTargets.length === 0) {
+                throw new Error("Those flowers are no longer here.");
+              }
+              const wateredAt = new Date().toISOString();
               const result = runtime.configured
-                ? await waterGardenPlant(current.id)
+                ? await waterGardenPlants(
+                    wateringTargets.map((target) => target.id),
+                  )
                 : {
-                    plant: { ...current, last_watered_at: new Date().toISOString() },
+                    plant: { ...current, last_watered_at: wateredAt },
+                    plants: wateringTargets.map((target) => ({
+                      ...target,
+                      last_watered_at: wateredAt,
+                    })),
                     contribution: null,
                   };
-              const { plant, contribution } = result;
-              runtime.plants.set(plantKey(plant.grid_x, plant.grid_y), plant);
-              runtime.communityPlants.set(
-                plantKey(plant.grid_x, plant.grid_y),
-                plant,
-              );
-              if (runtime.configured) {
-                rememberRecentCommunityPlant(runtime, plant);
-              }
+              const { plants, contribution } = result;
+              const effectStartedAt = Date.now();
               runtime.effects.push({
-                kind: "water",
-                gridX: plant.grid_x,
-                gridY: plant.grid_y,
-                startedAt: Date.now(),
+                kind: "spray",
+                fromX: runtime.mary.x,
+                fromY: runtime.mary.y,
+                gridX: current.grid_x,
+                gridY: current.grid_y,
+                startedAt: effectStartedAt,
               });
-              runtime.statusMessage = `The ${getPlantDefinition(plant.plant_type).name.toLowerCase()} looks brighter already.`;
+              for (const [index, plant] of plants.entries()) {
+                runtime.plants.set(plantKey(plant.grid_x, plant.grid_y), plant);
+                runtime.communityPlants.set(
+                  plantKey(plant.grid_x, plant.grid_y),
+                  plant,
+                );
+                if (runtime.configured) {
+                  rememberRecentCommunityPlant(runtime, plant);
+                }
+                runtime.effects.push({
+                  kind: "water",
+                  gridX: plant.grid_x,
+                  gridY: plant.grid_y,
+                  startedAt: effectStartedAt + index * 80,
+                });
+              }
+              runtime.statusMessage =
+                plants.length === 1
+                  ? `The ${getPlantDefinition(plants[0].plant_type).name.toLowerCase()} looks brighter already.`
+                  : `${plants.length} nearby flowers look brighter already.`;
               if (contribution) onCommunityContributionRef.current?.(contribution);
             }
             if (actionState.action === "plant") {
@@ -1590,6 +1676,22 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
           duck: runtime.duck,
           plants: Array.from(runtime.plants.values()),
           selected: runtime.selected,
+          wateringTargets:
+            runtime.mode === "community" &&
+            runtime.selected &&
+            getPlantAt(
+              runtime,
+              runtime.selected.gridX,
+              runtime.selected.gridY,
+            ) &&
+            getDistanceToCell(runtime, runtime.selected) <=
+              GARDEN_CONFIG.tileSize * WATERING_RANGE_TILES
+              ? getWateringCluster(runtime, runtime.selected).map((plant) => ({
+                  gridX: plant.grid_x,
+                  gridY: plant.grid_y,
+                  plantId: plant.id,
+                }))
+              : [],
           suggestedPlantingCell: runtime.suggestedPlantingCell,
           effects: runtime.reducedMotion ? [] : runtime.effects,
           moving: runtime.reducedMotion ? false : runtime.moving,
@@ -1700,9 +1802,14 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
 
       const plant = getPlantAt(runtime, gridX, gridY);
       runtime.selected = { gridX, gridY, plantId: plant?.id };
-      runtime.target = getAdjacentTarget(runtime, gridX, gridY);
+      runtime.target =
+        runtime.mode === "community" && plant
+          ? getWateringApproachTarget(runtime, gridX, gridY)
+          : getAdjacentTarget(runtime, gridX, gridY);
       runtime.statusMessage = plant
-        ? `Walking over to the ${getPlantDefinition(plant.plant_type).name.toLowerCase()}...`
+        ? runtime.target
+          ? `Walking into watering range of the ${getPlantDefinition(plant.plant_type).name.toLowerCase()}...`
+          : "Choose Water to care for the highlighted flowers."
         : "Walking to that spot...";
       publishUi();
     }

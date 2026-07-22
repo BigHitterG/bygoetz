@@ -110,10 +110,10 @@ export async function submitCommunityGardenAction(input: {
   gridX?: number;
   gridY?: number;
   plantType?: string;
-  plantId?: string;
+  plantIds?: string[];
 }) {
   const { data, error } = await getSupabaseAdmin().rpc(
-    "perform_idempotent_community_garden_action",
+    "perform_idempotent_community_garden_action_v2",
     {
       p_action_id: input.actionId,
       p_actor_key: input.actorKey,
@@ -122,7 +122,7 @@ export async function submitCommunityGardenAction(input: {
       p_grid_x: input.gridX ?? null,
       p_grid_y: input.gridY ?? null,
       p_plant_type: input.plantType ?? null,
-      p_plant_id: input.plantId ?? null,
+      p_plant_ids: input.plantIds ?? null,
     },
   );
   if (error) throw error;

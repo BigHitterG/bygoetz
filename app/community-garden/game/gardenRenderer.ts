@@ -23,8 +23,15 @@ export type GardenEffect =
       x: number;
       y: number;
       value: number;
-      steadyProgress?: number;
-      steadyActionsRequired?: number;
+      dailyBonus?: boolean;
+      startedAt: number;
+    }
+  | {
+      kind: "spray";
+      fromX: number;
+      fromY: number;
+      gridX: number;
+      gridY: number;
       startedAt: number;
     };
 
@@ -36,6 +43,7 @@ export type RenderGardenState = {
   duck: WorldPoint;
   plants: PlantRecord[];
   selected: SelectedCell;
+  wateringTargets: Array<NonNullable<SelectedCell>>;
   suggestedPlantingCell: SelectedCell;
   effects: GardenEffect[];
   moving: boolean;
@@ -1199,6 +1207,36 @@ function drawSelection(
   ctx.restore();
 }
 
+function drawWateringTargets(
+  ctx: CanvasRenderingContext2D,
+  targets: Array<NonNullable<SelectedCell>>,
+  camera: WorldPoint,
+  viewport: GardenViewport,
+  zoom: number,
+) {
+  for (const target of targets) {
+    const point = worldToScreen(
+      gridToWorld(target.gridX, target.gridY),
+      camera,
+      viewport,
+      zoom,
+    );
+    if (!isVisible(point, viewport)) continue;
+    ctx.save();
+    ctx.translate(Math.round(point.x), Math.round(point.y));
+    ctx.scale(zoom, zoom);
+    ctx.globalAlpha = 0.86;
+    ctx.fillStyle = "#fff4dc";
+    ctx.fillRect(-8, 3, 4, 2);
+    ctx.fillRect(4, 3, 4, 2);
+    ctx.fillStyle = "#4f94b0";
+    ctx.fillRect(-7, 3, 3, 1);
+    ctx.fillRect(4, 3, 3, 1);
+    ctx.fillRect(-1, -9, 2, 3);
+    ctx.restore();
+  }
+}
+
 function drawMary(
   ctx: CanvasRenderingContext2D,
   point: WorldPoint,
@@ -1272,6 +1310,35 @@ function drawEffects(
     const duration = effect.kind === "care" ? 1100 : 900;
     if (age < 0 || age > duration) continue;
     const progress = age / duration;
+    if (effect.kind === "spray") {
+      const from = worldToScreen(
+        { x: effect.fromX, y: effect.fromY - 8 },
+        camera,
+        viewport,
+        zoom,
+      );
+      const to = worldToScreen(
+        gridToWorld(effect.gridX, effect.gridY),
+        camera,
+        viewport,
+        zoom,
+      );
+      ctx.save();
+      ctx.globalAlpha = Math.sin(progress * Math.PI) * 0.74;
+      ctx.fillStyle = "#75b7cf";
+      for (let index = 1; index <= 9; index += 1) {
+        const t = index / 10;
+        const arc = Math.sin(t * Math.PI) * 8 * zoom;
+        ctx.fillRect(
+          Math.round(from.x + (to.x - from.x) * t),
+          Math.round(from.y + (to.y - from.y) * t - arc),
+          Math.max(1, Math.round(2 * zoom)),
+          Math.max(1, Math.round(2 * zoom)),
+        );
+      }
+      ctx.restore();
+      continue;
+    }
     const point =
       effect.kind === "care"
         ? worldToScreen({ x: effect.x, y: effect.y }, camera, viewport, zoom)
@@ -1291,17 +1358,11 @@ function drawEffects(
       ctx.translate(0, -31 - progress * 18);
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
-      ctx.font =
-        effect.value > 0
-          ? '900 14px "Courier New", monospace'
-          : '800 7px "Courier New", monospace';
+      ctx.font = '900 14px "Courier New", monospace';
       ctx.lineWidth = 3;
       ctx.strokeStyle = "rgba(255, 244, 223, 0.92)";
-      ctx.fillStyle = effect.value > 0 ? "#c94f4c" : "#63764e";
-      const label =
-        effect.value > 0
-          ? `+${effect.value}`
-          : `TENDING ${effect.steadyProgress ?? 0}/${effect.steadyActionsRequired ?? 4}`;
+      ctx.fillStyle = effect.dailyBonus ? "#57865a" : "#c94f4c";
+      const label = `+${effect.value}`;
       ctx.strokeText(label, 0, 0);
       ctx.fillText(label, 0, 0);
     } else if (effect.kind === "water") {
@@ -1467,6 +1528,13 @@ export function renderGarden(ctx: CanvasRenderingContext2D, state: RenderGardenS
       state.zoom,
       true,
     ),
+  );
+  drawWateringTargets(
+    ctx,
+    state.wateringTargets,
+    state.camera,
+    state.viewport,
+    state.zoom,
   );
   drawDuck(ctx, state.duck, state.camera, state.viewport, state.moving, state.now, state.zoom);
   drawMary(ctx, state.mary, state.camera, state.viewport, state.moving, state.now, state.zoom);
