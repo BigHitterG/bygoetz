@@ -847,15 +847,22 @@ function getActionState(runtime: Runtime) {
         enabled: nearby && !runtime.actionBusy,
       };
     }
-    if (runtime.toolMode === "path") {
-      const hasPath = hasPersonalPath(
-        runtime,
-        runtime.selected.gridX,
-        runtime.selected.gridY,
-      );
+    const hasPath = hasPersonalPath(
+      runtime,
+      runtime.selected.gridX,
+      runtime.selected.gridY,
+    );
+    if (hasPath) {
       return {
-        action: (hasPath ? "remove-path" : "lay-path") as GardenAction,
-        label: hasPath ? "Remove path · Free" : "Lay path · Free",
+        action: "remove-path" as GardenAction,
+        label: "Remove path · Free",
+        enabled: nearby && !runtime.actionBusy,
+      };
+    }
+    if (runtime.toolMode === "path") {
+      return {
+        action: "lay-path" as GardenAction,
+        label: "Lay path · Free",
         enabled: nearby && !runtime.actionBusy,
       };
     }
@@ -890,13 +897,6 @@ function getActionState(runtime: Runtime) {
           nearby &&
           !runtime.actionBusy &&
           (preview || care >= definition.careCost),
-      };
-    }
-    if (hasPersonalPath(runtime, runtime.selected.gridX, runtime.selected.gridY)) {
-      return {
-        action: null as GardenAction,
-        label: "A path is here",
-        enabled: false,
       };
     }
     const cost = runtime.personalGarden?.plantCost ?? 2;

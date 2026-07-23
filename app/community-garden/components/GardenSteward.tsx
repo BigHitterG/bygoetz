@@ -184,10 +184,17 @@ export function GardenSteward() {
       );
       return account;
     } catch (error) {
-      setAccountState({
-        status: "error",
-        message: error instanceof Error ? error.message : "Could not load the membership.",
-      });
+      setAccountState((current) =>
+        current.status === "active"
+          ? current
+          : {
+              status: "error",
+              message:
+                error instanceof Error
+                  ? error.message
+                  : "Could not load the membership.",
+            },
+      );
       return null;
     }
   }, []);

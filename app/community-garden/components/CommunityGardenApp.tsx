@@ -95,6 +95,8 @@ const INITIAL_UI: GardenUiState = {
 
 const HEALTH_PULSE_KEY = "basil-health-pulse-at-v1";
 const HEALTH_PULSE_INTERVAL_MS = 5 * 60 * 1000;
+const MEMBER_GARDEN_CACHE_PREFIX = "basil-member-garden-cache-v1:";
+const MEMBERSHIP_RETRY_MAX_DELAY_MS = 30_000;
 
 type AccountResponse =
   | { active: false }
@@ -111,6 +113,44 @@ async function getResponseError(response: Response, fallback: string) {
   }
 }
 
+function getMemberGardenCacheKey(userId: string) {
+  return `${MEMBER_GARDEN_CACHE_PREFIX}${userId}`;
+}
+
+function loadMemberGardenCache(userId: string) {
+  if (typeof window === "undefined") return null;
+  try {
+    const key = getMemberGardenCacheKey(userId);
+    const raw = window.sessionStorage.getItem(key);
+    if (!raw) return null;
+    const garden = JSON.parse(raw) as Partial<MyGardenState>;
+    if (
+      !Array.isArray(garden.plants) ||
+      !Array.isArray(garden.paths) ||
+      !Array.isArray(garden.elements) ||
+      typeof garden.careBalance !== "number" ||
+      typeof garden.lifetimeCare !== "number"
+    ) {
+      window.sessionStorage.removeItem(key);
+      return null;
+    }
+    return garden as MyGardenState;
+  } catch {
+    return null;
+  }
+}
+
+function saveMemberGardenCache(userId: string, garden: MyGardenState | null) {
+  if (typeof window === "undefined") return;
+  const key = getMemberGardenCacheKey(userId);
+  try {
+    if (garden) window.sessionStorage.setItem(key, JSON.stringify(garden));
+    else window.sessionStorage.removeItem(key);
+  } catch {
+    // Restricted or full session storage should never interrupt the garden.
+  }
+}
+
 export function CommunityGardenApp() {
   const canvasRef = useRef<GardenCanvasHandle>(null);
   const careClaimQueueRef = useRef<Promise<void>>(Promise.resolve());
@@ -119,6 +159,10 @@ export function CommunityGardenApp() {
     createGuestGardenPreview(),
   );
   const lifetimeCareRef = useRef(0);
+  const memberGardenRef = useRef<MyGardenState | null>(null);
+  const sessionUserIdRef = useRef<string | null>(null);
+  const membershipRetryTimerRef = useRef<number | null>(null);
+  const membershipRetryAttemptRef = useRef(0);
   const [ui, setUi] = useState(INITIAL_UI);
   const [world, setWorld] = useState<GardenWorldMode>("community");
   const [menuOpen, setMenuOpen] = useState(false);
@@ -143,6 +187,7 @@ export function CommunityGardenApp() {
     useState(0);
   const [showFreePlantingNotice, setShowFreePlantingNotice] = useState(false);
   const [restoreMessage, setRestoreMessage] = useState("");
+  const [membershipReloadToken, setMembershipReloadToken] = useState(0);
   const [unlockNotices, setUnlockNotices] = useState<MyGardenUnlockNotice[]>([]);
   const restoredJourneyRef = useRef(false);
   const communityOnboardingPlantingsRef = useRef(0);
@@ -203,6 +248,26 @@ export function CommunityGardenApp() {
     setGuestPreview(next);
     saveGuestGardenPreview(next);
   }, []);
+
+  const clearMembershipRetry = useCallback(() => {
+    if (membershipRetryTimerRef.current !== null) {
+      window.clearTimeout(membershipRetryTimerRef.current);
+      membershipRetryTimerRef.current = null;
+    }
+  }, []);
+
+  const scheduleMembershipRetry = useCallback(() => {
+    clearMembershipRetry();
+    const delay = Math.min(
+      1_500 * 2 ** membershipRetryAttemptRef.current,
+      MEMBERSHIP_RETRY_MAX_DELAY_MS,
+    );
+    membershipRetryAttemptRef.current += 1;
+    membershipRetryTimerRef.current = window.setTimeout(() => {
+      membershipRetryTimerRef.current = null;
+      setMembershipReloadToken((current) => current + 1);
+    }, delay);
+  }, [clearMembershipRetry]);
 
   const startMembershipCheckout = useCallback(async (
     credentials: GardenMembershipCredentials,
@@ -299,12 +364,29 @@ export function CommunityGardenApp() {
   }, [session, ui.mapX, ui.mapY, ui.selectedTool, ui.zoom, world]);
 
   const loadMembership = useCallback(async (activeSession: Session) => {
+    const cachedGarden = loadMemberGardenCache(activeSession.user.id);
+    if (!memberGardenRef.current && cachedGarden) {
+      memberGardenRef.current = cachedGarden;
+      lifetimeCareRef.current = cachedGarden.lifetimeCare;
+      setMemberGarden(cachedGarden);
+    }
     try {
       const response = await fetch("/api/community-garden/account", {
         cache: "no-store",
         headers: { authorization: `Bearer ${activeSession.access_token}` },
       });
-      if (!response.ok) return null;
+      if (!response.ok) {
+        if (
+          response.status >= 500 ||
+          response.status === 408 ||
+          response.status === 429
+        ) {
+          throw new Error(`Temporary account service error (${response.status})`);
+        }
+        clearMembershipRetry();
+        membershipRetryAttemptRef.current = 0;
+        return memberGardenRef.current;
+      }
       const account = (await response.json()) as AccountResponse;
       let nextGarden = account.active ? account.myGarden : null;
       if (nextGarden) {
@@ -361,20 +443,51 @@ export function CommunityGardenApp() {
           }
         }
       }
+      clearMembershipRetry();
+      membershipRetryAttemptRef.current = 0;
       lifetimeCareRef.current = nextGarden?.lifetimeCare ?? 0;
+      memberGardenRef.current = nextGarden;
       setMemberGarden(nextGarden);
+      saveMemberGardenCache(activeSession.user.id, nextGarden);
+      setRestoreMessage((current) =>
+        current ===
+        "Garden connection interrupted. Your saved garden is safe; reconnecting…"
+          ? ""
+          : current,
+      );
       if (nextGarden && pendingGardenEntryRef.current) {
         pendingGardenEntryRef.current = false;
         setMenuOpen(false);
         setWorld("personal");
       }
       return nextGarden;
-    } catch {
-      return null;
+    } catch (error) {
+      console.error("Basil membership lookup temporarily failed", {
+        message: error instanceof Error ? error.message : "Unknown error",
+      });
+      setRestoreMessage(
+        "Garden connection interrupted. Your saved garden is safe; reconnecting…",
+      );
+      scheduleMembershipRetry();
+      return memberGardenRef.current ?? cachedGarden;
     } finally {
       setAccountChecked(true);
     }
-  }, []);
+  }, [clearMembershipRetry, scheduleMembershipRetry]);
+
+  useEffect(() => {
+    memberGardenRef.current = memberGarden;
+    if (session && memberGarden) {
+      saveMemberGardenCache(session.user.id, memberGarden);
+    }
+  }, [memberGarden, session]);
+
+  useEffect(
+    () => () => {
+      clearMembershipRetry();
+    },
+    [clearMembershipRetry],
+  );
 
   useEffect(() => {
     void trackBasilFunnelEvent("session_started");
@@ -516,6 +629,7 @@ export function CommunityGardenApp() {
     void client.auth
       .getSession()
       .then(({ data }) => {
+        sessionUserIdRef.current = data.session?.user.id ?? null;
         setSession(data.session);
         if (!data.session) setAccountChecked(true);
       })
@@ -524,22 +638,29 @@ export function CommunityGardenApp() {
     const { data: listener } = client.auth.onAuthStateChange((_event, nextSession) => {
       setSession(nextSession);
       if (!nextSession) {
+        clearMembershipRetry();
+        if (sessionUserIdRef.current) {
+          saveMemberGardenCache(sessionUserIdRef.current, null);
+        }
+        sessionUserIdRef.current = null;
         lifetimeCareRef.current = 0;
+        memberGardenRef.current = null;
         setMemberGarden(null);
         setWorld("community");
         setAccountChecked(true);
       } else {
+        sessionUserIdRef.current = nextSession.user.id;
         setAccountChecked(false);
       }
     });
 
     return () => listener.subscription.unsubscribe();
-  }, []);
+  }, [clearMembershipRetry]);
 
   useEffect(() => {
     if (!guestPreviewReady || !session) return;
     queueMicrotask(() => void loadMembership(session));
-  }, [guestPreviewReady, loadMembership, session]);
+  }, [guestPreviewReady, loadMembership, membershipReloadToken, session]);
 
   useEffect(() => {
     if (!onboardingInventoryLocked) return;
@@ -1310,7 +1431,10 @@ export function CommunityGardenApp() {
         {restoreMessage ? (
           <p
             className={`cg-restore-status${
-              restoreMessage.startsWith("Restoring") ? "" : " is-error"
+              restoreMessage.startsWith("Restoring") ||
+              restoreMessage.startsWith("Garden connection interrupted")
+                ? ""
+                : " is-error"
             }`}
             role="status"
           >

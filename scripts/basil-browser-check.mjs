@@ -1,5 +1,5 @@
 import { createRequire } from "node:module";
-import { homedir } from "node:os";
+import { homedir, tmpdir } from "node:os";
 import { readdirSync } from "node:fs";
 import { join } from "node:path";
 
@@ -39,6 +39,34 @@ const cases = [
   { name: "tablet-landscape", width: 1180, height: 820, touch: true },
   { name: "desktop", width: 1440, height: 1000, touch: false },
 ];
+const inventoryPortraits = {
+  stone_paver: "paver",
+  gravel_tile: "paver",
+  brick_paver: "paver",
+  clay_pot: "pot",
+  hedge: "shrub",
+  birdhouse: "birdhouse",
+  bench: "bench",
+  fern: "shrub",
+  hydrangea: "shrub",
+  wheelbarrow: "tool",
+  wooden_planter: "planter",
+  bird_feeder: "feeder",
+  rustic_bench: "bench",
+  trellis: "trellis",
+  butterfly_bush: "shrub",
+  pollinator_sign: "sign",
+  butterfly_house: "birdhouse",
+  beehive: "hive",
+  rose_trellis: "trellis",
+  reeds: "reeds",
+  lily_pads: "lily",
+  birdbath: "basin",
+  stone_basin: "basin",
+  willow_tree: "tree",
+  fountain: "fountain",
+  small_pond: "pond",
+};
 
 const browser = await playwright.chromium.launch({ headless: true, channel: "msedge" });
 const results = [];
@@ -112,8 +140,74 @@ for (const device of cases) {
   await context.close();
 }
 
+const auditContext = await browser.newContext({
+  viewport: { width: 900, height: 700 },
+});
+const auditPage = await auditContext.newPage();
+await auditPage.goto(baseUrl, { waitUntil: "domcontentloaded", timeout: 30_000 });
+const stylesheetUrls = await auditPage
+  .locator('link[rel="stylesheet"]')
+  .evaluateAll((links) => links.map((link) => link.href));
+await auditPage.setContent(
+  `<!doctype html><html><head>${stylesheetUrls
+    .map((href) => `<link rel="stylesheet" href="${href}">`)
+    .join("")}</head><body></body></html>`,
+  { waitUntil: "networkidle" },
+);
+const inventoryAudit = await auditPage.evaluate((portraits) => {
+  document.body.innerHTML =
+    '<main id="inventory-audit" style="padding:24px;background:#f5eddd;display:grid;grid-template-columns:repeat(6,1fr);gap:12px;font:12px monospace"></main>';
+  const root = document.querySelector("#inventory-audit");
+  for (const [type, icon] of Object.entries(portraits)) {
+    const card = document.createElement("div");
+    card.style.cssText =
+      "height:90px;border:2px solid #34231f;background:#fff8e9;display:grid;place-items:center;text-align:center;padding:8px";
+    card.innerHTML = `<span class="cg-item-glyph is-${icon} is-item-${type}"></span><b>${type.replaceAll("_", " ")}</b>`;
+    root.append(card);
+  }
+  const signatures = Object.fromEntries(
+    Object.keys(portraits).map((type) => {
+      const element = document.querySelector(`.is-item-${type}`);
+      const signatureFor = (pseudo) => {
+        const style = getComputedStyle(element, pseudo);
+        return [
+          style.background,
+          style.backgroundColor,
+          style.border,
+          style.borderRadius,
+          style.boxShadow,
+          style.width,
+          style.height,
+          style.left,
+          style.top,
+          style.transform,
+          style.display,
+        ].join("|");
+      };
+      return [type, `${signatureFor("::before")}//${signatureFor("::after")}`];
+    }),
+  );
+  const entries = Object.entries(signatures);
+  return {
+    count: entries.length,
+    duplicatePortraits: entries
+      .filter(([, signature], index) =>
+        entries.some(
+          ([, candidate], candidateIndex) =>
+            candidateIndex < index && candidate === signature,
+        ),
+      )
+      .map(([type]) => type),
+  };
+}, inventoryPortraits);
+await auditPage.screenshot({
+  path: join(tmpdir(), "basil-inventory-audit.png"),
+  fullPage: true,
+});
+await auditContext.close();
+
 await browser.close();
-console.log(JSON.stringify(results));
+console.log(JSON.stringify({ viewports: results, inventoryAudit }));
 if (
   results.some(
     (result) =>
@@ -128,7 +222,9 @@ if (
           result.inventoryModal.itemHeight < 80 ||
           result.inventoryModal.itemFontSize < 10)) ||
       result.errors.length > 0,
-  )
+  ) ||
+  inventoryAudit.count !== Object.keys(inventoryPortraits).length ||
+  inventoryAudit.duplicatePortraits.length > 0
 ) {
   process.exitCode = 1;
 }
