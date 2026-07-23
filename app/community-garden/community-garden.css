@@ -1150,10 +1150,65 @@
 }
 
 .cg-inventory-panel {
-  overflow: hidden;
+  max-height: min(68dvh, 560px);
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   border: 2px solid var(--cg-ink);
   background: rgba(255, 244, 223, 0.98);
   box-shadow: 4px 4px 0 rgba(52, 35, 31, 0.24);
+}
+
+.cg-inventory-progress {
+  display: grid;
+  gap: 2px;
+  border-bottom: 1px solid rgba(52, 35, 31, 0.25);
+  background: #f4d89f;
+  padding: 7px 9px;
+}
+
+.cg-inventory-progress span {
+  color: var(--cg-red);
+  font-size: 0.55rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.cg-inventory-progress small {
+  color: #6f4c3e;
+  font-size: 0.45rem;
+  font-weight: 800;
+}
+
+.cg-inventory-tabs {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  border-bottom: 1px solid rgba(52, 35, 31, 0.3);
+}
+
+.cg-inventory-tabs button {
+  min-width: 0;
+  min-height: 32px;
+  border: 0;
+  border-right: 1px solid rgba(52, 35, 31, 0.25);
+  background: #fff4df;
+  color: #765446;
+  cursor: pointer;
+  padding: 4px 2px;
+  font: inherit;
+  font-size: 0.4rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.cg-inventory-tabs button:last-child {
+  border-right: 0;
+}
+
+.cg-inventory-tabs button[aria-pressed="true"] {
+  background: #f3c99b;
+  color: var(--cg-ink);
+  box-shadow: inset 0 -3px 0 var(--cg-coral);
 }
 
 .cg-inventory-panel header {
@@ -1231,6 +1286,13 @@
 .cg-inventory-grid button[aria-pressed="true"] {
   background: #f3c99b;
   box-shadow: inset 0 -4px 0 var(--cg-coral);
+}
+
+.cg-inventory-grid button.is-locked {
+  background: rgba(234, 223, 190, 0.7);
+  cursor: default;
+  filter: grayscale(0.5);
+  opacity: 0.68;
 }
 
 .cg-inventory-grid button.is-onboarding-choice {
@@ -1347,6 +1409,133 @@
   background: #d8d1c4;
 }
 
+.cg-item-glyph.is-paver::before {
+  left: 3px;
+  top: 8px;
+  width: 22px;
+  height: 15px;
+  border: 2px solid #817b70;
+  background: #bdb6a9;
+}
+
+.cg-item-glyph.is-paver::after {
+  left: 7px;
+  top: 11px;
+  width: 8px;
+  height: 3px;
+  background: #d8d1c4;
+}
+
+.cg-item-glyph.is-pot::before,
+.cg-item-glyph.is-planter::before {
+  left: 4px;
+  top: 12px;
+  width: 20px;
+  height: 13px;
+  background: #ad6345;
+  box-shadow: inset 0 4px 0 #7a4838;
+}
+
+.cg-item-glyph.is-pot::after,
+.cg-item-glyph.is-planter::after {
+  left: 12px;
+  top: 3px;
+  width: 4px;
+  height: 12px;
+  background: #58734c;
+  box-shadow: -5px 3px 0 #6f8a58, 5px 1px 0 #6f8a58;
+}
+
+.cg-item-glyph.is-shrub::before,
+.cg-item-glyph.is-tree::before {
+  left: 3px;
+  top: 4px;
+  width: 22px;
+  height: 18px;
+  border-radius: 45%;
+  background: #668151;
+  box-shadow: inset 5px 4px 0 #8aa069;
+}
+
+.cg-item-glyph.is-tree::after {
+  left: 12px;
+  top: 18px;
+  width: 5px;
+  height: 10px;
+  background: #6c4c38;
+}
+
+.cg-item-glyph.is-tool::before {
+  left: 3px;
+  top: 10px;
+  width: 18px;
+  height: 11px;
+  background: #a66c43;
+  transform: skewX(-12deg);
+}
+
+.cg-item-glyph.is-tool::after {
+  left: 19px;
+  top: 17px;
+  width: 9px;
+  height: 4px;
+  background: #5d4637;
+}
+
+.cg-item-glyph.is-feeder::before,
+.cg-item-glyph.is-trellis::before,
+.cg-item-glyph.is-sign::before,
+.cg-item-glyph.is-hive::before {
+  left: 6px;
+  top: 4px;
+  width: 16px;
+  height: 15px;
+  border: 2px solid #76513a;
+  background: #d8aa61;
+}
+
+.cg-item-glyph.is-feeder::after,
+.cg-item-glyph.is-trellis::after,
+.cg-item-glyph.is-sign::after,
+.cg-item-glyph.is-hive::after {
+  left: 12px;
+  top: 18px;
+  width: 4px;
+  height: 10px;
+  background: #76513a;
+}
+
+.cg-item-glyph.is-reeds::before {
+  left: 6px;
+  top: 5px;
+  width: 3px;
+  height: 22px;
+  background: #5b7750;
+  box-shadow: 7px -3px 0 #678158, 14px 2px 0 #4f7047;
+}
+
+.cg-item-glyph.is-lily::before,
+.cg-item-glyph.is-basin::before,
+.cg-item-glyph.is-fountain::before,
+.cg-item-glyph.is-pond::before {
+  left: 2px;
+  top: 13px;
+  width: 24px;
+  height: 12px;
+  border: 2px solid #6f756f;
+  border-radius: 50%;
+  background: #69b8ca;
+}
+
+.cg-item-glyph.is-fountain::after {
+  left: 12px;
+  top: 2px;
+  width: 4px;
+  height: 15px;
+  background: #66c9e2;
+  box-shadow: -5px 7px 0 -1px #66c9e2, 5px 7px 0 -1px #66c9e2;
+}
+
 .cg-action-button {
   position: absolute;
   right: max(12px, env(safe-area-inset-right));
@@ -1456,6 +1645,42 @@
   height: 13px;
   background: #8580ae;
   box-shadow: 6px -2px 0 #706e9d, 12px 1px 0 #9a91bb;
+}
+
+.cg-plant-glyph.is-daisy::after {
+  background: #fff7dc;
+  box-shadow: -3px 3px 0 #ffffff, 3px 3px 0 #ffffff, inset 5px 4px 0 #e0ad37;
+}
+
+.cg-plant-glyph.is-tulip::after {
+  clip-path: polygon(0 0, 30% 24%, 50% 0, 70% 24%, 100% 0, 88% 100%, 12% 100%);
+  background: #d95b6a;
+  box-shadow: inset 5px 4px 0 #f299a1;
+}
+
+.cg-plant-glyph.is-wildflowers::after {
+  left: 2px;
+  width: 7px;
+  height: 7px;
+  background: #e2b33c;
+  box-shadow: 7px -2px 0 #817bb0, 14px 2px 0 #d95b6a;
+}
+
+.cg-plant-glyph.is-peony::after {
+  left: 4px;
+  width: 17px;
+  height: 12px;
+  border-radius: 45%;
+  background: #e998aa;
+  box-shadow: inset 5px 4px 0 #c75f78;
+}
+
+.cg-plant-glyph.is-bee_balm::after {
+  left: 5px;
+  width: 15px;
+  height: 13px;
+  background: #c44e78;
+  box-shadow: -2px -2px 0 #e888a1, 3px -1px 0 #9f3e67;
 }
 
 .cg-plant-glyph.is-weed::before {

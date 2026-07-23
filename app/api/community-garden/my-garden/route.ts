@@ -19,6 +19,12 @@ import { hasAllowedBasilRequestOrigin } from "@/lib/communityGarden/urls";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+const PREVIEW_PLANT_TYPES: readonly MyGardenPlantType[] = [
+  "rose",
+  "sunflower",
+  "lavender",
+];
+
 function isGridCoordinate(value: unknown, minimum: number, maximum: number) {
   return (
     Number.isInteger(value) &&
@@ -73,7 +79,7 @@ export async function POST(request: NextRequest) {
           typeof candidate === "object" &&
           isGridCoordinate((candidate as { gridX?: unknown }).gridX, 0, 11) &&
           isGridCoordinate((candidate as { gridY?: unknown }).gridY, 0, 15) &&
-          MY_GARDEN_PLANT_TYPES.includes(
+          PREVIEW_PLANT_TYPES.includes(
             (candidate as { plantType?: unknown })
               .plantType as MyGardenPlantType,
           ),

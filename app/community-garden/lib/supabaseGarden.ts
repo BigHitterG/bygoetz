@@ -1,7 +1,7 @@
 import {
   PLANT_TYPES,
+  type CommunityPlantType,
   type PlantRecord,
-  type PlantType,
 } from "./roseLifecycle";
 import type { GardenBounds } from "./gardenConfig";
 import { MAX_WATERING_TARGETS } from "./wateringSelection";
@@ -68,8 +68,8 @@ export function isGardenConfigured() {
 }
 
 function normalizePlant(value: Record<string, unknown>): PlantRecord {
-  const plantType = PLANT_TYPES.includes(value.plant_type as PlantType)
-    ? (value.plant_type as PlantType)
+  const plantType = PLANT_TYPES.includes(value.plant_type as CommunityPlantType)
+    ? (value.plant_type as CommunityPlantType)
     : "rose";
   return { ...value, plant_type: plantType } as PlantRecord;
 }
@@ -313,7 +313,7 @@ async function submitGardenAction(
 export function plantGardenPlant(
   gridX: number,
   gridY: number,
-  plantType: PlantType,
+  plantType: CommunityPlantType,
 ) {
   return submitGardenAction({
     action: "plant",

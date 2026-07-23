@@ -1,22 +1,24 @@
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
-import type { MyGardenElementType } from "@/app/community-garden/lib/myGardenCatalog";
+import {
+  MY_GARDEN_PLANTS,
+  type MyGardenElementType,
+  type MyGardenPlantType,
+} from "@/app/community-garden/lib/myGardenCatalog";
 
 export {
   MY_GARDEN_ELEMENTS,
+  MY_GARDEN_PLANTS,
   type MyGardenElementType,
+  type MyGardenPlantType,
 } from "@/app/community-garden/lib/myGardenCatalog";
 
 export const MY_GARDEN_PLANT_COST = 2;
 export const MY_GARDEN_UPROOT_RETURN = 1;
 export const GARDEN_DAILY_CARE_LIMIT = 20;
 
-export const MY_GARDEN_PLANT_TYPES = [
-  "rose",
-  "sunflower",
-  "lavender",
-] as const;
-
-export type MyGardenPlantType = (typeof MY_GARDEN_PLANT_TYPES)[number];
+export const MY_GARDEN_PLANT_TYPES = MY_GARDEN_PLANTS.map(
+  (plant) => plant.type,
+);
 
 export type MyGardenPlant = {
   id: string;
@@ -156,6 +158,8 @@ function getDatabaseMessage(error: unknown, fallback: string) {
     "That plant is no longer in My Garden.",
     "Earn more Care in the Community Garden before expanding.",
     "That item is not available in My Garden.",
+    "Earn more lifetime Care to unlock this collection.",
+    "That item does not fit inside your current fenced garden.",
     "That garden spot already has an item.",
     "That garden spot is occupied.",
     "Earn more Care in the Community Garden before placing that item.",

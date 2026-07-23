@@ -21,6 +21,8 @@ import {
 import type { MyGardenState } from "@/lib/communityGarden/myGarden";
 import {
   getMyGardenElement,
+  isMyGardenElementType,
+  isMyGardenPlantType,
   type MyGardenElementType,
 } from "../lib/myGardenCatalog";
 import type { MyGardenMutation } from "../lib/myGardenMutation";
@@ -289,7 +291,7 @@ function ensureRecentCommunityPlantsLoaded(runtime: Runtime) {
         typeof plant.id !== "string" ||
         !Number.isInteger(gridX) ||
         !Number.isInteger(gridY) ||
-        !PLANT_TYPES.includes(plantType)
+        !PLANT_TYPES.some((type) => type === plantType)
       ) {
         continue;
       }
@@ -556,9 +558,72 @@ function hasPersonalPath(runtime: Runtime, gridX: number, gridY: number) {
 }
 
 function getPersonalElement(runtime: Runtime, gridX: number, gridY: number) {
-  return runtime.personalGarden?.elements.find(
-    (element) => element.gridX === gridX && element.gridY === gridY,
+  return runtime.personalGarden?.elements.find((element) => {
+    const definition = getMyGardenElement(element.elementType);
+    return (
+      gridX >= element.gridX &&
+      gridX < element.gridX + definition.footprintWidth &&
+      gridY >= element.gridY &&
+      gridY < element.gridY + definition.footprintHeight
+    );
+  });
+}
+
+function rectanglesOverlap(
+  left: { x: number; y: number; width: number; height: number },
+  right: { x: number; y: number; width: number; height: number },
+) {
+  return (
+    left.x < right.x + right.width &&
+    left.x + left.width > right.x &&
+    left.y < right.y + right.height &&
+    left.y + left.height > right.y
   );
+}
+
+function canPlacePersonalElement(
+  runtime: Runtime,
+  gridX: number,
+  gridY: number,
+  elementType: MyGardenElementType,
+) {
+  const garden = runtime.personalGarden;
+  if (!garden) return false;
+  const definition = getMyGardenElement(elementType);
+  const candidate = {
+    x: gridX,
+    y: gridY,
+    width: definition.footprintWidth,
+    height: definition.footprintHeight,
+  };
+  const maxX = garden.minX + garden.width - 1;
+  const maxY = garden.minY + garden.height - 1;
+  if (
+    gridX < garden.minX ||
+    gridY < garden.minY ||
+    gridX + candidate.width - 1 > maxX ||
+    gridY + candidate.height - 1 > maxY
+  ) {
+    return false;
+  }
+
+  for (let y = gridY; y < gridY + candidate.height; y += 1) {
+    for (let x = gridX; x < gridX + candidate.width; x += 1) {
+      if (getPlantAt(runtime, x, y) || hasPersonalPath(runtime, x, y)) {
+        return false;
+      }
+    }
+  }
+
+  return !garden.elements.some((element) => {
+    const existing = getMyGardenElement(element.elementType);
+    return rectanglesOverlap(candidate, {
+      x: element.gridX,
+      y: element.gridY,
+      width: existing.footprintWidth,
+      height: existing.footprintHeight,
+    });
+  });
 }
 
 function isValidTutorialPlantingCell(runtime: Runtime, gridX: number, gridY: number) {
@@ -808,14 +873,25 @@ function getActionState(runtime: Runtime) {
       };
     }
     if (runtime.toolMode === "element") {
-      if (plant || hasPersonalPath(runtime, runtime.selected.gridX, runtime.selected.gridY)) {
+      const definition = getMyGardenElement(runtime.selectedElementType);
+      if (
+        !canPlacePersonalElement(
+          runtime,
+          runtime.selected.gridX,
+          runtime.selected.gridY,
+          runtime.selectedElementType,
+        )
+      ) {
         return {
           action: null as GardenAction,
-          label: "Choose an open tile",
+          label:
+            definition.footprintWidth > 1 ||
+            definition.footprintHeight > 1
+              ? `Choose ${definition.footprintWidth}×${definition.footprintHeight} open tiles`
+              : "Choose an open tile",
           enabled: false,
         };
       }
-      const definition = getMyGardenElement(runtime.selectedElementType);
       const preview = Boolean(runtime.personalGarden?.preview);
       const care = runtime.personalGarden?.careBalance ?? 0;
       return {
@@ -1181,7 +1257,12 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
       runtime.effects = [];
       runtime.suggestedPlantingCell = null;
       runtime.suggestedWateringCell = null;
-      if (mode === "community") runtime.toolMode = "plant";
+      if (mode === "community") {
+        runtime.toolMode = "plant";
+        if (!PLANT_TYPES.some((type) => type === runtime.selectedPlantType)) {
+          runtime.selectedPlantType = "rose";
+        }
+      }
 
       const currentPersonalGarden = personalGardenRef.current;
       if (mode === "personal" && currentPersonalGarden) {
@@ -1485,18 +1566,12 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
           if (selectedTool === "path" && runtime.mode === "personal") {
             runtime.toolMode = "path";
           } else if (
-            (selectedTool === "birdhouse" ||
-              selectedTool === "bench" ||
-              selectedTool === "stone_paver") &&
+            isMyGardenElementType(selectedTool) &&
             runtime.mode === "personal"
           ) {
             runtime.toolMode = "element";
             runtime.selectedElementType = selectedTool;
-          } else if (
-            selectedTool === "rose" ||
-            selectedTool === "sunflower" ||
-            selectedTool === "lavender"
-          ) {
+          } else if (isMyGardenPlantType(selectedTool)) {
             runtime.toolMode = "plant";
             runtime.selectedPlantType = selectedTool;
           }
@@ -1723,6 +1798,15 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
                   ? `${selectedDefinition.name} planted. ${updatedGarden.careBalance} Care remains.`
                   : `Plant uprooted. ${updatedGarden.careBalance} Care is available.`;
             } else if (actionState.action === "plant") {
+              if (
+                !PLANT_TYPES.some(
+                  (type) => type === runtime.selectedPlantType,
+                )
+              ) {
+                runtime.selectedPlantType = "rose";
+              }
+              const communityPlantType =
+                runtime.selectedPlantType as (typeof PLANT_TYPES)[number];
               const existing = getPlantAt(runtime, selected.gridX, selected.gridY);
               if (!isPlantable(existing)) throw new Error("Another plant is already here.");
               if (getWeedAt(runtime, selected.gridX, selected.gridY)) {
@@ -1732,13 +1816,13 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
                 ? await plantGardenPlant(
                     selected.gridX,
                     selected.gridY,
-                    runtime.selectedPlantType,
+                    communityPlantType,
                   )
                 : {
                     plant: makeLocalPlant(
                       selected.gridX,
                       selected.gridY,
-                      runtime.selectedPlantType,
+                      communityPlantType,
                     ),
                     contribution: null,
                   };

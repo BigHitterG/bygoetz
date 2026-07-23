@@ -63,6 +63,7 @@ import {
   trackBasilFunnelEvent,
 } from "../lib/launchFunnel";
 import { SPECIAL_WATERING_FLOWER_NAME } from "../lib/roseLifecycle";
+import { getMyGardenElementGlyphClass } from "../lib/myGardenCatalog";
 
 const INITIAL_UI: GardenUiState = {
   action: null,
@@ -1120,6 +1121,7 @@ export function CommunityGardenApp() {
           mode={world}
           open={inventoryOpen}
           selectedTool={ui.selectedTool}
+          lifetimeCare={myGarden.lifetimeCare}
           onboardingLocked={onboardingInventoryLocked}
           toggleLocked={
             onboardingInventoryLocked &&
@@ -1188,7 +1190,9 @@ export function CommunityGardenApp() {
                   ? "cg-uproot-icon"
                   : ui.action === "place-element" ||
                       ui.action === "remove-element"
-                    ? `cg-item-glyph is-${ui.selectedElementType ?? "stone_paver"}`
+                    ? `cg-item-glyph ${getMyGardenElementGlyphClass(
+                        ui.selectedElementType ?? "stone_paver",
+                      )}`
                   : ui.action === "expand"
                     ? "cg-lock-icon"
                   : ui.action === "lay-path" || ui.action === "remove-path"

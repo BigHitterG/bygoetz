@@ -1,5 +1,8 @@
 import { GARDEN_CONFIG, isWithinGarden } from "../lib/gardenConfig";
-import type { MyGardenElementType } from "../lib/myGardenCatalog";
+import {
+  getMyGardenElement,
+  type MyGardenElementType,
+} from "../lib/myGardenCatalog";
 import {
   canEarnWateringCare,
   getPlantVisual,
@@ -838,9 +841,13 @@ function drawPersonalElement(
   camera: WorldPoint,
   viewport: GardenViewport,
   zoom: number,
+  now: number,
 ) {
+  const definition = getMyGardenElement(element.elementType);
+  const centerGridX = element.gridX + (definition.footprintWidth - 1) / 2;
+  const centerGridY = element.gridY + (definition.footprintHeight - 1) / 2;
   const point = worldToScreen(
-    gridToWorld(element.gridX, element.gridY),
+    gridToWorld(centerGridX, centerGridY),
     camera,
     viewport,
     zoom,
@@ -850,13 +857,35 @@ function drawPersonalElement(
   ctx.translate(Math.round(point.x), Math.round(point.y));
   ctx.scale(zoom, zoom);
 
-  if (element.elementType === "stone_paver") {
+  if (
+    element.elementType === "stone_paver" ||
+    element.elementType === "gravel_tile" ||
+    element.elementType === "brick_paver"
+  ) {
+    if (element.elementType === "brick_paver") {
+      ctx.fillStyle = "#8f5542";
+      ctx.fillRect(-8, -5, 16, 9);
+      ctx.fillStyle = "#c9825e";
+      ctx.fillRect(-7, -4, 6, 3);
+      ctx.fillRect(1, -4, 6, 3);
+      ctx.fillRect(-5, 0, 7, 3);
+      ctx.fillRect(4, 0, 3, 3);
+      ctx.restore();
+      return;
+    }
     ctx.fillStyle = "#817b70";
     ctx.fillRect(-7, -5, 14, 9);
-    ctx.fillStyle = "#bdb6a9";
+    ctx.fillStyle =
+      element.elementType === "gravel_tile" ? "#a79f8e" : "#bdb6a9";
     ctx.fillRect(-6, -4, 12, 7);
     ctx.fillStyle = "#d8d1c4";
-    ctx.fillRect(-4, -3, 5, 2);
+    if (element.elementType === "gravel_tile") {
+      ctx.fillRect(-4, -2, 2, 2);
+      ctx.fillRect(2, 0, 3, 2);
+      ctx.fillRect(1, -4, 2, 2);
+    } else {
+      ctx.fillRect(-4, -3, 5, 2);
+    }
   } else if (element.elementType === "birdhouse") {
     ctx.fillStyle = "#704b39";
     ctx.fillRect(-2, -20, 4, 21);
@@ -866,15 +895,187 @@ function drawPersonalElement(
     ctx.fillRect(-10, -35, 20, 5);
     ctx.fillStyle = "#4a372e";
     ctx.fillRect(-2, -28, 5, 5);
-  } else {
+  } else if (
+    element.elementType === "bench" ||
+    element.elementType === "rustic_bench"
+  ) {
+    const halfWidth = element.elementType === "rustic_bench" ? 17 : 10;
     ctx.fillStyle = "#603b31";
-    ctx.fillRect(-10, -13, 20, 4);
-    ctx.fillRect(-10, -7, 20, 4);
-    ctx.fillRect(-8, -3, 3, 8);
-    ctx.fillRect(5, -3, 3, 8);
+    ctx.fillRect(-halfWidth, -13, halfWidth * 2, 4);
+    ctx.fillRect(-halfWidth, -7, halfWidth * 2, 4);
+    ctx.fillRect(-halfWidth + 2, -3, 3, 8);
+    ctx.fillRect(halfWidth - 5, -3, 3, 8);
     ctx.fillStyle = "#9e6445";
-    ctx.fillRect(-9, -12, 18, 2);
-    ctx.fillRect(-9, -6, 18, 2);
+    ctx.fillRect(-halfWidth + 1, -12, halfWidth * 2 - 2, 2);
+    ctx.fillRect(-halfWidth + 1, -6, halfWidth * 2 - 2, 2);
+  } else if (element.elementType === "clay_pot") {
+    ctx.fillStyle = "#8f4f38";
+    ctx.fillRect(-6, -9, 12, 4);
+    ctx.fillStyle = "#b96b48";
+    ctx.fillRect(-5, -5, 10, 8);
+    ctx.fillStyle = "#55704d";
+    ctx.fillRect(-1, -15, 2, 7);
+    ctx.fillRect(-5, -13, 4, 3);
+    ctx.fillRect(1, -16, 5, 3);
+  } else if (
+    element.elementType === "hedge" ||
+    element.elementType === "fern" ||
+    element.elementType === "hydrangea" ||
+    element.elementType === "butterfly_bush"
+  ) {
+    const bloom =
+      element.elementType === "hydrangea"
+        ? "#8f8dbc"
+        : element.elementType === "butterfly_bush"
+          ? "#b86f9e"
+          : null;
+    ctx.fillStyle =
+      element.elementType === "fern" ? "#4f714d" : "#526e45";
+    ctx.fillRect(-8, -10, 16, 12);
+    ctx.fillRect(-5, -15, 10, 6);
+    ctx.fillStyle = "#78905b";
+    ctx.fillRect(-7, -12, 5, 5);
+    ctx.fillRect(2, -14, 6, 6);
+    if (bloom) {
+      ctx.fillStyle = bloom;
+      ctx.fillRect(-6, -15, 5, 4);
+      ctx.fillRect(1, -17, 6, 5);
+    }
+  } else if (element.elementType === "wheelbarrow") {
+    ctx.fillStyle = "#6e4a35";
+    ctx.fillRect(-12, -7, 17, 7);
+    ctx.fillStyle = "#9f6a43";
+    ctx.fillRect(-10, -9, 14, 4);
+    ctx.fillStyle = "#413c34";
+    ctx.fillRect(5, 0, 6, 3);
+    ctx.fillRect(-9, 1, 5, 5);
+    ctx.fillStyle = "#b58a5a";
+    ctx.fillRect(4, -3, 11, 2);
+  } else if (element.elementType === "wooden_planter") {
+    ctx.fillStyle = "#684334";
+    ctx.fillRect(-17, -8, 34, 10);
+    ctx.fillStyle = "#a26a43";
+    ctx.fillRect(-15, -6, 30, 6);
+    ctx.fillStyle = "#4f6b43";
+    for (let x = -12; x <= 12; x += 6) ctx.fillRect(x, -13, 3, 7);
+  } else if (
+    element.elementType === "bird_feeder" ||
+    element.elementType === "butterfly_house"
+  ) {
+    ctx.fillStyle = "#654838";
+    ctx.fillRect(-2, -19, 4, 20);
+    ctx.fillStyle =
+      element.elementType === "butterfly_house" ? "#c47a45" : "#d0a65e";
+    ctx.fillRect(-7, -27, 14, 10);
+    ctx.fillStyle = "#49352e";
+    ctx.fillRect(-9, -29, 18, 3);
+    ctx.fillRect(-1, -24, 2, 5);
+  } else if (
+    element.elementType === "trellis" ||
+    element.elementType === "rose_trellis"
+  ) {
+    const width = element.elementType === "rose_trellis" ? 30 : 18;
+    ctx.fillStyle = "#8b6848";
+    ctx.fillRect(-width / 2, -30, 3, 32);
+    ctx.fillRect(width / 2 - 3, -30, 3, 32);
+    ctx.fillRect(-width / 2, -29, width, 3);
+    ctx.fillRect(-width / 2, -18, width, 2);
+    ctx.fillRect(-width / 2, -8, width, 2);
+    if (element.elementType === "rose_trellis") {
+      ctx.fillStyle = "#59734b";
+      ctx.fillRect(-13, -26, 5, 22);
+      ctx.fillRect(7, -25, 5, 20);
+      ctx.fillStyle = "#d94a4e";
+      ctx.fillRect(-14, -25, 6, 5);
+      ctx.fillRect(7, -21, 7, 5);
+      ctx.fillRect(-5, -13, 6, 5);
+    }
+  } else if (
+    element.elementType === "pollinator_sign" ||
+    element.elementType === "beehive"
+  ) {
+    if (element.elementType === "pollinator_sign") {
+      ctx.fillStyle = "#674736";
+      ctx.fillRect(-2, -17, 4, 18);
+      ctx.fillStyle = "#ead69a";
+      ctx.fillRect(-10, -26, 20, 11);
+      ctx.fillStyle = "#6e8a50";
+      ctx.fillRect(-6, -22, 12, 3);
+    } else {
+      ctx.fillStyle = "#71513b";
+      ctx.fillRect(-8, -3, 3, 6);
+      ctx.fillRect(5, -3, 3, 6);
+      ctx.fillStyle = "#dfb84d";
+      ctx.fillRect(-10, -18, 20, 16);
+      ctx.fillStyle = "#a57b37";
+      ctx.fillRect(-10, -14, 20, 2);
+      ctx.fillRect(-10, -8, 20, 2);
+      ctx.fillStyle = "#4b3b31";
+      ctx.fillRect(-2, -6, 4, 4);
+      const wing = Math.floor(now / 180) % 2;
+      ctx.fillStyle = "#f2cf47";
+      ctx.fillRect(12, -18 + wing, 3, 2);
+      ctx.fillRect(-15, -12 - wing, 3, 2);
+    }
+  } else if (element.elementType === "reeds") {
+    ctx.fillStyle = "#55724d";
+    ctx.fillRect(-6, -18, 2, 19);
+    ctx.fillRect(-1, -22, 2, 23);
+    ctx.fillRect(5, -15, 2, 16);
+    ctx.fillStyle = "#7a583b";
+    ctx.fillRect(-7, -21, 4, 5);
+    ctx.fillRect(-2, -25, 4, 5);
+    ctx.fillRect(4, -18, 4, 5);
+  } else if (element.elementType === "lily_pads") {
+    ctx.fillStyle = "#5f8659";
+    ctx.fillRect(-10, -4, 9, 7);
+    ctx.fillRect(1, -3, 10, 7);
+    ctx.fillStyle = "#eee4ce";
+    ctx.fillRect(3, -8, 5, 5);
+    ctx.fillStyle = "#d9a1ad";
+    ctx.fillRect(4, -7, 3, 3);
+  } else if (
+    element.elementType === "birdbath" ||
+    element.elementType === "stone_basin"
+  ) {
+    const wide = element.elementType === "stone_basin";
+    ctx.fillStyle = "#79776e";
+    ctx.fillRect(-2, -12, 4, 14);
+    ctx.fillRect(-6, 0, 12, 3);
+    ctx.fillStyle = "#aaa99d";
+    ctx.fillRect(wide ? -13 : -9, -17, wide ? 26 : 18, 6);
+    ctx.fillStyle = "#68b8cf";
+    ctx.fillRect(wide ? -10 : -6, -16, wide ? 20 : 12, 2);
+  } else if (element.elementType === "willow_tree") {
+    ctx.fillStyle = "#604936";
+    ctx.fillRect(-4, -25, 8, 28);
+    ctx.fillStyle = "#597849";
+    ctx.fillRect(-17, -39, 34, 18);
+    ctx.fillRect(-12, -24, 5, 16);
+    ctx.fillRect(8, -26, 5, 18);
+    ctx.fillStyle = "#86a668";
+    ctx.fillRect(-13, -37, 12, 7);
+    ctx.fillRect(2, -35, 12, 7);
+  } else if (element.elementType === "fountain") {
+    const splash = Math.floor(now / 220) % 3;
+    ctx.fillStyle = "#77766f";
+    ctx.fillRect(-15, -4, 30, 7);
+    ctx.fillStyle = "#aaa99e";
+    ctx.fillRect(-12, -10, 24, 7);
+    ctx.fillRect(-3, -24, 6, 15);
+    ctx.fillStyle = "#62c2df";
+    ctx.fillRect(-1, -31 - splash, 2, 12);
+    ctx.fillRect(-7, -23 + splash, 3, 5);
+    ctx.fillRect(5, -23 + splash, 3, 5);
+  } else if (element.elementType === "small_pond") {
+    ctx.fillStyle = "#69675d";
+    ctx.fillRect(-25, -8, 50, 15);
+    ctx.fillStyle = "#69afbd";
+    ctx.fillRect(-22, -6, 44, 11);
+    ctx.fillStyle = "#91d0d5";
+    ctx.fillRect(-14, -4, 17, 2);
+    ctx.fillStyle = "#638757";
+    ctx.fillRect(8, -4, 7, 5);
   }
   ctx.restore();
 }
@@ -1084,6 +1285,58 @@ function drawLavenderPlant(
   ctx.fillRect(5, -12 + topOffset, 2, 2);
 }
 
+function drawMyGardenFlower(
+  ctx: CanvasRenderingContext2D,
+  plantType: "daisy" | "tulip" | "wildflowers" | "peony" | "bee_balm",
+) {
+  ctx.fillStyle = "#4f7047";
+  ctx.fillRect(-1, -10, 2, 11);
+  ctx.fillRect(-5, -5, 4, 2);
+  ctx.fillRect(1, -7, 5, 2);
+
+  if (plantType === "daisy") {
+    ctx.fillStyle = "#fff8de";
+    ctx.fillRect(-5, -15, 10, 7);
+    ctx.fillRect(-7, -13, 14, 3);
+    ctx.fillStyle = "#e0ad37";
+    ctx.fillRect(-2, -13, 4, 4);
+  } else if (plantType === "tulip") {
+    ctx.fillStyle = "#d95b6a";
+    ctx.fillRect(-5, -16, 10, 8);
+    ctx.fillRect(-3, -18, 3, 4);
+    ctx.fillRect(1, -18, 3, 4);
+    ctx.fillStyle = "#a7354e";
+    ctx.fillRect(-2, -14, 4, 5);
+  } else if (plantType === "wildflowers") {
+    ctx.fillStyle = "#4f7047";
+    ctx.fillRect(-6, -9, 2, 10);
+    ctx.fillRect(5, -8, 2, 9);
+    ctx.fillStyle = "#f0c04b";
+    ctx.fillRect(-8, -13, 5, 5);
+    ctx.fillStyle = "#7f79ad";
+    ctx.fillRect(-2, -16, 5, 5);
+    ctx.fillStyle = "#d85b68";
+    ctx.fillRect(4, -12, 5, 5);
+  } else if (plantType === "peony") {
+    ctx.fillStyle = "#eba0ad";
+    ctx.fillRect(-6, -16, 12, 9);
+    ctx.fillRect(-8, -13, 16, 4);
+    ctx.fillStyle = "#c85f78";
+    ctx.fillRect(-4, -14, 8, 6);
+    ctx.fillStyle = "#f2c5ca";
+    ctx.fillRect(-2, -15, 4, 3);
+  } else {
+    ctx.fillStyle = "#c44e78";
+    ctx.fillRect(-5, -17, 10, 9);
+    ctx.fillRect(-7, -14, 14, 3);
+    ctx.fillStyle = "#ed8aa4";
+    ctx.fillRect(-3, -18, 2, 5);
+    ctx.fillRect(1, -17, 2, 5);
+    ctx.fillStyle = "#6d3f68";
+    ctx.fillRect(-2, -13, 4, 4);
+  }
+}
+
 function drawPlant(
   ctx: CanvasRenderingContext2D,
   plant: PlantRecord,
@@ -1129,6 +1382,14 @@ function drawPlant(
     drawSunflowerPlant(ctx, visual.state);
   } else if (plant.plant_type === "lavender") {
     drawLavenderPlant(ctx, visual.state);
+  } else if (
+    plant.plant_type === "daisy" ||
+    plant.plant_type === "tulip" ||
+    plant.plant_type === "wildflowers" ||
+    plant.plant_type === "peony" ||
+    plant.plant_type === "bee_balm"
+  ) {
+    drawMyGardenFlower(ctx, plant.plant_type);
   } else {
     drawRosePlant(ctx, plant, visual.state);
   }
@@ -1232,7 +1493,10 @@ function drawPersonalDepthObjects(
     ...elements.map((element) => ({
       kind: "element" as const,
       gridX: element.gridX,
-      gridY: element.gridY,
+      gridY:
+        element.gridY +
+        getMyGardenElement(element.elementType).footprintHeight -
+        1,
       element,
     })),
   ];
@@ -1248,7 +1512,7 @@ function drawPersonalDepthObjects(
     if (object.kind === "plant") {
       drawPlant(ctx, object.plant, camera, viewport, now, zoom);
     } else {
-      drawPersonalElement(ctx, object.element, camera, viewport, zoom);
+      drawPersonalElement(ctx, object.element, camera, viewport, zoom, now);
     }
   }
 }

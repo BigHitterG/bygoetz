@@ -1,11 +1,14 @@
-import type { MyGardenElementType } from "./myGardenCatalog";
+import type {
+  MyGardenElementType,
+  MyGardenPlantType,
+} from "./myGardenCatalog";
 
 export type MyGardenMutation =
   | {
       action: "plant";
       gridX: number;
       gridY: number;
-      plantType: "rose" | "sunflower" | "lavender";
+      plantType: MyGardenPlantType;
     }
   | { action: "toggle-path"; gridX: number; gridY: number }
   | { action: "uproot"; plantId: string }

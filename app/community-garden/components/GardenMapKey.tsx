@@ -28,6 +28,11 @@ const PLANT_COLORS = {
   rose: "#b62f3d",
   sunflower: "#d7a52f",
   lavender: "#7876a8",
+  daisy: "#f5ead2",
+  tulip: "#d95b6a",
+  wildflowers: "#8d79a9",
+  peony: "#e998aa",
+  bee_balm: "#c44e78",
 } as const;
 
 export function GardenMapKey({
@@ -93,7 +98,7 @@ export function GardenMapKey({
     for (const plant of ui.plantMapPoints) {
       const x = Math.round((plant.x / 100) * EXPANDED_MAP_SIZE);
       const y = Math.round((plant.y / 100) * EXPANDED_MAP_SIZE);
-      ctx.fillStyle = PLANT_COLORS[plant.plantType];
+      ctx.fillStyle = PLANT_COLORS[plant.plantType] ?? "#c75f78";
       ctx.fillRect(x - 2, y - 2, 4, 4);
     }
 

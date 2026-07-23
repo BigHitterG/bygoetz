@@ -1,8 +1,11 @@
+import type { MyGardenPlantType } from "./myGardenCatalog";
+
 const HOUR_MS = 60 * 60 * 1000;
 const MOISTURE_HALF_LIFE_MS = 8 * HOUR_MS;
 export const WATERING_CARE_COOLDOWN_MS = 4 * HOUR_MS;
 
-export type PlantType = "rose" | "sunflower" | "lavender";
+export type CommunityPlantType = "rose" | "sunflower" | "lavender";
+export type PlantType = MyGardenPlantType;
 
 export type PlantState =
   | "seed"
@@ -38,7 +41,11 @@ export type PlantDefinition = {
   lifecycle: PlantLifecycle;
 };
 
-export const PLANT_TYPES: PlantType[] = ["rose", "sunflower", "lavender"];
+export const PLANT_TYPES: CommunityPlantType[] = [
+  "rose",
+  "sunflower",
+  "lavender",
+];
 
 export const PLANT_CATALOG: Record<PlantType, PlantDefinition> = {
   rose: {
@@ -102,6 +109,111 @@ export const PLANT_CATALOG: Record<PlantType, PlantDefinition> = {
       wiltMs: 120 * HOUR_MS,
       deadMs: 156 * HOUR_MS,
       removeMs: 168 * HOUR_MS,
+    },
+  },
+  daisy: {
+    type: "daisy",
+    name: "Daisy",
+    pluralName: "Daisies",
+    scientificName: "Bellis perennis",
+    character: "A bright, uncomplicated flower for cheerful garden edges.",
+    realWorldLifespan: "Often two years or longer in mild conditions",
+    gameLifespan: "Permanent in My Garden",
+    absoluteLifespan: "Permanent in My Garden",
+    careNote: "My Garden flowers stay in bloom without maintenance.",
+    colorRadius: 46,
+    lifecycle: {
+      seedMs: 0.5 * HOUR_MS,
+      sproutMs: 6 * HOUR_MS,
+      youngMs: 14 * HOUR_MS,
+      matureMs: 24 * HOUR_MS,
+      wiltMs: 72 * HOUR_MS,
+      deadMs: 96 * HOUR_MS,
+      removeMs: 102 * HOUR_MS,
+    },
+  },
+  tulip: {
+    type: "tulip",
+    name: "Tulip",
+    pluralName: "Tulips",
+    scientificName: "Tulipa",
+    character: "A clean cup of spring color for formal or playful rows.",
+    realWorldLifespan: "Perennial bulbs; blooms return seasonally",
+    gameLifespan: "Permanent in My Garden",
+    absoluteLifespan: "Permanent in My Garden",
+    careNote: "My Garden flowers stay in bloom without maintenance.",
+    colorRadius: 48,
+    lifecycle: {
+      seedMs: 0.5 * HOUR_MS,
+      sproutMs: 6 * HOUR_MS,
+      youngMs: 14 * HOUR_MS,
+      matureMs: 24 * HOUR_MS,
+      wiltMs: 72 * HOUR_MS,
+      deadMs: 96 * HOUR_MS,
+      removeMs: 102 * HOUR_MS,
+    },
+  },
+  wildflowers: {
+    type: "wildflowers",
+    name: "Wildflowers",
+    pluralName: "Wildflowers",
+    scientificName: "Mixed meadow flowers",
+    character: "A tiny, varied patch that makes planted areas feel natural.",
+    realWorldLifespan: "A seasonal mix of annuals and perennials",
+    gameLifespan: "Permanent in My Garden",
+    absoluteLifespan: "Permanent in My Garden",
+    careNote: "My Garden flowers stay in bloom without maintenance.",
+    colorRadius: 50,
+    lifecycle: {
+      seedMs: 0.5 * HOUR_MS,
+      sproutMs: 6 * HOUR_MS,
+      youngMs: 14 * HOUR_MS,
+      matureMs: 24 * HOUR_MS,
+      wiltMs: 72 * HOUR_MS,
+      deadMs: 96 * HOUR_MS,
+      removeMs: 102 * HOUR_MS,
+    },
+  },
+  peony: {
+    type: "peony",
+    name: "Peony",
+    pluralName: "Peonies",
+    scientificName: "Paeonia",
+    character: "A generous cottage bloom with a soft, rounded silhouette.",
+    realWorldLifespan: "Commonly 50 years or more",
+    gameLifespan: "Permanent in My Garden",
+    absoluteLifespan: "Permanent in My Garden",
+    careNote: "Unlocked with the Cottage Garden collection.",
+    colorRadius: 56,
+    lifecycle: {
+      seedMs: 0.5 * HOUR_MS,
+      sproutMs: 6 * HOUR_MS,
+      youngMs: 14 * HOUR_MS,
+      matureMs: 24 * HOUR_MS,
+      wiltMs: 72 * HOUR_MS,
+      deadMs: 96 * HOUR_MS,
+      removeMs: 102 * HOUR_MS,
+    },
+  },
+  bee_balm: {
+    type: "bee_balm",
+    name: "Bee balm",
+    pluralName: "Bee balm",
+    scientificName: "Monarda",
+    character: "A lively pollinator flower with a bright, tufted crown.",
+    realWorldLifespan: "A returning perennial, often lasting many years",
+    gameLifespan: "Permanent in My Garden",
+    absoluteLifespan: "Permanent in My Garden",
+    careNote: "Unlocked with the Pollinator Garden collection.",
+    colorRadius: 52,
+    lifecycle: {
+      seedMs: 0.5 * HOUR_MS,
+      sproutMs: 6 * HOUR_MS,
+      youngMs: 14 * HOUR_MS,
+      matureMs: 24 * HOUR_MS,
+      wiltMs: 72 * HOUR_MS,
+      deadMs: 96 * HOUR_MS,
+      removeMs: 102 * HOUR_MS,
     },
   },
 };
