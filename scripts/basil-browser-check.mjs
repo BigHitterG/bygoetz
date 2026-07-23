@@ -93,9 +93,17 @@ for (const device of cases) {
     }
   });
   page.on("pageerror", (error) => errors.push(error.message));
-  await page.goto(baseUrl, { waitUntil: "networkidle", timeout: 30_000 });
+  await page.goto(baseUrl, { waitUntil: "domcontentloaded", timeout: 30_000 });
+  await page.locator(".cg-game-frame").waitFor({
+    state: "visible",
+    timeout: 30_000,
+  });
   await page.waitForTimeout(750);
-  await page.reload({ waitUntil: "networkidle", timeout: 30_000 });
+  await page.reload({ waitUntil: "domcontentloaded", timeout: 30_000 });
+  await page.locator(".cg-game-frame").waitFor({
+    state: "visible",
+    timeout: 30_000,
+  });
   await page.waitForTimeout(750);
   let inventoryModal = null;
   if (device.name === "phone") {
@@ -152,7 +160,7 @@ await auditPage.setContent(
   `<!doctype html><html><head>${stylesheetUrls
     .map((href) => `<link rel="stylesheet" href="${href}">`)
     .join("")}</head><body></body></html>`,
-  { waitUntil: "networkidle" },
+  { waitUntil: "load" },
 );
 const inventoryAudit = await auditPage.evaluate((portraits) => {
   document.body.innerHTML =
