@@ -41,7 +41,12 @@ import {
   type PlantRecord,
   type PlantType,
 } from "../lib/roseLifecycle";
-import { selectDirectionalWateringTargets } from "../lib/wateringSelection";
+import {
+  advanceWateringPump,
+  MAX_WATERING_TARGETS,
+  selectDirectionalWateringTargets,
+  WATERING_PUMPS_REQUIRED,
+} from "../lib/wateringSelection";
 import {
   clearGardenWeed,
   fetchGardenSnapshot,
@@ -57,7 +62,6 @@ import {
 
 const WATERING_RANGE_TILES = 5;
 const WATERING_APPROACH_TILES = 4.25;
-const MAX_WATERING_TARGETS = 4;
 const WATERING_CHAIN_REACH_TILES = 6;
 const WATERING_STATUS_REFRESH_MS = 10 * 60 * 1000;
 
@@ -147,6 +151,8 @@ type Runtime = {
   requestId: number;
   actionBusy: boolean;
   pendingAction: GardenAction;
+  wateringPumpCount: number;
+  wateringPumpSelectionKey: string;
   mapRevision: number;
   cachedMapRevision: number;
   cachedPlantMapPoints: Array<{
@@ -648,6 +654,8 @@ function getWateringCluster(
   runtime: Runtime,
   selected: NonNullable<SelectedCell>,
 ) {
+  const anchorPlant = getPlantAt(runtime, selected.gridX, selected.gridY);
+  if (!anchorPlant) return [];
   const maryGridX = Math.floor(runtime.mary.x / GARDEN_CONFIG.tileSize);
   const maryGridY = Math.floor(runtime.mary.y / GARDEN_CONFIG.tileSize);
   const livePlants: PlantRecord[] = [];
@@ -675,6 +683,7 @@ function getWateringCluster(
     clickedGridY: selected.gridY,
     maryGridX,
     maryGridY,
+    anchorCandidateId: anchorPlant.id,
     candidates: livePlants.map((plant) => ({
       id: plant.id,
       gridX: plant.grid_x,
@@ -692,10 +701,7 @@ function getWateringSelection(
   runtime: Runtime,
   selected: NonNullable<SelectedCell>,
 ) {
-  const targets = getWateringCluster(runtime, selected);
-  return getPlantAt(runtime, selected.gridX, selected.gridY) || targets.length >= 2
-    ? targets
-    : [];
+  return getWateringCluster(runtime, selected);
 }
 
 function canEarnWateringCareInRuntime(runtime: Runtime, plant: PlantRecord) {
@@ -868,10 +874,7 @@ function getActionState(runtime: Runtime) {
   }
 
   const wateringTargets = getWateringSelection(runtime, runtime.selected);
-  if (
-    (plant && visual && visual.state !== "expired") ||
-    (!plant && wateringTargets.length >= 2)
-  ) {
+  if (plant && visual && visual.state !== "expired") {
     if (visual?.state === "dead") {
       return { action: null as GardenAction, label: "This spot is resting", enabled: false };
     }
@@ -879,17 +882,28 @@ function getActionState(runtime: Runtime) {
       getDistanceToCell(runtime, runtime.selected) <=
       GARDEN_CONFIG.tileSize * WATERING_RANGE_TILES;
     const primaryTarget = wateringTargets[0];
-    const label =
+    const sprayLabel =
       wateringTargets.length > 1
         ? `Water ${wateringTargets.length} flowers`
         : primaryTarget
           ? `Water ${getPlantDefinition(primaryTarget.plant_type).name}`
           : "Water flowers";
+    const selectionKey = primaryTarget?.id ?? "";
+    const pumpCount =
+      runtime.wateringPumpSelectionKey === selectionKey
+        ? runtime.wateringPumpCount
+        : 0;
+    const label =
+      pumpCount < WATERING_PUMPS_REQUIRED - 1
+        ? `Pump water · ${pumpCount + 1} of ${WATERING_PUMPS_REQUIRED}`
+        : sprayLabel;
     return {
       action: "water" as GardenAction,
-      label: wateringTargets.some((target) =>
-        canEarnWateringCareInRuntime(runtime, target),
-      )
+      label:
+        pumpCount >= WATERING_PUMPS_REQUIRED - 1 &&
+        wateringTargets.some((target) =>
+          canEarnWateringCareInRuntime(runtime, target),
+        )
         ? `${label} · Care`
         : label,
       enabled: inWateringRange && !runtime.actionBusy,
@@ -1037,6 +1051,8 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
       requestId: 0,
       actionBusy: false,
       pendingAction: null,
+      wateringPumpCount: 0,
+      wateringPumpSelectionKey: "",
       mapRevision: 0,
       cachedMapRevision: -1,
       cachedPlantMapPoints: [],
@@ -1564,6 +1580,23 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
           const actionState = getActionState(runtime);
           if (!selected || !actionState.enabled || !actionState.action) return;
 
+          if (actionState.action === "water") {
+            const wateringTargets = getWateringSelection(runtime, selected);
+            const selectionKey = wateringTargets[0]?.id ?? "";
+            if (!selectionKey) return;
+            if (runtime.wateringPumpSelectionKey !== selectionKey) {
+              runtime.wateringPumpSelectionKey = selectionKey;
+              runtime.wateringPumpCount = 0;
+            }
+            const pump = advanceWateringPump(runtime.wateringPumpCount);
+            if (!pump.shouldSpray) {
+              runtime.wateringPumpCount = pump.nextPumpCount;
+              runtime.statusMessage = `Water pressure ${runtime.wateringPumpCount} of ${WATERING_PUMPS_REQUIRED}. Keep pumping to spray.`;
+              publishUi();
+              return;
+            }
+          }
+
           runtime.actionBusy = true;
           runtime.pendingAction = actionState.action;
           runtime.requestId += 1;
@@ -1802,6 +1835,8 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
                 plants.length === 1
                   ? `The ${getPlantDefinition(plants[0].plant_type).name.toLowerCase()} looks brighter already.`
                   : `${plants.length} nearby flowers look brighter already.`;
+              runtime.wateringPumpCount = 0;
+              runtime.wateringPumpSelectionKey = "";
               if (contribution) onCommunityContributionRef.current?.(contribution);
             }
             if (actionState.action === "plant") {
@@ -2098,6 +2133,15 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
 
       const plant = getPlantAt(runtime, gridX, gridY);
       const weed = getWeedAt(runtime, gridX, gridY);
+      const nextWateringSelectionKey =
+        runtime.mode === "community" && !weed ? plant?.id ?? "" : "";
+      if (
+        runtime.wateringPumpSelectionKey &&
+        runtime.wateringPumpSelectionKey !== nextWateringSelectionKey
+      ) {
+        runtime.wateringPumpCount = 0;
+        runtime.wateringPumpSelectionKey = "";
+      }
       runtime.selected = { gridX, gridY, plantId: plant?.id, weedId: weed?.id };
       const wateringTargets =
         runtime.mode === "community" && !weed
@@ -2106,9 +2150,6 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
       const isWateringSelection =
         runtime.mode === "community" &&
         wateringTargets.length > 0;
-      if (!plant && isWateringSelection && wateringTargets[0]) {
-        runtime.selected.plantId = wateringTargets[0].id;
-      }
       runtime.target =
         isWateringSelection
           ? getWateringApproachTarget(runtime, gridX, gridY)

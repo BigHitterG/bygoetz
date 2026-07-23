@@ -4,6 +4,7 @@ import {
   type PlantType,
 } from "./roseLifecycle";
 import type { GardenBounds } from "./gardenConfig";
+import { MAX_WATERING_TARGETS } from "./wateringSelection";
 
 export type GardenMapPlant = Pick<
   PlantRecord,
@@ -323,7 +324,10 @@ export function plantGardenPlant(
 }
 
 export function waterGardenPlants(plantIds: string[]) {
-  return submitGardenAction({ action: "water", plantIds: plantIds.slice(0, 4) });
+  return submitGardenAction({
+    action: "water",
+    plantIds: plantIds.slice(0, MAX_WATERING_TARGETS),
+  });
 }
 
 export async function clearGardenWeed(weedId: string) {

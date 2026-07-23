@@ -100,13 +100,14 @@ export function GardenGuide() {
         <h4 id="garden-numbers-title">The garden numbers</h4>
         <div className="cg-ecology-grid">
           <article>
-            <p className="cg-ecology-number">4 at once</p>
+            <p className="cg-ecology-number">3 at once</p>
             <h5>Watering</h5>
             <p>
-              Start with the nearby quadrant and Basil can follow a loose chain
-              outward to reach up to four flowers. Care-ready flowers are chosen
-              before already-watered ones. A cared-for flower normally rests for
-              four hours.
+              Tap a real flower, then pump three times to release a spray that can
+              follow a loose chain to three flowers. Care-ready flowers are chosen
+              before already-watered ones, but the whole spray is one helpful
+              action. Planting is the quicker way to earn Care; watering saves
+              walking while maintaining several flowers.
             </p>
           </article>
           <article>

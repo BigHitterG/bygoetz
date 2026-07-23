@@ -5,11 +5,26 @@ export type WateringSelectionCandidate = {
   careReady: boolean;
 };
 
+export const MAX_WATERING_TARGETS = 3;
+export const WATERING_PUMPS_REQUIRED = 3;
+
+export function advanceWateringPump(currentPumpCount: number) {
+  const pumpCount = Math.max(
+    0,
+    Math.min(WATERING_PUMPS_REQUIRED - 1, Math.floor(currentPumpCount)),
+  );
+  if (pumpCount >= WATERING_PUMPS_REQUIRED - 1) {
+    return { nextPumpCount: 0, shouldSpray: true };
+  }
+  return { nextPumpCount: pumpCount + 1, shouldSpray: false };
+}
+
 type WateringSelectionOptions = {
   clickedGridX: number;
   clickedGridY: number;
   maryGridX: number;
   maryGridY: number;
+  anchorCandidateId: string | null;
   candidates: WateringSelectionCandidate[];
   maxTargets?: number;
   maxReach?: number;
@@ -35,20 +50,25 @@ function chebyshevDistance(
 /**
  * Starts with the directional 2x2 quadrant in front of Mary, then follows a
  * loose chain of flowers outward. Care-ready flowers are selected before
- * already-watered flowers, while connected fallback flowers keep a four-tile
- * spray possible in dense beds.
+ * already-watered flowers. Watering must begin on a real flower, which remains
+ * the first target while up to two connected flowers extend the spray.
  */
 export function selectDirectionalWateringTargets({
   clickedGridX,
   clickedGridY,
   maryGridX,
   maryGridY,
+  anchorCandidateId,
   candidates,
-  maxTargets = 4,
+  maxTargets = MAX_WATERING_TARGETS,
   maxReach = 6,
   maxLinkGap = 2,
 }: WateringSelectionOptions) {
   if (maxTargets <= 0 || candidates.length === 0) return [];
+  const anchorCandidate = candidates.find(
+    (candidate) => candidate.id === anchorCandidateId,
+  );
+  if (!anchorCandidate) return [];
 
   const originX = maryGridX <= clickedGridX ? clickedGridX : clickedGridX - 1;
   const originY = maryGridY <= clickedGridY ? clickedGridY : clickedGridY - 1;
@@ -149,8 +169,15 @@ export function selectDirectionalWateringTargets({
     return first.id.localeCompare(second.id);
   });
 
-  const selected = reachable.slice(0, maxTargets);
-  selected.sort((first, second) => {
+  const anchor = reachable.find(
+    (candidate) => candidate.id === anchorCandidate.id,
+  );
+  if (!anchor) return [];
+  const connected = reachable.filter(
+    (candidate) => candidate.id !== anchorCandidate.id,
+  );
+  const selectedConnected = connected.slice(0, Math.max(0, maxTargets - 1));
+  selectedConnected.sort((first, second) => {
     if (first.graphDepth !== second.graphDepth) {
       return first.graphDepth - second.graphDepth;
     }
@@ -159,5 +186,5 @@ export function selectDirectionalWateringTargets({
     }
     return first.id.localeCompare(second.id);
   });
-  return selected;
+  return [anchor, ...selectedConnected];
 }
