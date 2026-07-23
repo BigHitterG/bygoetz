@@ -118,6 +118,7 @@ export function createGuestGardenPreview(): GuestGardenPreview {
     garden: {
       careBalance: 0,
       lifetimeCare: 0,
+      inventorySeenLifetimeCare: 0,
       dailyCareLimit: PREVIEW_CARE_TRANSFER_LIMIT,
       plotLevel: 1,
       minX: 0,

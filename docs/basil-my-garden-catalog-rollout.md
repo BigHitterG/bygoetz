@@ -14,6 +14,9 @@ Status: Release 1 authorized for implementation on July 22, 2026.
 - Decorative animals and insects never award Care or create a paid gameplay advantage.
 - The three-flower onboarding remains rose, sunflower and lavender.
 - Each collection is implemented before it is shown to players.
+- Released inventory unlocks one item at a time from lifetime Care.
+- Reaching the next collection threshold completes the prior collection and
+  opens the next collection as a larger progression moment.
 
 ## Player progression
 
@@ -44,10 +47,19 @@ Rose, sunflower, lavender, daisy, tulip and wildflowers cost 2 Care. Clay pot
 costs 3; hedge costs 4; stone and gravel pavers cost 1; brick paver costs 2;
 birdhouse costs 6; garden bench costs 10.
 
+Rose, sunflower, lavender, stone paver, birdhouse and garden bench are the
+membership starter kit. Daisy unlocks at 25 lifetime Care, tulip at 50,
+wildflowers at 75, gravel at 100, brick at 125, clay pot at 150 and hedge at
+200. At 250, Garden Starter is complete and Cottage Garden opens.
+
 ### Cottage Garden: 250 lifetime Care
 
 Peony costs 2; fern costs 5; hydrangea, wheelbarrow and wooden planter cost 8;
 bird feeder and rustic bench cost 12; trellis costs 25.
+
+Peony unlocks at 250, fern at 300, hydrangea at 375, wheelbarrow at 450,
+wooden planter at 525, bird feeder at 600, rustic bench at 675 and trellis at
+725. At 750, Cottage Garden is complete and Pollinator Garden opens.
 
 ### Pollinator Garden: 750 lifetime Care
 
@@ -57,6 +69,10 @@ house costs 20; beehive costs 35; rose-covered trellis costs 50.
 Pollinator visitors are ambient only. They require no feeding, maintenance or
 Care and do not generate Care.
 
+Bee balm unlocks at 750, butterfly bush at 850, pollinator sign at 950,
+butterfly house at 1,050, beehive at 1,200 and rose-covered trellis at 1,400.
+At 1,500, Pollinator Garden is complete and Water Garden opens.
+
 ### Water Garden: 1,500 lifetime Care
 
 Reeds and lily pads cost 5; birdbath costs 35; stone basin costs 60; willow tree
@@ -64,6 +80,10 @@ costs 100; garden fountain costs 175; small pond costs 250.
 
 The fountain and pond are fixed-footprint objects in Release 1. Freeform ponds
 belong in a later release.
+
+Reeds unlock at 1,500, lily pads at 1,650, birdbath at 1,800, stone basin at
+2,000, willow tree at 2,200, garden fountain at 2,500 and small pond at 2,800.
+At 3,000, Water Garden is complete.
 
 ### Release 1 completion gate
 

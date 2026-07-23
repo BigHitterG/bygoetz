@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getGardenUser } from "@/lib/communityGarden/auth";
 import {
+  acknowledgeMyGardenInventory,
   expandMyGarden,
   importMyGardenPreview,
   MY_GARDEN_ELEMENTS,
@@ -70,6 +71,12 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    if (payload.action === "acknowledge-inventory") {
+      return NextResponse.json(
+        await acknowledgeMyGardenInventory(steward.id),
+      );
+    }
+
     if (payload.action === "import-preview") {
       const plants = Array.isArray(payload.plants) ? payload.plants : [];
       const paths = Array.isArray(payload.paths) ? payload.paths : [];

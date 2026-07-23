@@ -5,6 +5,8 @@ import {
   MY_GARDEN_COLLECTIONS,
   MY_GARDEN_ELEMENTS,
   MY_GARDEN_PLANTS,
+  getMyGardenUnlockNotices,
+  getMyGardenUnreadUnlockCount,
   getMyGardenElement,
   isMyGardenCatalogEntryUnlocked,
 } from "../app/community-garden/lib/myGardenCatalog.ts";
@@ -20,6 +22,18 @@ test("Release 1 collection thresholds match the approved progression", () => {
       ["cottage", 250],
       ["pollinator", 750],
       ["water", 1_500],
+    ],
+  );
+  assert.deepEqual(
+    MY_GARDEN_COLLECTIONS.map((collection) => [
+      collection.key,
+      collection.completionLifetimeCareRequired,
+    ]),
+    [
+      ["starter", 250],
+      ["cottage", 750],
+      ["pollinator", 1_500],
+      ["water", 3_000],
     ],
   );
 });
@@ -69,10 +83,10 @@ test("Release 1 includes meaningful multi-tile Water Garden landmarks", () => {
   );
 });
 
-test("database seed contains every client catalog key and threshold", () => {
+test("progressive migration contains every client catalog threshold", () => {
   const migration = readFileSync(
     new URL(
-      "../supabase/migrations/20260722234500_release_one_my_garden_catalog.sql",
+      "../supabase/migrations/20260723143000_progressive_my_garden_unlocks.sql",
       import.meta.url,
     ),
     "utf8",
@@ -81,18 +95,33 @@ test("database seed contains every client catalog key and threshold", () => {
   for (const plant of MY_GARDEN_PLANTS) {
     assert.ok(
       migration.includes(
-        `('${plant.type}', '${plant.name}', '${plant.collection}', ${plant.lifetimeCareRequired}, ${plant.careCost},`,
+        `when '${plant.type}' then ${plant.lifetimeCareRequired}`,
       ),
-      `missing exact database seed for ${plant.type}`,
+      `missing progressive database threshold for ${plant.type}`,
     );
   }
 
   for (const element of MY_GARDEN_ELEMENTS) {
     assert.ok(
       migration.includes(
-        `('${element.type}', '${element.name}', '${element.collection}', '${element.category}', ${element.lifetimeCareRequired}, ${element.careCost}, ${element.footprintWidth}, ${element.footprintHeight},`,
+        `when '${element.type}' then ${element.lifetimeCareRequired}`,
       ),
-      `missing exact database seed for ${element.type}`,
+      `missing progressive database threshold for ${element.type}`,
     );
   }
+});
+
+test("unlock notices group collection moments with the first item in the next collection", () => {
+  const notices = getMyGardenUnlockNotices(249, 250);
+  assert.equal(notices.length, 1);
+  assert.equal(notices[0]?.completedCollection?.key, "starter");
+  assert.equal(notices[0]?.openedCollection?.key, "cottage");
+  assert.deepEqual(notices[0]?.items.map((item) => item.name), ["Peony"]);
+});
+
+test("unread unlock count advances by milestones rather than every catalog row", () => {
+  assert.equal(getMyGardenUnreadUnlockCount(0, 24), 0);
+  assert.equal(getMyGardenUnreadUnlockCount(0, 25), 1);
+  assert.equal(getMyGardenUnreadUnlockCount(25, 150), 5);
+  assert.equal(getMyGardenUnreadUnlockCount(725, 750), 1);
 });

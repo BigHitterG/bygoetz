@@ -8,6 +8,7 @@ import {
   getMyGardenElementGlyphClass,
   getMyGardenPlant,
   isMyGardenCatalogEntryUnlocked,
+  MY_GARDEN_CATALOG_UNLOCKS,
   MY_GARDEN_COLLECTIONS,
   MY_GARDEN_ELEMENTS,
   MY_GARDEN_PLANTS,
@@ -26,6 +27,7 @@ type GardenInventoryProps = {
   open: boolean;
   selectedTool: GardenTool;
   lifetimeCare: number;
+  inventorySeenLifetimeCare: number;
   guidePlantChoice?: boolean;
   onboardingLocked?: boolean;
   toggleLocked?: boolean;
@@ -55,6 +57,7 @@ export function GardenInventory({
   open,
   selectedTool,
   lifetimeCare,
+  inventorySeenLifetimeCare,
   guidePlantChoice = false,
   onboardingLocked = false,
   toggleLocked = false,
@@ -94,11 +97,28 @@ export function GardenInventory({
     () =>
       MY_GARDEN_ELEMENTS.filter(
         (element) => element.category === currentCategory,
+      ).sort(
+        (left, right) =>
+          left.lifetimeCareRequired - right.lifetimeCareRequired,
       ),
     [currentCategory],
   );
-  const nextCollection = MY_GARDEN_COLLECTIONS.find(
-    (collection) => collection.lifetimeCareRequired > lifetimeCare,
+  const nextUnlock = MY_GARDEN_CATALOG_UNLOCKS.find(
+    (entry) => entry.lifetimeCareRequired > lifetimeCare,
+  );
+  const currentCollection = [...MY_GARDEN_COLLECTIONS]
+    .reverse()
+    .find((collection) => collection.lifetimeCareRequired <= lifetimeCare);
+  const newUnlocks = useMemo(
+    () =>
+      new Set(
+        MY_GARDEN_CATALOG_UNLOCKS.filter(
+          (entry) =>
+            entry.lifetimeCareRequired > inventorySeenLifetimeCare &&
+            entry.lifetimeCareRequired <= lifetimeCare,
+        ).map((entry) => entry.key),
+      ),
+    [inventorySeenLifetimeCare, lifetimeCare],
   );
 
   useEffect(() => {
@@ -153,22 +173,35 @@ export function GardenInventory({
               <div className="cg-inventory-progress" aria-label="Collection progress">
                 <span>{lifetimeCare.toLocaleString()} lifetime Care</span>
                 <small>
-                  {nextCollection
-                    ? `${nextCollection.lifetimeCareRequired - lifetimeCare} until ${nextCollection.name}`
+                  {nextUnlock
+                    ? `${nextUnlock.lifetimeCareRequired - lifetimeCare} until ${nextUnlock.name}`
                     : "Release 1 collections complete"}
                 </small>
+                {currentCollection ? (
+                  <strong>{currentCollection.name}</strong>
+                ) : null}
               </div>
               <nav className="cg-inventory-tabs" aria-label="Inventory categories">
-                {CATEGORIES.map((entry) => (
-                  <button
-                    key={entry.key}
-                    type="button"
-                    aria-pressed={currentCategory === entry.key}
-                    onClick={() => setCategory(entry.key)}
-                  >
-                    {entry.name}
-                  </button>
-                ))}
+                {CATEGORIES.map((entry) => {
+                  const hasNewUnlock = MY_GARDEN_CATALOG_UNLOCKS.some(
+                    (unlock) =>
+                      unlock.category === entry.key &&
+                      newUnlocks.has(unlock.key),
+                  );
+                  return (
+                    <button
+                      key={entry.key}
+                      type="button"
+                      aria-pressed={currentCategory === entry.key}
+                      onClick={() => setCategory(entry.key)}
+                    >
+                      {entry.name}
+                      {hasNewUnlock ? (
+                        <i aria-label={`New ${entry.name} unlocks`}>!</i>
+                      ) : null}
+                    </button>
+                  );
+                })}
               </nav>
             </>
           ) : null}
@@ -186,6 +219,9 @@ export function GardenInventory({
                   const unlocked =
                     !catalogPlant ||
                     isMyGardenCatalogEntryUnlocked(catalogPlant, lifetimeCare);
+                  const isNew =
+                    catalogPlant &&
+                    newUnlocks.has(`plant:${catalogPlant.type}`);
                   return (
                     <button
                       key={plantType}
@@ -199,6 +235,7 @@ export function GardenInventory({
                       className={[
                         guidePlantChoice ? "is-onboarding-choice" : "",
                         unlocked ? "" : "is-locked",
+                        isNew ? "is-new-unlock" : "",
                       ]
                         .filter(Boolean)
                         .join(" ")}
@@ -225,7 +262,10 @@ export function GardenInventory({
                           }
                         />
                       ) : catalogPlant ? (
-                        <small>{catalogPlant.careCost} Care</small>
+                        <small>
+                          {isNew ? "New · " : ""}
+                          {catalogPlant.careCost} Care
+                        </small>
                       ) : null}
                     </button>
                   );
@@ -255,6 +295,7 @@ export function GardenInventory({
                     element,
                     lifetimeCare,
                   );
+                  const isNew = newUnlocks.has(`element:${element.type}`);
                   return (
                     <button
                       key={element.type}
@@ -265,7 +306,12 @@ export function GardenInventory({
                           : `${element.name} locked until ${element.lifetimeCareRequired} lifetime Care`
                       }
                       aria-pressed={selectedTool === element.type}
-                      className={unlocked ? undefined : "is-locked"}
+                      className={[
+                        unlocked ? "" : "is-locked",
+                        isNew ? "is-new-unlock" : "",
+                      ]
+                        .filter(Boolean)
+                        .join(" ")}
                       disabled={!unlocked}
                       onClick={() => onSelectElement(element.type)}
                     >
@@ -274,7 +320,16 @@ export function GardenInventory({
                         aria-hidden="true"
                       />
                       <span>{element.name}</span>
-                      <small>{element.careCost} Care</small>
+                      {unlocked ? (
+                        <small>
+                          {isNew ? "New · " : ""}
+                          {element.careCost} Care
+                        </small>
+                      ) : (
+                        <UnlockLabel
+                          lifetimeCareRequired={element.lifetimeCareRequired}
+                        />
+                      )}
                     </button>
                   );
                 })}
@@ -295,6 +350,7 @@ export function GardenInventory({
                     lifetimeCare,
                   );
                   const collection = getMyGardenCollection(element.collection);
+                  const isNew = newUnlocks.has(`element:${element.type}`);
                   return (
                     <button
                       key={element.type}
@@ -305,7 +361,12 @@ export function GardenInventory({
                           : `${element.name} locked with ${collection.name}`
                       }
                       aria-pressed={selectedTool === element.type}
-                      className={unlocked ? undefined : "is-locked"}
+                      className={[
+                        unlocked ? "" : "is-locked",
+                        isNew ? "is-new-unlock" : "",
+                      ]
+                        .filter(Boolean)
+                        .join(" ")}
                       disabled={!unlocked}
                       onClick={() => onSelectElement(element.type)}
                     >
@@ -317,6 +378,7 @@ export function GardenInventory({
                       {unlocked ? (
                         <small>
                           {element.careCost} Care
+                          {isNew ? " · New" : ""}
                           {element.footprintWidth > 1 ||
                           element.footprintHeight > 1
                             ? ` · ${element.footprintWidth}×${element.footprintHeight}`

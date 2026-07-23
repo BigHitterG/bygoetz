@@ -49,6 +49,7 @@ import {
 } from "./GardenMembershipOffer";
 import { GardenUpdateStatus } from "./GardenUpdateStatus";
 import { GardenOnboarding } from "./GardenOnboarding";
+import { GardenUnlockCelebration } from "./GardenUnlockCelebration";
 import {
   isGardenOnboardingFinished,
   isGardenOnboardingPlantType,
@@ -63,7 +64,12 @@ import {
   trackBasilFunnelEvent,
 } from "../lib/launchFunnel";
 import { SPECIAL_WATERING_FLOWER_NAME } from "../lib/roseLifecycle";
-import { getMyGardenElementGlyphClass } from "../lib/myGardenCatalog";
+import {
+  getMyGardenElementGlyphClass,
+  getMyGardenUnlockNotices,
+  getMyGardenUnreadUnlockCount,
+  type MyGardenUnlockNotice,
+} from "../lib/myGardenCatalog";
 
 const INITIAL_UI: GardenUiState = {
   action: null,
@@ -112,6 +118,7 @@ export function CommunityGardenApp() {
   const guestPreviewRef = useRef<GuestGardenPreview>(
     createGuestGardenPreview(),
   );
+  const lifetimeCareRef = useRef(0);
   const [ui, setUi] = useState(INITIAL_UI);
   const [world, setWorld] = useState<GardenWorldMode>("community");
   const [menuOpen, setMenuOpen] = useState(false);
@@ -136,10 +143,19 @@ export function CommunityGardenApp() {
     useState(0);
   const [showFreePlantingNotice, setShowFreePlantingNotice] = useState(false);
   const [restoreMessage, setRestoreMessage] = useState("");
+  const [unlockNotices, setUnlockNotices] = useState<MyGardenUnlockNotice[]>([]);
   const restoredJourneyRef = useRef(false);
   const communityOnboardingPlantingsRef = useRef(0);
   const adLabel = process.env.NEXT_PUBLIC_COMMUNITY_GARDEN_AD_PLACEHOLDER;
   const myGarden = memberGarden ?? guestPreview.garden;
+  const unreadUnlockCount = memberGarden
+    ? getMyGardenUnreadUnlockCount(
+        memberGarden.inventorySeenLifetimeCare,
+        memberGarden.lifetimeCare,
+      )
+    : 0;
+  const showMyGardenUnlockNotice =
+    world === "community" && unreadUnlockCount > 0;
   const onboardingPlantActionReady =
     ui.action === "plant" && ui.actionEnabled;
   const onboardingWaterActionReady =
@@ -345,6 +361,7 @@ export function CommunityGardenApp() {
           }
         }
       }
+      lifetimeCareRef.current = nextGarden?.lifetimeCare ?? 0;
       setMemberGarden(nextGarden);
       if (nextGarden && pendingGardenEntryRef.current) {
         pendingGardenEntryRef.current = false;
@@ -374,917 +391,6 @@ export function CommunityGardenApp() {
   useEffect(() => {
     if (!membershipOfferOpen) return;
     trackBasilMetaCustomMilestone("BasilPaywallViewed", "paywall_viewed");
-    if (membershipOfferStage === "soft") {
-      void trackBasilFunnelEvent("paywall_viewed");
-      void trackBasilFunnelEvent("soft_paywall_viewed");
-    } else if (membershipOfferStage === "hard") {
-      void trackBasilFunnelEvent("preview_limit_reached");
-      void trackBasilFunnelEvent("hard_paywall_viewed");
-    } else {
-      void trackBasilFunnelEvent("preview_expired");
-    }
-  }, [membershipOfferOpen, membershipOfferStage]);
-
-  useEffect(() => {
-    if (world !== "personal") return;
-    void trackBasilFunnelEvent("my_garden_entered");
-    trackBasilMetaCustomMilestone("BasilMyGardenEntered", "my_garden_entered");
-  }, [world]);
-
-  useEffect(() => {
-    queueMicrotask(() => {
-      const storedPreview = loadGuestGardenPreview();
-      guestPreviewRef.current = storedPreview;
-      setGuestPreview(storedPreview);
-      setGuestPreviewReady(true);
-    });
-  }, []);
-
-  const transitionOnboarding = useCallback(
-    (next: GardenOnboardingStep, from?: GardenOnboardingStep[]) => {
-      setOnboardingStep((current) => {
-        if (isGardenOnboardingFinished(current)) return current;
-        if (from && (!current || !from.includes(current))) return current;
-        saveGardenOnboardingStep(next);
-        return next;
-      });
-    },
-    [],
-  );
-
-  const setOnboardingDirectly = useCallback((next: GardenOnboardingStep) => {
-    saveGardenOnboardingStep(next);
-    setOnboardingStep(next);
-  }, []);
-
-  useEffect(() => {
-    const sendPulse = () => {
-      if (document.visibilityState === "hidden") return;
-      const now = Date.now();
-      const lastPulse = Number(window.sessionStorage.getItem(HEALTH_PULSE_KEY));
-      if (Number.isFinite(lastPulse) && now - lastPulse < HEALTH_PULSE_INTERVAL_MS) {
-        return;
-      }
-      window.sessionStorage.setItem(HEALTH_PULSE_KEY, String(now));
-      void fetch("/api/community-garden/health/pulse", {
-        method: "POST",
-        cache: "no-store",
-        keepalive: true,
-      }).catch(() => {
-        window.sessionStorage.removeItem(HEALTH_PULSE_KEY);
-      });
-    };
-
-    sendPulse();
-    const interval = window.setInterval(sendPulse, HEALTH_PULSE_INTERVAL_MS);
-    document.addEventListener("visibilitychange", sendPulse);
-    return () => {
-      window.clearInterval(interval);
-      document.removeEventListener("visibilitychange", sendPulse);
-    };
-  }, []);
-
-  useEffect(() => {
-    const root = document.documentElement;
-    const updateViewport = () => {
-      const height = window.visualViewport?.height ?? window.innerHeight;
-      root.style.setProperty("--basil-viewport-height", `${Math.round(height)}px`);
-    };
-    const onOrientationChange = () => {
-      updateViewport();
-      window.setTimeout(updateViewport, 250);
-    };
-    updateViewport();
-    window.addEventListener("resize", updateViewport);
-    window.addEventListener("orientationchange", onOrientationChange);
-    window.visualViewport?.addEventListener("resize", updateViewport);
-    return () => {
-      window.removeEventListener("resize", updateViewport);
-      window.removeEventListener("orientationchange", onOrientationChange);
-      window.visualViewport?.removeEventListener("resize", updateViewport);
-      root.style.removeProperty("--basil-viewport-height");
-    };
-  }, []);
-
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const purchaseEventId = params.get("meta_purchase_event_id");
-    if (purchaseEventId && trackBasilMetaPurchase(purchaseEventId)) {
-      params.delete("meta_purchase_event_id");
-      const query = params.toString();
-      window.history.replaceState(
-        null,
-        "",
-        `${window.location.pathname}${query ? `?${query}` : ""}${window.location.hash}`,
-      );
-    }
-    if (params.has("steward") || params.has("checkout")) {
-      queueMicrotask(() => {
-        setMenuSection("account");
-        setMenuOpen(true);
-        if (params.get("steward") === "welcome") {
-          pendingGardenEntryRef.current = true;
-        }
-      });
-    }
-  }, []);
-
-  useEffect(() => {
-    const client = getGardenAccountClient();
-    if (!client) {
-      queueMicrotask(() => setAccountChecked(true));
-      return;
-    }
-
-    void client.auth
-      .getSession()
-      .then(({ data }) => {
-        setSession(data.session);
-        if (!data.session) setAccountChecked(true);
-      })
-      .catch(() => setAccountChecked(true));
-
-    const { data: listener } = client.auth.onAuthStateChange((_event, nextSession) => {
-      setSession(nextSession);
-      if (!nextSession) {
-        setMemberGarden(null);
-        setWorld("community");
-        setAccountChecked(true);
-      } else {
-        setAccountChecked(false);
-      }
-    });
-
-    return () => listener.subscription.unsubscribe();
-  }, []);
-
-  useEffect(() => {
-    if (!guestPreviewReady || !session) return;
-    queueMicrotask(() => void loadMembership(session));
-  }, [guestPreviewReady, loadMembership, session]);
-
-  useEffect(() => {
-    if (!onboardingInventoryLocked) return;
-    if (
-      ui.selectedTool === "rose" ||
-      ui.selectedTool === "sunflower" ||
-      ui.selectedTool === "lavender"
-    ) {
-      return;
-    }
-    canvasRef.current?.selectPlant("rose");
-  }, [onboardingInventoryLocked, ui.selectedTool]);
-
-  useEffect(() => {
-    if (
-      !guestPreviewReady ||
-      !accountChecked ||
-      ui.connection === "connecting" ||
-      onboardingStep
-    ) {
-      return;
-    }
-
-    const stored = loadGardenOnboardingStep();
-    const storedCommunityPlantings = loadCommunityOnboardingPlantings();
-    communityOnboardingPlantingsRef.current = storedCommunityPlantings;
-    let next = stored;
-    if (memberGarden) {
-      next = "complete";
-    } else if (!next) {
-      const plantings = guestPreviewRef.current.garden.preview?.plantingsUsed ?? 0;
-      if (plantings > 0) next = "complete";
-      else if (
-        guestPreviewRef.current.journey?.world === "personal"
-      ) {
-        next = "personal-inventory";
-      } else if (storedCommunityPlantings >= 3) {
-        next = "my-garden";
-      } else if (storedCommunityPlantings > 0) {
-        next = "community-tile";
-      } else {
-        next = "plant";
-      }
-    } else if (
-      !memberGarden &&
-      !isGardenOnboardingFinished(next) &&
-      storedCommunityPlantings >= 3 &&
-      next !== "community-water"
-    ) {
-      next = "my-garden";
-    } else if (next === "community-repeat") {
-      next = "community-tile";
-    }
-    queueMicrotask(() => {
-      setCommunityOnboardingPlantings(storedCommunityPlantings);
-      saveGardenOnboardingStep(next);
-      setOnboardingStep(next);
-    });
-  }, [
-    accountChecked,
-    guestPreviewReady,
-    memberGarden,
-    onboardingStep,
-    ui.connection,
-  ]);
-
-  useEffect(() => {
-    if (!showFreePlantingNotice) return;
-    const timeout = window.setTimeout(() => {
-      setShowFreePlantingNotice(false);
-    }, 4_500);
-    return () => window.clearTimeout(timeout);
-  }, [showFreePlantingNotice]);
-
-  useEffect(() => {
-    const shouldSuggestCommunity =
-      onboardingStep === "community-tile" && world === "community";
-    const shouldSuggestPersonal =
-      onboardingStep === "personal-tile" && world === "personal";
-    const shouldSuggestWatering =
-      onboardingStep === "community-water" && world === "community";
-    if (!shouldSuggestCommunity && !shouldSuggestPersonal && !shouldSuggestWatering) return;
-    const frame = window.requestAnimationFrame(() => {
-      if (shouldSuggestWatering) canvasRef.current?.suggestWateringSpot();
-      else canvasRef.current?.suggestPlantingSpot();
-    });
-    return () => window.cancelAnimationFrame(frame);
-  }, [onboardingStep, world]);
-
-  useEffect(() => {
-    if (!guestPreviewReady || memberGarden) return;
-    const timeout = window.setTimeout(() => {
-      const next = {
-        ...guestPreviewRef.current,
-        journey: {
-          world,
-          mapX: ui.mapX,
-          mapY: ui.mapY,
-          zoom: ui.zoom,
-          selectedTool: ui.selectedTool,
-        },
-      } satisfies GuestGardenPreview;
-      guestPreviewRef.current = next;
-      setGuestPreview(next);
-      saveGuestGardenPreview(next);
-    }, 250);
-    return () => window.clearTimeout(timeout);
-  }, [
-    guestPreviewReady,
-    memberGarden,
-    ui.mapX,
-    ui.mapY,
-    ui.selectedTool,
-    ui.zoom,
-    world,
-  ]);
-
-  useEffect(() => {
-    if (
-      !guestPreviewReady ||
-      restoredJourneyRef.current ||
-      !guestPreviewRef.current.journey
-    ) {
-      return;
-    }
-    restoredJourneyRef.current = true;
-    const journey = guestPreviewRef.current.journey;
-    setWorld(journey.world);
-    window.requestAnimationFrame(() => {
-      window.requestAnimationFrame(() => {
-        canvasRef.current?.restoreView(
-          journey.mapX,
-          journey.mapY,
-          journey.zoom,
-          journey.selectedTool,
-        );
-      });
-    });
-  }, [guestPreviewReady]);
-
-  useEffect(() => {
-    if (
-      !guestPreviewReady ||
-      memberGarden ||
-      world !== "personal" ||
-      guestPreview.garden.plants.length === 0 ||
-      !isGuestPreviewExpired(guestPreview)
-    ) {
-      return;
-    }
-    let canceled = false;
-    queueMicrotask(() => {
-      if (canceled) return;
-      setMembershipOfferStage("expired");
-      setMembershipOfferOpen(true);
-    });
-    return () => {
-      canceled = true;
-    };
-  }, [guestPreview, guestPreviewReady, memberGarden, world]);
-
-  const onStateChange = useCallback((state: GardenUiState) => {
-    setUi(state);
-  }, []);
-
-  const claimCommunityContribution = useCallback(
-    (contribution: GardenContribution) => {
-      const bonusLabel = contribution.specialFlower
-        ? `${SPECIAL_WATERING_FLOWER_NAME}! `
-        : "";
-      if (!session || !memberGarden) {
-        const currentPreview = guestPreviewRef.current;
-        const continuedPreview = markGuestPreviewContinued(currentPreview);
-        if (continuedPreview !== currentPreview) {
-          void trackBasilFunnelEvent("preview_continued");
-        }
-        const award = awardGuestCare(
-          continuedPreview,
-          contribution.careValue,
-          contribution.earningPhase,
-        );
-        commitGuestPreview(award.preview);
-        if (award.awardedCare > 0) {
-          canvasRef.current?.showCareReward(
-            award.awardedCare,
-            award.earningMode === "daily",
-          );
-          setCareAnnouncement(
-            `${bonusLabel}${award.awardedCare} temporary Care earned. Your preview balance is ${award.preview.garden.careBalance}.`,
-          );
-        } else {
-          setCareAnnouncement(
-            `Care is growing Β· ${contribution.tierProgress} of ${contribution.actionsRequired} helpful actions.`,
-          );
-        }
-        return;
-      }
-
-      if (!contribution.receiptToken || contribution.careValue <= 0) {
-        setCareAnnouncement(
-          `Care is growing Β· ${contribution.tierProgress} of ${contribution.actionsRequired} helpful actions.`,
-        );
-        return;
-      }
-
-      const activeSession = session;
-      careClaimQueueRef.current = careClaimQueueRef.current
-        .catch(() => undefined)
-        .then(async () => {
-          try {
-            const response = await fetchGardenRequest(
-              "/api/community-garden/care",
-              {
-                method: "POST",
-                headers: {
-                  authorization: `Bearer ${activeSession.access_token}`,
-                  "content-type": "application/json",
-                },
-                body: JSON.stringify({
-                  receiptToken: contribution.receiptToken,
-                }),
-              },
-            );
-            if (response.status === 401 || response.status === 403) {
-              const currentPreview = guestPreviewRef.current;
-              const continuedPreview = markGuestPreviewContinued(currentPreview);
-              if (continuedPreview !== currentPreview) {
-                void trackBasilFunnelEvent("preview_continued");
-              }
-              const award = awardGuestCare(
-                continuedPreview,
-                contribution.careValue,
-                contribution.earningPhase,
-              );
-              commitGuestPreview(award.preview);
-              canvasRef.current?.showCareReward(
-                award.awardedCare,
-                award.earningMode === "daily",
-              );
-              setCareAnnouncement(
-                `${bonusLabel}${award.awardedCare} temporary Care earned. A Garden Membership saves it.`,
-              );
-              return;
-            }
-            if (!response.ok) {
-              setCareAnnouncement(
-                "Care could not be saved. Please try another garden action.",
-              );
-              return;
-            }
-            const award = (await response.json()) as {
-              awardedCare: number;
-              careBalance: number;
-              lifetimeCare: number;
-              earningMode: "daily" | "standard";
-            };
-            setMemberGarden((current) =>
-              current
-                ? {
-                    ...current,
-                    careBalance: award.careBalance,
-                    lifetimeCare: award.lifetimeCare,
-                  }
-                : current,
-            );
-            canvasRef.current?.showCareReward(
-              award.awardedCare,
-              award.earningMode === "daily",
-            );
-            setCareAnnouncement(
-              `${bonusLabel}${award.awardedCare} Care saved. Your balance is ${award.careBalance}.`,
-            );
-          } catch (error) {
-            console.warn("Basil Care save was interrupted", {
-              online: navigator.onLine,
-              visibility: document.visibilityState,
-              message: error instanceof Error ? error.message : "Unknown error",
-            });
-            setCareAnnouncement(
-              "Care could not be saved. Please try another garden action.",
-            );
-          }
-        });
-    },
-    [commitGuestPreview, memberGarden, session],
-  );
-
-  const mutateMyGarden = useCallback(
-    async (mutation: MyGardenMutation) => {
-      if (!memberGarden) {
-        try {
-          const currentPreview = guestPreviewRef.current;
-          let updatedPreview = mutateGuestGarden(currentPreview, mutation);
-          const used = updatedPreview.garden.preview?.plantingsUsed ?? 0;
-          if (mutation.action === "plant") {
-            if (used === 1) {
-              void trackBasilFunnelEvent("first_personal_plant");
-              transitionOnboarding("complete", [
-                "personal-inventory",
-                "personal-seed",
-                "personal-tile",
-              ]);
-              setShowFreePlantingNotice(true);
-            }
-            if (
-              used === GUEST_SOFT_PAYWALL_PLANTINGS &&
-              !currentPreview.access?.softPaywallSeen
-            ) {
-              updatedPreview = markGuestSoftPaywallSeen(updatedPreview);
-              setMembershipOfferStage("soft");
-              setMembershipOfferOpen(true);
-            } else if (
-              used >= (updatedPreview.garden.preview?.plantingLimit ?? 10)
-            ) {
-              setMembershipOfferStage("hard");
-              setMembershipOfferOpen(true);
-            }
-          }
-          commitGuestPreview(updatedPreview);
-          return updatedPreview.garden;
-        } catch (error) {
-          if (
-            error instanceof GuestPreviewLimitError ||
-            error instanceof GuestPreviewExpiredError
-          ) {
-            transitionOnboarding("complete", [
-              "personal-inventory",
-              "personal-seed",
-              "personal-tile",
-            ]);
-            setMembershipOfferStage(
-              error instanceof GuestPreviewExpiredError ? "expired" : "hard",
-            );
-            setMembershipOfferOpen(true);
-          }
-          throw error;
-        }
-      }
-      if (!session) throw new Error("Sign in to update My Garden.");
-      const response = await fetch("/api/community-garden/my-garden", {
-        method: "POST",
-        headers: {
-          authorization: `Bearer ${session.access_token}`,
-          "content-type": "application/json",
-        },
-        body: JSON.stringify(mutation),
-      });
-      if (!response.ok) {
-        throw new Error(
-          await getResponseError(response, "My Garden could not be updated."),
-        );
-      }
-      const updated = (await response.json()) as MyGardenState;
-      setMemberGarden(updated);
-      return updated;
-    },
-    [commitGuestPreview, memberGarden, session, transitionOnboarding],
-  );
-
-  function switchWorld() {
-    if (world === "personal") {
-      setInventoryOpen(false);
-      setWorld("community");
-      return;
-    }
-    if (myGardenTutorialLocked) return;
-    setMenuOpen(false);
-    setInventoryOpen(false);
-    transitionOnboarding("personal-inventory", [
-      "plant",
-      "select-seed",
-      "community-tile",
-      "community-repeat",
-      "my-garden",
-    ]);
-    void trackBasilFunnelEvent("my_garden_entered");
-    setWorld("personal");
-  }
-
-  const handleGardenActionCompleted = useCallback(
-    (mode: GardenWorldMode, action: GardenUiState["action"]) => {
-      if (mode === "community" && action === "plant") {
-        const nextPlantings = Math.min(
-          3,
-          communityOnboardingPlantingsRef.current + 1,
-        );
-        communityOnboardingPlantingsRef.current = nextPlantings;
-        setCommunityOnboardingPlantings(nextPlantings);
-        saveCommunityOnboardingPlantings(nextPlantings);
-        if (nextPlantings === 1) {
-          void trackBasilFunnelEvent("first_community_plant");
-          trackBasilMetaCustomMilestone("BasilFirstPlant", "first_plant");
-        } else if (nextPlantings === 3) {
-          void trackBasilFunnelEvent("third_community_plant");
-          trackBasilMetaCustomMilestone(
-            "BasilCommunityTutorialCompleted",
-            "community_tutorial_completed",
-          );
-        }
-        transitionOnboarding(
-          nextPlantings >= 3 ? "my-garden" : "community-tile",
-          ["plant", "select-seed", "community-tile", "community-repeat"],
-        );
-        if (nextPlantings < 3) {
-          window.requestAnimationFrame(() => {
-            canvasRef.current?.suggestPlantingSpot();
-          });
-        }
-      } else if (
-        mode === "community" &&
-        action === "water" &&
-        onboardingStep === "community-water"
-      ) {
-        transitionOnboarding("complete", ["community-water"]);
-        setCareAnnouncement(
-          "Watering learned. Explore freely, earn Care, and return to My Garden whenever you are ready.",
-        );
-      }
-    },
-    [onboardingStep, transitionOnboarding],
-  );
-
-  const handleGardenActionFailed = useCallback(
-    (mode: GardenWorldMode, action: GardenUiState["action"], error: unknown) => {
-      void trackBasilFunnelEvent("garden_action_failed", {
-        failure_stage: mode,
-        error_code:
-          error instanceof Error && /network|connect|offline/i.test(error.message)
-            ? "connection"
-            : action ?? "unknown",
-      });
-    },
-    [],
-  );
-
-  function openInventoryForOnboarding() {
-    transitionOnboarding("select-seed", ["plant"]);
-    transitionOnboarding("personal-seed", ["personal-inventory"]);
-    setInventoryOpen(true);
-    void trackBasilFunnelEvent("inventory_opened");
-  }
-
-  function dismissMembershipOffer() {
-    if (membershipOfferStage === "soft") {
-      const isFirstDecline =
-        guestPreviewRef.current.access?.softPaywallDeclined !== true;
-      const declined = markGuestSoftPaywallDeclined(guestPreviewRef.current);
-      commitGuestPreview(declined);
-      void trackBasilFunnelEvent("soft_paywall_declined");
-      if (isFirstDecline) {
-        setInventoryOpen(false);
-        setWorld("community");
-        setOnboardingDirectly("community-water");
-      }
-    } else {
-      transitionOnboarding("complete");
-    }
-    setMembershipOfferOpen(false);
-  }
-
-  return (
-    <main className={`cg-root is-${world}-world`}>
-      <section className="cg-game-frame" aria-label="Basil garden game">
-        <GardenCanvas
-          ref={canvasRef}
-          mode={world}
-          personalGarden={myGarden}
-          tutorialDimmed={tutorialMapDimmed}
-          onStateChange={onStateChange}
-          onCommunityContribution={claimCommunityContribution}
-          onPersonalGardenMutation={mutateMyGarden}
-          onActionCompleted={handleGardenActionCompleted}
-          onActionFailed={handleGardenActionFailed}
-        />
-
-        <header className="cg-titlebar">
-          <div className="cg-pixel-rose" aria-hidden="true">
-            <span />
-          </div>
-          <div className="cg-title-copy">
-            <h1>Basil</h1>
-            <p>
-              {world === "personal" ? "My Garden" : "Community Garden"}
-              {world === "community" ? (
-                <GardenUpdateStatus nextUpdateAt={ui.nextMapUpdateAt} />
-              ) : null}
-            </p>
-          </div>
-          <button
-            className="cg-icon-button"
-            type="button"
-            aria-label="Open garden menu"
-            onClick={() => {
-              setMenuSection("play");
-              setMenuOpen(true);
-            }}
-          >
-            <span className="cg-menu-icon" aria-hidden="true" />
-          </button>
-        </header>
-
-        {world === "community" ? (
-          <GardenMapKey
-            ui={ui}
-            canExpand={Boolean(memberGarden)}
-            disabled={tutorialMapDimmed}
-            onNavigate={(mapX, mapY) =>
-              canvasRef.current?.goToMapPosition(mapX, mapY)
-            }
-          />
-        ) : null}
-
-        <div className="cg-zoom-control" role="group" aria-label="Garden zoom">
-          <button
-            type="button"
-            title="Zoom out"
-            aria-label="Zoom out to see more of the garden"
-            disabled={!ui.canZoomOut}
-            onClick={() => canvasRef.current?.zoomOut()}
-          >
-            -
-          </button>
-          <output aria-label={`Current zoom ${ui.zoom} times`}>{ui.zoom}x</output>
-          <button
-            type="button"
-            title="Zoom in"
-            aria-label="Zoom in for a closer garden view"
-            disabled={!ui.canZoomIn}
-            onClick={() => canvasRef.current?.zoomIn()}
-          >
-            +
-          </button>
-        </div>
-
-        <button
-          className={`cg-compact-support${
-            showMyGardenInvitation || showContinueGardenGuidance || showMyGardenGrowthNudge
-              ? " is-onboarding-highlight"
-              : ""
-          }`}
-          type="button"
-          disabled={world === "community" && myGardenTutorialLocked}
-          aria-label={
-            world === "personal"
-              ? `Go to Community Garden. ${myGarden.careBalance} Care.`
-              : myGardenTutorialLocked
-                ? `Plant ${3 - communityOnboardingPlantings} more community flowers before visiting My Garden`
-                : `Go to My Garden. ${myGarden.careBalance} Care.`
-          }
-          onClick={switchWorld}
-        >
-          <span
-            className={world === "personal" ? "cg-community-mark" : "cg-home-mark"}
-            aria-hidden="true"
-          />
-          <span className="cg-garden-switch-copy">
-            <strong>
-              {world === "personal" ? "Community Garden" : "My Garden"}
-            </strong>
-            <small>
-              Care <b>{myGarden.careBalance}</b>
-            </small>
-          </span>
-          {showMyGardenInvitation || showContinueGardenGuidance || showMyGardenGrowthNudge ? (
-            <strong
-              className="cg-my-garden-notice"
-              aria-label={
-                showContinueGardenGuidance
-                  ? "Earn more Care in Community Garden"
-                  : showMyGardenGrowthNudge
-                    ? "Care is ready to use in My Garden"
-                  : "My Garden is ready"
-              }
-            >
-              {showContinueGardenGuidance ? "+" : "!"}
-            </strong>
-          ) : null}
-        </button>
-
-        {world === "personal" && myGarden.preview ? (
-          <div className="cg-preview-progress" aria-live="polite">
-            {guestPreview.access?.softPaywallDeclined
-              ? "Temporary Β· not saved"
-              : "Preview"}{" "}
-            Β· {myGarden.preview.plantingsUsed} of {myGarden.preview.plantingLimit} flowers
-          </div>
-        ) : null}
-
-        {showContinueGardenGuidance ? (
-          <aside className="cg-preview-care-guide" role="status">
-            <strong>Continue growing</strong>
-            <span>Visit Community Garden to earn Care, then come back here.</span>
-          </aside>
-        ) : null}
-
-        <GardenInventory
-          mode={world}
-          open={inventoryOpen}
-          selectedTool={ui.selectedTool}
-          lifetimeCare={myGarden.lifetimeCare}
-          onboardingLocked={onboardingInventoryLocked}
-          toggleLocked={
-            onboardingInventoryLocked &&
-            onboardingStep !== "plant" &&
-            onboardingStep !== "personal-inventory"
-          }
-          guidePlantChoice={
-            onboardingStep === "select-seed" ||
-            onboardingStep === "personal-seed"
-          }
-          onToggle={() => {
-            if (!inventoryOpen) openInventoryForOnboarding();
-            else setInventoryOpen(false);
-          }}
-          onSelectPlant={(plantType) => {
-            if (
-              onboardingInventoryLocked &&
-              !isGardenOnboardingPlantType(plantType)
-            ) {
-              return;
-            }
-            void trackBasilFunnelEvent("plant_selected");
-            canvasRef.current?.selectPlant(plantType);
-            const shouldGuideSpot =
-              onboardingStep === "select-seed" ||
-              onboardingStep === "personal-seed";
-            transitionOnboarding("community-tile", ["select-seed"]);
-            transitionOnboarding("personal-tile", ["personal-seed"]);
-            setInventoryOpen(false);
-            if (shouldGuideSpot) {
-              window.requestAnimationFrame(() => {
-                canvasRef.current?.suggestPlantingSpot();
-              });
-            }
-          }}
-          onSelectPath={() => {
-            if (onboardingInventoryLocked) return;
-            canvasRef.current?.selectPathTool();
-            setInventoryOpen(false);
-          }}
-          onSelectElement={(elementType) => {
-            if (onboardingInventoryLocked) return;
-            canvasRef.current?.selectElement(elementType);
-            setInventoryOpen(false);
-          }}
-        />
-
-        <button
-          className={`cg-action-button${
-            (onboardingPlantActionReady &&
-              (onboardingStep === "community-tile" ||
-                onboardingStep === "personal-tile")) ||
-            (onboardingWaterActionReady && onboardingStep === "community-water")
-              ? " is-onboarding-highlight"
-              : ""
-          }`}
-          type="button"
-          disabled={!ui.actionEnabled || !tutorialActionAllowed}
-          onClick={() => void canvasRef.current?.performAction()}
-        >
-          <span
-            className={
-              ui.action === "water"
-                ? "cg-water-icon"
-                : ui.action === "uproot"
-                  ? "cg-uproot-icon"
-                  : ui.action === "place-element" ||
-                      ui.action === "remove-element"
-                    ? `cg-item-glyph ${getMyGardenElementGlyphClass(
-                        ui.selectedElementType ?? "stone_paver",
-                      )}`
-                  : ui.action === "expand"
-                    ? "cg-lock-icon"
-                  : ui.action === "lay-path" || ui.action === "remove-path"
-                    ? "cg-path-icon"
-                  : `cg-plant-glyph is-${ui.selectedPlantType}`
-            }
-            aria-hidden="true"
-          />
-          <span>{ui.actionLabel}</span>
-        </button>
-
-        {showMembershipShortcut ? (
-          <button
-            className="cg-community-join"
-            type="button"
-            aria-label={session ? "Upgrade Garden Membership" : "Join Garden Membership"}
-            onClick={() => {
-              setMembershipOfferStage("soft");
-              setMembershipOfferOpen(true);
-            }}
-          >
-            {session ? "Upgrade" : "Join"}
-          </button>
-        ) : null}
-
-        <p className="cg-sr-status" aria-live="polite">{ui.message}</p>
-        <p className="cg-sr-status" aria-live="polite">{careAnnouncement}</p>
-        {restoreMessage ? (
-          <p
-            className={`cg-restore-status${
-              restoreMessage.startsWith("Restoring") ? "" : " is-error"
-            }`}
-            role="status"
-          >
-            {restoreMessage}
-          </p>
-        ) : null}
-
-        <GardenOnboarding
-          step={onboardingStep}
-          communityPlantings={communityOnboardingPlantings}
-          inventoryOpen={inventoryOpen}
-          plantActionReady={onboardingPlantActionReady}
-          waterActionReady={onboardingWaterActionReady}
-          onOpenInventory={openInventoryForOnboarding}
-          onOpenMyGarden={() => {
-            transitionOnboarding("personal-inventory", ["my-garden"]);
-            void trackBasilFunnelEvent("my_garden_entered");
-            setWorld("personal");
-          }}
-        />
-
-        {world === "personal" && showFreePlantingNotice ? (
-          <aside className="cg-free-planting-notice" role="status">
-            <strong>Your first flower is planted.</strong>
-            <span>Feel free to plant more and arrange the garden your way.</span>
-          </aside>
-        ) : null}
-      </section>
-
-      {world === "community" ? <FutureAdSlot label={adLabel} /> : null}
-
-      <GardenMenu
-        open={menuOpen}
-        section={menuSection}
-        onClose={() => {
-          setMenuOpen(false);
-          pendingGardenEntryRef.current = false;
-        }}
-        onSectionChange={setMenuSection}
-      />
-
-      <GardenMembershipOffer
-        open={membershipOfferOpen}
-        planted={myGarden.preview?.plantingsUsed ?? GUEST_SOFT_PAYWALL_PLANTINGS}
-        stage={membershipOfferStage}
-        onClose={dismissMembershipOffer}
-        checkoutBusy={membershipCheckoutBusy}
-        checkoutError={membershipCheckoutError}
-        accountReady={Boolean(session)}
-        onLater={() => {
-          dismissMembershipOffer();
-          if (membershipOfferStage !== "soft") setWorld("community");
-        }}
-        onAccount={() => {
-          setMembershipOfferOpen(false);
-          setMembershipCheckoutError("");
-          setMenuSection("account");
-          setMenuOpen(true);
-        }}
-        onJoin={(credentials) => void startMembershipCheckout(credentials)}
-      />
-    </main>
-  );
-}
+  λ|¶‰ΛkΊwµη@€€€Μ°4(€€€€€€€€€½µµΥΉ¥Ρε=Ή‰½…Ι‘¥ΉA±…ΉΡ¥ΉΝI•ΉΥΙΙ•ΉΠ€¬€Δ°4(€€€€€€€€¤μ4(€€€€€€€½µµΥΉ¥Ρε=Ή‰½…Ι‘¥ΉA±…ΉΡ¥ΉΝI•ΉΥΙΙ•ΉΠ€τΉ•αΡA±…ΉΡ¥ΉΜμ4(€€€€€€€Ν•Ρ½µµΥΉ¥Ρε=Ή‰½…Ι‘¥ΉA±…ΉΡ¥ΉΜ΅Ή•αΡA±…ΉΡ¥ΉΜ¤μ4(€€€€€€€Ν…Ω•½µµΥΉ¥Ρε=Ή‰½…Ι‘¥ΉA±…ΉΡ¥ΉΜ΅Ή•αΡA±…ΉΡ¥ΉΜ¤μ4(€€€€€€€¥€΅Ή•αΡA±…ΉΡ¥ΉΜ€τττ€Δ¤μ4(€€€€€€€€€Ω½¥ΡΙ…­	…Ν¥±ΥΉΉ•±Ω•ΉΠ ‰™¥ΙΝΡ}½µµΥΉ¥Ρε}Α±…ΉΠ¤μ4(€€€€€€€€€ΡΙ…­	…Ν¥±5•Ρ…ΥΝΡ½µ5¥±•ΝΡ½Ή” ‰	…Ν¥±¥ΙΝΡA±…ΉΠ°€‰™¥ΙΝΡ}Α±…ΉΠ¤μ4(€€€€€€€τ•±Ν”¥€΅Ή•αΡA±…ΉΡ¥ΉΜ€τττ€Μ¤μ4(€€€€€€€€€Ω½¥ΡΙ…­	…Ν¥±ΥΉΉ•±Ω•ΉΠ ‰Ρ΅¥Ι‘}½µµΥΉ¥Ρε}Α±…ΉΠ¤μ4(€€€€€€€€€ΡΙ…­	…Ν¥±5•Ρ…ΥΝΡ½µ5¥±•ΝΡ½Ή” 4(€€€€€€€€€€€€‰	…Ν¥±½µµΥΉ¥ΡεQΥΡ½Ι¥…±½µΑ±•Ρ•°4(€€€€€€€€€€€€‰½µµΥΉ¥Ρε}ΡΥΡ½Ι¥…±}½µΑ±•Ρ•°4(€€€€€€€€€€¤μ4(€€€€€€€τ4(€€€€€€€ΡΙ…ΉΝ¥Ρ¥½Ή=Ή‰½…Ι‘¥Ή 4(€€€€€€€€€Ή•αΡA±…ΉΡ¥ΉΜ€ψτ€Μ€ό€‰µδµ…Ι‘•Έ€θ€‰½µµΥΉ¥ΡδµΡ¥±”°4(€€€€€€€€€l‰Α±…ΉΠ°€‰Ν•±•ΠµΝ••°€‰½µµΥΉ¥ΡδµΡ¥±”°€‰½µµΥΉ¥ΡδµΙ•Α•…Π‰t°4(€€€€€€€€¤μ4(€€€€€€€¥€΅Ή•αΡA±…ΉΡ¥ΉΜ€π€Μ¤μ4(€€€€€€€€€έ¥Ή‘½άΉΙ•ΕΥ•ΝΡΉ¥µ…Ρ¥½ΉΙ…µ”  ¤€τψμ4(€€€€€€€€€€€…ΉΩ…ΝI•ΉΥΙΙ•ΉΠόΉΝΥ•ΝΡA±…ΉΡ¥ΉMΑ½Π ¤μ4(€€€€€€€€€τ¤μ4(€€€€€€€τ(€€€€€τ•±Ν”¥€ (€€€€€€€µ½‘”€τττ€‰½µµΥΉ¥Ρδ€(€€€€€€€…Ρ¥½Έ€τττ€‰έ…Ρ•Θ€(€€€€€€€½Ή‰½…Ι‘¥ΉMΡ•ΐ€τττ€‰½µµΥΉ¥Ρδµέ…Ρ•Θ(€€€€€€¤μ(€€€€€€€ΡΙ…ΉΝ¥Ρ¥½Ή=Ή‰½…Ι‘¥Ή ‰½µΑ±•Ρ”°l‰½µµΥΉ¥Ρδµέ…Ρ•Θ‰t¤μ(€€€€€€€Ν•Ρ…Ι•ΉΉ½ΥΉ•µ•ΉΠ (€€€€€€€€€€‰]…Ρ•Ι¥Ή±•…ΙΉ•ΈαΑ±½Ι”™Ι••±δ°•…ΙΈ…Ι”°…ΉΙ•ΡΥΙΈΡΌ5δ…Ι‘•Έέ΅•Ή•Ω•Θε½Τ…Ι”Ι•…‘δΈ°(€€€€€€€€¤μ(€€€€€τ(€€€τ°(€€€m½Ή‰½…Ι‘¥ΉMΡ•ΐ°ΡΙ…ΉΝ¥Ρ¥½Ή=Ή‰½…Ι‘¥Ήt°(€€¤μ4(4(€½ΉΝΠ΅…Ή‘±•…Ι‘•ΉΡ¥½Ή…¥±•€τΥΝ•…±±‰…¬ 4(€€€€΅µ½‘”θ…Ι‘•Ή]½Ι±‘5½‘”°…Ρ¥½Έθ…Ι‘•ΉU¥MΡ…Ρ•l‰…Ρ¥½Έ‰t°•ΙΙ½ΘθΥΉ­Ή½έΈ¤€τψμ4(€€€€€Ω½¥ΡΙ…­	…Ν¥±ΥΉΉ•±Ω•ΉΠ ‰…Ι‘•Ή}…Ρ¥½Ή}™…¥±•°μ4(€€€€€€€™…¥±ΥΙ•}ΝΡ…”θµ½‘”°4(€€€€€€€•ΙΙ½Ι}½‘”θ4(€€€€€€€€€•ΙΙ½Θ¥ΉΝΡ…Ή•½ΙΙ½Θ€€½Ή•Ρέ½Ι­ρ½ΉΉ•Ρρ½™™±¥Ή”½¤ΉΡ•ΝΠ΅•ΙΙ½ΘΉµ•ΝΝ…”¤4(€€€€€€€€€€€€ό€‰½ΉΉ•Ρ¥½Έ4(€€€€€€€€€€€€θ…Ρ¥½Έ€όό€‰ΥΉ­Ή½έΈ°4(€€€€€τ¤μ4(€€€τ°4(€€€mt°4(€€¤μ4(4(€™ΥΉΡ¥½Έ½Α•Ή%ΉΩ•ΉΡ½Ιε½Ι=Ή‰½…Ι‘¥Ή ¤μ(€€€ΡΙ…ΉΝ¥Ρ¥½Ή=Ή‰½…Ι‘¥Ή ‰Ν•±•ΠµΝ••°l‰Α±…ΉΠ‰t¤μ4(€€€ΡΙ…ΉΝ¥Ρ¥½Ή=Ή‰½…Ι‘¥Ή ‰Α•ΙΝ½Ή…°µΝ••°l‰Α•ΙΝ½Ή…°µ¥ΉΩ•ΉΡ½Ιδ‰t¤μ4(€€€Ν•Ρ%ΉΩ•ΉΡ½Ιε=Α•Έ΅ΡΙΥ”¤μ4(€€€Ω½¥ΡΙ…­	…Ν¥±ΥΉΉ•±Ω•ΉΠ ‰¥ΉΩ•ΉΡ½Ιε}½Α•Ή•¤μ(€τ((€™ΥΉΡ¥½Έ‘¥Νµ¥ΝΝUΉ±½­9½Ρ¥” ¤μ(€€€Ν•ΡUΉ±½­9½Ρ¥•Μ ΅ΥΙΙ•ΉΠ¤€τψΥΙΙ•ΉΠΉΝ±¥” Δ¤¤μ(€τ((€™ΥΉΡ¥½ΈΩ¥•έUΉ±½­%Ή5ε…Ι‘•Έ ¤μ(€€€‘¥Νµ¥ΝΝUΉ±½­9½Ρ¥” ¤μ(€€€Ν•Ρ5•ΉΥ=Α•Έ΅™…±Ν”¤μ(€€€Ν•Ρ]½Ι± ‰Α•ΙΝ½Ή…°¤μ(€€€Ν•Ρ%ΉΩ•ΉΡ½Ιε=Α•Έ΅ΡΙΥ”¤μ(€€€Ω½¥ΡΙ…­	…Ν¥±ΥΉΉ•±Ω•ΉΠ ‰µε}…Ι‘•Ή}•ΉΡ•Ι•¤μ(€€€Ω½¥ΡΙ…­	…Ν¥±ΥΉΉ•±Ω•ΉΠ ‰¥ΉΩ•ΉΡ½Ιε}½Α•Ή•¤μ(€τ(4(€™ΥΉΡ¥½Έ‘¥Νµ¥ΝΝ5•µ‰•ΙΝ΅¥Α=™™•Θ ¤μ(€€€¥€΅µ•µ‰•ΙΝ΅¥Α=™™•ΙMΡ…”€τττ€‰Ν½™Π¤μ(€€€€€½ΉΝΠ¥Ν¥ΙΝΡ•±¥Ή”€τ(€€€€€€€Υ•ΝΡAΙ•Ω¥•έI•ΉΥΙΙ•ΉΠΉ…•ΝΜόΉΝ½™ΡA…εέ…±±•±¥Ή•€„ττΡΙΥ”μ(€€€€€½ΉΝΠ‘•±¥Ή•€τµ…Ι­Υ•ΝΡM½™ΡA…εέ…±±•±¥Ή•΅Υ•ΝΡAΙ•Ω¥•έI•ΉΥΙΙ•ΉΠ¤μ(€€€€€½µµ¥ΡΥ•ΝΡAΙ•Ω¥•ά΅‘•±¥Ή•¤μ(€€€€€Ω½¥ΡΙ…­	…Ν¥±ΥΉΉ•±Ω•ΉΠ ‰Ν½™Ρ}Α…εέ…±±}‘•±¥Ή•¤μ(€€€€€¥€΅¥Ν¥ΙΝΡ•±¥Ή”¤μ(€€€€€€€Ν•Ρ%ΉΩ•ΉΡ½Ιε=Α•Έ΅™…±Ν”¤μ(€€€€€€€Ν•Ρ]½Ι± ‰½µµΥΉ¥Ρδ¤μ(€€€€€€€Ν•Ρ=Ή‰½…Ι‘¥Ή¥Ι•Ρ±δ ‰½µµΥΉ¥Ρδµέ…Ρ•Θ¤μ(€€€€€τ(€€€τ•±Ν”μ(€€€€€ΡΙ…ΉΝ¥Ρ¥½Ή=Ή‰½…Ι‘¥Ή ‰½µΑ±•Ρ”¤μ(€€€τ(€€€Ν•Ρ5•µ‰•ΙΝ΅¥Α=™™•Ι=Α•Έ΅™…±Ν”¤μ(€τ(4(€Ι•ΡΥΙΈ€ 4(€€€€ρµ…¥Έ±…ΝΝ9…µ”υνµΙ½½Π¥Μ΄‘νέ½Ι±‘τµέ½Ι±‘τψ4(€€€€€€ρΝ•Ρ¥½Έ±…ΝΝ9…µ”τ‰µ…µ”µ™Ι…µ”…Ι¥„µ±…‰•°τ‰	…Ν¥°…Ι‘•Έ…µ”ψ4(€€€€€€€€ρ…Ι‘•Ή…ΉΩ…Μ4(€€€€€€€€€Ι•υν…ΉΩ…ΝI•™τ4(€€€€€€€€€µ½‘”υνέ½Ι±‘τ4(€€€€€€€€€Α•ΙΝ½Ή…±…Ι‘•Έυνµε…Ι‘•Ήτ4(€€€€€€€€€ΡΥΡ½Ι¥…±¥µµ•υνΡΥΡ½Ι¥…±5…Α¥µµ•‘τ4(€€€€€€€€€½ΉMΡ…Ρ•΅…Ή”υν½ΉMΡ…Ρ•΅…Ή•τ4(€€€€€€€€€½Ή½µµΥΉ¥Ρε½ΉΡΙ¥‰ΥΡ¥½Έυν±…¥µ½µµΥΉ¥Ρε½ΉΡΙ¥‰ΥΡ¥½Ήτ4(€€€€€€€€€½ΉA•ΙΝ½Ή…±…Ι‘•Ή5ΥΡ…Ρ¥½ΈυνµΥΡ…Ρ•5ε…Ι‘•Ήτ4(€€€€€€€€€½ΉΡ¥½Ή½µΑ±•Ρ•υν΅…Ή‘±•…Ι‘•ΉΡ¥½Ή½µΑ±•Ρ•‘τ4(€€€€€€€€€½ΉΡ¥½Ή…¥±•υν΅…Ή‘±•…Ι‘•ΉΡ¥½Ή…¥±•‘τ4(€€€€€€€€Όψ4(4(€€€€€€€€ρ΅•…‘•Θ±…ΝΝ9…µ”τ‰µΡ¥Ρ±•‰…Θψ4(€€€€€€€€€€ρ‘¥Ψ±…ΝΝ9…µ”τ‰µΑ¥α•°µΙ½Ν”…Ι¥„µ΅¥‘‘•Έτ‰ΡΙΥ”ψ4(€€€€€€€€€€€€ρΝΑ…Έ€Όψ4(€€€€€€€€€€π½‘¥Ψψ4(€€€€€€€€€€ρ‘¥Ψ±…ΝΝ9…µ”τ‰µΡ¥Ρ±”µ½Αδψ4(€€€€€€€€€€€€ρ Δω	…Ν¥°π½ Δψ4(€€€€€€€€€€€€ρΐψ4(€€€€€€€€€€€€€νέ½Ι±€τττ€‰Α•ΙΝ½Ή…°€ό€‰5δ…Ι‘•Έ€θ€‰½µµΥΉ¥Ρδ…Ι‘•Έ‰τ4(€€€€€€€€€€€€€νέ½Ι±€τττ€‰½µµΥΉ¥Ρδ€ό€ 4(€€€€€€€€€€€€€€€€ρ…Ι‘•ΉUΑ‘…Ρ•MΡ…ΡΥΜΉ•αΡUΑ‘…Ρ•ΠυνΥ¤ΉΉ•αΡ5…ΑUΑ‘…Ρ•Ρτ€Όψ4(€€€€€€€€€€€€€€¤€θΉΥ±±τ4(€€€€€€€€€€€€π½ΐψ4(€€€€€€€€€€π½‘¥Ψψ4(€€€€€€€€€€ρ‰ΥΡΡ½Έ4(€€€€€€€€€€€±…ΝΝ9…µ”τ‰µ¥½Έµ‰ΥΡΡ½Έ4(€€€€€€€€€€€ΡεΑ”τ‰‰ΥΡΡ½Έ4(€€€€€€€€€€€…Ι¥„µ±…‰•°τ‰=Α•Έ…Ι‘•Έµ•ΉΤ4(€€€€€€€€€€€½Ή±¥¬υμ ¤€τψμ4(€€€€€€€€€€€€€Ν•Ρ5•ΉΥM•Ρ¥½Έ ‰Α±…δ¤μ4(€€€€€€€€€€€€€Ν•Ρ5•ΉΥ=Α•Έ΅ΡΙΥ”¤μ4(€€€€€€€€€€€υτ4(€€€€€€€€€€ψ4(€€€€€€€€€€€€ρΝΑ…Έ±…ΝΝ9…µ”τ‰µµ•ΉΤµ¥½Έ…Ι¥„µ΅¥‘‘•Έτ‰ΡΙΥ”€Όψ4(€€€€€€€€€€π½‰ΥΡΡ½Έψ4(€€€€€€€€π½΅•…‘•Θψ4(4(€€€€€€€νέ½Ι±€τττ€‰½µµΥΉ¥Ρδ€ό€ 4(€€€€€€€€€€ρ…Ι‘•Ή5…Α-•δ(€€€€€€€€€€€Υ¤υνΥ¥τ(€€€€€€€€€€€…ΉαΑ…Ήυν	½½±•…Έ΅µ•µ‰•Ι…Ι‘•Έ¥τ(€€€€€€€€€€€‘¥Ν…‰±•υνΡΥΡ½Ι¥…±5…Α¥µµ•‘τ(€€€€€€€€€€€½Ή9…Ω¥…Ρ”υμ΅µ…Α`°µ…Αd¤€τψ(€€€€€€€€€€€€€…ΉΩ…ΝI•ΉΥΙΙ•ΉΠόΉ½Q½5…ΑA½Ν¥Ρ¥½Έ΅µ…Α`°µ…Αd¤(€€€€€€€€€€€τ(€€€€€€€€€€Όψ4(€€€€€€€€¤€θΉΥ±±τ4(4(€€€€€€€€ρ‘¥Ψ±…ΝΝ9…µ”τ‰µι½½΄µ½ΉΡΙ½°Ι½±”τ‰Ι½Υΐ…Ι¥„µ±…‰•°τ‰…Ι‘•Έι½½΄ψ4(€€€€€€€€€€ρ‰ΥΡΡ½Έ4(€€€€€€€€€€€ΡεΑ”τ‰‰ΥΡΡ½Έ4(€€€€€€€€€€€Ρ¥Ρ±”τ‰i½½΄½ΥΠ4(€€€€€€€€€€€…Ι¥„µ±…‰•°τ‰i½½΄½ΥΠΡΌΝ•”µ½Ι”½Ρ΅”…Ι‘•Έ4(€€€€€€€€€€€‘¥Ν…‰±•υμ…Υ¤Ή…Ήi½½µ=ΥΡτ4(€€€€€€€€€€€½Ή±¥¬υμ ¤€τψ…ΉΩ…ΝI•ΉΥΙΙ•ΉΠόΉι½½µ=ΥΠ ¥τ4(€€€€€€€€€€ψ4(€€€€€€€€€€€€΄4(€€€€€€€€€€π½‰ΥΡΡ½Έψ4(€€€€€€€€€€ρ½ΥΡΑΥΠ…Ι¥„µ±…‰•°υνΥΙΙ•ΉΠι½½΄€‘νΥ¤Ήι½½µτΡ¥µ•ΝτωνΥ¤Ήι½½µυΰπ½½ΥΡΑΥΠψ4(€€€€€€€€€€ρ‰ΥΡΡ½Έ4(€€€€€€€€€€€ΡεΑ”τ‰‰ΥΡΡ½Έ4(€€€€€€€€€€€Ρ¥Ρ±”τ‰i½½΄¥Έ4(€€€€€€€€€€€…Ι¥„µ±…‰•°τ‰i½½΄¥Έ™½Θ„±½Ν•Θ…Ι‘•ΈΩ¥•ά4(€€€€€€€€€€€‘¥Ν…‰±•υμ…Υ¤Ή…Ήi½½µ%Ήτ4(€€€€€€€€€€€½Ή±¥¬υμ ¤€τψ…ΉΩ…ΝI•ΉΥΙΙ•ΉΠόΉι½½µ%Έ ¥τ4(€€€€€€€€€€ψ4(€€€€€€€€€€€€¬4(€€€€€€€€€€π½‰ΥΡΡ½Έψ4(€€€€€€€€π½‘¥Ψψ4(4(€€€€€€€€ρ‰ΥΡΡ½Έ4(€€€€€€€€€±…ΝΝ9…µ”υνµ½µΑ…ΠµΝΥΑΑ½ΙΠ‘μ(€€€€€€€€€€€Ν΅½έ5ε…Ι‘•Ή%ΉΩ¥Ρ…Ρ¥½Έρπ(€€€€€€€€€€€Ν΅½έ½ΉΡ¥ΉΥ•…Ι‘•ΉΥ¥‘…Ή”ρπ(€€€€€€€€€€€Ν΅½έ5ε…Ι‘•ΉΙ½έΡ΅9Υ‘”ρπ(€€€€€€€€€€€Ν΅½έ5ε…Ι‘•ΉUΉ±½­9½Ρ¥”(€€€€€€€€€€€€€€ό€¥Μµ½Ή‰½…Ι‘¥Ήµ΅¥΅±¥΅Π(€€€€€€€€€€€€€€θ€(€€€€€€€€€υτ(€€€€€€€€€ΡεΑ”τ‰‰ΥΡΡ½Έ4(€€€€€€€€€‘¥Ν…‰±•υνέ½Ι±€τττ€‰½µµΥΉ¥Ρδ€µε…Ι‘•ΉQΥΡ½Ι¥…±1½­•‘τ4(€€€€€€€€€…Ι¥„µ±…‰•°υμ4(€€€€€€€€€€€έ½Ι±€τττ€‰Α•ΙΝ½Ή…°4(€€€€€€€€€€€€€€όΌΡΌ½µµΥΉ¥Ρδ…Ι‘•ΈΈ€‘νµε…Ι‘•ΈΉ…Ι•	…±…Ή•τ…Ι”Ή€4(€€€€€€€€€€€€€€θµε…Ι‘•ΉQΥΡ½Ι¥…±1½­•4(€€€€€€€€€€€€€€€€όA±…ΉΠ€‘μΜ€΄½µµΥΉ¥Ρε=Ή‰½…Ι‘¥ΉA±…ΉΡ¥ΉΝτµ½Ι”½µµΥΉ¥Ρδ™±½έ•ΙΜ‰•™½Ι”Ω¥Ν¥Ρ¥Ή5δ…Ι‘•Ή€4(€€€€€€€€€€€€€€€€θΌΡΌ5δ…Ι‘•ΈΈ€‘νµε…Ι‘•ΈΉ…Ι•	…±…Ή•τ…Ι”Ή€4(€€€€€€€€€τ4(€€€€€€€€€½Ή±¥¬υνΝέ¥Ρ΅]½Ι±‘τ4(€€€€€€€€ψ4(€€€€€€€€€€ρΝΑ…Έ4(€€€€€€€€€€€±…ΝΝ9…µ”υνέ½Ι±€τττ€‰Α•ΙΝ½Ή…°€ό€‰µ½µµΥΉ¥Ρδµµ…Ι¬€θ€‰µ΅½µ”µµ…Ι¬‰τ4(€€€€€€€€€€€…Ι¥„µ΅¥‘‘•Έτ‰ΡΙΥ”4(€€€€€€€€€€Όψ4(€€€€€€€€€€ρΝΑ…Έ±…ΝΝ9…µ”τ‰µ…Ι‘•ΈµΝέ¥Ρ µ½Αδψ4(€€€€€€€€€€€€ρΝΡΙ½Ήψ4(€€€€€€€€€€€€€νέ½Ι±€τττ€‰Α•ΙΝ½Ή…°€ό€‰½µµΥΉ¥Ρδ…Ι‘•Έ€θ€‰5δ…Ι‘•Έ‰τ4(€€€€€€€€€€€€π½ΝΡΙ½Ήψ4(€€€€€€€€€€€€ρΝµ…±°ψ4(€€€€€€€€€€€€€…Ι”€ρωνµε…Ι‘•ΈΉ…Ι•	…±…Ή•τπ½ψ4(€€€€€€€€€€€€π½Νµ…±°ψ4(€€€€€€€€€€π½ΝΑ…Έψ4(€€€€€€€€€νΝ΅½έ5ε…Ι‘•Ή%ΉΩ¥Ρ…Ρ¥½Έρπ(€€€€€€€€€Ν΅½έ½ΉΡ¥ΉΥ•…Ι‘•ΉΥ¥‘…Ή”ρπ(€€€€€€€€€Ν΅½έ5ε…Ι‘•ΉΙ½έΡ΅9Υ‘”ρπ(€€€€€€€€€Ν΅½έ5ε…Ι‘•ΉUΉ±½­9½Ρ¥”€ό€ (€€€€€€€€€€€€ρΝΡΙ½Ή(€€€€€€€€€€€€€±…ΝΝ9…µ”τ‰µµδµ…Ι‘•ΈµΉ½Ρ¥”(€€€€€€€€€€€€€…Ι¥„µ±…‰•°υμ(€€€€€€€€€€€€€€€Ν΅½έ5ε…Ι‘•ΉUΉ±½­9½Ρ¥”(€€€€€€€€€€€€€€€€€€ό€‘νΥΉΙ•…‘UΉ±½­½ΥΉΡτΉ•ά5δ…Ι‘•Έ€‘μ(€€€€€€€€€€€€€€€€€€€€€ΥΉΙ•…‘UΉ±½­½ΥΉΠ€τττ€Δ€ό€‰ΥΑ‘…Ρ”€θ€‰ΥΑ‘…Ρ•Μ(€€€€€€€€€€€€€€€€€€€υ€(€€€€€€€€€€€€€€€€€€θΝ΅½έ½ΉΡ¥ΉΥ•…Ι‘•ΉΥ¥‘…Ή”(€€€€€€€€€€€€€€€€€€ό€‰…ΙΈµ½Ι”…Ι”¥Έ½µµΥΉ¥Ρδ…Ι‘•Έ(€€€€€€€€€€€€€€€€€€θΝ΅½έ5ε…Ι‘•ΉΙ½έΡ΅9Υ‘”(€€€€€€€€€€€€€€€€€€€€ό€‰…Ι”¥ΜΙ•…‘δΡΌΥΝ”¥Έ5δ…Ι‘•Έ(€€€€€€€€€€€€€€€€€€θ€‰5δ…Ι‘•Έ¥ΜΙ•…‘δ(€€€€€€€€€€€€€τ4(€€€€€€€€€€€€ψ(€€€€€€€€€€€€€νΝ΅½έ5ε…Ι‘•ΉUΉ±½­9½Ρ¥”(€€€€€€€€€€€€€€€€ό5…Ρ Ήµ¥Έ δδ°ΥΉΙ•…‘UΉ±½­½ΥΉΠ¤(€€€€€€€€€€€€€€€€θΝ΅½έ½ΉΡ¥ΉΥ•…Ι‘•ΉΥ¥‘…Ή”(€€€€€€€€€€€€€€€€€€ό€¬(€€€€€€€€€€€€€€€€€€θ€„‰τ(€€€€€€€€€€€€π½ΝΡΙ½Ήψ(€€€€€€€€€€¤€θΉΥ±±τ4(€€€€€€€€π½‰ΥΡΡ½Έψ4(4(€€€€€€€νέ½Ι±€τττ€‰Α•ΙΝ½Ή…°€µε…Ι‘•ΈΉΑΙ•Ω¥•ά€ό€ 4(€€€€€€€€€€ρ‘¥Ψ±…ΝΝ9…µ”τ‰µΑΙ•Ω¥•άµΑΙ½Ι•ΝΜ…Ι¥„µ±¥Ω”τ‰Α½±¥Ρ”ψ4(€€€€€€€€€€€νΥ•ΝΡAΙ•Ω¥•άΉ…•ΝΜόΉΝ½™ΡA…εέ…±±•±¥Ή•4(€€€€€€€€€€€€€€ό€‰Q•µΑ½Ι…Ιδƒ
+άΉ½ΠΝ…Ω•4(€€€€€€€€€€€€€€θ€‰AΙ•Ω¥•ά‰υμ€‰τ4(€€€€€€€€€€€ƒ
+άνµε…Ι‘•ΈΉΑΙ•Ω¥•άΉΑ±…ΉΡ¥ΉΝUΝ•‘τ½νµε…Ι‘•ΈΉΑΙ•Ω¥•άΉΑ±…ΉΡ¥Ή1¥µ¥Ρτ™±½έ•ΙΜ4(€€€€€€€€€€π½‘¥Ψψ4(€€€€€€€€¤€θΉΥ±±τ4(4(€€€€€€€νΝ΅½έ½ΉΡ¥ΉΥ•…Ι‘•ΉΥ¥‘…Ή”€ό€ 4(€€€€€€€€€€ρ…Ν¥‘”±…ΝΝ9…µ”τ‰µΑΙ•Ω¥•άµ…Ι”µΥ¥‘”Ι½±”τ‰ΝΡ…ΡΥΜψ4(€€€€€€€€€€€€ρΝΡΙ½Ήω½ΉΡ¥ΉΥ”Ι½έ¥Ήπ½ΝΡΙ½Ήψ4(€€€€€€€€€€€€ρΝΑ…ΈωY¥Ν¥Π½µµΥΉ¥Ρδ…Ι‘•ΈΡΌ•…ΙΈ…Ι”°Ρ΅•Έ½µ”‰…¬΅•Ι”Έπ½ΝΑ…Έψ4(€€€€€€€€€€π½…Ν¥‘”ψ4(€€€€€€€€¤€θΉΥ±±τ4(4(€€€€€€€€ρ…Ι‘•Ή%ΉΩ•ΉΡ½Ιδ(€€€€€€€€€µ½‘”υνέ½Ι±‘τ(€€€€€€€€€½Α•Έυν¥ΉΩ•ΉΡ½Ιε=Α•Ήτ(€€€€€€€€€Ν•±•Ρ•‘Q½½°υνΥ¤ΉΝ•±•Ρ•‘Q½½±τ(€€€€€€€€€±¥™•Ρ¥µ•…Ι”υνµε…Ι‘•ΈΉ±¥™•Ρ¥µ•…Ι•τ(€€€€€€€€€¥ΉΩ•ΉΡ½ΙεM••Ή1¥™•Ρ¥µ•…Ι”υνµε…Ι‘•ΈΉ¥ΉΩ•ΉΡ½ΙεM••Ή1¥™•Ρ¥µ•…Ι•τ(€€€€€€€€€½Ή‰½…Ι‘¥Ή1½­•υν½Ή‰½…Ι‘¥Ή%ΉΩ•ΉΡ½Ιε1½­•‘τ(€€€€€€€€€Ρ½±•1½­•υμ(€€€€€€€€€€€½Ή‰½…Ι‘¥Ή%ΉΩ•ΉΡ½Ιε1½­•€(€€€€€€€€€€€½Ή‰½…Ι‘¥ΉMΡ•ΐ€„ττ€‰Α±…ΉΠ€(€€€€€€€€€€€½Ή‰½…Ι‘¥ΉMΡ•ΐ€„ττ€‰Α•ΙΝ½Ή…°µ¥ΉΩ•ΉΡ½Ιδ(€€€€€€€€€τ(€€€€€€€€€Υ¥‘•A±…ΉΡ΅½¥”υμ4(€€€€€€€€€€€½Ή‰½…Ι‘¥ΉMΡ•ΐ€τττ€‰Ν•±•ΠµΝ••ρπ4(€€€€€€€€€€€½Ή‰½…Ι‘¥ΉMΡ•ΐ€τττ€‰Α•ΙΝ½Ή…°µΝ••4(€€€€€€€€€τ4(€€€€€€€€€½ΉQ½±”υμ ¤€τψμ(€€€€€€€€€€€¥€ …¥ΉΩ•ΉΡ½Ιε=Α•Έ¤½Α•Ή%ΉΩ•ΉΡ½Ιε½Ι=Ή‰½…Ι‘¥Ή ¤μ(€€€€€€€€€€€•±Ν”μ(€€€€€€€€€€€€€Ν•Ρ%ΉΩ•ΉΡ½Ιε=Α•Έ΅™…±Ν”¤μ(€€€€€€€€€€€€€¥€΅έ½Ι±€τττ€‰Α•ΙΝ½Ή…°¤Ω½¥…­Ή½έ±•‘•%ΉΩ•ΉΡ½ΙεUΉ±½­Μ ¤μ(€€€€€€€€€€€τ(€€€€€€€€€υτ(€€€€€€€€€½ΉM•±•ΡA±…ΉΠυμ΅Α±…ΉΡQεΑ”¤€τψμ4(€€€€€€€€€€€¥€ 4(€€€€€€€€€€€€€½Ή‰½…Ι‘¥Ή%ΉΩ•ΉΡ½Ιε1½­•€4(€€€€€€€€€€€€€€…¥Ν…Ι‘•Ή=Ή‰½…Ι‘¥ΉA±…ΉΡQεΑ”΅Α±…ΉΡQεΑ”¤4(€€€€€€€€€€€€¤μ4(€€€€€€€€€€€€€Ι•ΡΥΙΈμ4(€€€€€€€€€€€τ4(€€€€€€€€€€€Ω½¥ΡΙ…­	…Ν¥±ΥΉΉ•±Ω•ΉΠ ‰Α±…ΉΡ}Ν•±•Ρ•¤μ4(€€€€€€€€€€€…ΉΩ…ΝI•ΉΥΙΙ•ΉΠόΉΝ•±•ΡA±…ΉΠ΅Α±…ΉΡQεΑ”¤μ4(€€€€€€€€€€€½ΉΝΠΝ΅½Υ±‘Υ¥‘•MΑ½Π€τ4(€€€€€€€€€€€€€½Ή‰½…Ι‘¥ΉMΡ•ΐ€τττ€‰Ν•±•ΠµΝ••ρπ4(€€€€€€€€€€€€€½Ή‰½…Ι‘¥ΉMΡ•ΐ€τττ€‰Α•ΙΝ½Ή…°µΝ••μ4(€€€€€€€€€€€ΡΙ…ΉΝ¥Ρ¥½Ή=Ή‰½…Ι‘¥Ή ‰½µµΥΉ¥ΡδµΡ¥±”°l‰Ν•±•ΠµΝ••‰t¤μ4(€€€€€€€€€€€ΡΙ…ΉΝ¥Ρ¥½Ή=Ή‰½…Ι‘¥Ή ‰Α•ΙΝ½Ή…°µΡ¥±”°l‰Α•ΙΝ½Ή…°µΝ••‰t¤μ4(€€€€€€€€€€€Ν•Ρ%ΉΩ•ΉΡ½Ιε=Α•Έ΅™…±Ν”¤μ4(€€€€€€€€€€€¥€΅Ν΅½Υ±‘Υ¥‘•MΑ½Π¤μ4(€€€€€€€€€€€€€έ¥Ή‘½άΉΙ•ΕΥ•ΝΡΉ¥µ…Ρ¥½ΉΙ…µ”  ¤€τψμ4(€€€€€€€€€€€€€€€…ΉΩ…ΝI•ΉΥΙΙ•ΉΠόΉΝΥ•ΝΡA±…ΉΡ¥ΉMΑ½Π ¤μ4(€€€€€€€€€€€€€τ¤μ4(€€€€€€€€€€€τ4(€€€€€€€€€υτ4(€€€€€€€€€½ΉM•±•ΡA…Ρ υμ ¤€τψμ4(€€€€€€€€€€€¥€΅½Ή‰½…Ι‘¥Ή%ΉΩ•ΉΡ½Ιε1½­•¤Ι•ΡΥΙΈμ4(€€€€€€€€€€€…ΉΩ…ΝI•ΉΥΙΙ•ΉΠόΉΝ•±•ΡA…Ρ΅Q½½° ¤μ4(€€€€€€€€€€€Ν•Ρ%ΉΩ•ΉΡ½Ιε=Α•Έ΅™…±Ν”¤μ4(€€€€€€€€€υτ4(€€€€€€€€€½ΉM•±•Ρ±•µ•ΉΠυμ΅•±•µ•ΉΡQεΑ”¤€τψμ4(€€€€€€€€€€€¥€΅½Ή‰½…Ι‘¥Ή%ΉΩ•ΉΡ½Ιε1½­•¤Ι•ΡΥΙΈμ4(€€€€€€€€€€€…ΉΩ…ΝI•ΉΥΙΙ•ΉΠόΉΝ•±•Ρ±•µ•ΉΠ΅•±•µ•ΉΡQεΑ”¤μ4(€€€€€€€€€€€Ν•Ρ%ΉΩ•ΉΡ½Ιε=Α•Έ΅™…±Ν”¤μ4(€€€€€€€€€υτ4(€€€€€€€€Όψ4(4(€€€€€€€€ρ‰ΥΡΡ½Έ4(€€€€€€€€€±…ΝΝ9…µ”υνµ…Ρ¥½Έµ‰ΥΡΡ½Έ‘μ4(€€€€€€€€€€€€΅½Ή‰½…Ι‘¥ΉA±…ΉΡΡ¥½ΉI•…‘δ€(€€€€€€€€€€€€€€΅½Ή‰½…Ι‘¥ΉMΡ•ΐ€τττ€‰½µµΥΉ¥ΡδµΡ¥±”ρπ(€€€€€€€€€€€€€€€½Ή‰½…Ι‘¥ΉMΡ•ΐ€τττ€‰Α•ΙΝ½Ή…°µΡ¥±”¤¤ρπ(€€€€€€€€€€€€΅½Ή‰½…Ι‘¥Ή]…Ρ•ΙΡ¥½ΉI•…‘δ€½Ή‰½…Ι‘¥ΉMΡ•ΐ€τττ€‰½µµΥΉ¥Ρδµέ…Ρ•Θ¤(€€€€€€€€€€€€€€ό€¥Μµ½Ή‰½…Ι‘¥Ήµ΅¥΅±¥΅Π(€€€€€€€€€€€€€€θ€4(€€€€€€€€€υτ(€€€€€€€€€ΡεΑ”τ‰‰ΥΡΡ½Έ(€€€€€€€€€‘¥Ν…‰±•υμ…Υ¤Ή…Ρ¥½ΉΉ…‰±•ρπ€…ΡΥΡ½Ι¥…±Ρ¥½Ή±±½έ•‘τ(€€€€€€€€€½Ή±¥¬υμ ¤€τψΩ½¥…ΉΩ…ΝI•ΉΥΙΙ•ΉΠόΉΑ•Ι™½ΙµΡ¥½Έ ¥τ4(€€€€€€€€ψ4(€€€€€€€€€€ρΝΑ…Έ4(€€€€€€€€€€€±…ΝΝ9…µ”υμ4(€€€€€€€€€€€€€Υ¤Ή…Ρ¥½Έ€τττ€‰έ…Ρ•Θ4(€€€€€€€€€€€€€€€€ό€‰µέ…Ρ•Θµ¥½Έ4(€€€€€€€€€€€€€€€€θΥ¤Ή…Ρ¥½Έ€τττ€‰ΥΑΙ½½Π4(€€€€€€€€€€€€€€€€€€ό€‰µΥΑΙ½½Πµ¥½Έ(€€€€€€€€€€€€€€€€€€θΥ¤Ή…Ρ¥½Έ€τττ€‰Α±…”µ•±•µ•ΉΠρπ(€€€€€€€€€€€€€€€€€€€€€Υ¤Ή…Ρ¥½Έ€τττ€‰Ι•µ½Ω”µ•±•µ•ΉΠ(€€€€€€€€€€€€€€€€€€€€όµ¥Ρ•΄µ±εΑ €‘ν•Ρ5ε…Ι‘•Ή±•µ•ΉΡ±εΑ΅±…ΝΜ (€€€€€€€€€€€€€€€€€€€€€€€Υ¤ΉΝ•±•Ρ•‘±•µ•ΉΡQεΑ”€όό€‰ΝΡ½Ή•}Α…Ω•Θ°(€€€€€€€€€€€€€€€€€€€€€€¥υ€(€€€€€€€€€€€€€€€€€€θΥ¤Ή…Ρ¥½Έ€τττ€‰•αΑ…Ή4(€€€€€€€€€€€€€€€€€€€€ό€‰µ±½¬µ¥½Έ4(€€€€€€€€€€€€€€€€€€θΥ¤Ή…Ρ¥½Έ€τττ€‰±…δµΑ…Ρ ρπΥ¤Ή…Ρ¥½Έ€τττ€‰Ι•µ½Ω”µΑ…Ρ 4(€€€€€€€€€€€€€€€€€€€€ό€‰µΑ…Ρ µ¥½Έ4(€€€€€€€€€€€€€€€€€€θµΑ±…ΉΠµ±εΑ ¥Μ΄‘νΥ¤ΉΝ•±•Ρ•‘A±…ΉΡQεΑ•υ€4(€€€€€€€€€€€τ4(€€€€€€€€€€€…Ι¥„µ΅¥‘‘•Έτ‰ΡΙΥ”4(€€€€€€€€€€Όψ4(€€€€€€€€€€ρΝΑ…ΈωνΥ¤Ή…Ρ¥½Ή1…‰•±τπ½ΝΑ…Έψ4(€€€€€€€€π½‰ΥΡΡ½Έψ4(4(€€€€€€€νΝ΅½έ5•µ‰•ΙΝ΅¥ΑM΅½ΙΡΥΠ€ό€ (€€€€€€€€€€ρ‰ΥΡΡ½Έ4(€€€€€€€€€€€±…ΝΝ9…µ”τ‰µ½µµΥΉ¥Ρδµ©½¥Έ(€€€€€€€€€€€ΡεΑ”τ‰‰ΥΡΡ½Έ(€€€€€€€€€€€…Ι¥„µ±…‰•°υνΝ•ΝΝ¥½Έ€ό€‰UΑΙ…‘”…Ι‘•Έ5•µ‰•ΙΝ΅¥ΐ€θ€‰)½¥Έ…Ι‘•Έ5•µ‰•ΙΝ΅¥ΐ‰τ(€€€€€€€€€€€½Ή±¥¬υμ ¤€τψμ4(€€€€€€€€€€€€€Ν•Ρ5•µ‰•ΙΝ΅¥Α=™™•ΙMΡ…” ‰Ν½™Π¤μ4(€€€€€€€€€€€€€Ν•Ρ5•µ‰•ΙΝ΅¥Α=™™•Ι=Α•Έ΅ΡΙΥ”¤μ4(€€€€€€€€€€€υτ4(€€€€€€€€€€ψ4(€€€€€€€€€€€νΝ•ΝΝ¥½Έ€ό€‰UΑΙ…‘”€θ€‰)½¥Έ‰τ(€€€€€€€€€€π½‰ΥΡΡ½Έψ4(€€€€€€€€¤€θΉΥ±±τ4(4(€€€€€€€€ρΐ±…ΝΝ9…µ”τ‰µΝΘµΝΡ…ΡΥΜ…Ι¥„µ±¥Ω”τ‰Α½±¥Ρ”ωνΥ¤Ήµ•ΝΝ…•τπ½ΐψ4(€€€€€€€€ρΐ±…ΝΝ9…µ”τ‰µΝΘµΝΡ…ΡΥΜ…Ι¥„µ±¥Ω”τ‰Α½±¥Ρ”ων…Ι•ΉΉ½ΥΉ•µ•ΉΡτπ½ΐψ4(€€€€€€€νΙ•ΝΡ½Ι•5•ΝΝ…”€ό€ 4(€€€€€€€€€€ρΐ4(€€€€€€€€€€€±…ΝΝ9…µ”υνµΙ•ΝΡ½Ι”µΝΡ…ΡΥΜ‘μ4(€€€€€€€€€€€€€Ι•ΝΡ½Ι•5•ΝΝ…”ΉΝΡ…ΙΡΝ]¥Ρ  ‰I•ΝΡ½Ι¥Ή¤€ό€€θ€¥Μµ•ΙΙ½Θ4(€€€€€€€€€€€υτ4(€€€€€€€€€€€Ι½±”τ‰ΝΡ…ΡΥΜ4(€€€€€€€€€€ψ4(€€€€€€€€€€€νΙ•ΝΡ½Ι•5•ΝΝ…•τ4(€€€€€€€€€€π½ΐψ4(€€€€€€€€¤€θΉΥ±±τ4(4(€€€€€€€€ρ…Ι‘•Ή=Ή‰½…Ι‘¥Ή4(€€€€€€€€€ΝΡ•ΐυν½Ή‰½…Ι‘¥ΉMΡ•Ατ4(€€€€€€€€€½µµΥΉ¥ΡεA±…ΉΡ¥ΉΜυν½µµΥΉ¥Ρε=Ή‰½…Ι‘¥ΉA±…ΉΡ¥ΉΝτ4(€€€€€€€€€¥ΉΩ•ΉΡ½Ιε=Α•Έυν¥ΉΩ•ΉΡ½Ιε=Α•Ήτ(€€€€€€€€€Α±…ΉΡΡ¥½ΉI•…‘δυν½Ή‰½…Ι‘¥ΉA±…ΉΡΡ¥½ΉI•…‘ετ(€€€€€€€€€έ…Ρ•ΙΡ¥½ΉI•…‘δυν½Ή‰½…Ι‘¥Ή]…Ρ•ΙΡ¥½ΉI•…‘ετ(€€€€€€€€€½Ή=Α•Ή%ΉΩ•ΉΡ½Ιδυν½Α•Ή%ΉΩ•ΉΡ½Ιε½Ι=Ή‰½…Ι‘¥Ήτ4(€€€€€€€€€½Ή=Α•Ή5ε…Ι‘•Έυμ ¤€τψμ4(€€€€€€€€€€€ΡΙ…ΉΝ¥Ρ¥½Ή=Ή‰½…Ι‘¥Ή ‰Α•ΙΝ½Ή…°µ¥ΉΩ•ΉΡ½Ιδ°l‰µδµ…Ι‘•Έ‰t¤μ4(€€€€€€€€€€€Ω½¥ΡΙ…­	…Ν¥±ΥΉΉ•±Ω•ΉΠ ‰µε}…Ι‘•Ή}•ΉΡ•Ι•¤μ4(€€€€€€€€€€€Ν•Ρ]½Ι± ‰Α•ΙΝ½Ή…°¤μ4(€€€€€€€€€υτ4(€€€€€€€€Όψ4(4(€€€€€€€νέ½Ι±€τττ€‰Α•ΙΝ½Ή…°€Ν΅½έΙ••A±…ΉΡ¥Ή9½Ρ¥”€ό€ 4(€€€€€€€€€€ρ…Ν¥‘”±…ΝΝ9…µ”τ‰µ™Ι•”µΑ±…ΉΡ¥ΉµΉ½Ρ¥”Ι½±”τ‰ΝΡ…ΡΥΜψ4(€€€€€€€€€€€€ρΝΡΙ½Ήωe½ΥΘ™¥ΙΝΠ™±½έ•Θ¥ΜΑ±…ΉΡ•Έπ½ΝΡΙ½Ήψ4(€€€€€€€€€€€€ρΝΑ…Έω••°™Ι•”ΡΌΑ±…ΉΠµ½Ι”…Ή…ΙΙ…Ή”Ρ΅”…Ι‘•Έε½ΥΘέ…δΈπ½ΝΑ…Έψ4(€€€€€€€€€€π½…Ν¥‘”ψ4(€€€€€€€€¤€θΉΥ±±τ4(€€€€€€π½Ν•Ρ¥½Έψ4(4(€€€€€νέ½Ι±€τττ€‰½µµΥΉ¥Ρδ€ό€ρΥΡΥΙ•‘M±½Π±…‰•°υν…‘1…‰•±τ€Όψ€θΉΥ±±τ4(4(€€€€€€ρ…Ι‘•Ή5•ΉΤ4(€€€€€€€½Α•Έυνµ•ΉΥ=Α•Ήτ4(€€€€€€€Ν•Ρ¥½Έυνµ•ΉΥM•Ρ¥½Ήτ4(€€€€€€€½Ή±½Ν”υμ ¤€τψμ4(€€€€€€€€€Ν•Ρ5•ΉΥ=Α•Έ΅™…±Ν”¤μ4(€€€€€€€€€Α•Ή‘¥Ή…Ι‘•ΉΉΡΙεI•ΉΥΙΙ•ΉΠ€τ™…±Ν”μ4(€€€€€€€υτ4(€€€€€€€½ΉM•Ρ¥½Ή΅…Ή”υνΝ•Ρ5•ΉΥM•Ρ¥½Ήτ4(€€€€€€Όψ4(4(€€€€€€ρ…Ι‘•Ή5•µ‰•ΙΝ΅¥Α=™™•Θ(€€€€€€€½Α•Έυνµ•µ‰•ΙΝ΅¥Α=™™•Ι=Α•Ήτ4(€€€€€€€Α±…ΉΡ•υνµε…Ι‘•ΈΉΑΙ•Ω¥•άόΉΑ±…ΉΡ¥ΉΝUΝ•€όόUMQ}M=Q}Ae]11}A19Q%9Mτ4(€€€€€€€ΝΡ…”υνµ•µ‰•ΙΝ΅¥Α=™™•ΙMΡ…•τ4(€€€€€€€½Ή±½Ν”υν‘¥Νµ¥ΝΝ5•µ‰•ΙΝ΅¥Α=™™•Ιτ4(€€€€€€€΅•­½ΥΡ	ΥΝδυνµ•µ‰•ΙΝ΅¥Α΅•­½ΥΡ	ΥΝετ4(€€€€€€€΅•­½ΥΡΙΙ½Θυνµ•µ‰•ΙΝ΅¥Α΅•­½ΥΡΙΙ½Ιτ4(€€€€€€€…½ΥΉΡI•…‘δυν	½½±•…Έ΅Ν•ΝΝ¥½Έ¥τ4(€€€€€€€½Ή1…Ρ•Θυμ ¤€τψμ4(€€€€€€€€€‘¥Νµ¥ΝΝ5•µ‰•ΙΝ΅¥Α=™™•Θ ¤μ4(€€€€€€€€€¥€΅µ•µ‰•ΙΝ΅¥Α=™™•ΙMΡ…”€„ττ€‰Ν½™Π¤Ν•Ρ]½Ι± ‰½µµΥΉ¥Ρδ¤μ4(€€€€€€€υτ4(€€€€€€€½Ή½ΥΉΠυμ ¤€τψμ4(€€€€€€€€€Ν•Ρ5•µ‰•ΙΝ΅¥Α=™™•Ι=Α•Έ΅™…±Ν”¤μ4(€€€€€€€€€Ν•Ρ5•µ‰•ΙΝ΅¥Α΅•­½ΥΡΙΙ½Θ ¤μ4(€€€€€€€€€Ν•Ρ5•ΉΥM•Ρ¥½Έ ‰…½ΥΉΠ¤μ4(€€€€€€€€€Ν•Ρ5•ΉΥ=Α•Έ΅ΡΙΥ”¤μ4(€€€€€€€υτ4(€€€€€€€½Ή)½¥Έυμ΅Ι•‘•ΉΡ¥…±Μ¤€τψΩ½¥ΝΡ…ΙΡ5•µ‰•ΙΝ΅¥Α΅•­½ΥΠ΅Ι•‘•ΉΡ¥…±Μ¥τ(€€€€€€Όψ((€€€€€€ρ…Ι‘•ΉUΉ±½­•±•‰Ι…Ρ¥½Έ(€€€€€€€Ή½Ρ¥”υνΥΉ±½­9½Ρ¥•ΝlΑt€όόΉΥ±±τ(€€€€€€€½Ή½ΉΡ¥ΉΥ”υν‘¥Νµ¥ΝΝUΉ±½­9½Ρ¥•τ(€€€€€€€½ΉY¥•έ…Ι‘•ΈυνΩ¥•έUΉ±½­%Ή5ε…Ι‘•Ήτ(€€€€€€Όψ(€€€€π½µ…¥Έψ(€€¤μ)τ(

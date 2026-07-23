@@ -3,24 +3,28 @@ export const MY_GARDEN_COLLECTIONS = [
     key: "starter",
     name: "Garden Starter",
     lifetimeCareRequired: 0,
+    completionLifetimeCareRequired: 250,
     description: "The essentials for beginning a garden of your own.",
   },
   {
     key: "cottage",
     name: "Cottage Garden",
     lifetimeCareRequired: 250,
+    completionLifetimeCareRequired: 750,
     description: "Soft flowers, useful tools and welcoming places to sit.",
   },
   {
     key: "pollinator",
     name: "Pollinator Garden",
     lifetimeCareRequired: 750,
+    completionLifetimeCareRequired: 1_500,
     description: "Flowers and small homes that invite garden visitors.",
   },
   {
     key: "water",
     name: "Water Garden",
     lifetimeCareRequired: 1_500,
+    completionLifetimeCareRequired: 3_000,
     description: "Quiet water, reeds and a willow for a calmer corner.",
   },
 ] as const;
@@ -81,21 +85,21 @@ export const MY_GARDEN_PLANTS = [
     name: "Daisy",
     careCost: 2,
     collection: "starter",
-    lifetimeCareRequired: 0,
+    lifetimeCareRequired: 25,
   },
   {
     type: "tulip",
     name: "Tulip",
     careCost: 2,
     collection: "starter",
-    lifetimeCareRequired: 0,
+    lifetimeCareRequired: 50,
   },
   {
     type: "wildflowers",
     name: "Wildflowers",
     careCost: 2,
     collection: "starter",
-    lifetimeCareRequired: 0,
+    lifetimeCareRequired: 75,
   },
   {
     type: "peony",
@@ -138,7 +142,7 @@ export const MY_GARDEN_ELEMENTS = [
     name: "Gravel tile",
     careCost: 1,
     collection: "starter",
-    lifetimeCareRequired: 0,
+    lifetimeCareRequired: 100,
     category: "paths",
     icon: "paver",
     footprintWidth: 1,
@@ -149,7 +153,7 @@ export const MY_GARDEN_ELEMENTS = [
     name: "Brick paver",
     careCost: 2,
     collection: "starter",
-    lifetimeCareRequired: 0,
+    lifetimeCareRequired: 125,
     category: "paths",
     icon: "paver",
     footprintWidth: 1,
@@ -160,7 +164,7 @@ export const MY_GARDEN_ELEMENTS = [
     name: "Clay pot",
     careCost: 3,
     collection: "starter",
-    lifetimeCareRequired: 0,
+    lifetimeCareRequired: 150,
     category: "decor",
     icon: "pot",
     footprintWidth: 1,
@@ -171,7 +175,7 @@ export const MY_GARDEN_ELEMENTS = [
     name: "Hedge",
     careCost: 4,
     collection: "starter",
-    lifetimeCareRequired: 0,
+    lifetimeCareRequired: 200,
     category: "nature",
     icon: "shrub",
     footprintWidth: 1,
@@ -204,7 +208,7 @@ export const MY_GARDEN_ELEMENTS = [
     name: "Fern",
     careCost: 5,
     collection: "cottage",
-    lifetimeCareRequired: 250,
+    lifetimeCareRequired: 300,
     category: "nature",
     icon: "shrub",
     footprintWidth: 1,
@@ -215,7 +219,7 @@ export const MY_GARDEN_ELEMENTS = [
     name: "Hydrangea",
     careCost: 8,
     collection: "cottage",
-    lifetimeCareRequired: 250,
+    lifetimeCareRequired: 375,
     category: "nature",
     icon: "shrub",
     footprintWidth: 1,
@@ -226,7 +230,7 @@ export const MY_GARDEN_ELEMENTS = [
     name: "Wheelbarrow",
     careCost: 8,
     collection: "cottage",
-    lifetimeCareRequired: 250,
+    lifetimeCareRequired: 450,
     category: "decor",
     icon: "tool",
     footprintWidth: 1,
@@ -237,7 +241,7 @@ export const MY_GARDEN_ELEMENTS = [
     name: "Wooden planter",
     careCost: 8,
     collection: "cottage",
-    lifetimeCareRequired: 250,
+    lifetimeCareRequired: 525,
     category: "decor",
     icon: "planter",
     footprintWidth: 2,
@@ -248,7 +252,7 @@ export const MY_GARDEN_ELEMENTS = [
     name: "Bird feeder",
     careCost: 12,
     collection: "cottage",
-    lifetimeCareRequired: 250,
+    lifetimeCareRequired: 600,
     category: "decor",
     icon: "feeder",
     footprintWidth: 1,
@@ -259,7 +263,7 @@ export const MY_GARDEN_ELEMENTS = [
     name: "Rustic bench",
     careCost: 12,
     collection: "cottage",
-    lifetimeCareRequired: 250,
+    lifetimeCareRequired: 675,
     category: "decor",
     icon: "bench",
     footprintWidth: 2,
@@ -270,7 +274,7 @@ export const MY_GARDEN_ELEMENTS = [
     name: "Trellis",
     careCost: 25,
     collection: "cottage",
-    lifetimeCareRequired: 250,
+    lifetimeCareRequired: 725,
     category: "decor",
     icon: "trellis",
     footprintWidth: 1,
@@ -281,7 +285,7 @@ export const MY_GARDEN_ELEMENTS = [
     name: "Butterfly bush",
     careCost: 10,
     collection: "pollinator",
-    lifetimeCareRequired: 750,
+    lifetimeCareRequired: 850,
     category: "nature",
     icon: "shrub",
     footprintWidth: 1,
@@ -292,7 +296,7 @@ export const MY_GARDEN_ELEMENTS = [
     name: "Pollinator sign",
     careCost: 12,
     collection: "pollinator",
-    lifetimeCareRequired: 750,
+    lifetimeCareRequired: 950,
     category: "decor",
     icon: "sign",
     footprintWidth: 1,
@@ -303,7 +307,7 @@ export const MY_GARDEN_ELEMENTS = [
     name: "Butterfly house",
     careCost: 20,
     collection: "pollinator",
-    lifetimeCareRequired: 750,
+    lifetimeCareRequired: 1_050,
     category: "decor",
     icon: "birdhouse",
     footprintWidth: 1,
@@ -314,7 +318,7 @@ export const MY_GARDEN_ELEMENTS = [
     name: "Beehive",
     careCost: 35,
     collection: "pollinator",
-    lifetimeCareRequired: 750,
+    lifetimeCareRequired: 1_200,
     category: "decor",
     icon: "hive",
     footprintWidth: 1,
@@ -325,7 +329,7 @@ export const MY_GARDEN_ELEMENTS = [
     name: "Rose-covered trellis",
     careCost: 50,
     collection: "pollinator",
-    lifetimeCareRequired: 750,
+    lifetimeCareRequired: 1_400,
     category: "decor",
     icon: "trellis",
     footprintWidth: 2,
@@ -347,7 +351,7 @@ export const MY_GARDEN_ELEMENTS = [
     name: "Lily pads",
     careCost: 5,
     collection: "water",
-    lifetimeCareRequired: 1_500,
+    lifetimeCareRequired: 1_650,
     category: "water",
     icon: "lily",
     footprintWidth: 1,
@@ -358,7 +362,7 @@ export const MY_GARDEN_ELEMENTS = [
     name: "Birdbath",
     careCost: 35,
     collection: "water",
-    lifetimeCareRequired: 1_500,
+    lifetimeCareRequired: 1_800,
     category: "water",
     icon: "basin",
     footprintWidth: 1,
@@ -369,7 +373,7 @@ export const MY_GARDEN_ELEMENTS = [
     name: "Stone basin",
     careCost: 60,
     collection: "water",
-    lifetimeCareRequired: 1_500,
+    lifetimeCareRequired: 2_000,
     category: "water",
     icon: "basin",
     footprintWidth: 1,
@@ -380,7 +384,7 @@ export const MY_GARDEN_ELEMENTS = [
     name: "Willow tree",
     careCost: 100,
     collection: "water",
-    lifetimeCareRequired: 1_500,
+    lifetimeCareRequired: 2_200,
     category: "nature",
     icon: "tree",
     footprintWidth: 1,
@@ -391,7 +395,7 @@ export const MY_GARDEN_ELEMENTS = [
     name: "Garden fountain",
     careCost: 175,
     collection: "water",
-    lifetimeCareRequired: 1_500,
+    lifetimeCareRequired: 2_500,
     category: "water",
     icon: "fountain",
     footprintWidth: 2,
@@ -402,7 +406,7 @@ export const MY_GARDEN_ELEMENTS = [
     name: "Small pond",
     careCost: 250,
     collection: "water",
-    lifetimeCareRequired: 1_500,
+    lifetimeCareRequired: 2_800,
     category: "water",
     icon: "pond",
     footprintWidth: 3,
@@ -422,6 +426,49 @@ export const MY_GARDEN_ELEMENTS = [
 
 export type MyGardenElementType = (typeof MY_GARDEN_ELEMENTS)[number]["type"];
 export type MyGardenElementDefinition = (typeof MY_GARDEN_ELEMENTS)[number];
+
+export type MyGardenCatalogUnlock = {
+  key: string;
+  kind: "plant" | "element";
+  name: string;
+  collection: MyGardenCollectionKey;
+  category: MyGardenInventoryCategory;
+  lifetimeCareRequired: number;
+  plantType?: MyGardenPlantType;
+  elementType?: MyGardenElementType;
+};
+
+export type MyGardenUnlockNotice = {
+  lifetimeCareRequired: number;
+  items: MyGardenCatalogUnlock[];
+  completedCollection: (typeof MY_GARDEN_COLLECTIONS)[number] | null;
+  openedCollection: (typeof MY_GARDEN_COLLECTIONS)[number] | null;
+};
+
+export const MY_GARDEN_CATALOG_UNLOCKS: readonly MyGardenCatalogUnlock[] = [
+  ...MY_GARDEN_PLANTS.map((plant) => ({
+    key: `plant:${plant.type}`,
+    kind: "plant" as const,
+    name: plant.name,
+    collection: plant.collection,
+    category: "plants" as const,
+    lifetimeCareRequired: plant.lifetimeCareRequired,
+    plantType: plant.type,
+  })),
+  ...MY_GARDEN_ELEMENTS.map((element) => ({
+    key: `element:${element.type}`,
+    kind: "element" as const,
+    name: element.name,
+    collection: element.collection,
+    category: element.category,
+    lifetimeCareRequired: element.lifetimeCareRequired,
+    elementType: element.type,
+  })),
+].sort(
+  (left, right) =>
+    left.lifetimeCareRequired - right.lifetimeCareRequired ||
+    left.name.localeCompare(right.name),
+);
 
 export function getMyGardenCollection(collection: MyGardenCollectionKey) {
   return MY_GARDEN_COLLECTIONS.find((entry) => entry.key === collection)!;
@@ -450,6 +497,61 @@ export function isMyGardenCatalogEntryUnlocked(
   lifetimeCare: number,
 ) {
   return lifetimeCare >= entry.lifetimeCareRequired;
+}
+
+export function getMyGardenUnlockNotices(
+  previousLifetimeCare: number,
+  lifetimeCare: number,
+) {
+  if (lifetimeCare <= previousLifetimeCare) return [] as MyGardenUnlockNotice[];
+
+  const thresholds = new Set<number>();
+  for (const entry of MY_GARDEN_CATALOG_UNLOCKS) {
+    if (
+      entry.lifetimeCareRequired > previousLifetimeCare &&
+      entry.lifetimeCareRequired <= lifetimeCare
+    ) {
+      thresholds.add(entry.lifetimeCareRequired);
+    }
+  }
+  for (const collection of MY_GARDEN_COLLECTIONS) {
+    if (
+      collection.completionLifetimeCareRequired > previousLifetimeCare &&
+      collection.completionLifetimeCareRequired <= lifetimeCare
+    ) {
+      thresholds.add(collection.completionLifetimeCareRequired);
+    }
+  }
+
+  return [...thresholds]
+    .sort((left, right) => left - right)
+    .map((threshold) => ({
+      lifetimeCareRequired: threshold,
+      items: MY_GARDEN_CATALOG_UNLOCKS.filter(
+        (entry) => entry.lifetimeCareRequired === threshold,
+      ),
+      completedCollection:
+        MY_GARDEN_COLLECTIONS.find(
+          (collection) =>
+            collection.completionLifetimeCareRequired === threshold,
+        ) ?? null,
+      openedCollection:
+        MY_GARDEN_COLLECTIONS.find(
+          (collection) =>
+            collection.key !== "starter" &&
+            collection.lifetimeCareRequired === threshold,
+        ) ?? null,
+    }));
+}
+
+export function getMyGardenUnreadUnlockCount(
+  inventorySeenLifetimeCare: number,
+  lifetimeCare: number,
+) {
+  return getMyGardenUnlockNotices(
+    Math.max(0, inventorySeenLifetimeCare),
+    lifetimeCare,
+  ).length;
 }
 
 export function getMyGardenElementGlyphClass(type: MyGardenElementType) {

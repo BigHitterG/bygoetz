@@ -55,6 +55,7 @@ export type MyGardenPreviewImport = {
 export type MyGardenState = {
   careBalance: number;
   lifetimeCare: number;
+  inventorySeenLifetimeCare: number;
   dailyCareLimit: number;
   plotLevel: number;
   minX: number;
@@ -85,6 +86,7 @@ export type MyGardenState = {
 type ProgressRow = {
   care_balance: number;
   lifetime_care: number;
+  inventory_seen_lifetime_care: number;
   plot_level: number;
 };
 
@@ -186,7 +188,9 @@ export async function getMyGarden(stewardId: string): Promise<MyGardenState> {
   ] = await Promise.all([
     supabase
       .from("garden_member_progress")
-      .select("care_balance,lifetime_care,plot_level")
+      .select(
+        "care_balance,lifetime_care,inventory_seen_lifetime_care,plot_level",
+      )
       .eq("steward_id", stewardId)
       .single<ProgressRow>(),
     supabase
@@ -221,6 +225,7 @@ export async function getMyGarden(stewardId: string): Promise<MyGardenState> {
   return {
     careBalance: progress.care_balance,
     lifetimeCare: progress.lifetime_care,
+    inventorySeenLifetimeCare: progress.inventory_seen_lifetime_care,
     dailyCareLimit: GARDEN_DAILY_CARE_LIMIT,
     plotLevel: progress.plot_level,
     ...dimensions,
@@ -249,6 +254,29 @@ export async function getMyGarden(stewardId: string): Promise<MyGardenState> {
       placedAt: element.placed_at,
     })),
   };
+}
+
+export async function acknowledgeMyGardenInventory(stewardId: string) {
+  const supabase = getSupabaseAdmin();
+  const { data: progress, error: progressError } = await supabase
+    .from("garden_member_progress")
+    .select("lifetime_care,inventory_seen_lifetime_care")
+    .eq("steward_id", stewardId)
+    .single<Pick<
+      ProgressRow,
+      "lifetime_care" | "inventory_seen_lifetime_care"
+    >>();
+  if (progressError) throw progressError;
+
+  if (progress.inventory_seen_lifetime_care < progress.lifetime_care) {
+    const { error: updateError } = await supabase
+      .from("garden_member_progress")
+      .update({ inventory_seen_lifetime_care: progress.lifetime_care })
+      .eq("steward_id", stewardId);
+    if (updateError) throw updateError;
+  }
+
+  return getMyGarden(stewardId);
 }
 
 export async function claimGardenCare(
