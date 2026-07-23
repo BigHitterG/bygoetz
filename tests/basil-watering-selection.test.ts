@@ -79,7 +79,7 @@ test("an empty click cannot start a watering spray", () => {
   assert.deepEqual(targets, []);
 });
 
-test("Care-ready flowers outrank already-watered flowers in the same connected spray", () => {
+test("only Care-ready flowers join the same connected spray", () => {
   const targets = selectDirectionalWateringTargets({
     clickedGridX: 2,
     clickedGridY: 2,
@@ -101,7 +101,7 @@ test("Care-ready flowers outrank already-watered flowers in the same connected s
   );
 });
 
-test("already-watered flowers fill remaining capacity only when needed", () => {
+test("already-watered flowers never fill remaining capacity", () => {
   const targets = selectDirectionalWateringTargets({
     clickedGridX: 2,
     clickedGridY: 2,
@@ -115,6 +115,21 @@ test("already-watered flowers fill remaining capacity only when needed", () => {
       flower("resting-b", 5, 2, false),
     ],
   });
-  assert.equal(targets.length, 3);
-  assert.deepEqual(targets.slice(0, 2).map((target) => target.id), ["ready-a", "ready-b"]);
+  assert.deepEqual(targets.map((target) => target.id), ["ready-a", "ready-b"]);
+});
+
+test("a flower without a water drop cannot anchor a sequence", () => {
+  const targets = selectDirectionalWateringTargets({
+    clickedGridX: 2,
+    clickedGridY: 2,
+    maryGridX: 0,
+    maryGridY: 2,
+    anchorCandidateId: "resting-a",
+    candidates: [
+      flower("resting-a", 2, 2, false),
+      flower("ready-a", 3, 2),
+      flower("ready-b", 4, 2),
+    ],
+  });
+  assert.deepEqual(targets, []);
 });

@@ -82,7 +82,7 @@ export function selectDirectionalWateringTargets({
   const anchorCandidate = candidates.find(
     (candidate) => candidate.id === anchorCandidateId,
   );
-  if (!anchorCandidate) return [];
+  if (!anchorCandidate?.careReady) return [];
 
   const originX = maryGridX <= clickedGridX ? clickedGridX : clickedGridX - 1;
   const originY = maryGridY <= clickedGridY ? clickedGridY : clickedGridY - 1;
@@ -101,6 +101,7 @@ export function selectDirectionalWateringTargets({
   const unitY = directionY / directionLength;
 
   const pool = candidates.filter((candidate) => {
+    if (!candidate.careReady) return false;
     if (
       chebyshevDistance(
         candidate.gridX,

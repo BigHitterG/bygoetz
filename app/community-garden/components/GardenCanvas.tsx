@@ -43,7 +43,6 @@ import {
 } from "../lib/roseLifecycle";
 import {
   advanceWateringPump,
-  getRequiredWateringPumps,
   MAX_WATERING_TARGETS,
   selectDirectionalWateringTargets,
 } from "../lib/wateringSelection";
@@ -602,12 +601,13 @@ function findSuggestedWateringCell(runtime: Runtime): NonNullable<SelectedCell> 
   const candidates = Array.from(runtime.plants.values())
     .filter((plant) => {
       const state = getPlantVisual(plant).state;
-      return state !== "expired" && state !== "dead";
+      return (
+        state !== "expired" &&
+        state !== "dead" &&
+        canEarnWateringCareInRuntime(runtime, plant)
+      );
     })
     .sort((first, second) => {
-      const firstReady = canEarnWateringCareInRuntime(runtime, first) ? 0 : 1;
-      const secondReady = canEarnWateringCareInRuntime(runtime, second) ? 0 : 1;
-      if (firstReady !== secondReady) return firstReady - secondReady;
       const firstPoint = gridToWorld(first.grid_x, first.grid_y);
       const secondPoint = gridToWorld(second.grid_x, second.grid_y);
       return (
@@ -881,32 +881,16 @@ function getActionState(runtime: Runtime) {
     const inWateringRange =
       getDistanceToCell(runtime, runtime.selected) <=
       GARDEN_CONFIG.tileSize * WATERING_RANGE_TILES;
-    const primaryTarget = wateringTargets[0];
-    const sprayLabel =
-      wateringTargets.length > 1
-        ? `Water ${wateringTargets.length} flowers`
-        : primaryTarget
-          ? `Water ${getPlantDefinition(primaryTarget.plant_type).name}`
-          : "Water flowers";
-    const selectionKey = primaryTarget?.id ?? "";
-    const pumpCount =
-      runtime.wateringPumpSelectionKey === selectionKey
-        ? runtime.wateringPumpCount
-        : 0;
-    const requiredPumps = getRequiredWateringPumps(wateringTargets.length);
-    const label =
-      pumpCount < requiredPumps - 1
-        ? `Pump water · ${pumpCount + 1} of ${requiredPumps}`
-        : sprayLabel;
+    if (wateringTargets.length === 0) {
+      return {
+        action: null as GardenAction,
+        label: "Choose a flower with a water drop",
+        enabled: false,
+      };
+    }
     return {
       action: "water" as GardenAction,
-      label:
-        pumpCount >= requiredPumps - 1 &&
-        wateringTargets.some((target) =>
-          canEarnWateringCareInRuntime(runtime, target),
-        )
-        ? `${label} · Care`
-        : label,
+      label: "Water",
       enabled: inWateringRange && !runtime.actionBusy,
     };
   }
@@ -1593,9 +1577,33 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
               runtime.wateringPumpCount,
               wateringTargets.length,
             );
+            const stepTarget =
+              wateringTargets[
+                Math.min(
+                  runtime.wateringPumpCount,
+                  wateringTargets.length - 1,
+                )
+              ];
+            if (!stepTarget) return;
+            const effectStartedAt = Date.now();
+            runtime.effects.push({
+              kind: "spray",
+              fromX: runtime.mary.x,
+              fromY: runtime.mary.y,
+              gridX: stepTarget.grid_x,
+              gridY: stepTarget.grid_y,
+              startedAt: effectStartedAt,
+            });
+            runtime.effects.push({
+              kind: "water",
+              gridX: stepTarget.grid_x,
+              gridY: stepTarget.grid_y,
+              startedAt: effectStartedAt + 80,
+            });
             if (!pump.shouldSpray) {
               runtime.wateringPumpCount = pump.nextPumpCount;
-              runtime.statusMessage = `Water pressure ${runtime.wateringPumpCount} of ${pump.requiredPumps}. Keep pumping to spray.`;
+              runtime.statusMessage =
+                "The spray found another connected flower. Water again to continue.";
               publishUi();
               return;
             }
@@ -1795,30 +1803,7 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
                     contribution: null,
                   };
               const { plants, contribution } = result;
-              const effectStartedAt = Date.now();
-              const farthestTarget = wateringTargets.reduce(
-                (farthest, target) =>
-                  Math.hypot(
-                    target.grid_x - selected.gridX,
-                    target.grid_y - selected.gridY,
-                  ) >
-                  Math.hypot(
-                    farthest.grid_x - selected.gridX,
-                    farthest.grid_y - selected.gridY,
-                  )
-                    ? target
-                    : farthest,
-                wateringTargets[0],
-              );
-              runtime.effects.push({
-                kind: "spray",
-                fromX: runtime.mary.x,
-                fromY: runtime.mary.y,
-                gridX: farthestTarget.grid_x,
-                gridY: farthestTarget.grid_y,
-                startedAt: effectStartedAt,
-              });
-              for (const [index, plant] of plants.entries()) {
+              for (const plant of plants) {
                 runtime.wateringCareReadyPlantIds.delete(plant.id);
                 runtime.plants.set(plantKey(plant.grid_x, plant.grid_y), plant);
                 runtime.communityPlants.set(
@@ -1828,12 +1813,6 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
                 if (runtime.configured) {
                   rememberRecentCommunityPlant(runtime, plant);
                 }
-                runtime.effects.push({
-                  kind: "water",
-                  gridX: plant.grid_x,
-                  gridY: plant.grid_y,
-                  startedAt: effectStartedAt + index * 80,
-                });
               }
               runtime.statusMessage =
                 plants.length === 1
@@ -1841,6 +1820,8 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
                   : `${plants.length} nearby flowers look brighter already.`;
               runtime.wateringPumpCount = 0;
               runtime.wateringPumpSelectionKey = "";
+              runtime.selected = null;
+              runtime.target = null;
               if (contribution) onCommunityContributionRef.current?.(contribution);
             }
             if (actionState.action === "plant") {
@@ -1998,11 +1979,13 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
             runtime.selected &&
             getDistanceToCell(runtime, runtime.selected) <=
               GARDEN_CONFIG.tileSize * WATERING_RANGE_TILES
-              ? getWateringSelection(runtime, runtime.selected).map((plant) => ({
+              ? getWateringSelection(runtime, runtime.selected)
+                  .slice(0, runtime.wateringPumpCount + 1)
+                  .map((plant) => ({
                   gridX: plant.grid_x,
                   gridY: plant.grid_y,
                   plantId: plant.id,
-                }))
+                  }))
               : [],
           wateringCareReadyPlantIds: runtime.wateringCareReadyPlantIds,
           wateringCareStatusLoaded: runtime.wateringCareStatusLoaded,
@@ -2154,8 +2137,15 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
       const isWateringSelection =
         runtime.mode === "community" &&
         wateringTargets.length > 0;
+      const unavailableWateringPlant =
+        runtime.mode === "community" &&
+        Boolean(plant) &&
+        !weed &&
+        !isWateringSelection;
       runtime.target =
-        isWateringSelection
+        unavailableWateringPlant
+          ? null
+          : isWateringSelection
           ? getWateringApproachTarget(runtime, gridX, gridY)
           : getAdjacentTarget(runtime, gridX, gridY);
       runtime.statusMessage = weed
@@ -2164,6 +2154,8 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
         ? runtime.target
           ? `Walking into range of ${wateringTargets.length} connected flower${wateringTargets.length === 1 ? "" : "s"}...`
           : "Choose Water to care for the highlighted flowers."
+        : unavailableWateringPlant
+          ? "Choose a flower with a water drop."
         : "Walking to that spot...";
       publishUi();
     }
