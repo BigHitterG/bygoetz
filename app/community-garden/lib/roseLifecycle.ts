@@ -262,6 +262,8 @@ export function canEarnWateringCare(
   );
 }
 
+export const SPECIAL_WATERING_FLOWER_NAME = "Care Blossom";
+
 export function isSpecialWateringFlower(
   plant: Pick<PlantRecord, "id">,
 ) {

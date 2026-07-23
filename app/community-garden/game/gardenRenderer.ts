@@ -1148,32 +1148,60 @@ function drawCareReadyCue(
     (Math.PI * 2);
   ctx.save();
   if (isSpecialWateringFlower(plant)) {
-    ctx.globalAlpha = 0.82 + Math.sin(phase) * 0.1;
-    ctx.translate(7, -12);
+    ctx.globalAlpha = 0.9 + Math.sin(phase) * 0.08;
+    ctx.translate(-8, -12);
     ctx.fillStyle = "#ffffff";
-    ctx.fillRect(-3, -1, 7, 3);
-    ctx.fillRect(-1, -3, 3, 7);
+    ctx.fillRect(-3, -1, 7, 2);
+    ctx.fillRect(-1, -3, 2, 7);
     ctx.fillStyle = "#c94f4c";
-    ctx.fillRect(-1, 0, 3, 1);
-    ctx.fillRect(0, -1, 1, 3);
+    ctx.fillRect(-1, -1, 2, 2);
     ctx.restore();
     return;
   }
 
-  ctx.globalAlpha = 0.72 + Math.sin(phase) * 0.08;
-  ctx.translate(8, -13);
+  ctx.globalAlpha = 0.88 + Math.sin(phase) * 0.08;
+  ctx.translate(-8, -12);
   ctx.fillStyle = "#ffffff";
-  ctx.fillRect(-1, -4, 3, 2);
-  ctx.fillRect(-2, -2, 5, 3);
-  ctx.fillRect(-3, 0, 7, 4);
-  ctx.fillRect(-2, 4, 5, 1);
-  ctx.fillStyle = "#4f9fbd";
-  ctx.fillRect(0, -3, 1, 2);
+  ctx.fillRect(-1, -3, 3, 2);
+  ctx.fillRect(-2, -1, 5, 3);
+  ctx.fillRect(-1, 2, 3, 2);
+  ctx.fillStyle = "#54c9f3";
+  ctx.fillRect(0, -2, 1, 1);
   ctx.fillRect(-1, -1, 3, 2);
-  ctx.fillRect(-2, 1, 5, 3);
-  ctx.fillRect(-1, 4, 3, 1);
-  ctx.fillStyle = "#c9efff";
-  ctx.fillRect(-1, 0, 2, 1);
+  ctx.fillRect(-1, 1, 3, 2);
+  ctx.fillStyle = "#e8fbff";
+  ctx.fillRect(-1, -1, 1, 1);
+  ctx.restore();
+}
+
+function drawPlantCareCue(
+  ctx: CanvasRenderingContext2D,
+  plant: PlantRecord,
+  camera: WorldPoint,
+  viewport: GardenViewport,
+  now: number,
+  zoom: number,
+  careReady?: boolean,
+) {
+  const visual = getPlantVisual(plant, now);
+  if (
+    visual.state === "expired" ||
+    visual.state === "dead" ||
+    !(careReady ?? canEarnWateringCare(plant, now))
+  ) {
+    return;
+  }
+  const point = worldToScreen(
+    gridToWorld(plant.grid_x, plant.grid_y),
+    camera,
+    viewport,
+    zoom,
+  );
+  if (!isVisible(point, viewport)) return;
+  ctx.save();
+  ctx.translate(Math.round(point.x), Math.round(point.y));
+  ctx.scale(zoom, zoom);
+  drawCareReadyCue(ctx, now, plant);
   ctx.restore();
 }
 
@@ -1348,8 +1376,8 @@ function drawWateringTargets(
     ctx.save();
     ctx.translate(Math.round(point.x), Math.round(point.y));
     ctx.scale(zoom, zoom);
-    ctx.globalAlpha = 0.92;
-    ctx.fillStyle = "#8ed8ee";
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = "#c9f7ff";
     ctx.fillRect(-8, -8, 6, 2);
     ctx.fillRect(2, -8, 6, 2);
     ctx.fillRect(-8, 6, 6, 2);
@@ -1358,17 +1386,28 @@ function drawWateringTargets(
     ctx.fillRect(-8, 1, 2, 5);
     ctx.fillRect(6, -6, 2, 5);
     ctx.fillRect(6, 1, 2, 5);
-    if (selected?.gridX === target.gridX && selected.gridY === target.gridY) {
-      const targetWorld = gridToWorld(target.gridX, target.gridY);
-      const cornerX = mary.x <= targetWorld.x ? -6 : 6;
-      const cornerY = mary.y <= targetWorld.y ? -6 : 6;
-      ctx.globalAlpha = 1;
-      ctx.fillStyle = "#c53f43";
-      ctx.fillRect(cornerX < 0 ? cornerX : cornerX - 4, cornerY, 5, 2);
-      ctx.fillRect(cornerX, cornerY < 0 ? cornerY : cornerY - 4, 2, 5);
-    }
     ctx.restore();
   }
+
+  if (!selected || targets.length === 0) return;
+  const selectedPoint = worldToScreen(
+    gridToWorld(selected.gridX, selected.gridY),
+    camera,
+    viewport,
+    zoom,
+  );
+  if (!isVisible(selectedPoint, viewport)) return;
+  const selectedWorld = gridToWorld(selected.gridX, selected.gridY);
+  const cornerX = mary.x <= selectedWorld.x ? -6 : 6;
+  const cornerY = mary.y <= selectedWorld.y ? -6 : 6;
+  ctx.save();
+  ctx.translate(Math.round(selectedPoint.x), Math.round(selectedPoint.y));
+  ctx.scale(zoom, zoom);
+  ctx.globalAlpha = 1;
+  ctx.fillStyle = "#d7464d";
+  ctx.fillRect(cornerX < 0 ? cornerX : cornerX - 4, cornerY, 5, 2);
+  ctx.fillRect(cornerX, cornerY < 0 ? cornerY : cornerY - 4, 2, 5);
+  ctx.restore();
 }
 
 function drawMary(
@@ -1456,8 +1495,8 @@ function drawEffects(
       const directionY = targetWorld.y - effect.fromY;
       const directionLength = Math.max(1, Math.hypot(directionX, directionY));
       const extendedTarget = {
-        x: targetWorld.x + (directionX / directionLength) * 18,
-        y: targetWorld.y + (directionY / directionLength) * 18,
+        x: targetWorld.x + (directionX / directionLength) * 32,
+        y: targetWorld.y + (directionY / directionLength) * 32,
       };
       const to = worldToScreen(
         extendedTarget,
@@ -1468,8 +1507,8 @@ function drawEffects(
       ctx.save();
       ctx.globalAlpha = Math.sin(progress * Math.PI) * 0.74;
       ctx.fillStyle = "#75b7cf";
-      for (let index = 1; index <= 9; index += 1) {
-        const t = index / 10;
+      for (let index = 1; index <= 12; index += 1) {
+        const t = index / 13;
         const arc = Math.sin(t * Math.PI) * 8 * zoom;
         ctx.fillRect(
           Math.round(from.x + (to.x - from.x) * t),
@@ -1700,7 +1739,17 @@ export function renderGarden(ctx: CanvasRenderingContext2D, state: RenderGardenS
       state.viewport,
       state.now,
       state.zoom,
-      true,
+      false,
+    ),
+  );
+  visiblePlants.forEach((plant) =>
+    drawPlantCareCue(
+      ctx,
+      plant,
+      state.camera,
+      state.viewport,
+      state.now,
+      state.zoom,
       state.wateringCareStatusLoaded
         ? state.wateringCareReadyPlantIds?.has(plant.id) ?? false
         : undefined,

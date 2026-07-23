@@ -2240,6 +2240,55 @@
   padding: 12px;
 }
 
+.cg-plant-entry.is-care-blossom {
+  background: rgba(226, 249, 245, 0.48);
+}
+
+.cg-care-blossom-glyph {
+  position: relative;
+  display: inline-block;
+  flex: 0 0 32px;
+  width: 32px;
+  height: 32px;
+  border: 1px solid rgba(52, 35, 31, 0.24);
+  background: #ccece8;
+}
+
+.cg-care-blossom-glyph::before,
+.cg-care-blossom-glyph::after,
+.cg-care-blossom-glyph i {
+  position: absolute;
+  display: block;
+  content: "";
+}
+
+.cg-care-blossom-glyph::before {
+  left: 12px;
+  top: 4px;
+  width: 8px;
+  height: 24px;
+  background: #fff;
+  box-shadow: 0 0 0 1px rgba(52, 35, 31, 0.08);
+}
+
+.cg-care-blossom-glyph::after {
+  left: 4px;
+  top: 12px;
+  width: 24px;
+  height: 8px;
+  background: #fff;
+  box-shadow: 0 0 0 1px rgba(52, 35, 31, 0.08);
+}
+
+.cg-care-blossom-glyph i {
+  z-index: 1;
+  left: 13px;
+  top: 13px;
+  width: 6px;
+  height: 6px;
+  background: #c94f4c;
+}
+
 .cg-plant-entry.is-weed,
 .cg-life-table tr.is-weed {
   background: rgba(139, 163, 97, 0.16);

@@ -1,4 +1,8 @@
-import { getPlantDefinition, PLANT_TYPES } from "../lib/roseLifecycle";
+import {
+  getPlantDefinition,
+  PLANT_TYPES,
+  SPECIAL_WATERING_FLOWER_NAME,
+} from "../lib/roseLifecycle";
 
 export function PlantGlossary() {
   return (
@@ -43,6 +47,38 @@ export function PlantGlossary() {
             </article>
           );
         })}
+        <article className="cg-plant-entry is-care-blossom">
+          <div className="cg-plant-entry-heading">
+            <span className="cg-care-blossom-glyph" aria-hidden="true">
+              <i />
+            </span>
+            <div>
+              <h4>{SPECIAL_WATERING_FLOWER_NAME}</h4>
+              <p>Rare watering bonus</p>
+            </div>
+          </div>
+          <p>
+            This tiny white flower occasionally appears beside a Care-ready rose,
+            sunflower, or lavender. Water its flower before the opportunity rests.
+          </p>
+          <dl>
+            <div>
+              <dt>Appearance</dt>
+              <dd>White petals with a red center</dd>
+            </div>
+            <div>
+              <dt>Rarity</dt>
+              <dd>About 1 in 64 community flowers</dd>
+            </div>
+            <div>
+              <dt>Reward</dt>
+              <dd>+2 bonus Care beyond the normal watering reward</dd>
+            </div>
+          </dl>
+          <p className="cg-care-note">
+            The Care Blossom is a bonus marker, not a separate seed or plant type.
+          </p>
+        </article>
         <article className="cg-plant-entry is-weed">
           <div className="cg-plant-entry-heading">
             <span className="cg-plant-glyph is-weed" aria-hidden="true" />

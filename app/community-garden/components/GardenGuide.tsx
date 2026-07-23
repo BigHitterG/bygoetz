@@ -5,6 +5,7 @@ import {
   DEFAULT_DAILY_CARE_LIMIT,
   type CommunityGardenEconomy,
 } from "@/lib/communityGarden/economyPolicy";
+import { SPECIAL_WATERING_FLOWER_NAME } from "../lib/roseLifecycle";
 
 const LIFE_STAGES = [
   { name: "Seed", className: "is-seed" },
@@ -58,7 +59,9 @@ export function GardenGuide() {
             Open Inventory to choose a seed, select an open spot, and plant.
             A white water drop means that flower can offer you Care. When another
             gardener has recently cared for it, the drop rests for a while. Dark
-            soil shows shared hydration and slowly dries as the plant approaches wilting.
+            soil shows shared hydration and slowly dries as the plant approaches
+            wilting. A rare white {SPECIAL_WATERING_FLOWER_NAME} with a red center
+            adds 2 bonus Care.
           </dd>
         </div>
         <div>
@@ -100,9 +103,10 @@ export function GardenGuide() {
             <p className="cg-ecology-number">4 at once</p>
             <h5>Watering</h5>
             <p>
-              One watering action reaches a nearby square of up to four flowers.
-              A cared-for flower normally rests for four hours. Watering still
-              refreshes shared hydration when no Care is ready.
+              Start with the nearby quadrant and Basil can follow a loose chain
+              outward to reach up to four flowers. Care-ready flowers are chosen
+              before already-watered ones. A cared-for flower normally rests for
+              four hours.
             </p>
           </article>
           <article>

@@ -62,6 +62,7 @@ import {
   getBasilLaunchSessionId,
   trackBasilFunnelEvent,
 } from "../lib/launchFunnel";
+import { SPECIAL_WATERING_FLOWER_NAME } from "../lib/roseLifecycle";
 
 const INITIAL_UI: GardenUiState = {
   action: null,
@@ -687,6 +688,9 @@ export function CommunityGardenApp() {
 
   const claimCommunityContribution = useCallback(
     (contribution: GardenContribution) => {
+      const bonusLabel = contribution.specialFlower
+        ? `${SPECIAL_WATERING_FLOWER_NAME}! `
+        : "";
       if (!session || !memberGarden) {
         const currentPreview = guestPreviewRef.current;
         const continuedPreview = markGuestPreviewContinued(currentPreview);
@@ -705,7 +709,7 @@ export function CommunityGardenApp() {
             award.earningMode === "daily",
           );
           setCareAnnouncement(
-            `${award.awardedCare} temporary Care earned. Your preview balance is ${award.preview.garden.careBalance}.`,
+            `${bonusLabel}${award.awardedCare} temporary Care earned. Your preview balance is ${award.preview.garden.careBalance}.`,
           );
         } else {
           setCareAnnouncement(
@@ -757,7 +761,7 @@ export function CommunityGardenApp() {
                 award.earningMode === "daily",
               );
               setCareAnnouncement(
-                `${award.awardedCare} temporary Care earned. A Garden Membership saves it.`,
+                `${bonusLabel}${award.awardedCare} temporary Care earned. A Garden Membership saves it.`,
               );
               return;
             }
@@ -787,7 +791,7 @@ export function CommunityGardenApp() {
               award.earningMode === "daily",
             );
             setCareAnnouncement(
-              `${award.awardedCare} Care saved. Your balance is ${award.careBalance}.`,
+              `${bonusLabel}${award.awardedCare} Care saved. Your balance is ${award.careBalance}.`,
             );
           } catch (error) {
             console.warn("Basil Care save was interrupted", {
