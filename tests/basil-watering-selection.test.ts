@@ -9,43 +9,43 @@ function flower(id: string, gridX: number, gridY: number, careReady = true) {
   return { id, gridX, gridY, careReady };
 }
 
-test("eight connected flowers use two four-flower sprays for one submission", () => {
-  const first = advanceWateringSpray(0, 8);
-  const second = advanceWateringSpray(first.nextSprayCount, 8);
+test("six connected flowers use two three-flower sprays for one submission", () => {
+  const first = advanceWateringSpray(0, 6);
+  const second = advanceWateringSpray(first.nextSprayCount, 6);
 
   assert.deepEqual(first, {
     nextSprayCount: 1,
     requiredSprays: 2,
     shouldSubmit: false,
     targetStartIndex: 0,
-    targetEndIndex: 4,
+    targetEndIndex: 3,
   });
   assert.deepEqual(second, {
     nextSprayCount: 0,
     requiredSprays: 2,
     shouldSubmit: true,
-    targetStartIndex: 4,
-    targetEndIndex: 8,
+    targetStartIndex: 3,
+    targetEndIndex: 6,
   });
 });
 
-test("up to four connected flowers complete in one spray", () => {
-  assert.deepEqual(advanceWateringSpray(0, 4), {
+test("up to three connected flowers complete in one spray", () => {
+  assert.deepEqual(advanceWateringSpray(0, 3), {
     nextSprayCount: 0,
     requiredSprays: 1,
     shouldSubmit: true,
     targetStartIndex: 0,
-    targetEndIndex: 4,
+    targetEndIndex: 3,
   });
 });
 
-test("a five-flower connection reveals one final flower on the second spray", () => {
-  assert.deepEqual(advanceWateringSpray(1, 5), {
+test("a four-flower connection reveals one final flower on the second spray", () => {
+  assert.deepEqual(advanceWateringSpray(1, 4), {
     nextSprayCount: 0,
     requiredSprays: 2,
     shouldSubmit: true,
-    targetStartIndex: 4,
-    targetEndIndex: 5,
+    targetStartIndex: 3,
+    targetEndIndex: 4,
   });
 });
 
@@ -67,7 +67,7 @@ test("the tapped flower anchors a broad directional spray", () => {
       flower("h", 8, 4),
     ],
   });
-  assert.equal(targets.length, 8);
+  assert.equal(targets.length, 6);
   assert.equal(targets[0].id, "a");
 });
 
@@ -87,6 +87,28 @@ test("an empty click cannot start a watering spray", () => {
     ],
   });
   assert.deepEqual(targets, []);
+});
+
+test("watering stays inside the nearby connected flower island", () => {
+  const targets = selectDirectionalWateringTargets({
+    clickedGridX: 2,
+    clickedGridY: 2,
+    maryGridX: 0,
+    maryGridY: 2,
+    anchorCandidateId: "island-a",
+    candidates: [
+      flower("island-a", 2, 2),
+      flower("island-b", 3, 2),
+      flower("distant-a", 6, 6),
+      flower("distant-b", 7, 6),
+      flower("off-map-distance", 12, 2),
+    ],
+  });
+
+  assert.deepEqual(targets.map((target) => target.id), [
+    "island-a",
+    "island-b",
+  ]);
 });
 
 test("only Care-ready flowers join the same connected spray", () => {

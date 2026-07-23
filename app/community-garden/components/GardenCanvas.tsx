@@ -63,6 +63,7 @@ import {
 } from "../lib/supabaseGarden";
 
 const WATERING_RANGE_TILES = 5;
+const WATERING_APPROACH_TILES = 2.125;
 const WATERING_CHAIN_REACH_TILES = 6;
 const WATERING_STATUS_REFRESH_MS = 10 * 60 * 1000;
 
@@ -946,7 +947,12 @@ function getActionState(runtime: Runtime) {
     }
     return {
       action: "water" as GardenAction,
-      label: "Water",
+      label:
+        wateringTargets.length > WATERING_TARGETS_PER_SPRAY
+          ? runtime.wateringPumpCount > 0
+            ? "Water again"
+            : "Water · double tap"
+          : "Water",
       enabled: inWateringRange && !runtime.actionBusy,
     };
   }
@@ -972,6 +978,24 @@ function getAdjacentTarget(runtime: Runtime, gridX: number, gridY: number) {
   return {
     x: clampRuntimeCoordinate(runtime, center.x, "x"),
     y: clampRuntimeCoordinate(runtime, center.y, "y"),
+  };
+}
+
+function getWateringApproachTarget(
+  runtime: Runtime,
+  gridX: number,
+  gridY: number,
+) {
+  const center = gridToWorld(gridX, gridY);
+  const dx = runtime.mary.x - center.x;
+  const dy = runtime.mary.y - center.y;
+  const distance = Math.hypot(dx, dy);
+  const standOff = GARDEN_CONFIG.tileSize * WATERING_APPROACH_TILES;
+  if (distance <= standOff) return null;
+  const scale = standOff / distance;
+  return {
+    x: clampRuntimeCoordinate(runtime, center.x + dx * scale, "x"),
+    y: clampRuntimeCoordinate(runtime, center.y + dy * scale, "y"),
   };
 }
 
@@ -1658,7 +1682,7 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
             if (!spray.shouldSubmit) {
               runtime.wateringPumpCount = spray.nextSprayCount;
               runtime.statusMessage =
-                `The first spray reached ${sprayTargets.length} flowers. Water again to finish the connected patch.`;
+                `The first spray reached ${sprayTargets.length} flowers. Tap Water again for the next three.`;
               publishUi();
               return;
             }
@@ -2209,11 +2233,17 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
         Boolean(plant) &&
         !weed &&
         !isWateringSelection;
-      runtime.target = getAdjacentTarget(runtime, gridX, gridY);
+      runtime.target = isWateringSelection
+        ? getWateringApproachTarget(runtime, gridX, gridY)
+        : getAdjacentTarget(runtime, gridX, gridY);
       runtime.statusMessage = weed
         ? "Walking over to pull this weed..."
         : isWateringSelection
-        ? `Walking to the flower. Water whenever Mary is in range of the highlighted patch.`
+        ? runtime.target
+          ? "Walking into watering range of the highlighted flowers..."
+          : wateringTargets.length > WATERING_TARGETS_PER_SPRAY
+            ? "Double tap Water to spray both strings of flowers."
+            : "Tap Water to spray the highlighted flowers."
         : unavailableWateringPlant
           ? "Walking to that flower. Look for a water drop to earn Care."
         : "Walking to that spot...";

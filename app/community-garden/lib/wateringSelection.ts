@@ -5,7 +5,7 @@ export type WateringSelectionCandidate = {
   careReady: boolean;
 };
 
-export const WATERING_TARGETS_PER_SPRAY = 4;
+export const WATERING_TARGETS_PER_SPRAY = 3;
 export const MAX_WATERING_TARGETS = WATERING_TARGETS_PER_SPRAY * 2;
 
 export function getRequiredWateringSprays(targetCount: number) {
@@ -72,10 +72,10 @@ function chebyshevDistance(
 
 /**
  * Starts with the directional 2x2 quadrant in front of Mary, then follows a
- * loose chain of flowers outward. Care-ready flowers are selected before
- * already-watered flowers. Watering must begin on a real flower, which remains
- * the first target while up to seven connected flowers extend across two
- * deliberate four-flower sprays.
+ * loose chain of Care-ready flowers outward. Already-watered flowers never
+ * bridge or fill the chain. Watering must begin on a real Care-ready flower,
+ * which remains the first target while up to five connected flowers extend
+ * across two deliberate three-flower sprays.
  */
 export function selectDirectionalWateringTargets({
   clickedGridX,
