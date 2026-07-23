@@ -27,6 +27,13 @@ export async function POST(request: Request) {
     if (!issue) return NextResponse.json({ error: "This private review link is invalid." }, { status: 404 });
     return NextResponse.json(issue);
   } catch (error) {
-    return NextResponse.json({ error: error instanceof Error ? error.message : "The newsletter request failed." }, { status: 409 });
+    console.error(JSON.stringify({
+      event: "basil_newsletter_review_failed",
+      action: new URL(request.url).searchParams.get("action") ?? "review",
+      message: error instanceof Error ? error.message : "unknown",
+    }));
+    return NextResponse.json({
+      error: "The newsletter could not be sent. Nothing was delivered, and this approval link remains safe to retry.",
+    }, { status: 409 });
   }
 }

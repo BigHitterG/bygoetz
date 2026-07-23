@@ -1,5 +1,5 @@
 import { createHash, randomBytes } from "node:crypto";
-import { getResend } from "@/lib/resend";
+import { getNewsletterResend, getResend } from "@/lib/resend";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import { getBasilUrl } from "./urls";
 
@@ -69,7 +69,7 @@ function pretty(value: number) {
 }
 
 async function ensureSubscribedContact(email: string) {
-  const resend = getResend();
+  const resend = getNewsletterResend();
   const { data: existing } = await resend.contacts.get({ email });
   if (existing?.id) {
     const [{ error: segmentError }, { error: topicError }] = await Promise.all([
@@ -237,7 +237,7 @@ export async function approveAndSendNewsletter(issueId: string, token: string) {
   await syncEligibleNewsletterMembers();
   let broadcastId = issue.resend_broadcast_id;
   if (!broadcastId) {
-    const { data: broadcast, error: createError } = await getResend().broadcasts.create({
+    const { data: broadcast, error: createError } = await getNewsletterResend().broadcasts.create({
       segmentId: SEGMENT_ID,
       topicId: TOPIC_ID,
       from: FROM,
@@ -261,7 +261,7 @@ export async function approveAndSendNewsletter(issueId: string, token: string) {
     const latest = await getIssue(issue.id);
     return { status: latest?.status ?? "sending", sentAt: latest?.sent_at ?? null };
   }
-  const { error: sendError } = await getResend().broadcasts.send(broadcastId);
+  const { error: sendError } = await getNewsletterResend().broadcasts.send(broadcastId);
   if (sendError) {
     await supabase.from("garden_newsletter_issues").update({ status: "failed", failed_at: new Date().toISOString(), last_error: sendError.message.slice(0, 500), updated_at: new Date().toISOString() }).eq("id", issue.id);
     throw new Error(sendError.message);
@@ -288,7 +288,7 @@ export async function setNewsletterPreference(userId: string, subscribed: boolea
     const contactId = await ensureSubscribedContact(email);
     await supabase.from("garden_newsletter_preferences").upsert({ user_id: userId, steward_id: steward.id, subscribed: true, resend_contact_id: contactId, subscribed_at: now, unsubscribed_at: null, updated_at: now }, { onConflict: "user_id" });
   } else {
-    const { error: topicError } = await getResend().contacts.topics.update({ email, topics: [{ id: TOPIC_ID, subscription: "opt_out" }] });
+    const { error: topicError } = await getNewsletterResend().contacts.topics.update({ email, topics: [{ id: TOPIC_ID, subscription: "opt_out" }] });
     if (topicError) throw new Error(topicError.message);
     await supabase.from("garden_newsletter_preferences").upsert({ user_id: userId, steward_id: steward.id, subscribed: false, unsubscribed_at: now, updated_at: now }, { onConflict: "user_id" });
   }
