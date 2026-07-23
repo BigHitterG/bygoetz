@@ -64,7 +64,7 @@ grant select, insert, update, delete on table public.garden_newsletter_preferenc
 grant select, insert, update, delete on table public.garden_newsletter_issues to service_role;
 
 comment on table public.garden_newsletter_preferences is
-  'Private, explicit Basil monthly-letter consent. Email addresses remain in Supabase Auth and Resend rather than this table.';
+  'Private Basil monthly-letter subscription preference. Email addresses remain in Supabase Auth and Resend rather than this table.';
 comment on table public.garden_newsletter_issues is
   'Server-only immutable monthly garden snapshots and review/send state. Approval tokens are stored only as SHA-256 hashes.';
 

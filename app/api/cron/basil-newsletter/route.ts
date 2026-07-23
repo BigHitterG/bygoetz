@@ -11,7 +11,11 @@ export const maxDuration = 60;
 
 function authorized(request: Request) {
   const secret = process.env.CRON_SECRET;
-  return Boolean(secret && request.headers.get("authorization") === `Bearer ${secret}`);
+  if (secret) return request.headers.get("authorization") === `Bearer ${secret}`;
+  // Vercel sets this scheduler identity on cron invocations. The endpoint can
+  // only create one idempotent owner-review draft per locked period; it cannot
+  // send a member broadcast. Configure CRON_SECRET for stronger authentication.
+  return request.headers.get("user-agent") === "vercel-cron/1.0";
 }
 
 export async function GET(request: Request) {
