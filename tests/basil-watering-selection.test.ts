@@ -10,13 +10,37 @@ function flower(id: string, gridX: number, gridY: number, careReady = true) {
 }
 
 test("watering requires three pumps before one spray is submitted", () => {
-  const first = advanceWateringPump(0);
-  const second = advanceWateringPump(first.nextPumpCount);
-  const third = advanceWateringPump(second.nextPumpCount);
+  const first = advanceWateringPump(0, 3);
+  const second = advanceWateringPump(first.nextPumpCount, 3);
+  const third = advanceWateringPump(second.nextPumpCount, 3);
 
-  assert.deepEqual(first, { nextPumpCount: 1, shouldSpray: false });
-  assert.deepEqual(second, { nextPumpCount: 2, shouldSpray: false });
-  assert.deepEqual(third, { nextPumpCount: 0, shouldSpray: true });
+  assert.deepEqual(first, { nextPumpCount: 1, requiredPumps: 3, shouldSpray: false });
+  assert.deepEqual(second, { nextPumpCount: 2, requiredPumps: 3, shouldSpray: false });
+  assert.deepEqual(third, { nextPumpCount: 0, requiredPumps: 3, shouldSpray: true });
+});
+
+test("an isolated flower sprays on the first tap", () => {
+  assert.deepEqual(advanceWateringPump(0, 1), {
+    nextPumpCount: 0,
+    requiredPumps: 1,
+    shouldSpray: true,
+  });
+});
+
+test("a two-flower connection completes on the second tap", () => {
+  const first = advanceWateringPump(0, 2);
+  const second = advanceWateringPump(first.nextPumpCount, 2);
+
+  assert.deepEqual(first, {
+    nextPumpCount: 1,
+    requiredPumps: 2,
+    shouldSpray: false,
+  });
+  assert.deepEqual(second, {
+    nextPumpCount: 0,
+    requiredPumps: 2,
+    shouldSpray: true,
+  });
 });
 
 test("the tapped flower anchors a three-flower directional spray", () => {

@@ -103,8 +103,9 @@ export function GardenGuide() {
             <p className="cg-ecology-number">3 at once</p>
             <h5>Watering</h5>
             <p>
-              Tap a real flower, then pump three times to release a spray that can
-              follow a loose chain to three flowers. Care-ready flowers are chosen
+              Tap a real flower, then pump once for each flower in the spray: one,
+              two, or three pumps. The spray can follow a loose chain to three
+              flowers. Care-ready flowers are chosen
               before already-watered ones, but the whole spray is one helpful
               action. Planting is the quicker way to earn Care; watering saves
               walking while maintaining several flowers.

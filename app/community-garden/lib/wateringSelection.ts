@@ -6,17 +6,31 @@ export type WateringSelectionCandidate = {
 };
 
 export const MAX_WATERING_TARGETS = 3;
-export const WATERING_PUMPS_REQUIRED = 3;
 
-export function advanceWateringPump(currentPumpCount: number) {
+export function getRequiredWateringPumps(targetCount: number) {
+  return Math.max(
+    1,
+    Math.min(MAX_WATERING_TARGETS, Math.floor(targetCount)),
+  );
+}
+
+export function advanceWateringPump(
+  currentPumpCount: number,
+  targetCount: number,
+) {
+  const requiredPumps = getRequiredWateringPumps(targetCount);
   const pumpCount = Math.max(
     0,
-    Math.min(WATERING_PUMPS_REQUIRED - 1, Math.floor(currentPumpCount)),
+    Math.min(requiredPumps - 1, Math.floor(currentPumpCount)),
   );
-  if (pumpCount >= WATERING_PUMPS_REQUIRED - 1) {
-    return { nextPumpCount: 0, shouldSpray: true };
+  if (pumpCount >= requiredPumps - 1) {
+    return { nextPumpCount: 0, requiredPumps, shouldSpray: true };
   }
-  return { nextPumpCount: pumpCount + 1, shouldSpray: false };
+  return {
+    nextPumpCount: pumpCount + 1,
+    requiredPumps,
+    shouldSpray: false,
+  };
 }
 
 type WateringSelectionOptions = {

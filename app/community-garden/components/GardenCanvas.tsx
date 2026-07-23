@@ -43,9 +43,9 @@ import {
 } from "../lib/roseLifecycle";
 import {
   advanceWateringPump,
+  getRequiredWateringPumps,
   MAX_WATERING_TARGETS,
   selectDirectionalWateringTargets,
-  WATERING_PUMPS_REQUIRED,
 } from "../lib/wateringSelection";
 import {
   clearGardenWeed,
@@ -893,14 +893,15 @@ function getActionState(runtime: Runtime) {
       runtime.wateringPumpSelectionKey === selectionKey
         ? runtime.wateringPumpCount
         : 0;
+    const requiredPumps = getRequiredWateringPumps(wateringTargets.length);
     const label =
-      pumpCount < WATERING_PUMPS_REQUIRED - 1
-        ? `Pump water · ${pumpCount + 1} of ${WATERING_PUMPS_REQUIRED}`
+      pumpCount < requiredPumps - 1
+        ? `Pump water · ${pumpCount + 1} of ${requiredPumps}`
         : sprayLabel;
     return {
       action: "water" as GardenAction,
       label:
-        pumpCount >= WATERING_PUMPS_REQUIRED - 1 &&
+        pumpCount >= requiredPumps - 1 &&
         wateringTargets.some((target) =>
           canEarnWateringCareInRuntime(runtime, target),
         )
@@ -1588,10 +1589,13 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
               runtime.wateringPumpSelectionKey = selectionKey;
               runtime.wateringPumpCount = 0;
             }
-            const pump = advanceWateringPump(runtime.wateringPumpCount);
+            const pump = advanceWateringPump(
+              runtime.wateringPumpCount,
+              wateringTargets.length,
+            );
             if (!pump.shouldSpray) {
               runtime.wateringPumpCount = pump.nextPumpCount;
-              runtime.statusMessage = `Water pressure ${runtime.wateringPumpCount} of ${WATERING_PUMPS_REQUIRED}. Keep pumping to spray.`;
+              runtime.statusMessage = `Water pressure ${runtime.wateringPumpCount} of ${pump.requiredPumps}. Keep pumping to spray.`;
               publishUi();
               return;
             }
