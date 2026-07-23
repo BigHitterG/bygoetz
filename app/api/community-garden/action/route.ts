@@ -130,7 +130,7 @@ export async function POST(request: NextRequest) {
     if (body.action === "water" && plantIds.length === 0) {
       recordResult("action_error", "invalid_water_targets");
       const response = NextResponse.json(
-        { error: "Choose between one and three flowers to water." },
+        { error: "Choose between one and eight connected flowers to water." },
         { status: 400 },
       );
       attachGardenSession(response, actor.session);

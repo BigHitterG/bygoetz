@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { GardenTool } from "./GardenCanvas";
 import type { GardenWorldMode } from "../game/gardenRenderer";
 import {
@@ -101,17 +101,45 @@ export function GardenInventory({
     (collection) => collection.lifetimeCareRequired > lifetimeCare,
   );
 
+  useEffect(() => {
+    if (!open) return;
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") onToggle();
+    }
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [onToggle, open]);
+
   return (
-    <div className={`cg-inventory${open ? " is-open" : ""}`}>
+    <div
+      className={`cg-inventory${open ? " is-open" : ""}`}
+      onClick={(event) => {
+        if (event.target === event.currentTarget && open) onToggle();
+      }}
+    >
       {open ? (
-        <section className="cg-inventory-panel" aria-label="Garden inventory">
+        <section
+          className="cg-inventory-panel"
+          role="dialog"
+          aria-label="Garden inventory"
+        >
           <header>
-            <strong>Inventory</strong>
-            <small>
-              {guidePlantChoice
-                ? "Choose one flower to begin"
-                : "Choose, then place it on the map"}
-            </small>
+            <span>
+              <strong>Inventory</strong>
+              <small>
+                {guidePlantChoice
+                  ? "Choose one flower to begin"
+                  : "Choose an item, then place it on the map"}
+              </small>
+            </span>
+            <button
+              className="cg-inventory-close"
+              type="button"
+              aria-label="Close inventory"
+              onClick={onToggle}
+            >
+              ×
+            </button>
           </header>
 
           {guidePlantChoice ? (

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import {
-  advanceWateringPump,
+  advanceWateringSpray,
   selectDirectionalWateringTargets,
 } from "../app/community-garden/lib/wateringSelection.ts";
 
@@ -9,41 +9,47 @@ function flower(id: string, gridX: number, gridY: number, careReady = true) {
   return { id, gridX, gridY, careReady };
 }
 
-test("watering requires three pumps before one spray is submitted", () => {
-  const first = advanceWateringPump(0, 3);
-  const second = advanceWateringPump(first.nextPumpCount, 3);
-  const third = advanceWateringPump(second.nextPumpCount, 3);
-
-  assert.deepEqual(first, { nextPumpCount: 1, requiredPumps: 3, shouldSpray: false });
-  assert.deepEqual(second, { nextPumpCount: 2, requiredPumps: 3, shouldSpray: false });
-  assert.deepEqual(third, { nextPumpCount: 0, requiredPumps: 3, shouldSpray: true });
-});
-
-test("an isolated flower sprays on the first tap", () => {
-  assert.deepEqual(advanceWateringPump(0, 1), {
-    nextPumpCount: 0,
-    requiredPumps: 1,
-    shouldSpray: true,
-  });
-});
-
-test("a two-flower connection completes on the second tap", () => {
-  const first = advanceWateringPump(0, 2);
-  const second = advanceWateringPump(first.nextPumpCount, 2);
+test("eight connected flowers use two four-flower sprays for one submission", () => {
+  const first = advanceWateringSpray(0, 8);
+  const second = advanceWateringSpray(first.nextSprayCount, 8);
 
   assert.deepEqual(first, {
-    nextPumpCount: 1,
-    requiredPumps: 2,
-    shouldSpray: false,
+    nextSprayCount: 1,
+    requiredSprays: 2,
+    shouldSubmit: false,
+    targetStartIndex: 0,
+    targetEndIndex: 4,
   });
   assert.deepEqual(second, {
-    nextPumpCount: 0,
-    requiredPumps: 2,
-    shouldSpray: true,
+    nextSprayCount: 0,
+    requiredSprays: 2,
+    shouldSubmit: true,
+    targetStartIndex: 4,
+    targetEndIndex: 8,
   });
 });
 
-test("the tapped flower anchors a three-flower directional spray", () => {
+test("up to four connected flowers complete in one spray", () => {
+  assert.deepEqual(advanceWateringSpray(0, 4), {
+    nextSprayCount: 0,
+    requiredSprays: 1,
+    shouldSubmit: true,
+    targetStartIndex: 0,
+    targetEndIndex: 4,
+  });
+});
+
+test("a five-flower connection reveals one final flower on the second spray", () => {
+  assert.deepEqual(advanceWateringSpray(1, 5), {
+    nextSprayCount: 0,
+    requiredSprays: 2,
+    shouldSubmit: true,
+    targetStartIndex: 4,
+    targetEndIndex: 5,
+  });
+});
+
+test("the tapped flower anchors a broad directional spray", () => {
   const targets = selectDirectionalWateringTargets({
     clickedGridX: 3,
     clickedGridY: 3,
@@ -55,9 +61,13 @@ test("the tapped flower anchors a three-flower directional spray", () => {
       flower("b", 4, 3),
       flower("c", 3, 4),
       flower("d", 4, 4),
+      flower("e", 5, 4),
+      flower("f", 6, 4),
+      flower("g", 7, 4),
+      flower("h", 8, 4),
     ],
   });
-  assert.equal(targets.length, 3);
+  assert.equal(targets.length, 8);
   assert.equal(targets[0].id, "a");
 });
 
@@ -97,7 +107,7 @@ test("only Care-ready flowers join the same connected spray", () => {
   });
   assert.deepEqual(
     new Set(targets.map((target) => target.id)),
-    new Set(["ready-a", "ready-b", "ready-c"]),
+    new Set(["ready-a", "ready-b", "ready-c", "ready-d"]),
   );
 });
 

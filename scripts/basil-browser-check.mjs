@@ -49,6 +49,10 @@ for (const device of cases) {
     hasTouch: device.touch,
     isMobile: device.name === "phone",
   });
+  await context.addInitScript(() => {
+    window.localStorage.setItem("basil-onboarding-v1", "complete");
+    window.localStorage.setItem("basil-onboarding-community-plantings-v1", "3");
+  });
   const page = await context.newPage();
   const errors = [];
   page.on("console", (message) => {
@@ -64,6 +68,32 @@ for (const device of cases) {
   await page.goto(baseUrl, { waitUntil: "networkidle", timeout: 30_000 });
   await page.waitForTimeout(750);
   await page.reload({ waitUntil: "networkidle", timeout: 30_000 });
+  await page.waitForTimeout(750);
+  let inventoryModal = null;
+  if (device.name === "phone") {
+    const inventoryToggle = page.locator(".cg-inventory-toggle");
+    const toggleDisabled = await inventoryToggle.isDisabled();
+    await inventoryToggle.dispatchEvent("click");
+    await page.waitForTimeout(150);
+    inventoryModal = await page.locator(".cg-inventory").evaluate((inventory, toggleDisabled) => {
+      const panel = inventory.querySelector(".cg-inventory-panel");
+      const firstItem = inventory.querySelector(".cg-inventory-grid button");
+      const panelBounds = panel?.getBoundingClientRect();
+      return {
+        open: inventory.classList.contains("is-open"),
+        toggleDisabled,
+        position: window.getComputedStyle(inventory).position,
+        panelWidth: panelBounds?.width ?? 0,
+        itemHeight: firstItem?.getBoundingClientRect().height ?? 0,
+        itemFontSize: firstItem
+          ? Number.parseFloat(window.getComputedStyle(firstItem).fontSize)
+          : 0,
+      };
+    }, toggleDisabled);
+    if (inventoryModal.open) {
+      await page.locator(".cg-inventory-close").click();
+    }
+  }
   const result = await page.evaluate(() => ({
     title: document.title,
     bodyLength: document.body.innerText.trim().length,
@@ -78,7 +108,7 @@ for (const device of cases) {
     horizontalOverflow:
       document.documentElement.scrollWidth > document.documentElement.clientWidth + 2,
   }));
-  results.push({ ...device, ...result, errors });
+  results.push({ ...device, ...result, inventoryModal, errors });
   await context.close();
 }
 
@@ -91,6 +121,12 @@ if (
       !result.inventoryVisible ||
       !result.gardenControlVisible ||
       result.errorOverlay ||
+      (result.name === "phone" &&
+        (!result.inventoryModal?.open ||
+          result.inventoryModal.position !== "fixed" ||
+          result.inventoryModal.panelWidth < 340 ||
+          result.inventoryModal.itemHeight < 80 ||
+          result.inventoryModal.itemFontSize < 10)) ||
       result.errors.length > 0,
   )
 ) {

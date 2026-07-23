@@ -5,31 +5,40 @@ export type WateringSelectionCandidate = {
   careReady: boolean;
 };
 
-export const MAX_WATERING_TARGETS = 3;
+export const WATERING_TARGETS_PER_SPRAY = 4;
+export const MAX_WATERING_TARGETS = WATERING_TARGETS_PER_SPRAY * 2;
 
-export function getRequiredWateringPumps(targetCount: number) {
+export function getRequiredWateringSprays(targetCount: number) {
   return Math.max(
     1,
-    Math.min(MAX_WATERING_TARGETS, Math.floor(targetCount)),
+    Math.min(
+      MAX_WATERING_TARGETS / WATERING_TARGETS_PER_SPRAY,
+      Math.ceil(Math.max(0, Math.floor(targetCount)) / WATERING_TARGETS_PER_SPRAY),
+    ),
   );
 }
 
-export function advanceWateringPump(
-  currentPumpCount: number,
+export function advanceWateringSpray(
+  completedSprayCount: number,
   targetCount: number,
 ) {
-  const requiredPumps = getRequiredWateringPumps(targetCount);
-  const pumpCount = Math.max(
+  const requiredSprays = getRequiredWateringSprays(targetCount);
+  const sprayIndex = Math.max(
     0,
-    Math.min(requiredPumps - 1, Math.floor(currentPumpCount)),
+    Math.min(requiredSprays - 1, Math.floor(completedSprayCount)),
   );
-  if (pumpCount >= requiredPumps - 1) {
-    return { nextPumpCount: 0, requiredPumps, shouldSpray: true };
-  }
+  const targetStartIndex = sprayIndex * WATERING_TARGETS_PER_SPRAY;
+  const targetEndIndex = Math.min(
+    Math.max(0, Math.floor(targetCount)),
+    targetStartIndex + WATERING_TARGETS_PER_SPRAY,
+  );
+  const shouldSubmit = sprayIndex >= requiredSprays - 1;
   return {
-    nextPumpCount: pumpCount + 1,
-    requiredPumps,
-    shouldSpray: false,
+    nextSprayCount: shouldSubmit ? 0 : sprayIndex + 1,
+    requiredSprays,
+    shouldSubmit,
+    targetStartIndex,
+    targetEndIndex,
   };
 }
 
@@ -65,7 +74,8 @@ function chebyshevDistance(
  * Starts with the directional 2x2 quadrant in front of Mary, then follows a
  * loose chain of flowers outward. Care-ready flowers are selected before
  * already-watered flowers. Watering must begin on a real flower, which remains
- * the first target while up to two connected flowers extend the spray.
+ * the first target while up to seven connected flowers extend across two
+ * deliberate four-flower sprays.
  */
 export function selectDirectionalWateringTargets({
   clickedGridX,

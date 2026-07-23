@@ -1212,10 +1212,18 @@
 }
 
 .cg-inventory-panel header {
-  display: grid;
-  gap: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
   border-bottom: 1px solid rgba(52, 35, 31, 0.32);
   padding: 8px 10px;
+}
+
+.cg-inventory-panel header > span {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
 }
 
 .cg-inventory-panel header strong {
@@ -1226,6 +1234,22 @@
 .cg-inventory-panel header small {
   color: #6f4c3e;
   font-size: 0.5rem;
+}
+
+.cg-inventory-close {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 2px solid var(--cg-ink);
+  background: #fff4df;
+  color: var(--cg-ink);
+  cursor: pointer;
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 900;
+  line-height: 1;
 }
 
 .cg-inventory-guide {
@@ -1534,6 +1558,98 @@
   height: 15px;
   background: #66c9e2;
   box-shadow: -5px 7px 0 -1px #66c9e2, 5px 7px 0 -1px #66c9e2;
+}
+
+.cg-item-glyph.is-item-gravel_tile::before {
+  border-color: #8f8878;
+  background:
+    radial-gradient(circle at 25% 35%, #ddd2b9 0 2px, transparent 2.5px),
+    radial-gradient(circle at 68% 62%, #948a77 0 2px, transparent 2.5px),
+    #bbb19d;
+}
+
+.cg-item-glyph.is-item-brick_paver::before {
+  border-color: #7a4936;
+  background:
+    linear-gradient(#824b3b 0 0) 0 0 / 10px 6px,
+    linear-gradient(#aa644d 0 0) 11px 0 / 11px 6px,
+    linear-gradient(#a65f48 0 0) 0 7px / 15px 6px,
+    linear-gradient(#7f4738 0 0) 16px 7px / 6px 6px,
+    #9a5845;
+}
+
+.cg-item-glyph.is-item-fern::before {
+  border-radius: 10% 60% 10% 60%;
+  background: #4f714d;
+  box-shadow:
+    7px -2px 0 -2px #7f9a68,
+    12px 4px 0 -3px #638258;
+  transform: rotate(-18deg);
+}
+
+.cg-item-glyph.is-item-hydrangea::before {
+  background:
+    radial-gradient(circle at 30% 38%, #bcb2d8 0 3px, transparent 3.5px),
+    radial-gradient(circle at 65% 32%, #9388bb 0 4px, transparent 4.5px),
+    radial-gradient(circle at 50% 68%, #aaa1cf 0 4px, transparent 4.5px),
+    #5f7b51;
+}
+
+.cg-item-glyph.is-item-butterfly_bush::before {
+  border-radius: 35%;
+  background:
+    linear-gradient(70deg, transparent 35%, #8b72ad 36% 48%, transparent 49%) 2px 0 / 8px 20px,
+    #5c774c;
+}
+
+.cg-item-glyph.is-item-butterfly_house::before {
+  border-top-color: #8d4c3f;
+  background:
+    linear-gradient(90deg, transparent 42%, #583d32 43% 56%, transparent 57%),
+    #c47a45;
+}
+
+.cg-item-glyph.is-item-beehive::before {
+  border-radius: 8px 8px 3px 3px;
+  background:
+    linear-gradient(
+      #d9a844 0 22%,
+      #8c632e 23% 29%,
+      #e8bc59 30% 51%,
+      #8c632e 52% 58%,
+      #d9a844 59%
+    );
+}
+
+.cg-item-glyph.is-item-rose_trellis::before {
+  background:
+    radial-gradient(circle at 20% 25%, #c64d4e 0 2px, transparent 2.5px),
+    radial-gradient(circle at 78% 42%, #c64d4e 0 2px, transparent 2.5px),
+    linear-gradient(90deg, #76513a 0 2px, transparent 2px 7px, #76513a 7px 9px, transparent 9px);
+}
+
+.cg-item-glyph.is-item-birdbath::before {
+  top: 8px;
+  height: 8px;
+  background: #72b5c2;
+}
+
+.cg-item-glyph.is-item-stone_basin::before {
+  left: 0;
+  width: 28px;
+  border-color: #77766f;
+  background: #89b8bf;
+}
+
+.cg-item-glyph.is-item-small_pond::before {
+  left: 0;
+  top: 10px;
+  width: 28px;
+  height: 16px;
+  border-color: #66826d;
+  background:
+    radial-gradient(circle at 35% 45%, #8cac62 0 3px, transparent 3.5px),
+    #64b2c4;
 }
 
 .cg-action-button {
@@ -5434,10 +5550,102 @@
     width: calc(50% - 16px);
   }
 
-  .cg-inventory {
+  .cg-inventory:not(.is-open) {
     right: auto;
     left: 10px;
     width: calc(50% - 16px);
+  }
+
+  .cg-inventory.is-open {
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    display: flex;
+    width: auto;
+    align-items: stretch;
+    justify-content: flex-end;
+    padding:
+      max(14px, env(safe-area-inset-top))
+      max(12px, env(safe-area-inset-right))
+      max(14px, env(safe-area-inset-bottom))
+      max(12px, env(safe-area-inset-left));
+    background: rgba(52, 35, 31, 0.58);
+  }
+
+  .cg-inventory.is-open .cg-inventory-panel {
+    width: 100%;
+    max-height: min(82dvh, 680px);
+    border-width: 3px;
+    background: #fff4df;
+    box-shadow: 6px 6px 0 rgba(52, 35, 31, 0.32);
+  }
+
+  .cg-inventory.is-open .cg-inventory-toggle {
+    display: none;
+  }
+
+  .cg-inventory.is-open .cg-inventory-panel header {
+    padding: 12px 14px;
+  }
+
+  .cg-inventory.is-open .cg-inventory-panel header strong {
+    font-size: 0.92rem;
+  }
+
+  .cg-inventory.is-open .cg-inventory-panel header small {
+    font-size: 0.64rem;
+    line-height: 1.35;
+  }
+
+  .cg-inventory.is-open .cg-inventory-progress {
+    padding: 9px 12px;
+  }
+
+  .cg-inventory.is-open .cg-inventory-progress span {
+    font-size: 0.66rem;
+  }
+
+  .cg-inventory.is-open .cg-inventory-progress small {
+    font-size: 0.56rem;
+  }
+
+  .cg-inventory.is-open .cg-inventory-tabs {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .cg-inventory.is-open .cg-inventory-tabs button {
+    min-height: 42px;
+    border-bottom: 1px solid rgba(52, 35, 31, 0.25);
+    font-size: 0.56rem;
+  }
+
+  .cg-inventory.is-open .cg-inventory-section > p {
+    padding: 7px 11px;
+    font-size: 0.62rem;
+  }
+
+  .cg-inventory.is-open .cg-inventory-grid,
+  .cg-inventory.is-open .cg-inventory-grid.is-items {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .cg-inventory.is-open .cg-inventory-grid button {
+    min-height: 90px;
+    gap: 4px;
+    padding: 8px 5px;
+    font-size: 0.68rem;
+    line-height: 1.15;
+  }
+
+  .cg-inventory.is-open .cg-inventory-grid button small {
+    font-size: 0.54rem;
+    line-height: 1.25;
+  }
+
+  .cg-inventory.is-open .cg-plant-glyph,
+  .cg-inventory.is-open .cg-item-glyph {
+    transform: scale(1.25);
+    transform-origin: center;
   }
 
   .cg-menu {
@@ -5540,7 +5748,7 @@
     top: max(82px, calc(env(safe-area-inset-top) + 76px));
   }
 
-  .cg-inventory {
+  .cg-inventory:not(.is-open) {
     bottom: max(100px, calc(env(safe-area-inset-bottom) + 90px));
   }
 

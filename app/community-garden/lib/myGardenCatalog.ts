@@ -453,5 +453,5 @@ export function isMyGardenCatalogEntryUnlocked(
 }
 
 export function getMyGardenElementGlyphClass(type: MyGardenElementType) {
-  return `is-${getMyGardenElement(type).icon}`;
+  return `is-${getMyGardenElement(type).icon} is-item-${type}`;
 }

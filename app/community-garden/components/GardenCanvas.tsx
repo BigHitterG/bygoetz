@@ -44,9 +44,10 @@ import {
   type PlantType,
 } from "../lib/roseLifecycle";
 import {
-  advanceWateringPump,
+  advanceWateringSpray,
   MAX_WATERING_TARGETS,
   selectDirectionalWateringTargets,
+  WATERING_TARGETS_PER_SPRAY,
 } from "../lib/wateringSelection";
 import {
   clearGardenWeed,
@@ -62,7 +63,6 @@ import {
 } from "../lib/supabaseGarden";
 
 const WATERING_RANGE_TILES = 5;
-const WATERING_APPROACH_TILES = 4.25;
 const WATERING_CHAIN_REACH_TILES = 6;
 const WATERING_STATUS_REFRESH_MS = 10 * 60 * 1000;
 
@@ -780,19 +780,6 @@ function canEarnWateringCareInRuntime(runtime: Runtime, plant: PlantRecord) {
   return canEarnWateringCare(plant);
 }
 
-function getWateringApproachTarget(runtime: Runtime, gridX: number, gridY: number) {
-  const center = gridToWorld(gridX, gridY);
-  const dx = runtime.mary.x - center.x;
-  const dy = runtime.mary.y - center.y;
-  const distance = Math.hypot(dx, dy);
-  if (distance <= GARDEN_CONFIG.tileSize * WATERING_RANGE_TILES) return null;
-  const scale = (GARDEN_CONFIG.tileSize * WATERING_APPROACH_TILES) / distance;
-  return {
-    x: clampRuntimeCoordinate(runtime, center.x + dx * scale, "x"),
-    y: clampRuntimeCoordinate(runtime, center.y + dy * scale, "y"),
-  };
-}
-
 function getActionState(runtime: Runtime) {
   if (runtime.actionBusy && runtime.pendingAction) {
     return {
@@ -853,14 +840,14 @@ function getActionState(runtime: Runtime) {
         enabled: nearby && !runtime.actionBusy,
       };
     }
+    if (plant) {
+      return {
+        action: "uproot" as GardenAction,
+        label: `Uproot ${getPlantDefinition(plant.plant_type).name} · +${runtime.personalGarden?.uprootReturn ?? 1} Care`,
+        enabled: nearby && !runtime.actionBusy,
+      };
+    }
     if (runtime.toolMode === "path") {
-      if (plant) {
-        return {
-          action: null as GardenAction,
-          label: "A flower is growing here",
-          enabled: false,
-        };
-      }
       const hasPath = hasPersonalPath(
         runtime,
         runtime.selected.gridX,
@@ -903,13 +890,6 @@ function getActionState(runtime: Runtime) {
           nearby &&
           !runtime.actionBusy &&
           (preview || care >= definition.careCost),
-      };
-    }
-    if (plant) {
-      return {
-        action: "uproot" as GardenAction,
-        label: `Uproot ${getPlantDefinition(plant.plant_type).name} · +${runtime.personalGarden?.uprootReturn ?? 1} Care`,
-        enabled: nearby && !runtime.actionBusy,
       };
     }
     if (hasPersonalPath(runtime, runtime.selected.gridX, runtime.selected.gridY)) {
@@ -1648,37 +1628,37 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
               runtime.wateringPumpSelectionKey = selectionKey;
               runtime.wateringPumpCount = 0;
             }
-            const pump = advanceWateringPump(
+            const spray = advanceWateringSpray(
               runtime.wateringPumpCount,
               wateringTargets.length,
             );
-            const stepTarget =
-              wateringTargets[
-                Math.min(
-                  runtime.wateringPumpCount,
-                  wateringTargets.length - 1,
-                )
-              ];
-            if (!stepTarget) return;
+            const sprayTargets = wateringTargets.slice(
+              spray.targetStartIndex,
+              spray.targetEndIndex,
+            );
+            if (sprayTargets.length === 0) return;
             const effectStartedAt = Date.now();
-            runtime.effects.push({
-              kind: "spray",
-              fromX: runtime.mary.x,
-              fromY: runtime.mary.y,
-              gridX: stepTarget.grid_x,
-              gridY: stepTarget.grid_y,
-              startedAt: effectStartedAt,
+            sprayTargets.forEach((target, index) => {
+              const delay = index * 55;
+              runtime.effects.push({
+                kind: "spray",
+                fromX: runtime.mary.x,
+                fromY: runtime.mary.y,
+                gridX: target.grid_x,
+                gridY: target.grid_y,
+                startedAt: effectStartedAt + delay,
+              });
+              runtime.effects.push({
+                kind: "water",
+                gridX: target.grid_x,
+                gridY: target.grid_y,
+                startedAt: effectStartedAt + delay + 80,
+              });
             });
-            runtime.effects.push({
-              kind: "water",
-              gridX: stepTarget.grid_x,
-              gridY: stepTarget.grid_y,
-              startedAt: effectStartedAt + 80,
-            });
-            if (!pump.shouldSpray) {
-              runtime.wateringPumpCount = pump.nextPumpCount;
+            if (!spray.shouldSubmit) {
+              runtime.wateringPumpCount = spray.nextSprayCount;
               runtime.statusMessage =
-                "The spray found another connected flower. Water again to continue.";
+                `The first spray reached ${sprayTargets.length} flowers. Water again to finish the connected patch.`;
               publishUi();
               return;
             }
@@ -1905,7 +1885,6 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
               runtime.wateringPumpCount = 0;
               runtime.wateringPumpSelectionKey = "";
               runtime.selected = null;
-              runtime.target = null;
               if (contribution) onCommunityContributionRef.current?.(contribution);
             }
             if (actionState.action === "plant") {
@@ -2064,7 +2043,11 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
             getDistanceToCell(runtime, runtime.selected) <=
               GARDEN_CONFIG.tileSize * WATERING_RANGE_TILES
               ? getWateringSelection(runtime, runtime.selected)
-                  .slice(0, runtime.wateringPumpCount + 1)
+                  .slice(
+                    0,
+                    (runtime.wateringPumpCount + 1) *
+                      WATERING_TARGETS_PER_SPRAY,
+                  )
                   .map((plant) => ({
                   gridX: plant.grid_x,
                   gridY: plant.grid_y,
@@ -2226,20 +2209,13 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
         Boolean(plant) &&
         !weed &&
         !isWateringSelection;
-      runtime.target =
-        unavailableWateringPlant
-          ? null
-          : isWateringSelection
-          ? getWateringApproachTarget(runtime, gridX, gridY)
-          : getAdjacentTarget(runtime, gridX, gridY);
+      runtime.target = getAdjacentTarget(runtime, gridX, gridY);
       runtime.statusMessage = weed
         ? "Walking over to pull this weed..."
         : isWateringSelection
-        ? runtime.target
-          ? `Walking into range of ${wateringTargets.length} connected flower${wateringTargets.length === 1 ? "" : "s"}...`
-          : "Choose Water to care for the highlighted flowers."
+        ? `Walking to the flower. Water whenever Mary is in range of the highlighted patch.`
         : unavailableWateringPlant
-          ? "Choose a flower with a water drop."
+          ? "Walking to that flower. Look for a water drop to earn Care."
         : "Walking to that spot...";
       publishUi();
     }
