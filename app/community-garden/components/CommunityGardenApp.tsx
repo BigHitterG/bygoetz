@@ -275,7 +275,7 @@ export function CommunityGardenApp() {
           if (active.error?.includes("active Garden Membership")) {
             setMembershipOfferOpen(false);
             setMembershipCheckoutBusy(false);
-            setRestoreMessage("Welcome back. Restoring your saved garden…");
+            setRestoreMessage("Welcome back. Restoring your saved gardenâ€¦");
             return;
           }
           throw new Error(active.error ?? "This account cannot start checkout.");
@@ -537,288 +537,7 @@ export function CommunityGardenApp() {
   }, []);
 
   useEffect(() => {
-    if (!guestPreviewReady || !session) return;
-    queueMicrotask(() => void loadMembership(session));
-  }, [guestPreviewReady, loadMembership, session]);
-
-  useEffect(() => {
-    if (!onboardingInventoryLocked) return;
-    if (
-      ui.selectedTool === "rose" ||
-      ui.selectedTool === "sunflower" ||
-      ui.selectedTool === "lavender"
-    ) {
-      return;
-    }
-    canvasRef.current?.selectPlant("rose");
-  }, [onboardingInventoryLocked, ui.selectedTool]);
-
-  useEffect(() => {
-    if (
-      !guestPreviewReady ||
-      !accountChecked ||
-      ui.connection === "connecting" ||
-      onboardingStep
-    ) {
-      return;
-    }
-
-    const stored = loadGardenOnboardingStep();
-    const storedCommunityPlantings = loadCommunityOnboardingPlantings();
-    communityOnboardingPlantingsRef.current = storedCommunityPlantings;
-    let next = stored;
-    if (memberGarden) {
-      next = "complete";
-    } else if (!next) {
-      const plantings = guestPreviewRef.current.garden.preview?.plantingsUsed ?? 0;
-      if (plantings > 0) next = "complete";
-      else if (
-        guestPreviewRef.current.journey?.world === "personal"
-      ) {
-        next = "personal-inventory";
-      } else if (storedCommunityPlantings >= 3) {
-        next = "my-garden";
-      } else if (storedCommunityPlantings > 0) {
-        next = "community-tile";
-      } else {
-        next = "plant";
-      }
-    } else if (
-      !memberGarden &&
-      !isGardenOnboardingFinished(next) &&
-      storedCommunityPlantings >= 3 &&
-      next !== "community-water"
-    ) {
-      next = "my-garden";
-    } else if (next === "community-repeat") {
-      next = "community-tile";
-    }
-    queueMicrotask(() => {
-      setCommunityOnboardingPlantings(storedCommunityPlantings);
-      saveGardenOnboardingStep(next);
-      setOnboardingStep(next);
-    });
-  }, [
-    accountChecked,
-    guestPreviewReady,
-    memberGarden,
-    onboardingStep,
-    ui.connection,
-  ]);
-
-  useEffect(() => {
-    if (!showFreePlantingNotice) return;
-    const timeout = window.setTimeout(() => {
-      setShowFreePlantingNotice(false);
-    }, 4_500);
-    return () => window.clearTimeout(timeout);
-  }, [showFreePlantingNotice]);
-
-  useEffect(() => {
-    const shouldSuggestCommunity =
-      onboardingStep === "community-tile" && world === "community";
-    const shouldSuggestPersonal =
-      onboardingStep === "personal-tile" && world === "personal";
-    const shouldSuggestWatering =
-      onboardingStep === "community-water" && world === "community";
-    if (!shouldSuggestCommunity && !shouldSuggestPersonal && !shouldSuggestWatering) return;
-    const frame = window.requestAnimationFrame(() => {
-      if (shouldSuggestWatering) canvasRef.current?.suggestWateringSpot();
-      else canvasRef.current?.suggestPlantingSpot();
-    });
-    return () => window.cancelAnimationFrame(frame);
-  }, [onboardingStep, world]);
-
-  useEffect(() => {
-    if (!guestPreviewReady || memberGarden) return;
-    const timeout = window.setTimeout(() => {
-      const next = {
-        ...guestPreviewRef.current,
-        journey: {
-          world,
-          mapX: ui.mapX,
-          mapY: ui.mapY,
-          zoom: ui.zoom,
-          selectedTool: ui.selectedTool,
-        },
-      } satisfies GuestGardenPreview;
-      guestPreviewRef.current = next;
-      setGuestPreview(next);
-      saveGuestGardenPreview(next);
-    }, 250);
-    return () => window.clearTimeout(timeout);
-  }, [
-    guestPreviewReady,
-    memberGarden,
-    ui.mapX,
-    ui.mapY,
-    ui.selectedTool,
-    ui.zoom,
-    world,
-  ]);
-
-  useEffect(() => {
-    if (
-      !guestPreviewReady ||
-      restoredJourneyRef.current ||
-      !guestPreviewRef.current.journey
-    ) {
-      return;
-    }
-    restoredJourneyRef.current = true;
-    const journey = guestPreviewRef.current.journey;
-    setWorld(journey.world);
-    window.requestAnimationFrame(() => {
-      window.requestAnimationFrame(() => {
-        canvasRef.current?.restoreView(
-          journey.mapX,
-          journey.mapY,
-          journey.zoom,
-          journey.selectedTool,
-        );
-      });
-    });
-  }, [guestPreviewReady]);
-
-  useEffect(() => {
-    if (
-      !guestPreviewReady ||
-      memberGarden ||
-      world !== "personal" ||
-      guestPreview.garden.plants.length === 0 ||
-      !isGuestPreviewExpired(guestPreview)
-    ) {
-      return;
-    }
-    let canceled = false;
-    queueMicrotask(() => {
-      if (canceled) return;
-      setMembershipOfferStage("expired");
-      setMembershipOfferOpen(true);
-    });
-    return () => {
-      canceled = true;
-    };
-  }, [guestPreview, guestPreviewReady, memberGarden, world]);
-
-  const onStateChange = useCallback((state: GardenUiState) => {
-    setUi(state);
-  }, []);
-
-  const claimCommunityContribution = useCallback(
-    (contribution: GardenContribution) => {
-      const bonusLabel = contribution.specialFlower
-        ? `${SPECIAL_WATERING_FLOWER_NAME}! `
-        : "";
-      if (!session || !memberGarden) {
-        const currentPreview = guestPreviewRef.current;
-        const continuedPreview = markGuestPreviewContinued(currentPreview);
-        if (continuedPreview !== currentPreview) {
-          void trackBasilFunnelEvent("preview_continued");
-        }
-        const award = awardGuestCare(
-          continuedPreview,
-          contribution.careValue,
-          contribution.earningPhase,
-        );
-        commitGuestPreview(award.preview);
-        if (award.awardedCare > 0) {
-          canvasRef.current?.showCareReward(
-            award.awardedCare,
-            award.earningMode === "daily",
-          );
-          setCareAnnouncement(
-            `${bonusLabel}${award.awardedCare} temporary Care earned. Your preview balance is ${award.preview.garden.careBalance}.`,
-          );
-        } else {
-          setCareAnnouncement(
-            `Care is growing · ${contribution.tierProgress} of ${contribution.actionsRequired} helpful actions.`,
-          );
-        }
-        return;
-      }
-
-      if (!contribution.receiptToken || contribution.careValue <= 0) {
-        setCareAnnouncement(
-          `Care is growing · ${contribution.tierProgress} of ${contribution.actionsRequired} helpful actions.`,
-        );
-        return;
-      }
-
-      const activeSession = session;
-      careClaimQueueRef.current = careClaimQueueRef.current
-        .catch(() => undefined)
-        .then(async () => {
-          try {
-            const response = await fetchGardenRequest(
-              "/api/community-garden/care",
-              {
-                method: "POST",
-                headers: {
-                  authorization: `Bearer ${activeSession.access_token}`,
-                  "content-type": "application/json",
-                },
-                body: JSON.stringify({
-                  receiptToken: contribution.receiptToken,
-                }),
-              },
-            );
-            if (response.status === 401 || response.status === 403) {
-              const currentPreview = guestPreviewRef.current;
-              const continuedPreview = markGuestPreviewContinued(currentPreview);
-              if (continuedPreview !== currentPreview) {
-                void trackBasilFunnelEvent("preview_continued");
-              }
-              const award = awardGuestCare(
-                continuedPreview,
-                contribution.careValue,
-                contribution.earningPhase,
-              );
-              commitGuestPreview(award.preview);
-              canvasRef.current?.showCareReward(
-                award.awardedCare,
-                award.earningMode === "daily",
-              );
-              setCareAnnouncement(
-                `${bonusLabel}${award.awardedCare} temporary Care earned. A Garden Membership saves it.`,
-              );
-              return;
-            }
-            if (!response.ok) {
-              setCareAnnouncement(
-                "Care could not be saved. Please try another garden action.",
-              );
-              return;
-            }
-            const award = (await response.json()) as {
-              awardedCare: number;
-              careBalance: number;
-              lifetimeCare: number;
-              earningMode: "daily" | "standard";
-            };
-            const previousLifetimeCare = lifetimeCareRef.current;
-            lifetimeCareRef.current = award.lifetimeCare;
-            const earnedUnlocks = memberGarden
-              ? getMyGardenUnlockNotices(
-                  previousLifetimeCare,
-                  award.lifetimeCare,
-                )
-              : [];
-            if (earnedUnlocks.length > 0) {
-              setUnlockNotices((current) => [...current, ...earnedUnlocks]);
-            }
-            setMemberGarden((current) =>
-              current
-                ? {
-                    ...current,
-                    careBalance: award.careBalance,
-                    lifetimeCare: award.lifetimeCare,
-                  }
-                : current,
-            );
-            canvasRef.current?.showCareReward(
-              award.awardedCare,
-              award.earningMode === "daily",
+    if (!guestPreviewReady || !session) retur…2305 tokens truncated…            award.earningMode === "daily",
             );
             setCareAnnouncement(
               `${bonusLabel}${award.awardedCare} Care saved. Your balance is ${award.careBalance}.`,
@@ -1126,7 +845,7 @@ export function CommunityGardenApp() {
         </div>
 
         <button
-          className={`cg-compact-support${
+          className={`cg-compact-support is-garden-switch${
             showMyGardenInvitation ||
             showContinueGardenGuidance ||
             showMyGardenGrowthNudge ||
@@ -1187,9 +906,9 @@ export function CommunityGardenApp() {
         {world === "personal" && myGarden.preview ? (
           <div className="cg-preview-progress" aria-live="polite">
             {guestPreview.access?.softPaywallDeclined
-              ? "Temporary · not saved"
+              ? "Temporary Â· not saved"
               : "Preview"}{" "}
-            · {myGarden.preview.plantingsUsed} of {myGarden.preview.plantingLimit} flowers
+            Â· {myGarden.preview.plantingsUsed} of {myGarden.preview.plantingLimit} flowers
           </div>
         ) : null}
 
