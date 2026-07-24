@@ -1466,10 +1466,31 @@
 
 /* Unified wall designer */
 .productHero {
+  position: relative;
   width: min(1180px, calc(100% - 32px));
   margin: 0 auto;
-  padding: 18px 0 12px;
+  padding: 18px 104px 12px 0;
   text-align: left;
+}
+
+.founderBubble {
+  position: absolute;
+  top: 16px;
+  right: 4px;
+  width: 82px;
+  overflow: hidden;
+  aspect-ratio: 1;
+  border: 4px solid #fffdf8;
+  border-radius: 50%;
+  background: #e8e8e3;
+  box-shadow:
+    0 0 0 1px rgba(17, 17, 17, 0.14),
+    0 10px 24px rgba(33, 29, 25, 0.18);
+}
+
+.founderBubble img {
+  object-fit: cover;
+  object-position: 50% 22%;
 }
 
 .productHero h1 {
@@ -2349,7 +2370,14 @@
 @media (max-width: 620px) {
   .productHero {
     width: calc(100% - 24px);
-    padding: 14px 0 8px;
+    padding: 14px 70px 8px 0;
+  }
+
+  .founderBubble {
+    top: 12px;
+    right: 0;
+    width: 58px;
+    border-width: 3px;
   }
 
   .founderStory {

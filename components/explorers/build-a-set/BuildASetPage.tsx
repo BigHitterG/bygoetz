@@ -270,6 +270,15 @@ export function BuildASetPage({
   return (
     <main className={styles.page}>
       <header className={styles.productHero} aria-labelledby="build-a-set-title">
+        <div className={styles.founderBubble} aria-hidden="true">
+          <Image
+            src={withSiteBasePath("/images/about/tj-goetz-founder.jpg")}
+            alt=""
+            fill
+            sizes="(max-width: 620px) 58px, 82px"
+            draggable={false}
+          />
+        </div>
         <p className={styles.eyebrow}>
           The Explorers Series
           {landingMode ? " \u00b7 Continue from the ad" : ""}
