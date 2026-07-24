@@ -66,6 +66,16 @@ const WATERING_RANGE_TILES = 5;
 const WATERING_APPROACH_TILES = 2.125;
 const WATERING_CHAIN_REACH_TILES = 6;
 const WATERING_STATUS_REFRESH_MS = 10 * 60 * 1000;
+const MOVEMENT_KEY_CODES = new Set([
+  "ArrowUp",
+  "ArrowDown",
+  "ArrowLeft",
+  "ArrowRight",
+  "KeyW",
+  "KeyA",
+  "KeyS",
+  "KeyD",
+]);
 
 export type GardenConnection = "connecting" | "online" | "offline" | "error";
 export type GardenAction =
@@ -1084,6 +1094,7 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
       lastY: number;
       dragged: boolean;
     } | null>(null);
+    const pressedMovementKeysRef = useRef<Set<string>>(new Set());
     const start = gridToWorld(0, 0);
     const runtimeRef = useRef<Runtime>({
       mary: { ...start },
@@ -1848,6 +1859,14 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
                 gridY: plant.grid_y,
                 startedAt: Date.now(),
               });
+              if (contribution?.gardenWorm) {
+                runtime.effects.push({
+                  kind: "worm",
+                  gridX: plant.grid_x,
+                  gridY: plant.grid_y,
+                  startedAt: Date.now(),
+                });
+              }
               runtime.statusMessage = `A new ${selectedDefinition.name.toLowerCase()} has taken root.`;
               if (contribution) onCommunityContributionRef.current?.(contribution);
             } else if (actionState.action === "weed") {
@@ -1989,7 +2008,33 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
         runtime.lastFrame = now;
         runtime.moving = false;
 
-        if (runtime.target) {
+        const pressedKeys = pressedMovementKeysRef.current;
+        const inputX =
+          (pressedKeys.has("ArrowRight") || pressedKeys.has("KeyD") ? 1 : 0) -
+          (pressedKeys.has("ArrowLeft") || pressedKeys.has("KeyA") ? 1 : 0);
+        const inputY =
+          (pressedKeys.has("ArrowDown") || pressedKeys.has("KeyS") ? 1 : 0) -
+          (pressedKeys.has("ArrowUp") || pressedKeys.has("KeyW") ? 1 : 0);
+        const inputLength = Math.hypot(inputX, inputY);
+
+        if (inputLength > 0) {
+          const step = GARDEN_CONFIG.moveSpeed * deltaSeconds;
+          const previousX = runtime.mary.x;
+          const previousY = runtime.mary.y;
+          runtime.mary.x = clampRuntimeCoordinate(
+            runtime,
+            runtime.mary.x + (inputX / inputLength) * step,
+            "x",
+          );
+          runtime.mary.y = clampRuntimeCoordinate(
+            runtime,
+            runtime.mary.y + (inputY / inputLength) * step,
+            "y",
+          );
+          runtime.moving =
+            runtime.mary.x !== previousX || runtime.mary.y !== previousY;
+          runtime.hasMoved ||= runtime.moving;
+        } else if (runtime.target) {
           const dx = runtime.target.x - runtime.mary.x;
           const dy = runtime.target.y - runtime.mary.y;
           const distance = Math.hypot(dx, dy);
@@ -2015,6 +2060,9 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
             runtime.hasMoved = true;
           }
 
+        }
+
+        if (runtime.moving) {
           const lastPath = runtime.path[runtime.path.length - 1];
           if (
             !lastPath ||
@@ -2041,7 +2089,8 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
         const wallClockNow = Date.now();
         runtime.effects = runtime.effects.filter(
           (effect) =>
-            wallClockNow - effect.startedAt < (effect.kind === "care" ? 1100 : 900),
+            wallClockNow - effect.startedAt <
+            (effect.kind === "care" ? 1100 : effect.kind === "worm" ? 1800 : 900),
         );
 
         const gridX = Math.floor(runtime.mary.x / GARDEN_CONFIG.tileSize);
@@ -2335,41 +2384,25 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
     }
 
     function onKeyDown(event: ReactKeyboardEvent<HTMLCanvasElement>) {
-      const directions: Record<string, [number, number]> = {
-        ArrowUp: [0, -1],
-        w: [0, -1],
-        W: [0, -1],
-        ArrowDown: [0, 1],
-        s: [0, 1],
-        S: [0, 1],
-        ArrowLeft: [-1, 0],
-        a: [-1, 0],
-        A: [-1, 0],
-        ArrowRight: [1, 0],
-        d: [1, 0],
-        D: [1, 0],
-      };
-      const direction = directions[event.key];
-      if (!direction) return;
+      if (!MOVEMENT_KEY_CODES.has(event.code)) return;
       event.preventDefault();
       const runtime = runtimeRef.current;
-      const currentGridX = Math.floor(runtime.mary.x / GARDEN_CONFIG.tileSize);
-      const currentGridY = Math.floor(runtime.mary.y / GARDEN_CONFIG.tileSize);
-      const nextGridX = currentGridX + direction[0];
-      const nextGridY = currentGridY + direction[1];
-      if (!isWithinRuntime(runtime, nextGridX, nextGridY)) {
-        runtime.target = null;
-        runtime.statusMessage = "You have reached the garden edge.";
-        publishUi();
-        return;
-      }
-      runtime.selected = null;
-      runtime.target = gridToWorld(nextGridX, nextGridY);
+      pressedMovementKeysRef.current.add(event.code);
       runtime.statusMessage =
         runtime.mode === "personal"
           ? "Exploring My Garden..."
           : "Exploring the garden...";
       publishUi();
+    }
+
+    function onKeyUp(event: ReactKeyboardEvent<HTMLCanvasElement>) {
+      if (!pressedMovementKeysRef.current.delete(event.code)) return;
+      event.preventDefault();
+      publishUi();
+    }
+
+    function clearMovementKeys() {
+      pressedMovementKeysRef.current.clear();
     }
 
     return (
@@ -2388,6 +2421,8 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
         onPointerUp={onPointerUp}
         onPointerCancel={onPointerCancel}
         onKeyDown={onKeyDown}
+        onKeyUp={onKeyUp}
+        onBlur={clearMovementKeys}
         onContextMenu={(event) => event.preventDefault()}
       />
     );

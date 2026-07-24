@@ -106,10 +106,14 @@ for (const device of cases) {
   });
   await page.waitForTimeout(750);
   let inventoryModal = null;
-  if (device.name === "phone") {
+  if (device.name === "phone" || device.name === "desktop") {
     const inventoryToggle = page.locator(".cg-inventory-toggle");
     const toggleDisabled = await inventoryToggle.isDisabled();
-    await inventoryToggle.dispatchEvent("click");
+    if (device.name === "desktop") {
+      await page.keyboard.press("q");
+    } else {
+      await inventoryToggle.dispatchEvent("click");
+    }
     await page.waitForTimeout(150);
     inventoryModal = await page.locator(".cg-inventory").evaluate((inventory, toggleDisabled) => {
       const panel = inventory.querySelector(".cg-inventory-panel");
@@ -223,12 +227,14 @@ if (
       !result.inventoryVisible ||
       !result.gardenControlVisible ||
       result.errorOverlay ||
-      (result.name === "phone" &&
+      ((result.name === "phone" || result.name === "desktop") &&
         (!result.inventoryModal?.open ||
           result.inventoryModal.position !== "fixed" ||
-          result.inventoryModal.panelWidth < 340 ||
+          result.inventoryModal.panelWidth <
+            (result.name === "desktop" ? 700 : 340) ||
           result.inventoryModal.itemHeight < 80 ||
-          result.inventoryModal.itemFontSize < 10)) ||
+          result.inventoryModal.itemFontSize <
+            (result.name === "desktop" ? 13 : 10))) ||
       result.errors.length > 0,
   ) ||
   inventoryAudit.count !== Object.keys(inventoryPortraits).length ||

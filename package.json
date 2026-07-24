@@ -19,6 +19,7 @@
     "test:phase4": "node --experimental-strip-types tests/basil-urls.test.ts",
     "test:commons": "node --experimental-strip-types tests/basil-commons.test.ts",
     "test:watering": "node --experimental-strip-types tests/basil-watering-selection.test.ts",
+    "test:desktop": "node --experimental-strip-types tests/basil-desktop-controls-and-worm.test.ts",
     "test:catalog": "node --experimental-strip-types tests/basil-my-garden-catalog.test.ts",
     "test:phase5": "node --experimental-strip-types tests/basil-phase5-reliability.test.ts",
     "test:load:mock": "node scripts/basil-load-test.mjs --mock --users 5 --seconds 3",

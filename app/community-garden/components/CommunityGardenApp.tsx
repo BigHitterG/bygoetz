@@ -51,6 +51,7 @@ import { GardenUpdateStatus } from "./GardenUpdateStatus";
 import { GardenOnboarding } from "./GardenOnboarding";
 import { GardenUnlockCelebration } from "./GardenUnlockCelebration";
 import { CareBlossomDiscovery } from "./CareBlossomDiscovery";
+import { GardenWormDiscovery } from "./GardenWormDiscovery";
 import {
   isGardenOnboardingFinished,
   isGardenOnboardingPlantType,
@@ -191,6 +192,7 @@ export function CommunityGardenApp() {
   const [membershipReloadToken, setMembershipReloadToken] = useState(0);
   const [unlockNotices, setUnlockNotices] = useState<MyGardenUnlockNotice[]>([]);
   const [careBlossomFound, setCareBlossomFound] = useState(false);
+  const [gardenWormFound, setGardenWormFound] = useState(false);
   const restoredJourneyRef = useRef(false);
   const communityOnboardingPlantingsRef = useRef(0);
   const adLabel = process.env.NEXT_PUBLIC_COMMUNITY_GARDEN_AD_PLACEHOLDER;
@@ -832,9 +834,13 @@ export function CommunityGardenApp() {
     (contribution: GardenContribution) => {
       const bonusLabel = contribution.specialFlower
         ? `${SPECIAL_WATERING_FLOWER_NAME}! `
+        : contribution.gardenWorm
+          ? "Garden Worm! "
         : "";
       if (contribution.specialFlower) {
         setCareBlossomFound(true);
+      } else if (contribution.gardenWorm) {
+        setGardenWormFound(true);
       }
       if (!session || !memberGarden) {
         const currentPreview = guestPreviewRef.current;
@@ -1062,7 +1068,7 @@ export function CommunityGardenApp() {
     }
   }, [memberGarden, session]);
 
-  function switchWorld() {
+  const switchWorld = useCallback(() => {
     if (world === "personal") {
       if (inventoryOpen) void acknowledgeInventoryUnlocks();
       setInventoryOpen(false);
@@ -1081,7 +1087,108 @@ export function CommunityGardenApp() {
     ]);
     void trackBasilFunnelEvent("my_garden_entered");
     setWorld("personal");
-  }
+  }, [
+    acknowledgeInventoryUnlocks,
+    inventoryOpen,
+    myGardenTutorialLocked,
+    transitionOnboarding,
+    world,
+  ]);
+
+  useEffect(() => {
+    const handleKeyboardShortcut = (event: KeyboardEvent) => {
+      if (event.ctrlKey || event.metaKey || event.altKey) return;
+      const target = event.target;
+      if (
+        target instanceof HTMLInputElement ||
+        target instanceof HTMLTextAreaElement ||
+        target instanceof HTMLSelectElement ||
+        (target instanceof HTMLElement && target.isContentEditable)
+      ) {
+        return;
+      }
+
+      const code = event.code;
+      const inventoryShortcut = code === "KeyQ" || code === "KeyI";
+      const gardenShortcut = code === "KeyC" || code === "KeyG";
+      if (inventoryShortcut) {
+        const inventoryShortcutLocked =
+          onboardingInventoryLocked &&
+          onboardingStep !== "plant" &&
+          onboardingStep !== "personal-inventory";
+        if (
+          menuOpen ||
+          membershipOfferOpen ||
+          careBlossomFound ||
+          gardenWormFound ||
+          unlockNotices.length > 0 ||
+          (!inventoryOpen && inventoryShortcutLocked)
+        ) {
+          return;
+        }
+        event.preventDefault();
+        if (inventoryOpen) {
+          setInventoryOpen(false);
+          if (world === "personal") void acknowledgeInventoryUnlocks();
+        } else {
+          transitionOnboarding("select-seed", ["plant"]);
+          transitionOnboarding("personal-seed", ["personal-inventory"]);
+          setInventoryOpen(true);
+          void trackBasilFunnelEvent("inventory_opened");
+        }
+        return;
+      }
+
+      if (gardenShortcut) {
+        if (
+          menuOpen ||
+          membershipOfferOpen ||
+          inventoryOpen ||
+          careBlossomFound ||
+          gardenWormFound ||
+          unlockNotices.length > 0
+        ) {
+          return;
+        }
+        event.preventDefault();
+        switchWorld();
+        return;
+      }
+
+      if (code === "KeyE") {
+        if (
+          menuOpen ||
+          membershipOfferOpen ||
+          inventoryOpen ||
+          careBlossomFound ||
+          gardenWormFound ||
+          unlockNotices.length > 0 ||
+          !tutorialActionAllowed
+        ) {
+          return;
+        }
+        event.preventDefault();
+        void canvasRef.current?.performAction();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyboardShortcut);
+    return () => window.removeEventListener("keydown", handleKeyboardShortcut);
+  }, [
+    acknowledgeInventoryUnlocks,
+    careBlossomFound,
+    gardenWormFound,
+    inventoryOpen,
+    membershipOfferOpen,
+    menuOpen,
+    onboardingInventoryLocked,
+    onboardingStep,
+    switchWorld,
+    transitionOnboarding,
+    tutorialActionAllowed,
+    unlockNotices.length,
+    world,
+  ]);
 
   const handleGardenActionCompleted = useCallback(
     (mode: GardenWorldMode, action: GardenUiState["action"]) => {
@@ -1511,13 +1618,21 @@ export function CommunityGardenApp() {
       />
 
       <GardenUnlockCelebration
-        notice={careBlossomFound ? null : (unlockNotices[0] ?? null)}
+        notice={
+          careBlossomFound || gardenWormFound
+            ? null
+            : (unlockNotices[0] ?? null)
+        }
         onContinue={dismissUnlockNotice}
         onViewGarden={viewUnlockInMyGarden}
       />
       <CareBlossomDiscovery
         open={careBlossomFound}
         onClose={() => setCareBlossomFound(false)}
+      />
+      <GardenWormDiscovery
+        open={gardenWormFound}
+        onClose={() => setGardenWormFound(false)}
       />
     </main>
   );

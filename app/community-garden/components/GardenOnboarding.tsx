@@ -38,6 +38,7 @@ export function GardenOnboarding({
           kicker: "One garden, shared everywhere",
           title: "Add your flowers to the community",
           copy: "This shared landscape is shaped by gardeners wherever they are. Choose one plant, then add it three times.",
+          desktopHint: "Press Q to open Inventory.",
           action: "Open Inventory",
           onAction: onOpenInventory,
         }
@@ -50,6 +51,9 @@ export function GardenOnboarding({
               : communityPlantings > 0
                 ? "Keep your chosen plant. Tap the next glowing patch to walk over."
                 : "Tap the highlighted open ground. Your gardener will walk over to it.",
+            desktopHint: actionReady
+              ? "Press E to plant."
+              : "Move with WASD or click the glowing patch.",
             action: null,
             onAction: null,
           }
@@ -58,6 +62,7 @@ export function GardenOnboarding({
             kicker: "Community planting 3 of 3",
             title: "See what your Care can grow",
             copy: "Three flowers are planted. My Garden is now ready to try.",
+            desktopHint: "Press C to switch gardens.",
             action: "Visit My Garden",
             onAction: onOpenMyGarden,
           }
@@ -66,6 +71,7 @@ export function GardenOnboarding({
               kicker: "Your garden preview",
               title: "Plant three flowers of your own",
               copy: "Try your first one with the guide, then arrange the next two however you like.",
+              desktopHint: "Press Q to open Inventory.",
               action: "Open Inventory",
               onAction: onOpenInventory,
             }
@@ -76,6 +82,9 @@ export function GardenOnboarding({
                 copy: actionReady
                   ? "Tap the Plant button below. Your next two flowers are yours to arrange."
                   : "Tap the highlighted ground and walk over to make this space your own.",
+                desktopHint: actionReady
+                  ? "Press E to plant."
+                  : "Move with WASD or click the glowing patch.",
                 action: null,
                 onAction: null,
               }
@@ -88,6 +97,9 @@ export function GardenOnboarding({
                   copy: actionReady
                     ? "Double tap Water below to send two short sprays through the highlighted flowers."
                     : "Tap the highlighted flowers. Mary will move into range and the Water button will light up.",
+                  desktopHint: actionReady
+                    ? "Press E twice to water while you keep moving."
+                    : "Move with WASD, then click a flower with a water drop.",
                   action: null,
                   onAction: null,
                 }
@@ -95,6 +107,7 @@ export function GardenOnboarding({
             kicker: "Your garden preview",
             title: "Choose your first flower",
             copy: "Open Inventory and start making this garden your own.",
+            desktopHint: "Press Q to open Inventory.",
             action: "Open Inventory",
             onAction: onOpenInventory,
           };
@@ -107,6 +120,7 @@ export function GardenOnboarding({
       <p>{content.kicker}</p>
       <h2 id="cg-onboarding-title">{content.title}</h2>
       <span>{content.copy}</span>
+      <kbd className="cg-onboarding-desktop-hint">{content.desktopHint}</kbd>
       {content.action && content.onAction ? (
         <button
           className="cg-onboarding-action"

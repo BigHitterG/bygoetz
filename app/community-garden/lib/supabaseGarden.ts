@@ -21,6 +21,7 @@ export type GardenContribution = {
   receiptToken?: string;
   careValue: number;
   specialFlower?: boolean;
+  gardenWorm?: boolean;
   earningPhase: "daily" | "full" | "taper4" | "taper20";
   dailyCareEarned: number;
   dailyCareLimit: number;

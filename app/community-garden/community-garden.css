@@ -847,6 +847,10 @@
   line-height: 1.38;
 }
 
+.cg-onboarding-desktop-hint {
+  display: none;
+}
+
 .cg-onboarding-dismiss {
   position: absolute;
   right: 7px;
@@ -1176,6 +1180,87 @@
   box-shadow: 4px 4px 0 rgba(52, 35, 31, 0.24);
 }
 
+.cg-inventory.is-open {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  width: auto;
+  place-items: center;
+  padding:
+    max(24px, env(safe-area-inset-top))
+    max(24px, env(safe-area-inset-right))
+    max(24px, env(safe-area-inset-bottom))
+    max(24px, env(safe-area-inset-left));
+  background: rgba(52, 35, 31, 0.62);
+}
+
+.cg-inventory.is-open .cg-inventory-panel {
+  width: min(860px, 92vw);
+  max-height: min(84dvh, 760px);
+  border-width: 3px;
+  background: #fff4df;
+  box-shadow: 7px 7px 0 rgba(52, 35, 31, 0.34);
+}
+
+.cg-inventory.is-open .cg-inventory-toggle {
+  display: none;
+}
+
+.cg-inventory.is-open .cg-inventory-panel header {
+  padding: 14px 18px;
+}
+
+.cg-inventory.is-open .cg-inventory-panel header strong {
+  font-size: 1rem;
+}
+
+.cg-inventory.is-open .cg-inventory-panel header small {
+  font-size: 0.66rem;
+}
+
+.cg-inventory.is-open .cg-inventory-progress {
+  padding: 10px 14px;
+}
+
+.cg-inventory.is-open .cg-inventory-progress span {
+  font-size: 0.72rem;
+}
+
+.cg-inventory.is-open .cg-inventory-progress small,
+.cg-inventory.is-open .cg-inventory-progress strong {
+  font-size: 0.6rem;
+}
+
+.cg-inventory.is-open .cg-inventory-tabs button {
+  min-height: 48px;
+  font-size: 0.62rem;
+}
+
+.cg-inventory.is-open .cg-inventory-section > p {
+  padding: 8px 12px;
+  font-size: 0.66rem;
+}
+
+.cg-inventory.is-open .cg-inventory-grid button {
+  min-height: 104px;
+  gap: 5px;
+  padding: 10px 7px;
+  font-size: 0.72rem;
+  line-height: 1.15;
+}
+
+.cg-inventory.is-open .cg-inventory-grid button small {
+  font-size: 0.57rem;
+  line-height: 1.25;
+}
+
+.cg-inventory.is-open .cg-plant-glyph,
+.cg-inventory.is-open .cg-item-glyph {
+  transform: scale(1.35);
+  transform-origin: center;
+}
+
 .cg-inventory-progress {
   display: grid;
   gap: 2px;
@@ -1492,6 +1577,51 @@
 .cg-unlock-emblem.is-care-blossom .cg-care-blossom-glyph {
   border: 0;
   transform: scale(2);
+}
+
+.cg-unlock-card.is-garden-worm {
+  box-shadow:
+    8px 8px 0 rgba(52, 35, 31, 0.34),
+    0 0 0 5px rgba(139, 163, 97, 0.62);
+}
+
+.cg-unlock-emblem.is-garden-worm {
+  background: #dfe9bd;
+}
+
+.cg-garden-worm-glyph {
+  position: relative;
+  display: block;
+  width: 54px;
+  height: 32px;
+}
+
+.cg-garden-worm-glyph::before {
+  position: absolute;
+  left: 4px;
+  top: 11px;
+  width: 12px;
+  height: 10px;
+  border: 3px solid #7b493c;
+  border-right: 0;
+  border-radius: 12px 0 0 12px;
+  content: "";
+  box-shadow:
+    10px -7px 0 -3px #d88a72,
+    19px 0 0 -3px #c46f5f,
+    28px -7px 0 -3px #b85f55,
+    37px 0 0 -3px #a9514c;
+  transform: rotate(-6deg);
+}
+
+.cg-garden-worm-glyph::after {
+  position: absolute;
+  right: 2px;
+  top: 14px;
+  width: 4px;
+  height: 4px;
+  background: var(--cg-ink);
+  content: "";
 }
 
 @keyframes cg-unlock-arrive {
@@ -6162,6 +6292,50 @@
 
   .cg-community-join {
     width: 190px;
+  }
+}
+
+@media (min-width: 900px) and (hover: hover) and (pointer: fine) {
+  .cg-onboarding-card {
+    width: min(420px, calc(100% - 48px));
+    gap: 10px;
+    padding: 20px 22px;
+    box-shadow:
+      8px 8px 0 rgba(52, 35, 31, 0.36),
+      0 0 0 5px rgba(255, 244, 223, 0.72),
+      0 0 0 9px rgba(184, 49, 54, 0.22);
+  }
+
+  .cg-onboarding-card p {
+    font-size: 0.66rem;
+  }
+
+  .cg-onboarding-card h2 {
+    font-size: 1.25rem;
+  }
+
+  .cg-onboarding-card > span {
+    font-size: 0.84rem;
+    line-height: 1.5;
+  }
+
+  .cg-onboarding-desktop-hint {
+    display: block;
+    width: fit-content;
+    border: 1px solid rgba(52, 35, 31, 0.32);
+    background: #eadfbe;
+    color: var(--cg-ink);
+    padding: 6px 8px;
+    font: inherit;
+    font-size: 0.66rem;
+    font-weight: 900;
+    line-height: 1.25;
+    text-transform: uppercase;
+  }
+
+  .cg-onboarding-action {
+    min-height: 48px;
+    font-size: 0.74rem;
   }
 }
 

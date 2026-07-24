@@ -22,7 +22,7 @@ export type SelectedCell = {
 } | null;
 export type GardenEffect =
   | {
-      kind: "plant" | "water" | "uproot" | "path";
+      kind: "plant" | "water" | "uproot" | "path" | "worm";
       gridX: number;
       gridY: number;
       startedAt: number;
@@ -1744,7 +1744,8 @@ function drawEffects(
 ) {
   for (const effect of effects) {
     const age = now - effect.startedAt;
-    const duration = effect.kind === "care" ? 1100 : 900;
+    const duration =
+      effect.kind === "care" ? 1100 : effect.kind === "worm" ? 1800 : 900;
     if (age < 0 || age > duration) continue;
     const progress = age / duration;
     if (effect.kind === "spray") {
@@ -1816,6 +1817,18 @@ function drawEffects(
         const offset = index * 4 - 6;
         ctx.fillRect(offset, -20 + progress * 16 + (index % 2) * 3, 2, 3);
       }
+    } else if (effect.kind === "worm") {
+      const wiggle = Math.sin(progress * Math.PI * 6) * 3;
+      ctx.globalAlpha = Math.sin(progress * Math.PI);
+      ctx.translate(wiggle, -12 - progress * 12);
+      ctx.fillStyle = "#d88a72";
+      ctx.fillRect(-7, -2, 5, 4);
+      ctx.fillStyle = "#c46f5f";
+      ctx.fillRect(-2, -4, 5, 4);
+      ctx.fillStyle = "#a9514c";
+      ctx.fillRect(3, -2, 5, 4);
+      ctx.fillStyle = "#34231f";
+      ctx.fillRect(6, -1, 1, 1);
     } else if (effect.kind === "plant") {
       ctx.fillStyle = "#876444";
       ctx.fillRect(-7 - progress * 4, -3, 3, 2);
