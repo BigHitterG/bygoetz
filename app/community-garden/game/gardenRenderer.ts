@@ -497,4 +497,1643 @@ function drawTerrainLayer(
       if (layer === "soil") {
         ctx.fillStyle = "#bd936e";
         ctx.fillRect(x, y, cellWidth + 1, cellHeight + 1);
-      } else if (lay×]têÚ$z{-®éÜj×6öç7B6†VVå7G&VæwF‚ÒÒVÆ6VD†ÆdÆ—fW3°¢7G‚ævÆö&ÄÇ†Òã3"¢f—7VÂæF×7G&VæwF‚¢6†VVå7G&VæwFƒ°¢7G‚æf–ÆÅ7G–ÆRÒ"3“6#v##°¢7G‚æf–ÆÅ&V7B‚ÓBÂÓ2Â"Â“°¢7G‚æf–ÆÅ&V7Bƒ2ÂÂ"Â“°¢Ğ¢7G‚ç&W7F÷&R‚“°¢Ğ§Ğ ¦gVæ7F–öâG&u6VÆV7F–öâ€¢7Gƒ¢6çf5&VæFW&–æt6öçFW‡C$BÀ¢6VÆV7FVC¢6VÆV7FVD6VÆÂÀ¢6ÖW&¢v÷&ÆEö–çBÀ¢f–Ww÷'C¢v&FVåf–Ww÷'BÀ¢¦ööÓ¢çVÖ&W"À¢’°¢–b‚6VÆV7FVB’&WGW&ã°¢6öç7Bö–çBÒv÷&ÆEFõ67&VVâ€¢w&–EFõv÷&ÆB‡6VÆV7FVBæw&–E‚Â6VÆV7FVBæw&–E’’À¢6ÖW&À¢f–Ww÷'BÀ¢¦ööÒÀ¢“°¢–b‚—5f—6–&ÆR‡ö–çBÂf–Ww÷'B’’&WGW&ã°¢7G‚ç6fR‚“°¢7G‚çG&ç6ÆFR„ÖF‚ç&÷VæB‡ö–çBç‚’ÂÖF‚ç&÷VæB‡ö–çBç’’“°¢7G‚ç66ÆR‡¦ööÒÂ¦ööÒ“°¢7G‚ævÆö&ÄÇ†Òã“S°¢7G‚æf–ÆÅ7G–ÆRÒ"6ffcFF2#°¢7G‚æf–ÆÅ&V7B‚Ó’ÂÓrÂRÂ"“°¢7G‚æf–ÆÅ&V7B‚Ó’ÂÓrÂ"ÂR“°¢7G‚æf–ÆÅ&V7BƒBÂÓrÂRÂ"“°¢7G‚æf–ÆÅ&V7BƒrÂÓrÂ"ÂR“°¢7G‚æf–ÆÅ&V7B‚Ó’ÂRÂRÂ"“°¢7G‚æf–ÆÅ&V7B‚Ó’Â"Â"ÂR“°¢7G‚æf–ÆÅ&V7BƒBÂRÂRÂ"“°¢7G‚æf–ÆÅ&V7BƒrÂ"Â"ÂR“°¢7G‚æf–ÆÅ7G–ÆRÒ"6ƒFcF"#°¢7G‚æf–ÆÅ&V7B‚Ó‚ÂÓbÂBÂ"“°¢7G‚æf–ÆÅ&V7B‚Ó‚ÂÓbÂ"ÂB“°¢7G‚æf–ÆÅ&V7BƒBÂÓbÂBÂ"“°¢7G‚æf–ÆÅ&V7BƒbÂÓbÂ"ÂB“°¢7G‚æf–ÆÅ&V7B‚Ó‚ÂBÂBÂ"“°¢7G‚æf–ÆÅ&V7B‚Ó‚Â"Â"ÂB“°¢7G‚æf–ÆÅ&V7BƒBÂBÂBÂ"“°¢7G‚æf–ÆÅ&V7BƒbÂ"Â"ÂB“°¢7G‚ç&W7F÷&R‚“°§Ğ ¦gVæ7F–öâG&uvFW&–æuF&vWG2€¢7Gƒ¢6çf5&VæFW&–æt6öçFW‡C$BÀ¢F&vWG3¢'&“ÄæöäçVÆÆ&ÆSÅ6VÆV7FVD6VÆÃãâÀ¢6ÖW&¢v÷&ÆEö–çBÀ¢f–Ww÷'C¢v&FVåf–Ww÷'BÀ¢¦ööÓ¢çVÖ&W"À¢Ö'“¢v÷&ÆEö–çBÀ¢6VÆV7FVC¢6VÆV7FVD6VÆÂÀ¢’°¢f÷"†6öç7BF&vWBöbF&vWG2’°¢6öç7Bö–çBÒv÷&ÆEFõ67&VVâ€¢w&–EFõv÷&ÆB‡F&vWBæw&–E‚ÂF&vWBæw&–E’’À¢6ÖW&À¢f–Ww÷'BÀ¢¦ööÒÀ¢“°¢–b‚—5f—6–&ÆR‡ö–çBÂf–Ww÷'B’’6öçF–çVS°¢7G‚ç6fR‚“°¢7G‚çG&ç6ÆFR„ÖF‚ç&÷VæB‡ö–çBç‚’ÂÖF‚ç&÷VæB‡ö–çBç’’“°¢7G‚ç66ÆR‡¦ööÒÂ¦ööÒ“°¢7G‚ævÆö&ÄÇ†Ò°¢7G‚æf–ÆÅ7G–ÆRÒ"63–cvfb#°¢7G‚æf–ÆÅ&V7B‚Ó‚ÂÓ‚ÂbÂ"“°¢7G‚æf–ÆÅ&V7Bƒ"ÂÓ‚ÂbÂ"“°¢7G‚æf–ÆÅ&V7B‚Ó‚ÂbÂbÂ"“°¢7G‚æf–ÆÅ&V7Bƒ"ÂbÂbÂ"“°¢7G‚æf–ÆÅ&V7B‚Ó‚ÂÓbÂ"ÂR“°¢7G‚æf–ÆÅ&V7B‚Ó‚ÂÂ"ÂR“°¢7G‚æf–ÆÅ&V7BƒbÂÓbÂ"ÂR“°¢7G‚æf–ÆÅ&V7BƒbÂÂ"ÂR“°¢7G‚ç&W7F÷&R‚“°¢Ğ ¢–b‚6VÆV7FVBÇÂF&vWG2æÆVæwF‚ÓÓÒ’&WGW&ã°¢6öç7B6VÆV7FVEö–çBÒv÷&ÆEFõ67&VVâ€¢w&–EFõv÷&ÆB‡6VÆV7FVBæw&–E‚Â6VÆV7FVBæw&–E’’À¢6ÖW&À¢f–Ww÷'BÀ¢¦ööÒÀ¢“°¢–b‚—5f—6–&ÆR‡6VÆV7FVEö–çBÂf–Ww÷'B’’&WGW&ã°¢6öç7B6VÆV7FVEv÷&ÆBÒw&–EFõv÷&ÆB‡6VÆV7FVBæw&–E‚Â6VÆV7FVBæw&–E’“°¢6öç7B6÷&æW%‚ÒÖ'’ç‚ÃÒ6VÆV7FVEv÷&ÆBç‚òÓb¢c°¢6öç7B6÷&æW%’ÒÖ'’ç’ÃÒ6VÆV7FVEv÷&ÆBç’òÓb¢c°¢7G‚ç6fR‚“°¢7G‚çG&ç6ÆFR„ÖF‚ç&÷VæB‡6VÆV7FVEö–çBç‚’ÂÖF‚ç&÷VæB‡6VÆV7FVEö–çBç’’“°¢7G‚ç66ÆR‡¦ööÒÂ¦ööÒ“°¢7G‚ævÆö&ÄÇ†Ò°¢7G‚æf–ÆÅ7G–ÆRÒ"6CsCcFB#°¢7G‚æf–ÆÅ&V7B†6÷&æW%‚Âò6÷&æW%‚¢6÷&æW%‚ÒBÂ6÷&æW%’ÂRÂ"“°¢7G‚æf–ÆÅ&V7B†6÷&æW%‚Â6÷&æW%’Âò6÷&æW%’¢6÷&æW%’ÒBÂ"ÂR“°¢7G‚ç&W7F÷&R‚“°§Ğ ¦gVæ7F–öâG&tÖ'’€¢7Gƒ¢6çf5&VæFW&–æt6öçFW‡C$BÀ¢ö–çC¢v÷&ÆEö–çBÀ¢6ÖW&¢v÷&ÆEö–çBÀ¢f–Ww÷'C¢v&FVåf–Ww÷'BÀ¢Ö÷f–æs¢&ööÆVâÀ¢æ÷s¢çVÖ&W"À¢¦ööÓ¢çVÖ&W"À¢’°¢6öç7B67&VVâÒv÷&ÆEFõ67&VVâ‡ö–çBÂ6ÖW&Âf–Ww÷'BÂ¦ööÒ“°¢6öç7B7FWÒÖ÷f–ærbbÖF‚æfÆö÷"†æ÷ròs’R"ÓÓÒò¢°¢7G‚ç6fR‚“°¢7G‚çG&ç6ÆFR„ÖF‚ç&÷VæB‡67&VVâç‚’ÂÖF‚ç&÷VæB‡67&VVâç’’Ò7FW¢¦ööÒ“°¢7G‚ç66ÆR‡¦ööÒÂ¦ööÒ“°¢7G‚æf–ÆÅ7G–ÆRÒ"3VS&c#R#°¢7G‚æf–ÆÅ&V7B‚ÓbÂÓ#"Â"Â’“°¢7G‚æf–ÆÅ&V7B‚Ó‚ÂÓ’ÂbÂ’“°¢7G‚æf–ÆÅ7G–ÆRÒ"6SV3F#°¢7G‚æf–ÆÅ&V7B‚ÓRÂÓ"ÂÂR“°¢7G‚æf–ÆÅ7G–ÆRÒ"6cS3B#°¢7G‚æf–ÆÅ&V7B‚ÓrÂÓ‚ÂBÂ‚“°¢7G‚æf–ÆÅ7G–ÆRÒ"3cSsF#°¢7G‚æf–ÆÅ&V7B‚ÓbÂÓrÂBÂ2“°¢7G‚æf–ÆÅ&V7Bƒ"ÂÓrÂBÂ2“°¢7G‚æf–ÆÅ&V7B‚Ó"ÂÓ2ÂBÂ’“°¢7G‚æf–ÆÅ7G–ÆRÒ"3C“3ƒ&R#°¢7G‚æf–ÆÅ&V7B‚ÓrÂRÂbÂB²7FW“°¢7G‚æf–ÆÅ&V7BƒÂRÂbÂRÒ7FW“°¢7G‚æf–ÆÅ7G–ÆRÒ"33&#b#°¢7G‚æf–ÆÅ&V7B‚ÓrÂ‚²7FWÂbÂ"“°¢7G‚æf–ÆÅ&V7BƒÂ’Ò7FWÂbÂ"“°¢7G‚ç&W7F÷&R‚“°§Ğ ¦gVæ7F–öâG&tGV6²€¢7Gƒ¢6çf5&VæFW&–æt6öçFW‡C$BÀ¢ö–çC¢v÷&ÆEö–çBÀ¢6ÖW&¢v÷&ÆEö–çBÀ¢f–Ww÷'C¢v&FVåf–Ww÷'BÀ¢Ö÷f–æs¢&ööÆVâÀ¢æ÷s¢çVÖ&W"À¢¦ööÓ¢çVÖ&W"À¢’°¢6öç7B67&VVâÒv÷&ÆEFõ67&VVâ‡ö–çBÂ6ÖW&Âf–Ww÷'BÂ¦ööÒ“°¢6öç7BvFFÆRÒÖ÷f–ærbbÖF‚æfÆö÷"†æ÷ròS’R"ÓÓÒò¢Ó°¢7G‚ç6fR‚“°¢7G‚çG&ç6ÆFR„ÖF‚ç&÷VæB‡67&VVâç‚’²vFFÆR¢¦ööÒÂÖF‚ç&÷VæB‡67&VVâç’’“°¢7G‚ç66ÆR‡¦ööÒÂ¦ööÒ“°¢7G‚æf–ÆÅ7G–ÆRÒ"6cVcFb#°¢7G‚æf–ÆÅ&V7B‚ÓRÂÓ‚ÂÂ‚“°¢7G‚æf–ÆÅ&V7B‚Ó2ÂÓ"ÂrÂb“°¢7G‚æf–ÆÅ7G–ÆRÒ"3&c33#°¢7G‚æf–ÆÅ&V7Bƒ"ÂÓÂÂ“°¢7G‚æf–ÆÅ7G–ÆRÒ"6Cf6"#°¢7G‚æf–ÆÅ&V7BƒBÂÓ’ÂBÂ"“°¢7G‚æf–ÆÅ&V7B‚ÓBÂÂ2Â“°¢7G‚æf–ÆÅ&V7Bƒ"ÂÂ2Â“°¢7G‚ç&W7F÷&R‚“°§Ğ ¦gVæ7F–öâG&tVffV7G2€¢7Gƒ¢6çf5&VæFW&–æt6öçFW‡C$BÀ¢VffV7G3¢v&FVäVffV7EµÒÀ¢6ÖW&¢v÷&ÆEö–çBÀ¢f–Ww÷'C¢v&FVåf–Ww÷'BÀ¢æ÷s¢çVÖ&W"À¢¦ööÓ¢çVÖ&W"À¢’°¢f÷"†6öç7BVffV7BöbVffV7G2’°¢6öç7BvRÒæ÷rÒVffV7Bç7F'FVDC°¢6öç7BGW&F–öâĞ¢VffV7Bæ¶–æBÓÓÒ&6&R"ò¢VffV7Bæ¶–æBÓÓÒ'v÷&Ò"òƒ¢“°¢–b†vRÂÇÂvRâGW&F–öâ’6öçF–çVS°¢6öç7B&öw&W72ÒvRòGW&F–öã°¢–b†VffV7Bæ¶–æBÓÓÒ'7&’"’°¢6öç7Bg&öÒÒv÷&ÆEFõ67&VVâ€¢²ƒ¢VffV7Bæg&öÕ‚Â“¢VffV7Bæg&öÕ’Ò‚ÒÀ¢6ÖW&À¢f–Ww÷'BÀ¢¦ööÒÀ¢“°¢6öç7BF&vWEv÷&ÆBÒw&–EFõv÷&ÆB†VffV7Bæw&–E‚ÂVffV7Bæw&–E’“°¢6öç7BF—&V7F–öå‚ÒF&vWEv÷&ÆBç‚ÒVffV7Bæg&öÕƒ°¢6öç7BF—&V7F–öå’ÒF&vWEv÷&ÆBç’ÒVffV7Bæg&öÕ“°¢6öç7BF—&V7F–öäÆVæwF‚ÒÖF‚æÖ‚ƒÂÖF‚æ‡—÷B†F—&V7F–öå‚ÂF—&V7F–öå’’“°¢6öç7BW‡FVæFVEF&vWBÒ°¢ƒ¢F&vWEv÷&ÆBç‚²†F—&V7F–öå‚òF—&V7F–öäÆVæwF‚’¢3"À¢“¢F&vWEv÷&ÆBç’²†F—&V7F–öå’òF—&V7F–öäÆVæwF‚’¢3"À¢Ó°¢6öç7BFòÒv÷&ÆEFõ67&VVâ€¢W‡FVæFVEF&vWBÀ¢6ÖW&À¢f–Ww÷'BÀ¢¦ööÒÀ¢“°¢7G‚ç6fR‚“°¢7G‚ævÆö&ÄÇ†ÒÖF‚ç6–â‡&öw&W72¢ÖF‚å’’¢ãsC°¢7G‚æf–ÆÅ7G–ÆRÒ"3sV#v6b#°¢f÷"†ÆWB–æFW‚Ò²–æFW‚ÃÒ#²–æFW‚³Ò’°¢6öç7BBÒ–æFW‚ò3°¢6öç7B&2ÒÖF‚ç6–â‡B¢ÖF‚å’’¢‚¢¦ööÓ°¢7G‚æf–ÆÅ&V7B€¢ÖF‚ç&÷VæB†g&öÒç‚²‡Fòç‚Òg&öÒç‚’¢B’À¢ÖF‚ç&÷VæB†g&öÒç’²‡Fòç’Òg&öÒç’’¢BÒ&2’À¢ÖF‚æÖ‚ƒÂÖF‚ç&÷VæBƒ"¢¦ööÒ’’À¢ÖF‚æÖ‚ƒÂÖF‚ç&÷VæBƒ"¢¦ööÒ’’À¢“°¢Ğ¢7G‚ç&W7F÷&R‚“°¢6öçF–çVS°¢Ğ¢6öç7Bö–çBĞ¢VffV7Bæ¶–æBÓÓÒ&6&R ¢òv÷&ÆEFõ67&VVâ‡²ƒ¢VffV7Bç‚Â“¢VffV7Bç’ÒÂ6ÖW&Âf–Ww÷'BÂ¦ööÒ¢¢v÷&ÆEFõ67&VVâ€¢w&–EFõv÷&ÆB†VffV7Bæw&–E‚ÂVffV7Bæw&–E’’À¢6ÖW&À¢f–Ww÷'BÀ¢¦ööÒÀ¢“°¢7G‚ç6fR‚“°¢7G‚çG&ç6ÆFR„ÖF‚ç&÷VæB‡ö–çBç‚’ÂÖF‚ç&÷VæB‡ö–çBç’’“°¢7G‚ç66ÆR‡¦ööÒÂ¦ööÒ“°¢–b†VffV7Bæ¶–æBÓÓÒ&6&R"’°¢6öç7BfFT–âÒÖF‚æÖ–âƒÂ&öw&W72òã"“°¢6öç7BfFT÷WBÒÖF‚æÖ–âƒÂƒÒ&öw&W72’òã#‚“°¢7G‚ævÆö&ÄÇ†ÒÖF‚æÖ–â†fFT–âÂfFT÷WB“°¢7G‚çG&ç6ÆFRƒÂÓ3Ò&öw&W72¢‚“°¢7G‚çFW‡DÆ–vâÒ&6VçFW"#°¢7G‚çFW‡D&6VÆ–æRÒ&Ö–FFÆR#°¢7G‚æföçBÒs“G‚$6÷W&–W"æWr"ÂÖöæ÷76Rs°¢7G‚æÆ–æUv–GF‚Ò3°¢7G‚ç7G&ö¶U7G–ÆRÒ'&v&ƒ#SRÂ#CBÂ##2Âã“"’#°¢7G‚æf–ÆÅ7G–ÆRÒVffV7BæF–Ç”&öçW2ò"3SsƒcV"¢"63“FcF2#°¢6öç7BÆ&VÂÒ²G¶VffV7BçfÇVWÖ°¢7G‚ç7G&ö¶UFW‡B†Æ&VÂÂÂ“°¢7G‚æf–ÆÅFW‡B†Æ&VÂÂÂ“°¢ÒVÇ6R–b†VffV7Bæ¶–æBÓÓÒ'vFW""’°¢7G‚æf–ÆÅ7G–ÆRÒ"3sV#v6b#°¢f÷"†ÆWB–æFW‚Ò²–æFW‚ÂC²–æFW‚³Ò’°¢6öç7Böfg6WBÒ–æFW‚¢BÒc°¢7G‚æf–ÆÅ&V7B†öfg6WBÂÓ#²&öw&W72¢b²†–æFW‚R"’¢2Â"Â2“°¢Ğ¢ÒVÇ6R–b†VffV7Bæ¶–æBÓÓÒ'v÷&Ò"’°¢6öç7Bv–vvÆRÒÖF‚ç6–â‡&öw&W72¢ÖF‚å’¢b’¢3°¢7G‚ævÆö&ÄÇ†ÒÖF‚ç6–â‡&öw&W72¢ÖF‚å’“°¢7G‚çG&ç6ÆFR‡v–vvÆRÂÓ"Ò&öw&W72¢"“°¢7G‚æf–ÆÅ7G–ÆRÒ"6Cƒ†s"#°¢7G‚æf–ÆÅ&V7B‚ÓrÂÓ"ÂRÂB“°¢7G‚æf–ÆÅ7G–ÆRÒ"63CfcVb#°¢7G‚æf–ÆÅ&V7B‚Ó"ÂÓBÂRÂB“°¢7G‚æf–ÆÅ7G–ÆRÒ"6“SF2#°¢7G‚æf–ÆÅ&V7Bƒ2ÂÓ"ÂRÂB“°¢7G‚æf–ÆÅ7G–ÆRÒ"33C#3b#°¢7G‚æf–ÆÅ&V7BƒbÂÓÂÂ“°¢ÒVÇ6R–b†VffV7Bæ¶–æBÓÓÒ'ÆçB"’°¢7G‚æf–ÆÅ7G–ÆRÒ"3ƒscCCB#°¢7G‚æf–ÆÅ&V7B‚ÓrÒ&öw&W72¢BÂÓ2Â2Â"“°¢7G‚æf–ÆÅ&V7BƒB²&öw&W72¢BÂÓRÂ2Â"“°¢ÒVÇ6R–b†VffV7Bæ¶–æBÓÓÒ'F‚"’°¢7G‚æf–ÆÅ7G–ÆRÒ"6S3C“R#°¢7G‚æf–ÆÅ&V7B‚Ó‚Ò&öw&W72¢"ÂÓrÒ&öw&W72¢2Â2Â"“°¢7G‚æf–ÆÅ&V7BƒR²&öw&W72¢"ÂÓRÒ&öw&W72¢BÂ2Â"“°¢ÒVÇ6R°¢7G‚æf–ÆÅ7G–ÆRÒ"6c&C†2#°¢7G‚æf–ÆÅ&V7B‚ÓbÒ&öw&W72¢RÂÓÒ&öw&W72¢bÂ2Â2“°¢7G‚æf–ÆÅ&V7Bƒ2²&öw&W72¢RÂÓrÒ&öw&W72¢‚Â2Â2“°¢Ğ¢7G‚ç&W7F÷&R‚“°¢Ğ§Ğ ¦W‡÷'BgVæ7F–öâ&VæFW$v&FVâ†7Gƒ¢6çf5&VæFW&–æt6öçFW‡C$BÂ7FFS¢&VæFW$v&FVå7FFR’°¢–b‡7FFRæÖöFRÓÓÒ'W'6öæÂ"bb7FFRçW'6öæÄv&FVâ’°¢6öç7Bf—6–&ÆUÆçG2Ò7FFRçÆçG2æf–ÇFW"€¢‡ÆçB’ÓâvWEÆçEf—7VÂ‡ÆçBÂ7FFRææ÷r’ç7FFRÓÒ&W‡—&VB"À¢“°¢7G‚æ–ÖvU6Öö÷F†–ætVæ&ÆVBÒfÇ6S°¢7G‚æ6ÆV%&V7BƒÂÂ7FFRçf–Ww÷'Bçv–GF‚Â7FFRçf–Ww÷'Bæ†V–v‡B“°¢G&uW'6öæÅFW'&–â€¢7G‚À¢7FFRæ6ÖW&À¢7FFRçf–Ww÷'BÀ¢7FFRç¦ööÒÀ¢7FFRçW'6öæÄv&FVâæÖ–å‚À¢7FFRçW'6öæÄv&FVâæÖ–å’À¢7FFRçW'6öæÄv&FVâçv–GF‚À¢7FFRçW'6öæÄv&FVâæ†V–v‡BÀ¢7FFRçW'6öæÄv&FVâææW‡DW‡ç6–öâÀ¢“°¢G&uW'6öæÅF‡2€¢7G‚À¢7FFRçW'6öæÄv&FVâçF‡2À¢7FFRæ6ÖW&À¢7FFRçf–Ww÷'BÀ¢7FFRç¦ööÒÀ¢“°¢G&uW'6öæÄFV6÷&F–öç2€¢7G‚À¢7FFRæ6ÖW&À¢7FFRçf–Ww÷'BÀ¢7FFRç¦ööÒÀ¢7FFRçW'6öæÄv&FVâæÖ–å‚À¢7FFRçW'6öæÄv&FVâæÖ–å’À¢7FFRçW'6öæÄv&FVâçv–GF‚À¢7FFRçW'6öæÄv&FVâæ†V–v‡BÀ¢7FFRçW'6öæÄv&FVâææW‡DW‡ç6–öâÀ¢“°¢G&u7VvvW7FVEÆçF–æt†–v†Æ–v‡B€¢7G‚À¢7FFRç7VvvW7FVEÆçF–æt6VÆÂÀ¢7FFRæ6ÖW&À¢7FFRçf–Ww÷'BÀ¢7FFRææ÷rÀ¢7FFRç¦ööÒÀ¢“°¢G&uW'6öæÅ6ö–ÅF6†W2€¢7G‚À¢f—6–&ÆUÆçG2À¢7FFRæ6ÖW&À¢7FFRçf–Ww÷'BÀ¢7FFRç¦ööÒÀ¢“°¢G&tF×6ö–Â†7G‚Âf—6–&ÆUÆçG2Â7FFRæ6ÖW&Â7FFRçf–Ww÷'BÂ7FFRææ÷rÂ7FFRç¦ööÒ“°¢G&uW'6öæÄFWF„ö&¦V7G2€¢7G‚À¢f—6–&ÆUÆçG2À¢7FFRçW'6öæÄv&FVâæVÆVÖVçG2À¢7FFRæ6ÖW&À¢7FFRçf–Ww÷'BÀ¢7FFRææ÷rÀ¢7FFRç¦ööÒÀ¢“°¢G&tGV6²†7G‚Â7FFRæGV6²Â7FFRæ6ÖW&Â7FFRçf–Ww÷'BÂ7FFRæÖ÷f–ærÂ7FFRææ÷rÂ7FFRç¦ööÒ“°¢–b‡7FFRçGWF÷&–ÄF–ÖÖVB’°¢G&uGWF÷&–ÄF–ÖÖW"€¢7G‚À¢7FFRçf–Ww÷'BÀ¢7FFRæÖ'’À¢7FFRæ6ÖW&À¢7FFRç¦ööÒÀ¢“°¢G&u7VvvW7FVEÆçF–æt†–v†Æ–v‡B€¢7G‚À¢7FFRç7VvvW7FVEÆçF–æt6VÆÂÀ¢7FFRæ6ÖW&À¢7FFRçf–Ww÷'BÀ¢7FFRææ÷rÀ¢7FFRç¦ööÒÀ¢“°¢Ğ¢G&tÖ'’†7G‚Â7FFRæÖ'’Â7FFRæ6ÖW&Â7FFRçf–Ww÷'BÂ7FFRæÖ÷f–ærÂ7FFRææ÷rÂ7FFRç¦ööÒ“°¢G&u7VvvW7FVEÆçF–ætÆ&VÂ€¢7G‚À¢7FFRç7VvvW7FVEÆçF–æt6VÆÂÀ¢7FFRæÖ'’À¢7FFRæ6ÖW&À¢7FFRçf–Ww÷'BÀ¢7FFRææ÷rÀ¢7FFRç¦ööÒÀ¢“°¢G&tVffV7G2†7G‚Â7FFRæVffV7G2Â7FFRæ6ÖW&Â7FFRçf–Ww÷'BÂ7FFRææ÷rÂ7FFRç¦ööÒ“°¢G&u6VÆV7F–öâ†7G‚Â7FFRç6VÆV7FVBÂ7FFRæ6ÖW&Â7FFRçf–Ww÷'BÂ7FFRç¦ööÒ“°¢&WGW&ã°¢Ğ ¢&6TÆ–W"ÒVç7W&TÆ–W"†&6TÆ–W"Â7FFRçf–Ww÷'B“°¢6ö–ÄÆ–W"ÒVç7W&TÆ–W"‡6ö–ÄÆ–W"Â7FFRçf–Ww÷'B“°¢w&VVäÆ–W"ÒVç7W&TÆ–W"†w&VVäÆ–W"Â7FFRçf–Ww÷'B“°¢Ö6´Æ–W"ÒVç7W&TÆ–W"†Ö6´Æ–W"Â7FFRçf–Ww÷'B“°¢6öç7B&6T7G‚Ò&6TÆ–W"ævWD6öçFW‡B‚#&B"“°¢6öç7B6ö–Ä7G‚Ò6ö–ÄÆ–W"ævWD6öçFW‡B‚#&B"“°¢6öç7Bw&VVä7G‚Òw&VVäÆ–W"ævWD6öçFW‡B‚#&B"“°¢6öç7BÖ6´7G‚ÒÖ6´Æ–W"ævWD6öçFW‡B‚#&B"“°¢–b‚&6T7G‚ÇÂ6ö–Ä7G‚ÇÂw&VVä7G‚ÇÂÖ6´7G‚’&WGW&ã° ¢6öç7Bf—6–&ÆUÆçG2Ò7FFRçÆçG2æf–ÇFW"€¢‡ÆçB’ÓâvWEÆçEf—7VÂ‡ÆçBÂ7FFRææ÷r’ç7FFRÓÒ&W‡—&VB"À¢“°¢6öç7Bö67W–VD6VÆÇ2ÒæWr6WB€¢°¢ââçf—6–&ÆUÆçG2æÖ‚‡ÆçB’ÓâFW'&–ä6VÆÄ¶W’‡ÆçBæw&–E÷‚ÂÆçBæw&–E÷’’’À¢ââç7FFRçvVVG2æÖ‚‡vVVB’ÓâFW'&–ä6VÆÄ¶W’‡vVVBæw&–E÷‚ÂvVVBæw&–E÷’’’À¢ÒÀ¢“°¢7G‚æ–ÖvU6Öö÷F†–ætVæ&ÆVBÒfÇ6S°¢7G‚æ6ÆV%&V7BƒÂÂ7FFRçf–Ww÷'Bçv–GF‚Â7FFRçf–Ww÷'Bæ†V–v‡B“°¢G&uFW'&–äÆ–W"†&6T7G‚Â7FFRæ6ÖW&Â7FFRçf–Ww÷'BÂ&&6R"Â7FFRç¦ööÒÂö67W–VD6VÆÇ2“°¢G&uFW'&–äÆ–W"‡6ö–Ä7G‚Â7FFRæ6ÖW&Â7FFRçf–Ww÷'BÂ'6ö–Â"Â7FFRç¦ööÒÂö67W–VD6VÆÇ2“°¢G&t6öÆ÷$Ö6²€¢Ö6´7G‚À¢f—6–&ÆUÆçG2À¢7FFRæ6ÖW&À¢7FFRçf–Ww÷'BÀ¢7FFRææ÷rÀ¢'6ö–Â"À¢7FFRç¦ööÒÀ¢“°¢Ç”Ö6²‡6ö–Ä7G‚ÂÖ6´7G‚ÂÖ6´Æ–W"“°¢G&uFW'&–äÆ–W"†w&VVä7G‚Â7FFRæ6ÖW&Â7FFRçf–Ww÷'BÂ&w&VVâ"Â7FFRç¦ööÒÂö67W–VD6VÆÇ2“°¢G&t6öÆ÷$Ö6²€¢Ö6´7G‚À¢f—6–&ÆUÆçG2À¢7FFRæ6ÖW&À¢7FFRçf–Ww÷'BÀ¢7FFRææ÷rÀ¢&w&VVâ"À¢7FFRç¦ööÒÀ¢“°¢Ç”Ö6²†w&VVä7G‚ÂÖ6´7G‚ÂÖ6´Æ–W"“° ¢7G‚æG&t–ÖvR†&6TÆ–W"ÂÂ“°¢7G‚æG&t–ÖvR‡6ö–ÄÆ–W"ÂÂ“°¢7G‚æG&t–ÖvR†w&VVäÆ–W"ÂÂ“°¢G&u7VvvW7FVEÆçF–æt†–v†Æ–v‡B€¢7G‚À¢7FFRç7VvvW7FVEÆçF–æt6VÆÂÀ¢7FFRæ6ÖW&À¢7FFRçf–Ww÷'BÀ¢7FFRææ÷rÀ¢7FFRç¦ööÒÀ¢“°¢G&u7VvvW7FVEvFW&–æt†–v†Æ–v‡B€¢7G‚À¢7FFRç7VvvW7FVEvFW&–æt6VÆÂÀ¢7FFRæ6ÖW&À¢7FFRçf–Ww÷'BÀ¢7FFRææ÷rÀ¢7FFRç¦ööÒÀ¢“°¢G&tF×6ö–Â†7G‚Âf—6–&ÆUÆçG2Â7FFRæ6ÖW&Â7FFRçf–Ww÷'BÂ7FFRææ÷rÂ7FFRç¦ööÒ“°¢7FFRæv&FVåv÷&×2æf÷$V6‚‚‡v÷&Ò’Óà¢G&tv&FVåv÷&Ò€¢7G‚À¢v÷&ÒÀ¢7FFRæ6ÖW&À¢7FFRçf–Ww÷'BÀ¢7FFRææ÷rÀ¢7FFRç¦ööÒÀ¢’À¢“°¢7FFRçvVVG2æf÷$V6‚‚‡vVVB’Óà¢G&uvVVB†7G‚ÂvVVBÂ7FFRæ6ÖW&Â7FFRçf–Ww÷'BÂ7FFRç¦ööÒ’À¢“°¢f—6–&ÆUÆçG2æf÷$V6‚‚‡ÆçB’Óà¢G&uÆçB€¢7G‚À¢ÆçBÀ¢7FFRæ6ÖW&À¢7FFRçf–Ww÷'BÀ¢7FFRææ÷rÀ¢7FFRç¦ööÒÀ¢fÇ6RÀ¢’À¢“°¢f—6–&ÆUÆçG2æf÷$V6‚‚‡ÆçB’Óà¢G&uÆçD6&T7VR€¢7G‚À¢ÆçBÀ¢7FFRæ6ÖW&À¢7FFRçf–Ww÷'BÀ¢7FFRææ÷rÀ¢7FFRç¦ööÒÀ¢7FFRçvFW&–æt6&U7FGW4ÆöFV@¢ò7FFRçvFW&–æt6&U&VG•ÆçD–G3òæ†2‡ÆçBæ–B’óòfÇ6P¢¢VæFVf–æVBÀ¢’À¢“°¢G&uvFW&–æuF&vWG2€¢7G‚À¢7FFRçvFW&–æuF&vWG2À¢7FFRæ6ÖW&À¢7FFRçf–Ww÷'BÀ¢7FFRç¦ööÒÀ¢7FFRæÖ'’À¢7FFRç6VÆV7FVBÀ¢“°¢G&tGV6²†7G‚Â7FFRæGV6²Â7FFRæ6ÖW&Â7FFRçf–Ww÷'BÂ7FFRæÖ÷f–ærÂ7FFRææ÷rÂ7FFRç¦ööÒ“°¢–b‡7FFRçGWF÷&–ÄF–ÖÖVB’°¢G&uGWF÷&–ÄF–ÖÖW"€¢7G‚À¢7FFRçf–Ww÷'BÀ¢7FFRæÖ'’À¢7FFRæ6ÖW&À¢7FFRç¦ööÒÀ¢“°¢G&u7VvvW7FVEÆçF–æt†–v†Æ–v‡B€¢7G‚À¢7FFRç7VvvW7FVEÆçF–æt6VÆÂÀ¢7FFRæ6ÖW&À¢7FFRçf–Ww÷'BÀ¢7FFRææ÷rÀ¢7FFRç¦ööÒÀ¢“°¢G&u7VvvW7FVEvFW&–æt†–v†Æ–v‡B€¢7G‚À¢7FFRç7VvvW7FVEvFW&–æt6VÆÂÀ¢7FFRæ6ÖW&À¢7FFRçf–Ww÷'BÀ¢7FFRææ÷rÀ¢7FFRç¦ööÒÀ¢“°¢Ğ¢G&tÖ'’†7G‚Â7FFRæÖ'’Â7FFRæ6ÖW&Â7FFRçf–Ww÷'BÂ7FFRæÖ÷f–ærÂ7FFRææ÷rÂ7FFRç¦ööÒ“°¢G&u7VvvW7FVEÆçF–ætÆ&VÂ€¢7G‚À¢7FFRç7VvvW7FVEÆçF–æt6VÆÂÀ¢7FFRæÖ'’À¢7FFRæ6ÖW&À¢7FFRçf–Ww÷'BÀ¢7FFRææ÷rÀ¢7FFRç¦ööÒÀ¢“°¢G&tVffV7G2†7G‚Â7FFRæVffV7G2Â7FFRæ6ÖW&Â7FFRçf–Ww÷'BÂ7FFRææ÷rÂ7FFRç¦ööÒ“°¢G&u6VÆV7F–öâ†7G‚Â7FFRç6VÆV7FVBÂ7FFRæ6ÖW&Â7FFRçf–Ww÷'BÂ7FFRç¦ööÒ“°§Ğ Ğ
+      } else if (layer === "green") {
+        ctx.fillStyle = "#9ca67a";
+        ctx.fillRect(x, y, cellWidth + 1, cellHeight + 1);
+      }
+
+      if (!occupied && tile.detail <= 2) {
+        if (layer === "green") {
+          if (tile.detail === 0) {
+            ctx.fillStyle = "#65714e";
+            ctx.fillRect(x + 4 * zoom, y + 8 * zoom, 3 * zoom, zoom);
+            ctx.fillRect(x + 11 * zoom, y + 6 * zoom, zoom, zoom);
+          }
+        } else {
+          const detailColor = layer === "base" ? "#b9b3a8" : "#8e6b53";
+          drawGroundMark(ctx, x, y, zoom, detailColor);
+        }
+      } else if (!occupied && tile.detail === 5) {
+        ctx.fillStyle =
+          layer === "base" ? "#c4bdb1" : layer === "soil" ? "#9b765b" : "#74805e";
+        ctx.fillRect(x + 3 * zoom, y + 6 * zoom, 5 * zoom, zoom);
+        ctx.fillRect(x + 8 * zoom, y + 7 * zoom, 4 * zoom, zoom);
+      }
+
+      if (layer === "green" && !occupied && (tile.accent === 1 || tile.accent === 4)) {
+        const warmBloom = terrainNoise(gridX, gridY, 19) > 0.5;
+        ctx.fillStyle =
+          tile.accent === 4 ? "#6f9995" : warmBloom ? "#dfb85f" : "#df7b70";
+        ctx.fillRect(x + 11 * zoom, y + 4 * zoom, 2 * zoom, 2 * zoom);
+        ctx.fillStyle = "#5d6d49";
+        ctx.fillRect(x + 12 * zoom, y + 6 * zoom, zoom, 2 * zoom);
+        if (tile.accent === 4) {
+          ctx.fillStyle = "#dca08b";
+          ctx.fillRect(x + 4 * zoom, y + 8 * zoom, 2 * zoom, 2 * zoom);
+        }
+      }
+    }
+  }
+}
+
+function drawPersonalTerrain(
+  ctx: CanvasRenderingContext2D,
+  camera: WorldPoint,
+  viewport: GardenViewport,
+  zoom: number,
+  minX: number,
+  minY: number,
+  width: number,
+  height: number,
+  nextExpansion: NonNullable<RenderGardenState["personalGarden"]>["nextExpansion"],
+) {
+  const { tileSize, tileScreenHeight } = GARDEN_CONFIG;
+  const cellWidth = tileSize * zoom;
+  const cellHeight = tileScreenHeight * zoom;
+  const visible = getVisibleGridBounds(camera, viewport, zoom);
+
+  ctx.fillStyle = "#eee9df";
+  ctx.fillRect(0, 0, viewport.width, viewport.height);
+
+  for (let gridY = visible.minGridY; gridY <= visible.maxGridY; gridY += 1) {
+    for (let gridX = visible.minGridX; gridX <= visible.maxGridX; gridX += 1) {
+      const topLeft = worldToScreen(
+        { x: gridX * tileSize, y: gridY * tileSize },
+        camera,
+        viewport,
+        zoom,
+      );
+      const x = Math.floor(topLeft.x);
+      const y = Math.floor(topLeft.y);
+      const maxX = minX + width - 1;
+      const maxY = minY + height - 1;
+      const inProperty =
+        gridX >= minX && gridX <= maxX && gridY >= minY && gridY <= maxY;
+      const inExpansion =
+        nextExpansion &&
+        gridX >= nextExpansion.minX &&
+        gridX < nextExpansion.minX + nextExpansion.width &&
+        gridY >= nextExpansion.minY &&
+        gridY < nextExpansion.minY + nextExpansion.height;
+
+      ctx.fillStyle = inProperty
+        ? (gridX + gridY) % 2 === 0
+          ? "#91ad78"
+          : "#98b47f"
+        : inExpansion
+          ? (gridX + gridY) % 3 === 0
+            ? "#f4f1e9"
+            : "#eeebe3"
+          : (gridX + gridY) % 3 === 0
+            ? "#e3ded2"
+            : "#e9e4da";
+      ctx.fillRect(x, y, cellWidth + 1, cellHeight + 1);
+
+      if (inProperty && terrainNoise(gridX, gridY, 73) > 0.66) {
+        drawGroundMark(ctx, x, y, zoom, "#6f895d");
+      }
+    }
+  }
+}
+
+function drawPersonalPaths(
+  ctx: CanvasRenderingContext2D,
+  paths: Array<{ gridX: number; gridY: number }>,
+  camera: WorldPoint,
+  viewport: GardenViewport,
+  zoom: number,
+) {
+  const { tileSize, tileScreenHeight } = GARDEN_CONFIG;
+  for (const path of paths) {
+    const topLeft = worldToScreen(
+      { x: path.gridX * tileSize, y: path.gridY * tileSize },
+      camera,
+      viewport,
+      zoom,
+    );
+    if (!isVisible(topLeft, viewport, tileSize * zoom)) continue;
+
+    const inset = Math.max(1, zoom);
+    const width = tileSize * zoom;
+    const height = tileScreenHeight * zoom;
+    ctx.save();
+    ctx.fillStyle =
+      (path.gridX + path.gridY) % 2 === 0 ? "#c7aa7c" : "#cfb589";
+    ctx.fillRect(
+      Math.floor(topLeft.x + inset),
+      Math.floor(topLeft.y + inset),
+      Math.ceil(width - inset * 2),
+      Math.ceil(height - inset * 2),
+    );
+    ctx.fillStyle = "rgba(116, 86, 60, 0.34)";
+    ctx.fillRect(
+      Math.floor(topLeft.x + 4 * zoom),
+      Math.floor(topLeft.y + 4 * zoom),
+      Math.max(2, 3 * zoom),
+      Math.max(1, zoom),
+    );
+    ctx.fillRect(
+      Math.floor(topLeft.x + 10 * zoom),
+      Math.floor(topLeft.y + 8 * zoom),
+      Math.max(2, 2 * zoom),
+      Math.max(1, zoom),
+    );
+    ctx.restore();
+  }
+}
+
+function drawPixelShed(
+  ctx: CanvasRenderingContext2D,
+  camera: WorldPoint,
+  viewport: GardenViewport,
+  zoom: number,
+) {
+  const point = worldToScreen(
+    {
+      x: 6.5 * GARDEN_CONFIG.tileSize,
+      y: 0,
+    },
+    camera,
+    viewport,
+    zoom,
+  );
+  if (!isVisible(point, viewport, 110)) return;
+  ctx.save();
+  ctx.translate(Math.round(point.x), Math.round(point.y));
+  ctx.scale(zoom, zoom);
+  ctx.fillStyle = "#6d4638";
+  ctx.fillRect(-24, -35, 48, 34);
+  ctx.fillStyle = "#c78358";
+  ctx.fillRect(-21, -32, 42, 31);
+  ctx.fillStyle = "#8f4642";
+  ctx.fillRect(-29, -42, 58, 12);
+  ctx.fillRect(-20, -48, 40, 7);
+  ctx.fillStyle = "#e4c77d";
+  ctx.fillRect(-15, -24, 12, 11);
+  ctx.fillStyle = "#49362e";
+  ctx.fillRect(4, -26, 12, 25);
+  ctx.fillStyle = "#e7b84e";
+  ctx.fillRect(12, -14, 2, 2);
+  ctx.fillStyle = "#5f4639";
+  ctx.fillRect(20, -50, 7, 13);
+  ctx.restore();
+}
+
+function drawLockedParcel(
+  ctx: CanvasRenderingContext2D,
+  camera: WorldPoint,
+  viewport: GardenViewport,
+  zoom: number,
+  minX: number,
+  minY: number,
+  width: number,
+  height: number,
+  nextExpansion: NonNullable<RenderGardenState["personalGarden"]>["nextExpansion"],
+) {
+  if (!nextExpansion) return;
+  const { tileSize, tileScreenHeight } = GARDEN_CONFIG;
+  const currentMaxX = minX + width - 1;
+  const currentMaxY = minY + height - 1;
+  const nextMaxX = nextExpansion.minX + nextExpansion.width - 1;
+  const nextMaxY = nextExpansion.minY + nextExpansion.height - 1;
+  let parcelMinX = minX;
+  let parcelMinY = minY;
+  let parcelColumns = width;
+  let parcelRows = height;
+
+  if (nextExpansion.minX < minX) {
+    parcelMinX = nextExpansion.minX;
+    parcelMinY = nextExpansion.minY;
+    parcelColumns = minX - nextExpansion.minX;
+    parcelRows = nextExpansion.height;
+  } else if (nextMaxX > currentMaxX) {
+    parcelMinX = currentMaxX + 1;
+    parcelMinY = nextExpansion.minY;
+    parcelColumns = nextMaxX - currentMaxX;
+    parcelRows = nextExpansion.height;
+  } else if (nextExpansion.minY < minY) {
+    parcelMinX = nextExpansion.minX;
+    parcelMinY = nextExpansion.minY;
+    parcelColumns = nextExpansion.width;
+    parcelRows = minY - nextExpansion.minY;
+  } else if (nextMaxY > currentMaxY) {
+    parcelMinX = nextExpansion.minX;
+    parcelMinY = currentMaxY + 1;
+    parcelColumns = nextExpansion.width;
+    parcelRows = nextMaxY - currentMaxY;
+  }
+
+  const parcelTopLeft = worldToScreen(
+    {
+      x: parcelMinX * tileSize,
+      y: parcelMinY * tileSize,
+    },
+    camera,
+    viewport,
+    zoom,
+  );
+  const parcelX = parcelTopLeft.x;
+  const parcelY = parcelTopLeft.y;
+  const parcelWidth = parcelColumns * tileSize * zoom;
+  const parcelHeight = parcelRows * tileScreenHeight * zoom;
+
+  ctx.save();
+  ctx.fillStyle = "rgba(239, 211, 142, 0.14)";
+  ctx.fillRect(parcelX, parcelY, parcelWidth, parcelHeight);
+  ctx.strokeStyle = "#d49a38";
+  ctx.lineWidth = Math.max(2, 2 * zoom);
+  ctx.setLineDash([5 * zoom, 3 * zoom]);
+  ctx.strokeRect(parcelX, parcelY, parcelWidth, parcelHeight);
+  ctx.restore();
+
+  const labelPoint = {
+    x: parcelX + parcelWidth / 2,
+    y: parcelY + parcelHeight / 2,
+  };
+  if (!isVisible(labelPoint, viewport, 70)) return;
+
+  ctx.save();
+  ctx.translate(Math.round(labelPoint.x), Math.round(labelPoint.y));
+  ctx.scale(zoom, zoom);
+  ctx.fillStyle = "rgba(255, 244, 223, 0.9)";
+  ctx.fillRect(-28, -11, 56, 22);
+  ctx.strokeStyle = "#8a623f";
+  ctx.lineWidth = 1;
+  ctx.strokeRect(-28, -11, 56, 22);
+  ctx.fillStyle = "#8a623f";
+  ctx.fillRect(-22, -3, 8, 8);
+  ctx.strokeRect(-21, -7, 6, 6);
+  ctx.fillStyle = "#5f4437";
+  ctx.font = '700 7px "Courier New", monospace';
+  ctx.textAlign = "left";
+  ctx.textBaseline = "middle";
+  ctx.fillText(`${nextExpansion.careCost} CARE`, -9, 1);
+  ctx.restore();
+}
+
+function drawPersonalFence(
+  ctx: CanvasRenderingContext2D,
+  camera: WorldPoint,
+  viewport: GardenViewport,
+  zoom: number,
+  minX: number,
+  minY: number,
+  width: number,
+  height: number,
+  stonePosts: boolean,
+) {
+  const { tileSize, tileScreenHeight } = GARDEN_CONFIG;
+  const topLeft = worldToScreen(
+    { x: minX * tileSize, y: minY * tileSize },
+    camera,
+    viewport,
+    zoom,
+  );
+  const fenceWidth = width * tileSize * zoom;
+  const fenceHeight = height * tileScreenHeight * zoom;
+
+  ctx.save();
+  ctx.strokeStyle = stonePosts ? "#776f65" : "#8b6043";
+  ctx.lineWidth = Math.max(2, 2 * zoom);
+  ctx.strokeRect(
+    Math.floor(topLeft.x),
+    Math.floor(topLeft.y),
+    fenceWidth,
+    fenceHeight,
+  );
+
+  const postColor = stonePosts ? "#b7afa2" : "#704b36";
+  ctx.fillStyle = postColor;
+  const postWidth = Math.max(3, 3 * zoom);
+  const postHeight = Math.max(7, 8 * zoom);
+  for (let column = 0; column <= width; column += 1) {
+    const x = topLeft.x + column * tileSize * zoom;
+    ctx.fillRect(x - postWidth / 2, topLeft.y - postHeight / 2, postWidth, postHeight);
+    ctx.fillRect(
+      x - postWidth / 2,
+      topLeft.y + fenceHeight - postHeight / 2,
+      postWidth,
+      postHeight,
+    );
+  }
+  for (let row = 1; row < height; row += 1) {
+    const y = topLeft.y + row * tileScreenHeight * zoom;
+    ctx.fillRect(topLeft.x - postWidth / 2, y - postHeight / 2, postWidth, postHeight);
+    ctx.fillRect(
+      topLeft.x + fenceWidth - postWidth / 2,
+      y - postHeight / 2,
+      postWidth,
+      postHeight,
+    );
+  }
+  ctx.restore();
+}
+
+function drawPersonalDecorations(
+  ctx: CanvasRenderingContext2D,
+  camera: WorldPoint,
+  viewport: GardenViewport,
+  zoom: number,
+  minX: number,
+  minY: number,
+  width: number,
+  height: number,
+  nextExpansion: NonNullable<RenderGardenState["personalGarden"]>["nextExpansion"],
+) {
+  drawLockedParcel(
+    ctx,
+    camera,
+    viewport,
+    zoom,
+    minX,
+    minY,
+    width,
+    height,
+    nextExpansion,
+  );
+  drawPersonalFence(
+    ctx,
+    camera,
+    viewport,
+    zoom,
+    minX,
+    minY,
+    width,
+    height,
+    false,
+  );
+  drawPixelShed(ctx, camera, viewport, zoom);
+}
+
+type PersonalGardenElement = NonNullable<
+  RenderGardenState["personalGarden"]
+>["elements"][number];
+
+function drawPersonalElement(
+  ctx: CanvasRenderingContext2D,
+  element: PersonalGardenElement,
+  camera: WorldPoint,
+  viewport: GardenViewport,
+  zoom: number,
+  now: number,
+) {
+  const definition = getMyGardenElement(element.elementType);
+  const centerGridX = element.gridX + (definition.footprintWidth - 1) / 2;
+  const centerGridY = element.gridY + (definition.footprintHeight - 1) / 2;
+  const point = worldToScreen(
+    gridToWorld(centerGridX, centerGridY),
+    camera,
+    viewport,
+    zoom,
+  );
+  if (!isVisible(point, viewport)) return;
+  ctx.save();
+  ctx.translate(Math.round(point.x), Math.round(point.y));
+  ctx.scale(zoom, zoom);
+
+  if (
+    element.elementType === "stone_paver" ||
+    element.elementType === "gravel_tile" ||
+    element.elementType === "brick_paver"
+  ) {
+    if (element.elementType === "brick_paver") {
+      ctx.fillStyle = "#8f5542";
+      ctx.fillRect(-8, -5, 16, 9);
+      ctx.fillStyle = "#c9825e";
+      ctx.fillRect(-7, -4, 6, 3);
+      ctx.fillRect(1, -4, 6, 3);
+      ctx.fillRect(-5, 0, 7, 3);
+      ctx.fillRect(4, 0, 3, 3);
+      ctx.restore();
+      return;
+    }
+    ctx.fillStyle = "#817b70";
+    ctx.fillRect(-7, -5, 14, 9);
+    ctx.fillStyle =
+      element.elementType === "gravel_tile" ? "#a79f8e" : "#bdb6a9";
+    ctx.fillRect(-6, -4, 12, 7);
+    ctx.fillStyle = "#d8d1c4";
+    if (element.elementType === "gravel_tile") {
+      ctx.fillRect(-4, -2, 2, 2);
+      ctx.fillRect(2, 0, 3, 2);
+      ctx.fillRect(1, -4, 2, 2);
+    } else {
+      ctx.fillRect(-4, -3, 5, 2);
+    }
+  } else if (element.elementType === "birdhouse") {
+    ctx.fillStyle = "#704b39";
+    ctx.fillRect(-2, -20, 4, 21);
+    ctx.fillStyle = "#e0b76d";
+    ctx.fillRect(-8, -31, 16, 12);
+    ctx.fillStyle = "#954a45";
+    ctx.fillRect(-10, -35, 20, 5);
+    ctx.fillStyle = "#4a372e";
+    ctx.fillRect(-2, -28, 5, 5);
+  } else if (
+    element.elementType === "bench" ||
+    element.elementType === "rustic_bench"
+  ) {
+    const halfWidth = element.elementType === "rustic_bench" ? 17 : 10;
+    ctx.fillStyle = "#603b31";
+    ctx.fillRect(-halfWidth, -13, halfWidth * 2, 4);
+    ctx.fillRect(-halfWidth, -7, halfWidth * 2, 4);
+    ctx.fillRect(-halfWidth + 2, -3, 3, 8);
+    ctx.fillRect(halfWidth - 5, -3, 3, 8);
+    ctx.fillStyle = "#9e6445";
+    ctx.fillRect(-halfWidth + 1, -12, halfWidth * 2 - 2, 2);
+    ctx.fillRect(-halfWidth + 1, -6, halfWidth * 2 - 2, 2);
+  } else if (element.elementType === "clay_pot") {
+    ctx.fillStyle = "#8f4f38";
+    ctx.fillRect(-6, -9, 12, 4);
+    ctx.fillStyle = "#b96b48";
+    ctx.fillRect(-5, -5, 10, 8);
+    ctx.fillStyle = "#55704d";
+    ctx.fillRect(-1, -15, 2, 7);
+    ctx.fillRect(-5, -13, 4, 3);
+    ctx.fillRect(1, -16, 5, 3);
+  } else if (
+    element.elementType === "hedge" ||
+    element.elementType === "fern" ||
+    element.elementType === "hydrangea" ||
+    element.elementType === "butterfly_bush"
+  ) {
+    const bloom =
+      element.elementType === "hydrangea"
+        ? "#8f8dbc"
+        : element.elementType === "butterfly_bush"
+          ? "#b86f9e"
+          : null;
+    ctx.fillStyle =
+      element.elementType === "fern" ? "#4f714d" : "#526e45";
+    ctx.fillRect(-8, -10, 16, 12);
+    ctx.fillRect(-5, -15, 10, 6);
+    ctx.fillStyle = "#78905b";
+    ctx.fillRect(-7, -12, 5, 5);
+    ctx.fillRect(2, -14, 6, 6);
+    if (bloom) {
+      ctx.fillStyle = bloom;
+      ctx.fillRect(-6, -15, 5, 4);
+      ctx.fillRect(1, -17, 6, 5);
+    }
+  } else if (element.elementType === "wheelbarrow") {
+    ctx.fillStyle = "#6e4a35";
+    ctx.fillRect(-12, -7, 17, 7);
+    ctx.fillStyle = "#9f6a43";
+    ctx.fillRect(-10, -9, 14, 4);
+    ctx.fillStyle = "#413c34";
+    ctx.fillRect(5, 0, 6, 3);
+    ctx.fillRect(-9, 1, 5, 5);
+    ctx.fillStyle = "#b58a5a";
+    ctx.fillRect(4, -3, 11, 2);
+  } else if (element.elementType === "wooden_planter") {
+    ctx.fillStyle = "#684334";
+    ctx.fillRect(-17, -8, 34, 10);
+    ctx.fillStyle = "#a26a43";
+    ctx.fillRect(-15, -6, 30, 6);
+    ctx.fillStyle = "#4f6b43";
+    for (let x = -12; x <= 12; x += 6) ctx.fillRect(x, -13, 3, 7);
+  } else if (
+    element.elementType === "bird_feeder" ||
+    element.elementType === "butterfly_house"
+  ) {
+    ctx.fillStyle = "#654838";
+    ctx.fillRect(-2, -19, 4, 20);
+    ctx.fillStyle =
+      element.elementType === "butterfly_house" ? "#c47a45" : "#d0a65e";
+    ctx.fillRect(-7, -27, 14, 10);
+    ctx.fillStyle = "#49352e";
+    ctx.fillRect(-9, -29, 18, 3);
+    ctx.fillRect(-1, -24, 2, 5);
+  } else if (
+    element.elementType === "trellis" ||
+    element.elementType === "rose_trellis"
+  ) {
+    const width = element.elementType === "rose_trellis" ? 30 : 18;
+    ctx.fillStyle = "#8b6848";
+    ctx.fillRect(-width / 2, -30, 3, 32);
+    ctx.fillRect(width / 2 - 3, -30, 3, 32);
+    ctx.fillRect(-width / 2, -29, width, 3);
+    ctx.fillRect(-width / 2, -18, width, 2);
+    ctx.fillRect(-width / 2, -8, width, 2);
+    if (element.elementType === "rose_trellis") {
+      ctx.fillStyle = "#59734b";
+      ctx.fillRect(-13, -26, 5, 22);
+      ctx.fillRect(7, -25, 5, 20);
+      ctx.fillStyle = "#d94a4e";
+      ctx.fillRect(-14, -25, 6, 5);
+      ctx.fillRect(7, -21, 7, 5);
+      ctx.fillRect(-5, -13, 6, 5);
+    }
+  } else if (
+    element.elementType === "pollinator_sign" ||
+    element.elementType === "beehive"
+  ) {
+    if (element.elementType === "pollinator_sign") {
+      ctx.fillStyle = "#674736";
+      ctx.fillRect(-2, -17, 4, 18);
+      ctx.fillStyle = "#ead69a";
+      ctx.fillRect(-10, -26, 20, 11);
+      ctx.fillStyle = "#6e8a50";
+      ctx.fillRect(-6, -22, 12, 3);
+    } else {
+      ctx.fillStyle = "#71513b";
+      ctx.fillRect(-8, -3, 3, 6);
+      ctx.fillRect(5, -3, 3, 6);
+      ctx.fillStyle = "#dfb84d";
+      ctx.fillRect(-10, -18, 20, 16);
+      ctx.fillStyle = "#a57b37";
+      ctx.fillRect(-10, -14, 20, 2);
+      ctx.fillRect(-10, -8, 20, 2);
+      ctx.fillStyle = "#4b3b31";
+      ctx.fillRect(-2, -6, 4, 4);
+      const wing = Math.floor(now / 180) % 2;
+      ctx.fillStyle = "#f2cf47";
+      ctx.fillRect(12, -18 + wing, 3, 2);
+      ctx.fillRect(-15, -12 - wing, 3, 2);
+    }
+  } else if (element.elementType === "reeds") {
+    ctx.fillStyle = "#55724d";
+    ctx.fillRect(-6, -18, 2, 19);
+    ctx.fillRect(-1, -22, 2, 23);
+    ctx.fillRect(5, -15, 2, 16);
+    ctx.fillStyle = "#7a583b";
+    ctx.fillRect(-7, -21, 4, 5);
+    ctx.fillRect(-2, -25, 4, 5);
+    ctx.fillRect(4, -18, 4, 5);
+  } else if (element.elementType === "lily_pads") {
+    ctx.fillStyle = "#5f8659";
+    ctx.fillRect(-10, -4, 9, 7);
+    ctx.fillRect(1, -3, 10, 7);
+    ctx.fillStyle = "#eee4ce";
+    ctx.fillRect(3, -8, 5, 5);
+    ctx.fillStyle = "#d9a1ad";
+    ctx.fillRect(4, -7, 3, 3);
+  } else if (
+    element.elementType === "birdbath" ||
+    element.elementType === "stone_basin"
+  ) {
+    const wide = element.elementType === "stone_basin";
+    ctx.fillStyle = "#79776e";
+    ctx.fillRect(-2, -12, 4, 14);
+    ctx.fillRect(-6, 0, 12, 3);
+    ctx.fillStyle = "#aaa99d";
+    ctx.fillRect(wide ? -13 : -9, -17, wide ? 26 : 18, 6);
+    ctx.fillStyle = "#68b8cf";
+    ctx.fillRect(wide ? -10 : -6, -16, wide ? 20 : 12, 2);
+  } else if (element.elementType === "willow_tree") {
+    ctx.fillStyle = "#604936";
+    ctx.fillRect(-4, -25, 8, 28);
+    ctx.fillStyle = "#597849";
+    ctx.fillRect(-17, -39, 34, 18);
+    ctx.fillRect(-12, -24, 5, 16);
+    ctx.fillRect(8, -26, 5, 18);
+    ctx.fillStyle = "#86a668";
+    ctx.fillRect(-13, -37, 12, 7);
+    ctx.fillRect(2, -35, 12, 7);
+  } else if (element.elementType === "fountain") {
+    const splash = Math.floor(now / 220) % 3;
+    ctx.fillStyle = "#77766f";
+    ctx.fillRect(-15, -4, 30, 7);
+    ctx.fillStyle = "#aaa99e";
+    ctx.fillRect(-12, -10, 24, 7);
+    ctx.fillRect(-3, -24, 6, 15);
+    ctx.fillStyle = "#62c2df";
+    ctx.fillRect(-1, -31 - splash, 2, 12);
+    ctx.fillRect(-7, -23 + splash, 3, 5);
+    ctx.fillRect(5, -23 + splash, 3, 5);
+  } else if (element.elementType === "small_pond") {
+    ctx.fillStyle = "#69675d";
+    ctx.fillRect(-25, -8, 50, 15);
+    ctx.fillStyle = "#69afbd";
+    ctx.fillRect(-22, -6, 44, 11);
+    ctx.fillStyle = "#91d0d5";
+    ctx.fillRect(-14, -4, 17, 2);
+    ctx.fillStyle = "#638757";
+    ctx.fillRect(8, -4, 7, 5);
+  }
+  ctx.restore();
+}
+
+function drawPersonalSoilPatches(
+  ctx: CanvasRenderingContext2D,
+  plants: PlantRecord[],
+  camera: WorldPoint,
+  viewport: GardenViewport,
+  zoom: number,
+) {
+  for (const plant of plants) {
+    const point = worldToScreen(
+      gridToWorld(plant.grid_x, plant.grid_y),
+      camera,
+      viewport,
+      zoom,
+    );
+    if (!isVisible(point, viewport)) continue;
+    ctx.save();
+    ctx.translate(Math.round(point.x), Math.round(point.y));
+    ctx.scale(zoom, zoom);
+    ctx.fillStyle = "#7d5b43";
+    ctx.fillRect(-7, -4, 14, 7);
+    ctx.fillStyle = "#9b7557";
+    ctx.fillRect(-4, -5, 8, 2);
+    ctx.fillRect(-8, -1, 3, 3);
+    ctx.fillRect(5, 0, 3, 2);
+    ctx.restore();
+  }
+}
+
+function drawColorMask(
+  ctx: CanvasRenderingContext2D,
+  plants: PlantRecord[],
+  camera: WorldPoint,
+  viewport: GardenViewport,
+  now: number,
+  kind: "soil" | "green",
+  zoom: number,
+) {
+  ctx.clearRect(0, 0, viewport.width, viewport.height);
+  for (const plant of plants) {
+    const visual = getPlantVisual(plant, now);
+    if (visual.colorRadius <= 0) continue;
+    const point = worldToScreen(
+      gridToWorld(plant.grid_x, plant.grid_y),
+      camera,
+      viewport,
+      zoom,
+    );
+    const radiusMultiplier = kind === "soil" ? 1.55 : 0.9;
+    const radius = visual.colorRadius * zoom * radiusMultiplier;
+    const strength =
+      kind === "soil"
+        ? Math.min(0.84, 0.36 + visual.colorStrength * 0.48)
+        : visual.colorStrength;
+    const gradient = ctx.createRadialGradient(point.x, point.y, 4, point.x, point.y, radius);
+    gradient.addColorStop(0, `rgba(255,255,255,${strength})`);
+    gradient.addColorStop(kind === "soil" ? 0.58 : 0.7, `rgba(255,255,255,${strength * 0.68})`);
+    gradient.addColorStop(1, "rgba(255,255,255,0)");
+    ctx.fillStyle = gradient;
+    ctx.fillRect(point.x - radius, point.y - radius, radius * 2, radius * 2);
+  }
+}
+
+function applyMask(
+  layerContext: CanvasRenderingContext2D,
+  maskContext: CanvasRenderingContext2D,
+  maskCanvas: HTMLCanvasElement,
+) {
+  layerContext.globalCompositeOperation = "destination-in";
+  layerContext.drawImage(maskCanvas, 0, 0);
+  layerContext.globalCompositeOperation = "source-over";
+  maskContext.globalCompositeOperation = "source-over";
+}
+
+function isVisible(point: WorldPoint, viewport: GardenViewport, padding = 50) {
+  return (
+    point.x >= -padding &&
+    point.x <= viewport.width + padding &&
+    point.y >= -padding &&
+    point.y <= viewport.height + padding
+  );
+}
+
+function drawSeedOrSprout(
+  ctx: CanvasRenderingContext2D,
+  plant: PlantRecord,
+  state: "seed" | "sprout",
+) {
+  if (state === "seed") {
+    ctx.fillStyle = plant.plant_type === "sunflower" ? "#4f4434" : "#705443";
+    ctx.fillRect(-2, -2, 4, 2);
+    ctx.fillStyle = plant.plant_type === "lavender" ? "#8f765b" : "#8f6b51";
+    ctx.fillRect(-1, -4, 2, 2);
+    return;
+  }
+
+  ctx.fillStyle = plant.plant_type === "lavender" ? "#69755e" : "#68764f";
+  ctx.fillRect(-1, -5, 2, 6);
+  ctx.fillRect(-4, -4, 3, 2);
+  ctx.fillRect(1, -2, 2, 2);
+}
+
+function drawRosePlant(
+  ctx: CanvasRenderingContext2D,
+  plant: PlantRecord,
+  state: "young" | "mature" | "blooming" | "wilting",
+) {
+  const wilting = state === "wilting";
+  const plantVariant = Math.abs(plant.grid_x * 17 + plant.grid_y * 13) % 2;
+  const stemLean = plantVariant === 0 ? -1 : 1;
+  if (state === "young") {
+    ctx.fillStyle = "#45643f";
+    ctx.fillRect(-1, -4, 2, 5);
+    ctx.fillRect(-1 + stemLean, -9, 2, 5);
+    ctx.fillRect(-4 + stemLean, -7, 3, 2);
+    ctx.fillRect(1, -3, 3, 2);
+    ctx.fillStyle = "#718054";
+    ctx.fillRect(-2 + stemLean, -10, 4, 3);
+    return;
+  }
+
+  const leftLeafY = plantVariant === 0 ? -7 : -6;
+  const rightLeafY = plantVariant === 0 ? -2 : -3;
+  ctx.fillStyle = wilting ? "#677052" : "#45643f";
+  ctx.fillRect(-1, -4, 2, 5);
+  ctx.fillRect(-1 + stemLean, -9, 2, 5);
+  ctx.fillRect(-5 + stemLean, leftLeafY, 4, 2);
+  ctx.fillRect(-2, leftLeafY + 1, 2, 1);
+  ctx.fillRect(1, rightLeafY, 3, 2);
+  ctx.fillRect(0, rightLeafY + 1, 2, 1);
+
+  if (state === "mature") {
+    ctx.fillStyle = "#bc5f5f";
+    ctx.fillRect(-3 + stemLean, -12, 6, 4);
+    ctx.fillStyle = "#8f4548";
+    ctx.fillRect(-1 + stemLean, -13, 3, 3);
+    return;
+  }
+
+  ctx.fillStyle = wilting ? "#a76d62" : "#d94a4e";
+  ctx.fillRect(-4, -14, 8, 7);
+  ctx.fillRect(-6, -12, 12, 3);
+  ctx.fillStyle = wilting ? "#845047" : "#a51f31";
+  ctx.fillRect(-2, -13, 4, 4);
+  ctx.fillStyle = "#f2a36f";
+  ctx.fillRect(-1, -12, 2, 2);
+}
+
+function drawSunflowerPlant(
+  ctx: CanvasRenderingContext2D,
+  state: "young" | "mature" | "blooming" | "wilting",
+) {
+  const wilting = state === "wilting";
+  ctx.save();
+  if (wilting) ctx.rotate(0.16);
+  ctx.fillStyle = wilting ? "#6f7151" : "#42633e";
+  ctx.fillRect(-1, -12, 2, 13);
+  ctx.fillRect(-6, -7, 5, 3);
+  ctx.fillRect(1, -4, 6, 3);
+
+  if (state === "young") {
+    ctx.fillStyle = "#758454";
+    ctx.fillRect(-3, -14, 6, 3);
+    ctx.restore();
+    return;
+  }
+
+  const petal = wilting ? "#b78f4c" : "#e4b53f";
+  const center = wilting ? "#705243" : "#5b4335";
+  const headY = state === "mature" ? -14 : -16;
+  ctx.fillStyle = petal;
+  ctx.fillRect(-5, headY - 3, 10, 8);
+  ctx.fillRect(-7, headY - 1, 14, 4);
+  ctx.fillStyle = center;
+  ctx.fillRect(-3, headY - 1, 6, 5);
+  ctx.fillStyle = "#9c6e35";
+  ctx.fillRect(-1, headY, 2, 2);
+  ctx.restore();
+}
+
+function drawLavenderPlant(
+  ctx: CanvasRenderingContext2D,
+  state: "young" | "mature" | "blooming" | "wilting",
+) {
+  const wilting = state === "wilting";
+  ctx.fillStyle = wilting ? "#73735d" : "#536a50";
+  ctx.fillRect(-7, -5, 14, 5);
+  ctx.fillRect(-5, -8, 3, 7);
+  ctx.fillRect(-1, -10, 2, 10);
+  ctx.fillRect(3, -7, 3, 7);
+
+  if (state === "young") return;
+
+  const flower = wilting ? "#827688" : "#7876a8";
+  const flowerLight = wilting ? "#9b8c92" : "#a39bc4";
+  const topOffset = state === "mature" ? 2 : 0;
+  ctx.fillStyle = flower;
+  ctx.fillRect(-6, -13 + topOffset, 3, 6);
+  ctx.fillRect(-1, -16 + topOffset, 3, 7);
+  ctx.fillRect(4, -12 + topOffset, 3, 6);
+  ctx.fillStyle = flowerLight;
+  ctx.fillRect(-5, -13 + topOffset, 2, 2);
+  ctx.fillRect(0, -16 + topOffset, 2, 2);
+  ctx.fillRect(5, -12 + topOffset, 2, 2);
+}
+
+function drawMyGardenFlower(
+  ctx: CanvasRenderingContext2D,
+  plantType: "daisy" | "tulip" | "wildflowers" | "peony" | "bee_balm",
+) {
+  ctx.fillStyle = "#4f7047";
+  ctx.fillRect(-1, -10, 2, 11);
+  ctx.fillRect(-5, -5, 4, 2);
+  ctx.fillRect(1, -7, 5, 2);
+
+  if (plantType === "daisy") {
+    ctx.fillStyle = "#fff8de";
+    ctx.fillRect(-5, -15, 10, 7);
+    ctx.fillRect(-7, -13, 14, 3);
+    ctx.fillStyle = "#e0ad37";
+    ctx.fillRect(-2, -13, 4, 4);
+  } else if (plantType === "tulip") {
+    ctx.fillStyle = "#d95b6a";
+    ctx.fillRect(-5, -16, 10, 8);
+    ctx.fillRect(-3, -18, 3, 4);
+    ctx.fillRect(1, -18, 3, 4);
+    ctx.fillStyle = "#a7354e";
+    ctx.fillRect(-2, -14, 4, 5);
+  } else if (plantType === "wildflowers") {
+    ctx.fillStyle = "#4f7047";
+    ctx.fillRect(-6, -9, 2, 10);
+    ctx.fillRect(5, -8, 2, 9);
+    ctx.fillStyle = "#f0c04b";
+    ctx.fillRect(-8, -13, 5, 5);
+    ctx.fillStyle = "#7f79ad";
+    ctx.fillRect(-2, -16, 5, 5);
+    ctx.fillStyle = "#d85b68";
+    ctx.fillRect(4, -12, 5, 5);
+  } else if (plantType === "peony") {
+    ctx.fillStyle = "#eba0ad";
+    ctx.fillRect(-6, -16, 12, 9);
+    ctx.fillRect(-8, -13, 16, 4);
+    ctx.fillStyle = "#c85f78";
+    ctx.fillRect(-4, -14, 8, 6);
+    ctx.fillStyle = "#f2c5ca";
+    ctx.fillRect(-2, -15, 4, 3);
+  } else {
+    ctx.fillStyle = "#c44e78";
+    ctx.fillRect(-5, -17, 10, 9);
+    ctx.fillRect(-7, -14, 14, 3);
+    ctx.fillStyle = "#ed8aa4";
+    ctx.fillRect(-3, -18, 2, 5);
+    ctx.fillRect(1, -17, 2, 5);
+    ctx.fillStyle = "#6d3f68";
+    ctx.fillRect(-2, -13, 4, 4);
+  }
+}
+
+function drawPlant(
+  ctx: CanvasRenderingContext2D,
+  plant: PlantRecord,
+  camera: WorldPoint,
+  viewport: GardenViewport,
+  now: number,
+  zoom: number,
+  showCareCue = false,
+  careReady?: boolean,
+) {
+  const point = worldToScreen(
+    gridToWorld(plant.grid_x, plant.grid_y),
+    camera,
+    viewport,
+    zoom,
+  );
+  if (!isVisible(point, viewport)) return;
+  const visual = getPlantVisual(plant, now);
+  if (visual.state === "expired") return;
+  ctx.save();
+  ctx.translate(Math.round(point.x), Math.round(point.y));
+  ctx.scale(zoom, zoom);
+
+  if (plant.heritage_at) {
+    const shimmer = 0.72 + Math.sin(now / 900 + plant.grid_x + plant.grid_y) * 0.12;
+    ctx.save();
+    ctx.globalAlpha = shimmer;
+    ctx.strokeStyle = "#f4d36b";
+    ctx.lineWidth = 1;
+    ctx.strokeRect(-8.5, -8.5, 17, 11);
+    ctx.fillStyle = "#fff2b3";
+    ctx.fillRect(-1, -12, 3, 3);
+    ctx.restore();
+  }
+
+  if (visual.state === "dead") {
+    ctx.fillStyle = plant.plant_type === "lavender" ? "#706756" : "#6f573d";
+    ctx.fillRect(-1, -6, 2, 7);
+    ctx.fillRect(-5, -5, 5, 2);
+    ctx.fillRect(0, -3, 5, 2);
+    ctx.restore();
+    return;
+  }
+
+  if (visual.state === "seed" || visual.state === "sprout") {
+    drawSeedOrSprout(ctx, plant, visual.state);
+    if (showCareCue && (careReady ?? canEarnWateringCare(plant, now))) {
+      drawCareReadyCue(ctx, now, plant);
+    }
+    ctx.restore();
+    return;
+  }
+
+  if (plant.plant_type === "sunflower") {
+    drawSunflowerPlant(ctx, visual.state);
+  } else if (plant.plant_type === "lavender") {
+    drawLavenderPlant(ctx, visual.state);
+  } else if (
+    plant.plant_type === "daisy" ||
+    plant.plant_type === "tulip" ||
+    plant.plant_type === "wildflowers" ||
+    plant.plant_type === "peony" ||
+    plant.plant_type === "bee_balm"
+  ) {
+    drawMyGardenFlower(ctx, plant.plant_type);
+  } else {
+    drawRosePlant(ctx, plant, visual.state);
+  }
+  if (showCareCue && (careReady ?? canEarnWateringCare(plant, now))) {
+    drawCareReadyCue(ctx, now, plant);
+  }
+  ctx.restore();
+}
+
+function drawCareReadyCue(
+  ctx: CanvasRenderingContext2D,
+  now: number,
+  plant: PlantRecord,
+) {
+  const phase =
+    (now / 1600 + Math.abs(plant.grid_x * 7 + plant.grid_y * 11)) %
+    (Math.PI * 2);
+  ctx.save();
+  if (isSpecialWateringFlower(plant)) {
+    ctx.globalAlpha = 0.9 + Math.sin(phase) * 0.08;
+    ctx.translate(-8, -12);
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(-3, -1, 7, 2);
+    ctx.fillRect(-1, -3, 2, 7);
+    ctx.fillStyle = "#c94f4c";
+    ctx.fillRect(-1, -1, 2, 2);
+    ctx.restore();
+    return;
+  }
+
+  ctx.globalAlpha = 0.88 + Math.sin(phase) * 0.08;
+  ctx.translate(-8, -12);
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(-1, -3, 3, 2);
+  ctx.fillRect(-2, -1, 5, 3);
+  ctx.fillRect(-1, 2, 3, 2);
+  ctx.fillStyle = "#54c9f3";
+  ctx.fillRect(0, -2, 1, 1);
+  ctx.fillRect(-1, -1, 3, 2);
+  ctx.fillRect(-1, 1, 3, 2);
+  ctx.fillStyle = "#e8fbff";
+  ctx.fillRect(-1, -1, 1, 1);
+  ctx.restore();
+}
+
+function drawPlantCareCue(
+  ctx: CanvasRenderingContext2D,
+  plant: PlantRecord,
+  camera: WorldPoint,
+  viewport: GardenViewport,
+  now: number,
+  zoom: number,
+  careReady?: boolean,
+) {
+  const visual = getPlantVisual(plant, now);
+  if (
+    visual.state === "expired" ||
+    visual.state === "dead" ||
+    !(careReady ?? canEarnWateringCare(plant, now))
+  ) {
+    return;
+  }
+  const point = worldToScreen(
+    gridToWorld(plant.grid_x, plant.grid_y),
+    camera,
+    viewport,
+    zoom,
+  );
+  if (!isVisible(point, viewport)) return;
+  ctx.save();
+  ctx.translate(Math.round(point.x), Math.round(point.y));
+  ctx.scale(zoom, zoom);
+  drawCareReadyCue(ctx, now, plant);
+  ctx.restore();
+}
+
+function drawPersonalDepthObjects(
+  ctx: CanvasRenderingContext2D,
+  plants: PlantRecord[],
+  elements: PersonalGardenElement[],
+  camera: WorldPoint,
+  viewport: GardenViewport,
+  now: number,
+  zoom: number,
+) {
+  const objects: Array<
+    | { kind: "plant"; gridX: number; gridY: number; plant: PlantRecord }
+    | {
+        kind: "element";
+        gridX: number;
+        gridY: number;
+        element: PersonalGardenElement;
+      }
+  > = [
+    ...plants.map((plant) => ({
+      kind: "plant" as const,
+      gridX: plant.grid_x,
+      gridY: plant.grid_y,
+      plant,
+    })),
+    ...elements.map((element) => ({
+      kind: "element" as const,
+      gridX: element.gridX,
+      gridY:
+        element.gridY +
+        getMyGardenElement(element.elementType).footprintHeight -
+        1,
+      element,
+    })),
+  ];
+
+  objects.sort(
+    (left, right) =>
+      left.gridY - right.gridY ||
+      left.gridX - right.gridX ||
+      (left.kind === right.kind ? 0 : left.kind === "plant" ? -1 : 1),
+  );
+
+  for (const object of objects) {
+    if (object.kind === "plant") {
+      drawPlant(ctx, object.plant, camera, viewport, now, zoom);
+    } else {
+      drawPersonalElement(ctx, object.element, camera, viewport, zoom, now);
+    }
+  }
+}
+
+function drawDampSoil(
+  ctx: CanvasRenderingContext2D,
+  plants: PlantRecord[],
+  camera: WorldPoint,
+  viewport: GardenViewport,
+  now: number,
+  zoom: number,
+) {
+  for (const plant of plants) {
+    const visual = getPlantVisual(plant, now);
+    if (visual.dampStrength <= 0) continue;
+    const point = worldToScreen(
+      gridToWorld(plant.grid_x, plant.grid_y),
+      camera,
+      viewport,
+      zoom,
+    );
+    if (!isVisible(point, viewport)) continue;
+    ctx.save();
+    ctx.translate(Math.round(point.x), Math.round(point.y));
+    ctx.scale(zoom, zoom);
+    const elapsedHalfLives = -Math.log2(visual.dampStrength);
+    const soilVariant = Math.abs(plant.grid_x * 17 + plant.grid_y * 13) % 3;
+    const patchInset = Math.min(2, Math.floor(elapsedHalfLives));
+    const patchHalfWidth = 5 - patchInset;
+    const patchHeight = 6 - patchInset;
+    ctx.globalAlpha = 0.42 * visual.dampStrength;
+    ctx.fillStyle = "#6f5947";
+    ctx.fillRect(
+      -patchHalfWidth,
+      -Math.ceil(patchHeight / 2),
+      patchHalfWidth * 2,
+      patchHeight,
+    );
+    if (elapsedHalfLives < 2.7) {
+      if (soilVariant === 0) {
+        ctx.fillRect(-3 + patchInset, -5 + patchInset, 7 - patchInset, 2);
+        ctx.fillRect(-6 + patchInset, -1, 2, 3 - Math.min(1, patchInset));
+      } else if (soilVariant === 1) {
+        ctx.fillRect(-4 + patchInset, -4 + patchInset, 8 - patchInset * 2, 2);
+        ctx.fillRect(4 - patchInset, -1, 2, 3 - Math.min(1, patchInset));
+      } else {
+        ctx.fillRect(-2, -5 + patchInset, 7 - patchInset, 2);
+        ctx.fillRect(-6 + patchInset, 0, 3 - Math.min(1, patchInset), 2);
+      }
+    }
+    if (elapsedHalfLives < 2) {
+      ctx.globalAlpha = 0.28 * visual.dampStrength;
+      ctx.fillStyle = "#a18a70";
+      ctx.fillRect(-3, -2, 3, 1);
+      ctx.fillRect(2, 1, 3, 1);
+    }
+    if (elapsedHalfLives < 1) {
+      const sheenStrength = 1 - elapsedHalfLives;
+      ctx.globalAlpha = 0.32 * visual.dampStrength * sheenStrength;
+      ctx.fillStyle = "#93b7b0";
+      ctx.fillRect(-4, -3, 2, 1);
+      ctx.fillRect(3, 1, 2, 1);
+    }
+    ctx.restore();
+  }
+}
+
+function drawSelection(
+  ctx: CanvasRenderingContext2D,
+  selected: SelectedCell,
+  camera: WorldPoint,
+  viewport: GardenViewport,
+  zoom: number,
+) {
+  if (!selected) return;
+  const point = worldToScreen(
+    gridToWorld(selected.gridX, selected.gridY),
+    camera,
+    viewport,
+    zoom,
+  );
+  if (!isVisible(point, viewport)) return;
+  ctx.save();
+  ctx.translate(Math.round(point.x), Math.round(point.y));
+  ctx.scale(zoom, zoom);
+  ctx.globalAlpha = 0.95;
+  ctx.fillStyle = "#fff4dc";
+  ctx.fillRect(-9, -7, 5, 2);
+  ctx.fillRect(-9, -7, 2, 5);
+  ctx.fillRect(4, -7, 5, 2);
+  ctx.fillRect(7, -7, 2, 5);
+  ctx.fillRect(-9, 5, 5, 2);
+  ctx.fillRect(-9, 2, 2, 5);
+  ctx.fillRect(4, 5, 5, 2);
+  ctx.fillRect(7, 2, 2, 5);
+  ctx.fillStyle = "#a84f4b";
+  ctx.fillRect(-8, -6, 4, 2);
+  ctx.fillRect(-8, -6, 2, 4);
+  ctx.fillRect(4, -6, 4, 2);
+  ctx.fillRect(6, -6, 2, 4);
+  ctx.fillRect(-8, 4, 4, 2);
+  ctx.fillRect(-8, 2, 2, 4);
+  ctx.fillRect(4, 4, 4, 2);
+  ctx.fillRect(6, 2, 2, 4);
+  ctx.restore();
+}
+
+function drawWateringTargets(
+  ctx: CanvasRenderingContext2D,
+  targets: Array<NonNullable<SelectedCell>>,
+  camera: WorldPoint,
+  viewport: GardenViewport,
+  zoom: number,
+  mary: WorldPoint,
+  selected: SelectedCell,
+) {
+  for (const target of targets) {
+    const point = worldToScreen(
+      gridToWorld(target.gridX, target.gridY),
+      camera,
+      viewport,
+      zoom,
+    );
+    if (!isVisible(point, viewport)) continue;
+    ctx.save();
+    ctx.translate(Math.round(point.x), Math.round(point.y));
+    ctx.scale(zoom, zoom);
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = "#c9f7ff";
+    ctx.fillRect(-8, -8, 6, 2);
+    ctx.fillRect(2, -8, 6, 2);
+    ctx.fillRect(-8, 6, 6, 2);
+    ctx.fillRect(2, 6, 6, 2);
+    ctx.fillRect(-8, -6, 2, 5);
+    ctx.fillRect(-8, 1, 2, 5);
+    ctx.fillRect(6, -6, 2, 5);
+    ctx.fillRect(6, 1, 2, 5);
+    ctx.restore();
+  }
+
+  if (!selected || targets.length === 0) return;
+  const selectedPoint = worldToScreen(
+    gridToWorld(selected.gridX, selected.gridY),
+    camera,
+    viewport,
+    zoom,
+  );
+  if (!isVisible(selectedPoint, viewport)) return;
+  const selectedWorld = gridToWorld(selected.gridX, selected.gridY);
+  const cornerX = mary.x <= selectedWorld.x ? -6 : 6;
+  const cornerY = mary.y <= selectedWorld.y ? -6 : 6;
+  ctx.save();
+  ctx.translate(Math.round(selectedPoint.x), Math.round(selectedPoint.y));
+  ctx.scale(zoom, zoom);
+  ctx.globalAlpha = 1;
+  ctx.fillStyle = "#d7464d";
+  ctx.fillRect(cornerX < 0 ? cornerX : cornerX - 4, cornerY, 5, 2);
+  ctx.fillRect(cornerX, cornerY < 0 ? cornerY : cornerY - 4, 2, 5);
+  ctx.restore();
+}
+
+function drawMary(
+  ctx: CanvasRenderingContext2D,
+  point: WorldPoint,
+  camera: WorldPoint,
+  viewport: GardenViewport,
+  moving: boolean,
+  now: number,
+  zoom: number,
+) {
+  const screen = worldToScreen(point, camera, viewport, zoom);
+  const step = moving && Math.floor(now / 170) % 2 === 0 ? 1 : 0;
+  ctx.save();
+  ctx.translate(Math.round(screen.x), Math.round(screen.y) - step * zoom);
+  ctx.scale(zoom, zoom);
+  ctx.fillStyle = "#5e2f25";
+  ctx.fillRect(-6, -22, 12, 9);
+  ctx.fillRect(-8, -19, 16, 9);
+  ctx.fillStyle = "#e5c4a1";
+  ctx.fillRect(-5, -12, 10, 5);
+  ctx.fillStyle = "#f0e0c4";
+  ctx.fillRect(-7, -8, 14, 8);
+  ctx.fillStyle = "#65704a";
+  ctx.fillRect(-6, -7, 4, 13);
+  ctx.fillRect(2, -7, 4, 13);
+  ctx.fillRect(-2, -3, 4, 9);
+  ctx.fillStyle = "#49382e";
+  ctx.fillRect(-7, 5, 6, 4 + step);
+  ctx.fillRect(1, 5, 6, 5 - step);
+  ctx.fillStyle = "#312a26";
+  ctx.fillRect(-7, 8 + step, 6, 2);
+  ctx.fillRect(1, 9 - step, 6, 2);
+  ctx.restore();
+}
+
+function drawDuck(
+  ctx: CanvasRenderingContext2D,
+  point: WorldPoint,
+  camera: WorldPoint,
+  viewport: GardenViewport,
+  moving: boolean,
+  now: number,
+  zoom: number,
+) {
+  const screen = worldToScreen(point, camera, viewport, zoom);
+  const waddle = moving && Math.floor(now / 150) % 2 === 0 ? 1 : -1;
+  ctx.save();
+  ctx.translate(Math.round(screen.x) + waddle * zoom, Math.round(screen.y));
+  ctx.scale(zoom, zoom);
+  ctx.fillStyle = "#f5f0df";
+  ctx.fillRect(-5, -8, 10, 8);
+  ctx.fillRect(-3, -12, 7, 6);
+  ctx.fillStyle = "#2f3130";
+  ctx.fillRect(2, -10, 1, 1);
+  ctx.fillStyle = "#d6a13b";
+  ctx.fillRect(4, -9, 4, 2);
+  ctx.fillRect(-4, 0, 3, 1);
+  ctx.fillRect(2, 0, 3, 1);
+  ctx.restore();
+}
+
+function drawEffects(
+  ctx: CanvasRenderingContext2D,
+  effects: GardenEffect[],
+  camera: WorldPoint,
+  viewport: GardenViewport,
+  now: number,
+  zoom: number,
+) {
+  for (const effect of effects) {
+    const age = now - effect.startedAt;
+    const duration =
+      effect.kind === "care" ? 1100 : effect.kind === "worm" ? 1800 : 900;
+    if (age < 0 || age > duration) continue;
+    const progress = age / duration;
+    if (effect.kind === "spray") {
+      const from = worldToScreen(
+        { x: effect.fromX, y: effect.fromY - 8 },
+        camera,
+        viewport,
+        zoom,
+      );
+      const targetWorld = gridToWorld(effect.gridX, effect.gridY);
+      const directionX = targetWorld.x - effect.fromX;
+      const directionY = targetWorld.y - effect.fromY;
+      const directionLength = Math.max(1, Math.hypot(directionX, directionY));
+      const extendedTarget = {
+        x: targetWorld.x + (directionX / directionLength) * 32,
+        y: targetWorld.y + (directionY / directionLength) * 32,
+      };
+      const to = worldToScreen(
+        extendedTarget,
+        camera,
+        viewport,
+        zoom,
+      );
+      ctx.save();
+      ctx.globalAlpha = Math.sin(progress * Math.PI) * 0.74;
+      ctx.fillStyle = "#75b7cf";
+      for (let index = 1; index <= 12; index += 1) {
+        const t = index / 13;
+        const arc = Math.sin(t * Math.PI) * 8 * zoom;
+        ctx.fillRect(
+          Math.round(from.x + (to.x - from.x) * t),
+          Math.round(from.y + (to.y - from.y) * t - arc),
+          Math.max(1, Math.round(2 * zoom)),
+          Math.max(1, Math.round(2 * zoom)),
+        );
+      }
+      ctx.restore();
+      continue;
+    }
+    const point =
+      effect.kind === "care"
+        ? worldToScreen({ x: effect.x, y: effect.y }, camera, viewport, zoom)
+        : worldToScreen(
+            gridToWorld(effect.gridX, effect.gridY),
+            camera,
+            viewport,
+            zoom,
+          );
+    ctx.save();
+    ctx.translate(Math.round(point.x), Math.round(point.y));
+    ctx.scale(zoom, zoom);
+    if (effect.kind === "care") {
+      const fadeIn = Math.min(1, progress / 0.12);
+      const fadeOut = Math.min(1, (1 - progress) / 0.28);
+      ctx.globalAlpha = Math.min(fadeIn, fadeOut);
+      ctx.translate(0, -31 - progress * 18);
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.font = '900 14px "Courier New", monospace';
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = "rgba(255, 244, 223, 0.92)";
+      ctx.fillStyle = effect.dailyBonus ? "#57865a" : "#c94f4c";
+      const label = `+${effect.value}`;
+      ctx.strokeText(label, 0, 0);
+      ctx.fillText(label, 0, 0);
+    } else if (effect.kind === "water") {
+      ctx.fillStyle = "#75b7cf";
+      for (let index = 0; index < 4; index += 1) {
+        const offset = index * 4 - 6;
+        ctx.fillRect(offset, -20 + progress * 16 + (index % 2) * 3, 2, 3);
+      }
+    } else if (effect.kind === "worm") {
+      const wiggle = Math.sin(progress * Math.PI * 6) * 3;
+      ctx.globalAlpha = Math.sin(progress * Math.PI);
+      ctx.translate(wiggle, -12 - progress * 12);
+      ctx.fillStyle = "#d88a72";
+      ctx.fillRect(-7, -2, 5, 4);
+      ctx.fillStyle = "#c46f5f";
+      ctx.fillRect(-2, -4, 5, 4);
+      ctx.fillStyle = "#a9514c";
+      ctx.fillRect(3, -2, 5, 4);
+      ctx.fillStyle = "#34231f";
+      ctx.fillRect(6, -1, 1, 1);
+    } else if (effect.kind === "plant") {
+      ctx.fillStyle = "#876444";
+      ctx.fillRect(-7 - progress * 4, -3, 3, 2);
+      ctx.fillRect(4 + progress * 4, -5, 3, 2);
+    } else if (effect.kind === "path") {
+      ctx.fillStyle = "#e1c495";
+      ctx.fillRect(-8 - progress * 2, -7 - progress * 3, 3, 2);
+      ctx.fillRect(5 + progress * 2, -5 - progress * 4, 3, 2);
+    } else {
+      ctx.fillStyle = "#f2d08c";
+      ctx.fillRect(-6 - progress * 5, -10 - progress * 6, 3, 3);
+      ctx.fillRect(3 + progress * 5, -7 - progress * 8, 3, 3);
+    }
+    ctx.restore();
+  }
+}
+
+export function renderGarden(ctx: CanvasRenderingContext2D, state: RenderGardenState) {
+  if (state.mode === "personal" && state.personalGarden) {
+    const visiblePlants = state.plants.filter(
+      (plant) => getPlantVisual(plant, state.now).state !== "expired",
+    );
+    ctx.imageSmoothingEnabled = false;
+    ctx.clearRect(0, 0, state.viewport.width, state.viewport.height);
+    drawPersonalTerrain(
+      ctx,
+      state.camera,
+      state.viewport,
+      state.zoom,
+      state.personalGarden.minX,
+      state.personalGarden.minY,
+      state.personalGarden.width,
+      state.personalGarden.height,
+      state.personalGarden.nextExpansion,
+    );
+    drawPersonalPaths(
+      ctx,
+      state.personalGarden.paths,
+      state.camera,
+      state.viewport,
+      state.zoom,
+    );
+    drawPersonalDecorations(
+      ctx,
+      state.camera,
+      state.viewport,
+      state.zoom,
+      state.personalGarden.minX,
+      state.personalGarden.minY,
+      state.personalGarden.width,
+      state.personalGarden.height,
+      state.personalGarden.nextExpansion,
+    );
+    drawSuggestedPlantingHighlight(
+      ctx,
+      state.suggestedPlantingCell,
+      state.camera,
+      state.viewport,
+      state.now,
+      state.zoom,
+    );
+    drawPersonalSoilPatches(
+      ctx,
+      visiblePlants,
+      state.camera,
+      state.viewport,
+      state.zoom,
+    );
+    drawDampSoil(ctx, visiblePlants, state.camera, state.viewport, state.now, state.zoom);
+    drawPersonalDepthObjects(
+      ctx,
+      visiblePlants,
+      state.personalGarden.elements,
+      state.camera,
+      state.viewport,
+      state.now,
+      state.zoom,
+    );
+    drawDuck(ctx, state.duck, state.camera, state.viewport, state.moving, state.now, state.zoom);
+    if (state.tutorialDimmed) {
+      drawTutorialDimmer(
+        ctx,
+        state.viewport,
+        state.mary,
+        state.camera,
+        state.zoom,
+      );
+      drawSuggestedPlantingHighlight(
+        ctx,
+        state.suggestedPlantingCell,
+        state.camera,
+        state.viewport,
+        state.now,
+        state.zoom,
+      );
+    }
+    drawMary(ctx, state.mary, state.camera, state.viewport, state.moving, state.now, state.zoom);
+    drawSuggestedPlantingLabel(
+      ctx,
+      state.suggestedPlantingCell,
+      state.mary,
+      state.camera,
+      state.viewport,
+      state.now,
+      state.zoom,
+    );
+    drawEffects(ctx, state.effects, state.camera, state.viewport, state.now, state.zoom);
+    drawSelection(ctx, state.selected, state.camera, state.viewport, state.zoom);
+    return;
+  }
+
+  baseLayer = ensureLayer(baseLayer, state.viewport);
+  soilLayer = ensureLayer(soilLayer, state.viewport);
+  greenLayer = ensureLayer(greenLayer, state.viewport);
+  maskLayer = ensureLayer(maskLayer, state.viewport);
+  const baseCtx = baseLayer.getContext("2d");
+  const soilCtx = soilLayer.getContext("2d");
+  const greenCtx = greenLayer.getContext("2d");
+  const maskCtx = maskLayer.getContext("2d");
+  if (!baseCtx || !soilCtx || !greenCtx || !maskCtx) return;
+
+  const visiblePlants = state.plants.filter(
+    (plant) => getPlantVisual(plant, state.now).state !== "expired",
+  );
+  const occupiedCells = new Set(
+    [
+      ...visiblePlants.map((plant) => terrainCellKey(plant.grid_x, plant.grid_y)),
+      ...state.weeds.map((weed) => terrainCellKey(weed.grid_x, weed.grid_y)),
+    ],
+  );
+  ctx.imageSmoothingEnabled = false;
+  ctx.clearRect(0, 0, state.viewport.width, state.viewport.height);
+  drawTerrainLayer(baseCtx, state.camera, state.viewport, "base", state.zoom, occupiedCells);
+  drawTerrainLayer(soilCtx, state.camera, state.viewport, "soil", state.zoom, occupiedCells);
+  drawColorMask(
+    maskCtx,
+    visiblePlants,
+    state.camera,
+    state.viewport,
+    state.now,
+    "soil",
+    state.zoom,
+  );
+  applyMask(soilCtx, maskCtx, maskLayer);
+  drawTerrainLayer(greenCtx, state.camera, state.viewport, "green", state.zoom, occupiedCells);
+  drawColorMask(
+    maskCtx,
+    visiblePlants,
+    state.camera,
+    state.viewport,
+    state.now,
+    "green",
+    state.zoom,
+  );
+  applyMask(greenCtx, maskCtx, maskLayer);
+
+  ctx.drawImage(baseLayer, 0, 0);
+  ctx.drawImage(soilLayer, 0, 0);
+  ctx.drawImage(greenLayer, 0, 0);
+  drawSuggestedPlantingHighlight(
+    ctx,
+    state.suggestedPlantingCell,
+    state.camera,
+    state.viewport,
+    state.now,
+    state.zoom,
+  );
+  drawSuggestedWateringHighlight(
+    ctx,
+    state.suggestedWateringCell,
+    state.camera,
+    state.viewport,
+    state.now,
+    state.zoom,
+  );
+  drawDampSoil(ctx, visiblePlants, state.camera, state.viewport, state.now, state.zoom);
+  state.gardenWorms.forEach((worm) =>
+    drawGardenWorm(
+      ctx,
+      worm,
+      state.camera,
+      state.viewport,
+      state.now,
+      state.zoom,
+    ),
+  );
+  state.weeds.forEach((weed) =>
+    drawWeed(ctx, weed, state.camera, state.viewport, state.zoom),
+  );
+  visiblePlants.forEach((plant) =>
+    drawPlant(
+      ctx,
+      plant,
+      state.camera,
+      state.viewport,
+      state.now,
+      state.zoom,
+      false,
+    ),
+  );
+  visiblePlants.forEach((plant) =>
+    drawPlantCareCue(
+      ctx,
+      plant,
+      state.camera,
+      state.viewport,
+      state.now,
+      state.zoom,
+      state.wateringCareStatusLoaded
+        ? state.wateringCareReadyPlantIds?.has(plant.id) ?? false
+        : undefined,
+    ),
+  );
+  drawWateringTargets(
+    ctx,
+    state.wateringTargets,
+    state.camera,
+    state.viewport,
+    state.zoom,
+    state.mary,
+    state.selected,
+  );
+  drawDuck(ctx, state.duck, state.camera, state.viewport, state.moving, state.now, state.zoom);
+  if (state.tutorialDimmed) {
+    drawTutorialDimmer(
+      ctx,
+      state.viewport,
+      state.mary,
+      state.camera,
+      state.zoom,
+    );
+    drawSuggestedPlantingHighlight(
+      ctx,
+      state.suggestedPlantingCell,
+      state.camera,
+      state.viewport,
+      state.now,
+      state.zoom,
+    );
+    drawSuggestedWateringHighlight(
+      ctx,
+      state.suggestedWateringCell,
+      state.camera,
+      state.viewport,
+      state.now,
+      state.zoom,
+    );
+  }
+  drawMary(ctx, state.mary, state.camera, state.viewport, state.moving, state.now, state.zoom);
+  drawSuggestedPlantingLabel(
+    ctx,
+    state.suggestedPlantingCell,
+    state.mary,
+    state.camera,
+    state.viewport,
+    state.now,
+    state.zoom,
+  );
+  drawEffects(ctx, state.effects, state.camera, state.viewport, state.now, state.zoom);
+  drawSelection(ctx, state.selected, state.camera, state.viewport, state.zoom);
+}
+
