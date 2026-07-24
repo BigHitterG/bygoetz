@@ -100,6 +100,7 @@ const HEALTH_PULSE_INTERVAL_MS = 5 * 60 * 1000;
 const MEMBER_GARDEN_CACHE_PREFIX = "basil-member-garden-cache-v1:";
 const MEMBERSHIP_RETRY_MAX_DELAY_MS = 30_000;
 const GARDEN_WORM_DISCOVERY_KEY = "basil-garden-worm-discovery-v1";
+const CARE_BLOSSOM_DISCOVERY_KEY = "basil-care-blossom-discovery-v1";
 const UNLOCK_CELEBRATION_HISTORY_PREFIX =
   "basil-unlock-celebration-history-v1:";
 
@@ -157,6 +158,19 @@ function saveUnlockCelebrationHistory(userId: string, history: Set<string>) {
     );
   } catch {
     // The live queue still shows celebrations during this visit.
+  }
+}
+
+function claimFirstCareBlossomDiscovery() {
+  if (typeof window === "undefined") return false;
+  try {
+    if (window.localStorage.getItem(CARE_BLOSSOM_DISCOVERY_KEY) === "seen") {
+      return false;
+    }
+    window.localStorage.setItem(CARE_BLOSSOM_DISCOVERY_KEY, "seen");
+    return true;
+  } catch {
+    return true;
   }
 }
 
@@ -220,6 +234,7 @@ export function CommunityGardenApp() {
   const lifetimeCareRef = useRef(0);
   const memberGardenRef = useRef<MyGardenState | null>(null);
   const sessionUserIdRef = useRef<string | null>(null);
+  const careBlossomDiscoverySeenRef = useRef(false);
   const membershipRetryTimerRef = useRef<number | null>(null);
   const membershipRetryAttemptRef = useRef(0);
   const [ui, setUi] = useState(INITIAL_UI);
@@ -278,6 +293,11 @@ export function CommunityGardenApp() {
     !isGardenOnboardingFinished(onboardingStep) &&
     onboardingStep !== "my-garden" &&
     (communityOnboardingPlantings < 3 || onboardingStep === "community-water");
+  const communityGardenTutorialLocked =
+    world === "personal" &&
+    !memberGarden &&
+    Boolean(onboardingStep) &&
+    !isGardenOnboardingFinished(onboardingStep);
   const onboardingInventoryLocked =
     Boolean(onboardingStep) && !isGardenOnboardingFinished(onboardingStep);
   const tutorialMapDimmed =
@@ -658,11 +678,6 @@ export function CommunityGardenApp() {
     [],
   );
 
-  const setOnboardingDirectly = useCallback((next: GardenOnboardingStep) => {
-    saveGardenOnboardingStep(next);
-    setOnboardingStep(next);
-  }, []);
-
   useEffect(() => {
     const sendPulse = () => {
       if (document.visibilityState === "hidden") return;
@@ -814,7 +829,7 @@ export function CommunityGardenApp() {
       ) {
         next = "personal-inventory";
       } else if (storedCommunityPlantings >= 3) {
-        next = "my-garden";
+        next = "community-water";
       } else if (storedCommunityPlantings > 0) {
         next = "community-tile";
       } else {
@@ -824,13 +839,17 @@ export function CommunityGardenApp() {
       !memberGarden &&
       !isGardenOnboardingFinished(next) &&
       storedCommunityPlantings >= 3 &&
-      next !== "community-water"
+      next !== "community-water" &&
+      next !== "personal-inventory" &&
+      next !== "personal-seed" &&
+      next !== "personal-tile"
     ) {
-      next = "my-garden";
+      next = "community-water";
     } else if (next === "community-repeat") {
       next = "community-tile";
     }
     queueMicrotask(() => {
+      if (next === "community-water") setWorld("community");
       setCommunityOnboardingPlantings(storedCommunityPlantings);
       saveGardenOnboardingStep(next);
       setOnboardingStep(next);
@@ -981,7 +1000,13 @@ export function CommunityGardenApp() {
           ? "Garden Worm! "
         : "";
       if (contribution.specialFlower) {
-        setCareBlossomFound(true);
+        const shouldShowDiscovery =
+          !careBlossomDiscoverySeenRef.current &&
+          claimFirstCareBlossomDiscovery();
+        careBlossomDiscoverySeenRef.current = true;
+        if (shouldShowDiscovery) {
+          setCareBlossomFound(true);
+        }
       }
       if (!session || !memberGarden) {
         const currentPreview = guestPreviewRef.current;
@@ -1255,6 +1280,7 @@ export function CommunityGardenApp() {
 
   const switchWorld = useCallback(() => {
     if (world === "personal") {
+      if (communityGardenTutorialLocked) return;
       if (inventoryOpen) void acknowledgeInventoryUnlocks();
       setInventoryOpen(false);
       setWorld("community");
@@ -1274,6 +1300,7 @@ export function CommunityGardenApp() {
     setWorld("personal");
   }, [
     acknowledgeInventoryUnlocks,
+    communityGardenTutorialLocked,
     inventoryOpen,
     myGardenTutorialLocked,
     transitionOnboarding,
@@ -1390,28 +1417,30 @@ export function CommunityGardenApp() {
           trackBasilMetaCustomMilestone("BasilFirstPlant", "first_plant");
         } else if (nextPlantings === 3) {
           void trackBasilFunnelEvent("third_community_plant");
-          trackBasilMetaCustomMilestone(
-            "BasilCommunityTutorialCompleted",
-            "community_tutorial_completed",
-          );
         }
         transitionOnboarding(
-          nextPlantings >= 3 ? "my-garden" : "community-tile",
+          nextPlantings >= 3 ? "community-water" : "community-tile",
           ["plant", "select-seed", "community-tile", "community-repeat"],
         );
-        if (nextPlantings < 3) {
-          window.requestAnimationFrame(() => {
+        window.requestAnimationFrame(() => {
+          if (nextPlantings >= 3) {
+            canvasRef.current?.suggestWateringSpot();
+          } else {
             canvasRef.current?.suggestPlantingSpot();
-          });
-        }
+          }
+        });
       } else if (
         mode === "community" &&
         action === "water" &&
         onboardingStep === "community-water"
       ) {
-        transitionOnboarding("complete", ["community-water"]);
+        transitionOnboarding("my-garden", ["community-water"]);
+        trackBasilMetaCustomMilestone(
+          "BasilCommunityTutorialCompleted",
+          "community_tutorial_completed",
+        );
         setCareAnnouncement(
-          "Watering learned. Explore freely, earn Care, and return to My Garden whenever you are ready.",
+          "Watering learned. Your first My Garden planting is ready.",
         );
       }
     },
@@ -1469,7 +1498,6 @@ export function CommunityGardenApp() {
       if (isFirstDecline) {
         setInventoryOpen(false);
         setWorld("community");
-        setOnboardingDirectly("community-water");
       }
     } else {
       transitionOnboarding("complete");
@@ -1562,10 +1590,15 @@ export function CommunityGardenApp() {
               : ""
           }`}
           type="button"
-          disabled={world === "community" && myGardenTutorialLocked}
+          disabled={
+            (world === "community" && myGardenTutorialLocked) ||
+            communityGardenTutorialLocked
+          }
           aria-label={
             world === "personal"
-              ? `Go to Community Garden. ${myGarden.careBalance} Care.`
+              ? communityGardenTutorialLocked
+                ? "Plant your first rose before returning to Community Garden"
+                : `Go to Community Garden. ${myGarden.careBalance} Care.`
               : myGardenTutorialLocked
                 ? `Plant ${3 - communityOnboardingPlantings} more community flowers before visiting My Garden`
                 : `Go to My Garden. ${myGarden.careBalance} Care.`

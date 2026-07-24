@@ -59,9 +59,9 @@ export function GardenOnboarding({
           }
       : step === "my-garden"
         ? {
-            kicker: "Community planting 3 of 3",
+            kicker: "Community skills complete",
             title: "See what your Care can grow",
-            copy: "Three flowers are planted. My Garden is now ready to try.",
+            copy: "You planted three flowers and learned to water. My Garden is now ready to try.",
             desktopHint: "Press C to switch gardens.",
             action: "Visit My Garden",
             onAction: onOpenMyGarden,

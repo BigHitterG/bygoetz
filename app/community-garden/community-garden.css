@@ -5158,6 +5158,119 @@
   font: 700 0.56rem/1.2 system-ui, sans-serif;
 }
 
+.cg-membership-comparison {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px;
+  margin: 14px 0 8px;
+}
+
+.cg-membership-comparison-panel {
+  min-width: 0;
+  border: 2px solid var(--cg-ink);
+  background: #fffaf0;
+  padding: 10px;
+  box-shadow: 3px 3px 0 rgba(52, 35, 31, 0.16);
+}
+
+.cg-membership-comparison-panel.is-current {
+  background: rgba(223, 233, 189, 0.7);
+}
+
+.cg-membership-comparison-panel.is-membership {
+  background: #f8dfb4;
+}
+
+.cg-membership-comparison-panel > p {
+  margin: 0 0 4px;
+  color: var(--cg-red);
+  font-size: 0.5rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.cg-membership-comparison-panel h3 {
+  min-height: 2.5em;
+  margin: 0;
+  font-size: 0.68rem;
+  line-height: 1.25;
+  text-transform: uppercase;
+}
+
+.cg-membership-offer .cg-membership-comparison-panel ul {
+  display: grid;
+  gap: 7px;
+  margin: 9px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cg-membership-comparison-panel li {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: 25px auto 1fr;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.6rem;
+  line-height: 1.25;
+}
+
+.cg-membership-comparison-panel li > span {
+  width: 22px;
+  height: 19px;
+  border: 2px solid var(--cg-ink);
+  background: #9fc688;
+}
+
+.cg-membership-comparison-panel li > span.is-flower {
+  background:
+    radial-gradient(circle, #fff4df 0 2px, transparent 3px),
+    conic-gradient(var(--cg-red) 0 25%, #d96d61 0 50%, var(--cg-red) 0 75%, #d96d61 0);
+}
+
+.cg-membership-comparison-panel li > span.is-path,
+.cg-membership-comparison-panel li > span.is-build {
+  background: repeating-linear-gradient(90deg, #b49b77 0 5px, #776451 6px 8px);
+}
+
+.cg-membership-comparison-panel li > span.is-item {
+  background:
+    linear-gradient(#714d3c 0 0) 50% 100% / 3px 10px no-repeat,
+    linear-gradient(135deg, transparent 28%, #e5be73 29% 70%, transparent 71%);
+}
+
+.cg-membership-comparison-panel li > span.is-care {
+  background:
+    radial-gradient(circle at center, #fff4df 0 4px, transparent 5px),
+    var(--cg-red);
+}
+
+.cg-membership-comparison-panel li > span.is-save {
+  background:
+    linear-gradient(#fffaf0 0 0) 50% 52% / 9px 7px no-repeat,
+    #7480b7;
+}
+
+.cg-membership-comparison-panel li > span.is-land {
+  border-style: dashed;
+  background: #9fc688;
+}
+
+.cg-membership-comparison-panel li > span.is-return {
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at center, #fffaf0 0 3px, transparent 4px),
+    conic-gradient(from 20deg, #7480b7 0 78%, #fffaf0 79% 100%);
+}
+
+.cg-membership-lifetime-note {
+  margin: 0 0 11px !important;
+  color: #6f4c3e;
+  font-size: 0.68rem !important;
+  font-weight: 750;
+  text-align: center;
+}
+
 .cg-membership-benefits strong {
   font-size: 0.58rem;
   text-transform: uppercase;

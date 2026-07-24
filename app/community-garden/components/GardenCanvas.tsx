@@ -758,15 +758,38 @@ function findSuggestedWateringCell(runtime: Runtime): NonNullable<SelectedCell> 
 function bringTutorialTargetIntoView(
   runtime: Runtime,
   cell: NonNullable<SelectedCell>,
+  forceSafeWateringPosition = false,
 ) {
   const point = gridToWorld(cell.gridX, cell.gridY);
   const distance = Math.hypot(runtime.mary.x - point.x, runtime.mary.y - point.y);
-  if (distance <= GARDEN_CONFIG.tileSize * 5) return;
-  const approachX = cell.gridX > 0 ? cell.gridX - 2 : cell.gridX + 2;
-  const approachY = cell.gridY > 0 ? cell.gridY - 1 : cell.gridY + 1;
+  if (!forceSafeWateringPosition && distance <= GARDEN_CONFIG.tileSize * 5) return;
+  const bounds = getRuntimeBounds(runtime);
+  const approachCandidates = forceSafeWateringPosition
+    ? [
+        { gridX: cell.gridX, gridY: cell.gridY + 3 },
+        { gridX: cell.gridX + 3, gridY: cell.gridY + 1 },
+        { gridX: cell.gridX - 3, gridY: cell.gridY + 1 },
+        { gridX: cell.gridX, gridY: cell.gridY - 3 },
+      ]
+    : [
+        {
+          gridX: cell.gridX > 0 ? cell.gridX - 2 : cell.gridX + 2,
+          gridY: cell.gridY > 0 ? cell.gridY - 1 : cell.gridY + 1,
+        },
+      ];
+  const approachCell =
+    approachCandidates.find(
+      (candidate) =>
+        candidate.gridX >= bounds.minX &&
+        candidate.gridX <= bounds.maxX &&
+        candidate.gridY >= bounds.minY &&
+        candidate.gridY <= bounds.maxY &&
+        isPlantable(getPlantAt(runtime, candidate.gridX, candidate.gridY)) &&
+        !getWeedAt(runtime, candidate.gridX, candidate.gridY),
+    ) ?? approachCandidates[0];
   const approach = gridToWorld(
-    Math.max(getRuntimeBounds(runtime).minX, Math.min(getRuntimeBounds(runtime).maxX, approachX)),
-    Math.max(getRuntimeBounds(runtime).minY, Math.min(getRuntimeBounds(runtime).maxY, approachY)),
+    Math.max(bounds.minX, Math.min(bounds.maxX, approachCell.gridX)),
+    Math.max(bounds.minY, Math.min(bounds.maxY, approachCell.gridY)),
   );
   runtime.mary = { ...approach };
   runtime.camera = { ...approach };
@@ -1588,7 +1611,11 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
           runtime.selected = null;
           runtime.target = null;
           if (runtime.suggestedWateringCell) {
-            bringTutorialTargetIntoView(runtime, runtime.suggestedWateringCell);
+            bringTutorialTargetIntoView(
+              runtime,
+              runtime.suggestedWateringCell,
+              true,
+            );
           }
           runtime.statusMessage = runtime.suggestedWateringCell
             ? "Tap the blue watering square to learn how watering works."
@@ -1926,6 +1953,11 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
                 plantKey(plant.grid_x, plant.grid_y),
                 plant,
               );
+              if (tutorialDimmedRef.current) {
+                // Fresh tutorial flowers provide a deterministic watering
+                // lesson. The server still validates the action.
+                runtime.wateringCareReadyPlantIds.add(plant.id);
+              }
               if (runtime.configured) {
                 rememberRecentCommunityPlant(runtime, plant);
               }
@@ -2472,6 +2504,13 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
       if (!gesture.dragged) {
         const cell = getPointerCell(event);
         if (cell) selectCell(cell.gridX, cell.gridY);
+        return;
+      }
+
+      if (tutorialDimmedRef.current) {
+        runtime.statusMessage =
+          "Finish the highlighted garden step before exploring.";
+        publishUi();
         return;
       }
 

@@ -110,59 +110,66 @@ export function GardenMembershipOffer({
         aria-labelledby="membership-offer-title"
         onPointerDown={(event) => event.stopPropagation()}
       >
-        <div
-          className="cg-membership-garden-preview"
-          aria-label="An expanded My Garden with a cottage, flowers, paths, furniture, and more land"
-        >
-          <div className="cg-membership-garden-scene" aria-hidden="true">
-            <i className="is-house" />
-            <i className="is-path" />
-            <i className="is-flower is-red" />
-            <i className="is-flower is-gold" />
-            <i className="is-flower is-purple" />
-            <i className="is-flower is-far" />
-            <i className="is-bench" />
-            <i className="is-birdhouse" />
-            <i className="is-expansion" />
-          </div>
-          <strong>Keep this My Garden—and grow beyond it</strong>
-          <span>Saved progress · expandable land · lasting inventory</span>
-        </div>
         <p className="cg-kicker">
           {isSoft ? "Your garden has begun" : "Your garden is ready to keep"}
         </p>
         <h2 id="membership-offer-title">{title}</h2>
         <p>{description}</p>
-        <div className="cg-membership-keeps" aria-label="Your garden progress">
-          <strong>Your garden right now</strong>
-          <span>{gardenPlantCount} flowers</span>
-          <span>{gardenPathCount} paths</span>
-          <span>{gardenElementCount} garden items</span>
-          <span>{careBalance.toLocaleString()} Care ready</span>
-          <span>{lifetimeCare.toLocaleString()} lifetime Care</span>
+        <div className="cg-membership-comparison">
+          <section
+            className="cg-membership-comparison-panel is-current"
+            aria-label="The garden you made"
+          >
+            <p>Your garden now</p>
+            <h3>Keep this garden growing</h3>
+            <ul>
+              <li>
+                <span className="is-flower" aria-hidden="true" />
+                <strong>{gardenPlantCount}</strong> flowers arranged
+              </li>
+              <li>
+                <span className="is-path" aria-hidden="true" />
+                <strong>{gardenPathCount}</strong> paths placed
+              </li>
+              <li>
+                <span className="is-item" aria-hidden="true" />
+                <strong>{gardenElementCount}</strong> garden items
+              </li>
+              <li>
+                <span className="is-care" aria-hidden="true" />
+                <strong>{careBalance.toLocaleString()}</strong> Care ready
+              </li>
+            </ul>
+          </section>
+          <section
+            className="cg-membership-comparison-panel is-membership"
+            aria-label="What Garden Membership adds"
+          >
+            <p>What membership adds</p>
+            <h3>What you are missing</h3>
+            <ul>
+              <li>
+                <span className="is-save" aria-hidden="true" />
+                <strong>Save</strong> this exact garden
+              </li>
+              <li>
+                <span className="is-land" aria-hidden="true" />
+                <strong>Expand</strong> into more land
+              </li>
+              <li>
+                <span className="is-build" aria-hidden="true" />
+                <strong>Unlock</strong> the full collection
+              </li>
+              <li>
+                <span className="is-return" aria-hidden="true" />
+                <strong>Return</strong> on any device
+              </li>
+            </ul>
+          </section>
         </div>
-        <div className="cg-membership-benefits" aria-label="Garden Membership benefits">
-          <article>
-            <span className="is-save" aria-hidden="true" />
-            <strong>Save what you made</strong>
-            <small>Your flowers, paths, Care and layout stay together.</small>
-          </article>
-          <article>
-            <span className="is-land" aria-hidden="true" />
-            <strong>Expand your land</strong>
-            <small>Open more fenced plots and shape a larger garden.</small>
-          </article>
-          <article>
-            <span className="is-build" aria-hidden="true" />
-            <strong>Unlock the collection</strong>
-            <small>Earn plants, paths, water features and garden pieces.</small>
-          </article>
-          <article>
-            <span className="is-return" aria-hidden="true" />
-            <strong>Return anywhere</strong>
-            <small>Your private account keeps My Garden across devices.</small>
-          </article>
-        </div>
+        <p className="cg-membership-lifetime-note">
+          You have already earned {lifetimeCare.toLocaleString()} lifetime Care.
+        </p>
         <div className="cg-membership-offer-price">
           <span>Garden Membership · one time</span>
           <strong>{GARDEN_MEMBERSHIP_PRICE_LABEL}</strong>
