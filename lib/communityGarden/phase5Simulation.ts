@@ -87,7 +87,7 @@ export function simulateCommonsScenario(
       occupancy >= BASIL_COMMONS_POLICY.mapExpansionAtOccupancy * 100,
     actorMutationLimitReached:
       requestedActions > BASIL_COMMONS_POLICY.dailyMutationLimit,
-    careLimitReached: care.careEarned >= BASIL_COMMONS_POLICY.dailyCareLimit,
+    careLimitReached: false,
   };
 }
 

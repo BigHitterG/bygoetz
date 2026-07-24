@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import type { GardenTool } from "./GardenCanvas";
 import type { GardenWorldMode } from "../game/gardenRenderer";
 import {
+  BASIL_LIFETIME_CARE_GOAL,
   getMyGardenCollection,
   getMyGardenElementGlyphClass,
   getMyGardenPlant,
@@ -109,6 +110,24 @@ export function GardenInventory({
   const currentCollection = [...MY_GARDEN_COLLECTIONS]
     .reverse()
     .find((collection) => collection.lifetimeCareRequired <= lifetimeCare);
+  const nextCollectionCompletion = MY_GARDEN_COLLECTIONS.find(
+    (collection) =>
+      collection.completionLifetimeCareRequired > lifetimeCare,
+  );
+  const nextProgressMessage = nextUnlock
+    ? `${(
+        nextUnlock.lifetimeCareRequired - lifetimeCare
+      ).toLocaleString()} until ${nextUnlock.name}`
+    : nextCollectionCompletion
+      ? `${(
+          nextCollectionCompletion.completionLifetimeCareRequired -
+          lifetimeCare
+        ).toLocaleString()} until ${nextCollectionCompletion.name} complete`
+      : lifetimeCare < BASIL_LIFETIME_CARE_GOAL
+        ? `${(
+            BASIL_LIFETIME_CARE_GOAL - lifetimeCare
+          ).toLocaleString()} until Basil`
+        : "Basil achieved";
   const newUnlocks = useMemo(
     () =>
       new Set(
@@ -172,11 +191,7 @@ export function GardenInventory({
             <>
               <div className="cg-inventory-progress" aria-label="Collection progress">
                 <span>{lifetimeCare.toLocaleString()} lifetime Care</span>
-                <small>
-                  {nextUnlock
-                    ? `${nextUnlock.lifetimeCareRequired - lifetimeCare} until ${nextUnlock.name}`
-                    : "Release 1 collections complete"}
-                </small>
+                <small>{nextProgressMessage}</small>
                 {currentCollection ? (
                   <strong>{currentCollection.name}</strong>
                 ) : null}

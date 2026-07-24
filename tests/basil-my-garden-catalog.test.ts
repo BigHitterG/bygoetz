@@ -19,9 +19,9 @@ test("Release 1 collection thresholds match the approved progression", () => {
     ]),
     [
       ["starter", 0],
-      ["cottage", 250],
-      ["pollinator", 750],
-      ["water", 1_500],
+      ["cottage", 2_000],
+      ["pollinator", 15_000],
+      ["water", 50_000],
     ],
   );
   assert.deepEqual(
@@ -30,10 +30,10 @@ test("Release 1 collection thresholds match the approved progression", () => {
       collection.completionLifetimeCareRequired,
     ]),
     [
-      ["starter", 250],
-      ["cottage", 750],
-      ["pollinator", 1_500],
-      ["water", 3_000],
+      ["starter", 2_000],
+      ["cottage", 15_000],
+      ["pollinator", 50_000],
+      ["water", 200_000],
     ],
   );
 });
@@ -86,7 +86,7 @@ test("Release 1 includes meaningful multi-tile Water Garden landmarks", () => {
 test("progressive migration contains every client catalog threshold", () => {
   const migration = readFileSync(
     new URL(
-      "../supabase/migrations/20260723143000_progressive_my_garden_unlocks.sql",
+      "../supabase/migrations/20260724013000_uncapped_care_and_heritage_flowers.sql",
       import.meta.url,
     ),
     "utf8",
@@ -112,7 +112,7 @@ test("progressive migration contains every client catalog threshold", () => {
 });
 
 test("unlock notices group collection moments with the first item in the next collection", () => {
-  const notices = getMyGardenUnlockNotices(249, 250);
+  const notices = getMyGardenUnlockNotices(1_999, 2_000);
   assert.equal(notices.length, 1);
   assert.equal(notices[0]?.completedCollection?.key, "starter");
   assert.equal(notices[0]?.openedCollection?.key, "cottage");
@@ -120,8 +120,8 @@ test("unlock notices group collection moments with the first item in the next co
 });
 
 test("unread unlock count advances by milestones rather than every catalog row", () => {
-  assert.equal(getMyGardenUnreadUnlockCount(0, 24), 0);
-  assert.equal(getMyGardenUnreadUnlockCount(0, 25), 1);
-  assert.equal(getMyGardenUnreadUnlockCount(25, 150), 5);
-  assert.equal(getMyGardenUnreadUnlockCount(725, 750), 1);
+  assert.equal(getMyGardenUnreadUnlockCount(0, 99), 0);
+  assert.equal(getMyGardenUnreadUnlockCount(0, 100), 1);
+  assert.equal(getMyGardenUnreadUnlockCount(100, 1_600), 6);
+  assert.equal(getMyGardenUnreadUnlockCount(13_000, 15_000), 1);
 });

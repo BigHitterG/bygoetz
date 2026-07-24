@@ -1,11 +1,16 @@
 export const BASIL_COMMONS_POLICY = {
-  dailyCareLimit: 600,
-  fullCareLimit: 200,
-  moderateCareLimit: 400,
-  dailyMutationLimit: 3_000,
-  networkMutationLimit: 12_000,
+  careMode: "uncapped",
+  firstHelpfulActionCare: 4,
+  dailyMutationLimit: 30_000,
+  networkMutationLimit: 120_000,
+  actorActionsPerMinute: 150,
+  networkActionsPerMinute: 1_500,
   contributorSoftFootprint: 100,
   contributorHardFootprint: 125,
+  heritageMinimumAgeDays: 5,
+  heritageCareDays: 3,
+  heritageGardeners: 3,
+  heritageNeighborCount: 6,
   regionSize: 16,
   regionBusyAt: 140,
   regionRestingAt: 180,
@@ -22,40 +27,30 @@ export function calculateCommonsCareAward(
   state: CarePacingState,
   baseCare: number,
 ) {
-  const specialBonus = Math.max(0, Math.trunc(baseCare) - 1);
-  let award = 0;
-  let progress = state.tierProgress;
-  let actionsRequired = 1;
-  let phase: "daily" | "full" | "taper4" | "taper20" = "full";
+  const normalizedCare = Math.max(0, Math.trunc(baseCare));
+  const progress = 0;
+  const actionsRequired = 1;
+  let phase: "daily" | "open" = "open";
 
-  if (baseCare <= 0 || state.careEarned >= BASIL_COMMONS_POLICY.dailyCareLimit) {
+  if (normalizedCare <= 0) {
     return { award: 0, progress, actionsRequired, phase };
   }
   if (state.careEarned === 0) {
-    award = 4 + specialBonus;
     phase = "daily";
-    progress = 0;
-  } else if (state.careEarned < BASIL_COMMONS_POLICY.fullCareLimit) {
-    award = 1 + specialBonus;
-    progress = 0;
-  } else {
-    actionsRequired =
-      state.careEarned < BASIL_COMMONS_POLICY.moderateCareLimit ? 4 : 20;
-    phase =
-      state.careEarned < BASIL_COMMONS_POLICY.moderateCareLimit
-        ? "taper4"
-        : "taper20";
-    progress += 1;
-    award = specialBonus;
-    if (progress >= actionsRequired) {
-      award += 1;
-      progress = 0;
-    }
+    return {
+      award:
+        BASIL_COMMONS_POLICY.firstHelpfulActionCare +
+        Math.max(0, normalizedCare - 1),
+      progress,
+      actionsRequired,
+      phase,
+    };
   }
 
-  award = Math.min(
-    award,
-    BASIL_COMMONS_POLICY.dailyCareLimit - state.careEarned,
-  );
-  return { award, progress, actionsRequired, phase };
+  return {
+    award: normalizedCare,
+    progress,
+    actionsRequired,
+    phase: "open",
+  };
 }

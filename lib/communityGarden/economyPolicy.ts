@@ -1,13 +1,12 @@
-export const DEFAULT_DAILY_CARE_LIMIT = 600;
-export const MIN_DAILY_CARE_LIMIT = 300;
-export const MAX_DAILY_CARE_LIMIT = 2_000;
+export const CARE_ECONOMY_MODE = "uncapped" as const;
 
 export type CommunityGardenEconomy = {
-  dailyCareLimit: number;
-  fullRewardLimit: number;
-  moderateRewardLimit: number;
-  moderateActionsRequired: number;
-  longActionsRequired: number;
+  mode: typeof CARE_ECONOMY_MODE;
+  firstHelpfulActionCare: number;
+  standardActionCare: number;
+  dailyCareLimit: null;
+  actorActionsPerMinute: number;
+  dailyTechnicalActionLimit: number;
   updatedAt: string;
 };
 

@@ -65,23 +65,21 @@ The controls are intentionally generous before they become restrictive:
 | Control | Rule | Purpose |
 | --- | --- | --- |
 | First daily action | +4 Care | Preserve the satisfying daily return |
-| 0-200 Care | +1 per meaningful action | Fast normal play |
-| 201-400 Care | +1 per 4 meaningful actions | Gentle diminishing return |
-| 401-600 Care | +1 per 20 meaningful actions | Long-session tail without rapid map capture |
-| Daily Care | Configurable hard stop; currently 600 | A cookie bot cannot farm indefinitely |
-| Daily mutations | Hard stop at 3,000 per session; 12,000 per pseudonymous network | Bounds malicious non-rewarded planting/watering |
+| Every later helpful action | +1 Care, without taper | Long play remains rewarding |
+| Daily Care | No reward ceiling | Care can be earned for as long as the player contributes |
+| Rolling traffic rail | 150 actions/minute per actor; 1,500 per network | Leaves room above measured strong play while bounding automation |
+| Daily mutations | Technical stop at 30,000 per session; 120,000 per pseudonymous network | Bounds extreme automated traffic without constraining a strong 2–3 hour session |
 | Live contributor footprint | 100 soft / 125 hard | The newest 100 remain; only that contributor's exact oldest overflow is scheduled to succeed at the next ecology round |
 | Region size | 16 by 16 tiles | Local pressure without splitting the public garden into separate maps |
 | Region pressure | Healthy below 140; busy at 140; resting at 180 | Steers new planting toward open parts of the same map |
-| Absolute lifespan | Sunflower 7 days; rose 14 days; lavender 21 days | Watering cannot make one person's footprint permanent |
+| Absolute lifespan | Sunflower 7 days; rose 14 days; lavender 21 days | Ordinary flowers continue cycling |
+| Heritage promotion | 5 days, 3 care days, 3 gardeners, 6 neighbors | Community-supported exceptions become permanent and leave the contributor footprint |
 | Ecology round | Every ten-minute snapshot | Applies expiry, succession, pressure, and bounded weeds together |
 
 A meaningful watering action is one that reaches the existing four-hour Care
-window. Repeated watering can still animate and hydrate, but it does not advance
-Care pacing. Special flowers retain their small bonus, subject to the same
-600-Care ceiling. With the separate 3,000-mutation actor limit, ordinary
-single-reward actions reach about 500 Care; legitimate cluster and special
-rewards can advance faster but never exceed the configured ceiling.
+window. Repeated watering can still animate and hydrate, but it does not create
+another reward. Special flowers retain their small bonus. Planting and pulling
+weeds award their normal Care without a diminishing-return schedule.
 
 Care receipts are now tied to the anonymous signed garden session and unique
 action ID. A replay, another browser, or another account cannot claim the same

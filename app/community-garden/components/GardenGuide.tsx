@@ -1,10 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import {
-  DEFAULT_DAILY_CARE_LIMIT,
-  type CommunityGardenEconomy,
-} from "@/lib/communityGarden/economyPolicy";
+import { BASIL_COMMONS_POLICY } from "@/lib/communityGarden/commonsPolicy";
 import { SPECIAL_WATERING_FLOWER_NAME } from "../lib/roseLifecycle";
 
 const LIFE_STAGES = [
@@ -17,28 +13,6 @@ const LIFE_STAGES = [
 ] as const;
 
 export function GardenGuide() {
-  const [economy, setEconomy] = useState<CommunityGardenEconomy>({
-    dailyCareLimit: DEFAULT_DAILY_CARE_LIMIT,
-    fullRewardLimit: Math.floor(DEFAULT_DAILY_CARE_LIMIT / 3),
-    moderateRewardLimit: Math.floor((DEFAULT_DAILY_CARE_LIMIT * 2) / 3),
-    moderateActionsRequired: 4,
-    longActionsRequired: 20,
-    updatedAt: new Date(0).toISOString(),
-  });
-
-  useEffect(() => {
-    const controller = new AbortController();
-    void fetch("/api/community-garden/economy", {
-      signal: controller.signal,
-    })
-      .then(async (response) => {
-        if (!response.ok) return;
-        setEconomy((await response.json()) as CommunityGardenEconomy);
-      })
-      .catch(() => undefined);
-    return () => controller.abort();
-  }, []);
-
   return (
     <section className="cg-guide cg-library-section" aria-labelledby="garden-guide-title">
       <p className="cg-kicker">A shared living artwork</p>
@@ -121,6 +95,17 @@ export function GardenGuide() {
             </p>
           </article>
           <article>
+            <p className="cg-ecology-number">5 days + community care</p>
+            <h5>Heritage flowers</h5>
+            <p>
+              A flower that has grown for five days, received Care on three
+              different days from three gardeners, and lives in a healthy cluster
+              can become a Heritage Flower. Heritage Flowers leave your 100-flower
+              footprint, keep their place permanently, and mark the parts of the
+              shared garden the community sustained together.
+            </p>
+          </article>
+          <article>
             <p className="cg-ecology-number">100 newest</p>
             <h5>Your ecological footprint</h5>
             <p>
@@ -152,26 +137,21 @@ export function GardenGuide() {
       </div>
 
       <div className="cg-care-rates">
-        <h4>Daily Care rhythm</h4>
+        <h4>Open-ended Care</h4>
         <dl>
-          <div><dt>First helpful action</dt><dd>+4 Care</dd></div>
           <div>
-            <dt>Through {economy.fullRewardLimit} Care</dt><dd>+1 each</dd>
+            <dt>First helpful action each day</dt>
+            <dd>+{BASIL_COMMONS_POLICY.firstHelpfulActionCare} Care</dd>
           </div>
-          <div>
-            <dt>{economy.fullRewardLimit + 1}-{economy.moderateRewardLimit} Care</dt>
-            <dd>+1 every {economy.moderateActionsRequired} helpful actions</dd>
-          </div>
-          <div>
-            <dt>{economy.moderateRewardLimit + 1}-{economy.dailyCareLimit} Care</dt>
-            <dd>+1 every {economy.longActionsRequired} helpful actions</dd>
-          </div>
-          <div><dt>Daily limit</dt><dd>{economy.dailyCareLimit} Care</dd></div>
+          <div><dt>Every helpful action after that</dt><dd>+1 Care</dd></div>
+          <div><dt>Care Blossom</dt><dd>+2 bonus Care</dd></div>
+          <div><dt>Daily Care limit</dt><dd>None</dd></div>
         </dl>
         <p>
-          The slower rhythm lets long sessions continue while keeping one gardener
-          from consuming the whole shared landscape. The counter starts fresh each
-          day.
+          Care no longer slows down or stops during a long play session. The
+          100-flower and 100-watering footprints protect the shared landscape,
+          while high technical safety rails only interrupt automation or traffic
+          far beyond ordinary play.
         </p>
       </div>
 

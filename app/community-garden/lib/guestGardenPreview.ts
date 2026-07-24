@@ -297,7 +297,7 @@ export function preserveGuestGardenPreviewForCheckout(
 export function awardGuestCare(
   current: GuestGardenPreview,
   requestedCare: number,
-  earningPhase: "daily" | "full" | "taper4" | "taper20" = "full",
+  earningPhase: "daily" | "open" | "full" | "taper4" | "taper20" = "full",
 ): GuestCareAward {
   const value = clampInteger(requestedCare, 0, 6);
   const today = new Date().toISOString().slice(0, 10);

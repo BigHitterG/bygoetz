@@ -29,7 +29,7 @@ const serverSource = await readFile(
 );
 const wormMigration = await readFile(
   new URL(
-    "../supabase/migrations/20260723234500_garden_worm_rewards.sql",
+    "../supabase/migrations/20260724013000_uncapped_care_and_heritage_flowers.sql",
     import.meta.url,
   ),
   "utf8",
@@ -66,7 +66,7 @@ test("guest Care milestones use the same visible unlock celebration queue", () =
 test("Garden Worm rewards are server-authoritative, rare, and idempotent", () => {
   assert.match(
     serverSource,
-    /perform_idempotent_community_garden_action_v7/,
+    /perform_idempotent_community_garden_action_v8/,
   );
   assert.match(wormMigration, /p_action_type = 'plant'/);
   assert.match(wormMigration, /,[\s\S]*64\s*\)\s*=\s*0/);
@@ -74,7 +74,7 @@ test("Garden Worm rewards are server-authoritative, rare, and idempotent", () =>
   assert.match(wormMigration, /'\{contribution,gardenWorm\}'/);
   assert.match(
     wormMigration,
-    /if coalesce\(\(result_payload #>> '\{contribution,gardenWorm\}'\)::boolean, false\) then/,
+    /perform pg_advisory_xact_lock/,
   );
   assert.match(canvasSource, /surfaceGardenWorm/);
   assert.match(appSource, /basil-garden-worm-discovery-v1/);

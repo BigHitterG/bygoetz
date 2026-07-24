@@ -227,6 +227,7 @@ export type PlantRecord = {
   last_watered_at: string;
   created_at: string;
   permanent?: boolean;
+  heritage_at?: string | null;
 };
 
 export type PlantVisual = {
@@ -253,7 +254,7 @@ export function getPlantVisual(plant: PlantRecord, now = Date.now()): PlantVisua
   const plantedAge = Math.max(0, now - Date.parse(plant.planted_at));
   const careAge = Math.max(0, now - Date.parse(plant.last_watered_at));
 
-  if (plant.permanent) {
+  if (plant.permanent || plant.heritage_at) {
     return {
       state: "blooming",
       ageMs: plantedAge,

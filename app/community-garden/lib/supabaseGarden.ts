@@ -22,9 +22,9 @@ export type GardenContribution = {
   careValue: number;
   specialFlower?: boolean;
   gardenWorm?: boolean;
-  earningPhase: "daily" | "full" | "taper4" | "taper20";
+  earningPhase: "daily" | "open" | "full" | "taper4" | "taper20";
   dailyCareEarned: number;
-  dailyCareLimit: number;
+  dailyCareLimit: number | null;
   tierProgress: number;
   actionsRequired: number;
 };
@@ -42,6 +42,7 @@ type GardenActionResult = {
   plant: PlantRecord;
   plants: PlantRecord[];
   wateringClaimedPlantIds: string[];
+  heritagePlantIds: string[];
   contribution: GardenContribution | null;
 };
 
@@ -303,10 +304,16 @@ async function submitGardenAction(
         (plantId): plantId is string => typeof plantId === "string",
       )
     : [];
+  const heritagePlantIds = Array.isArray(data.heritagePlantIds)
+    ? data.heritagePlantIds.filter(
+        (plantId): plantId is string => typeof plantId === "string",
+      )
+    : [];
   return {
     plant,
     plants: plants.length > 0 ? plants : [plant],
     wateringClaimedPlantIds,
+    heritagePlantIds,
     contribution,
   };
 }

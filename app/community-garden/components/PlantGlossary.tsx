@@ -79,6 +79,37 @@ export function PlantGlossary() {
             The Care Blossom is a bonus marker, not a separate seed or plant type.
           </p>
         </article>
+        <article className="cg-plant-entry is-heritage">
+          <div className="cg-plant-entry-heading">
+            <span className="cg-heritage-flower-glyph" aria-hidden="true">✦</span>
+            <div>
+              <h4>Heritage Flower</h4>
+              <p>A lasting community landmark</p>
+            </div>
+          </div>
+          <p>
+            An ordinary rose, sunflower, or lavender can become a Heritage Flower
+            when several gardeners sustain it over time inside a living cluster.
+          </p>
+          <dl>
+            <div>
+              <dt>Minimum age</dt>
+              <dd>5 days</dd>
+            </div>
+            <div>
+              <dt>Shared care</dt>
+              <dd>3 different days from 3 gardeners</dd>
+            </div>
+            <div>
+              <dt>Garden setting</dt>
+              <dd>At least 6 nearby flowers</dd>
+            </div>
+          </dl>
+          <p className="cg-care-note">
+            Heritage Flowers no longer count against their planter&apos;s newest
+            100 and do not return with the ordinary season or watering clocks.
+          </p>
+        </article>
         <article className="cg-plant-entry is-weed">
           <div className="cg-plant-entry-heading">
             <span className="cg-plant-glyph is-weed" aria-hidden="true" />
@@ -142,6 +173,7 @@ export function PlantGlossary() {
           maximum season, or its turn to return as one of your oldest flowers after
           your Community Garden ecological footprint passes 100. Continued planting
           always keeps your newest flowers and reopens older ground for others.
+          A flower that becomes a Heritage Flower is the lasting exception.
         </p>
       </div>
     </section>

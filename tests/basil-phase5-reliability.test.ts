@@ -87,18 +87,17 @@ test("10 repeated fulfillment returns are covered by one provider purchase key",
   });
 });
 
-test("Care and mutation controls remain bounded for an eight-hour bot", () => {
+test("Care stays proportional while the technical mutation rail bounds automation", () => {
   const bot = simulateCareForMeaningfulActions(10_000);
-  assert.equal(bot.processedActions, BASIL_COMMONS_POLICY.dailyMutationLimit);
-  assert.equal(bot.careEarned, 500);
-  assert.ok(bot.careEarned <= BASIL_COMMONS_POLICY.dailyCareLimit);
+  assert.equal(bot.processedActions, 10_000);
+  assert.equal(bot.careEarned, 10_003);
 });
 
 test("30/90/365-day matrix preserves footprint and occupancy invariants", () => {
   const matrix = buildPhase5SimulationMatrix();
   assert.equal(matrix.length, 48);
   for (const result of matrix) {
-    assert.ok(result.carePerPlayerDay <= BASIL_COMMONS_POLICY.dailyCareLimit);
+    assert.ok(result.carePerPlayerDay >= result.meaningfulActionsPerPlayerDay);
     assert.ok(result.meaningfulActionsPerPlayerDay <= BASIL_COMMONS_POLICY.dailyMutationLimit);
     assert.ok(result.projectedLivePlants <= 25_600);
   }
