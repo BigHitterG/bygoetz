@@ -12,6 +12,11 @@ export type GardenMembershipCredentials = {
 type GardenMembershipOfferProps = {
   open: boolean;
   planted: number;
+  gardenPlantCount: number;
+  gardenPathCount: number;
+  gardenElementCount: number;
+  careBalance: number;
+  lifetimeCare: number;
   stage: "soft" | "hard" | "expired";
   onClose: () => void;
   onJoin: (credentials: GardenMembershipCredentials) => void;
@@ -25,6 +30,11 @@ type GardenMembershipOfferProps = {
 export function GardenMembershipOffer({
   open,
   planted,
+  gardenPlantCount,
+  gardenPathCount,
+  gardenElementCount,
+  careBalance,
+  lifetimeCare,
   stage,
   onClose,
   onJoin,
@@ -49,10 +59,10 @@ export function GardenMembershipOffer({
       ? "Save your temporary garden"
       : "Your preview garden is full";
   const description = isSoft
-    ? `You planted ${planted} flowers of your own. Save them now, or keep playing this 24-hour temporary preview up to ten flowers.`
+    ? `You planted ${planted} flowers of your own. Garden Membership turns this temporary preview into a lasting place you can keep building.`
     : isExpired
       ? "Your 24-hour preview has ended. Your work is still here and ready to save with Garden Membership."
-      : `You planted all ${planted} preview flowers. Join to save this garden and keep growing without the preview limit.`;
+      : `You planted all ${planted} preview flowers. Upgrade to save this garden and keep growing without the preview limit.`;
 
   function submitMembership(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -93,57 +103,61 @@ export function GardenMembershipOffer({
         aria-labelledby="membership-offer-title"
         onPointerDown={(event) => event.stopPropagation()}
       >
-        <div className="cg-membership-vision" aria-label="Preview garden compared with an expanded member garden">
-          <section className="cg-membership-vision-panel is-preview">
-            <strong>Preview</strong>
-            <div className="cg-membership-mini-garden" aria-hidden="true">
-              <i className="is-flower is-red" />
-              <i className="is-flower is-gold" />
-              <i className="is-flower is-purple" />
-            </div>
-            <span>A small beginning</span>
-          </section>
-          <span className="cg-membership-vision-arrow" aria-hidden="true">→</span>
-          <section className="cg-membership-vision-panel is-member">
-            <strong>Garden Membership</strong>
-            <div className="cg-membership-mini-garden" aria-hidden="true">
-              <i className="is-house" />
-              <i className="is-path" />
-              <i className="is-flower is-red" />
-              <i className="is-flower is-gold" />
-              <i className="is-flower is-purple" />
-              <i className="is-flower is-red is-far" />
-              <i className="is-bench" />
-              <i className="is-birdhouse" />
-              <i className="is-expansion" />
-            </div>
-            <span>Build outward and make it yours</span>
-          </section>
+        <div
+          className="cg-membership-garden-preview"
+          aria-label="An expanded My Garden with a cottage, flowers, paths, furniture, and more land"
+        >
+          <div className="cg-membership-garden-scene" aria-hidden="true">
+            <i className="is-house" />
+            <i className="is-path" />
+            <i className="is-flower is-red" />
+            <i className="is-flower is-gold" />
+            <i className="is-flower is-purple" />
+            <i className="is-flower is-far" />
+            <i className="is-bench" />
+            <i className="is-birdhouse" />
+            <i className="is-expansion" />
+          </div>
+          <strong>Keep this My Garden—and grow beyond it</strong>
+          <span>Saved progress · expandable land · lasting inventory</span>
         </div>
         <p className="cg-kicker">
           {isSoft ? "Your garden has begun" : "Your garden is ready to keep"}
         </p>
         <h2 id="membership-offer-title">{title}</h2>
         <p>{description}</p>
+        <div className="cg-membership-keeps" aria-label="Your garden progress">
+          <strong>Your garden right now</strong>
+          <span>{gardenPlantCount} flowers</span>
+          <span>{gardenPathCount} paths</span>
+          <span>{gardenElementCount} garden items</span>
+          <span>{careBalance.toLocaleString()} Care ready</span>
+          <span>{lifetimeCare.toLocaleString()} lifetime Care</span>
+        </div>
         <div className="cg-membership-benefits" aria-label="Garden Membership benefits">
           <article>
+            <span className="is-save" aria-hidden="true" />
+            <strong>Save what you made</strong>
+            <small>Your flowers, paths, Care and layout stay together.</small>
+          </article>
+          <article>
             <span className="is-land" aria-hidden="true" />
-            <strong>More land</strong>
-            <small>Open new plots as your garden grows.</small>
+            <strong>Expand your land</strong>
+            <small>Open more fenced plots and shape a larger garden.</small>
           </article>
           <article>
             <span className="is-build" aria-hidden="true" />
-            <strong>Build freely</strong>
-            <small>Keep flowers, paths, furniture and Care.</small>
+            <strong>Unlock the collection</strong>
+            <small>Earn plants, paths, water features and garden pieces.</small>
           </article>
           <article>
-            <span className="is-future" aria-hidden="true" />
-            <strong>Future tools</strong>
-            <small>Make My Garden your long-term home.</small>
+            <span className="is-return" aria-hidden="true" />
+            <strong>Return anywhere</strong>
+            <small>Your private account keeps My Garden across devices.</small>
           </article>
         </div>
         <div className="cg-membership-offer-price">
-          <span>Garden Membership</span>
+          <span>Garden Membership · one time</span>
           <strong>{GARDEN_MEMBERSHIP_PRICE_LABEL}</strong>
         </div>
         {accountReady ? (

@@ -604,15 +604,13 @@
 }
 
 .cg-compact-support.is-garden-switch {
-  border-color: #6f272b;
-  background: rgba(225, 142, 127, 0.97);
-  box-shadow:
-    3px 3px 0 rgba(52, 35, 31, 0.24),
-    inset 0 0 0 2px rgba(255, 244, 223, 0.34);
+  border-color: var(--cg-ink);
+  background: rgba(244, 216, 159, 0.96);
+  box-shadow: 3px 3px 0 rgba(52, 35, 31, 0.22);
 }
 
 .cg-compact-support.is-garden-switch:hover:not(:disabled) {
-  background: #e99584;
+  background: #f8e5b9;
 }
 
 .cg-compact-support > .cg-home-mark,
@@ -644,6 +642,13 @@
 .cg-garden-switch-copy b {
   color: var(--cg-red);
   font-size: 0.8rem;
+}
+
+.cg-garden-switch-copy > small.cg-lifetime-care {
+  color: rgba(79, 57, 48, 0.72);
+  font-size: 0.43rem;
+  letter-spacing: 0.015em;
+  text-transform: none;
 }
 
 .cg-compact-support:disabled {
@@ -1474,6 +1479,21 @@
     0 0 0 5px rgba(229, 180, 79, 0.6);
 }
 
+.cg-unlock-card.is-care-blossom {
+  box-shadow:
+    8px 8px 0 rgba(52, 35, 31, 0.34),
+    0 0 0 5px rgba(102, 201, 226, 0.58);
+}
+
+.cg-unlock-emblem.is-care-blossom {
+  background: #ccece8;
+}
+
+.cg-unlock-emblem.is-care-blossom .cg-care-blossom-glyph {
+  border: 0;
+  transform: scale(2);
+}
+
 @keyframes cg-unlock-arrive {
   from {
     opacity: 0;
@@ -1550,6 +1570,10 @@
   gap: 8px;
   width: 100%;
   margin-top: 18px;
+}
+
+.cg-unlock-actions.is-single {
+  grid-template-columns: 1fr;
 }
 
 .cg-unlock-actions button {
@@ -4607,6 +4631,162 @@
   box-shadow: 7px 7px 0 rgba(0, 0, 0, 0.28);
 }
 
+.cg-membership-garden-preview {
+  display: grid;
+  gap: 6px;
+}
+
+.cg-membership-garden-preview > strong {
+  font-size: 0.68rem;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.cg-membership-garden-preview > span {
+  color: #6f4c3e;
+  font-family: system-ui, sans-serif;
+  font-size: 0.62rem;
+  font-weight: 750;
+  text-align: center;
+}
+
+.cg-membership-garden-scene {
+  position: relative;
+  height: 152px;
+  overflow: hidden;
+  border: 3px solid var(--cg-ink);
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.1) 1px, transparent 1px),
+    linear-gradient(rgba(255, 255, 255, 0.1) 1px, transparent 1px),
+    #8fb97a;
+  background-size: 22px 22px;
+  box-shadow: 5px 5px 0 rgba(52, 35, 31, 0.2);
+}
+
+.cg-membership-garden-scene i {
+  position: absolute;
+  display: block;
+}
+
+.cg-membership-garden-scene .is-house {
+  left: 18px;
+  top: 15px;
+  z-index: 5;
+  width: 52px;
+  height: 45px;
+  border: 3px solid var(--cg-ink);
+  background: #d69b62;
+  box-shadow: inset 16px 18px 0 #f0d184;
+}
+
+.cg-membership-garden-scene .is-house::before {
+  position: absolute;
+  left: -5px;
+  top: -15px;
+  width: 42px;
+  height: 27px;
+  border-top: 4px solid var(--cg-ink);
+  border-left: 4px solid var(--cg-ink);
+  background: #a54f45;
+  content: "";
+  transform: rotate(45deg);
+}
+
+.cg-membership-garden-scene .is-path {
+  left: 64px;
+  top: 63px;
+  width: 54%;
+  height: 13px;
+  background: repeating-linear-gradient(
+    90deg,
+    #d4c4a8 0 12px,
+    #7e7161 13px 16px
+  );
+  transform: rotate(13deg);
+}
+
+.cg-membership-garden-scene .is-flower {
+  left: 25%;
+  top: 65%;
+  z-index: 3;
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--cg-ink);
+  background: var(--cg-red);
+  box-shadow:
+    18px 5px 0 -1px var(--cg-red),
+    36px -4px 0 -1px var(--cg-red),
+    53px 6px 0 -1px var(--cg-red);
+}
+
+.cg-membership-garden-scene .is-gold {
+  left: 50%;
+  top: 49%;
+  background: var(--cg-gold);
+  box-shadow:
+    18px -7px 0 -1px var(--cg-gold),
+    37px 2px 0 -1px var(--cg-gold),
+    54px -5px 0 -1px var(--cg-gold);
+}
+
+.cg-membership-garden-scene .is-purple {
+  left: 59%;
+  top: 72%;
+  background: #8c83ad;
+  box-shadow:
+    17px 5px 0 -1px #8c83ad,
+    35px -4px 0 -1px #8c83ad;
+}
+
+.cg-membership-garden-scene .is-far {
+  left: 82%;
+  top: 25%;
+  background: var(--cg-red);
+}
+
+.cg-membership-garden-scene .is-bench {
+  right: 16%;
+  top: 22px;
+  z-index: 5;
+  width: 45px;
+  height: 17px;
+  border: 2px solid var(--cg-ink);
+  background: #a86f48;
+  box-shadow: inset 0 5px 0 #d39466;
+}
+
+.cg-membership-garden-scene .is-birdhouse {
+  right: 7%;
+  top: 28px;
+  z-index: 5;
+  width: 15px;
+  height: 38px;
+  border-top: 17px solid #e5be73;
+  border-left: 3px solid transparent;
+  border-right: 3px solid transparent;
+  background: #714d3c;
+}
+
+.cg-membership-garden-scene .is-expansion {
+  right: -3px;
+  bottom: -3px;
+  width: 30%;
+  height: 43%;
+  border: 3px dashed #c99536;
+  background: rgba(255, 250, 240, 0.72);
+}
+
+.cg-membership-garden-scene .is-expansion::after {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  content: "MORE LAND";
+  color: #7a552e;
+  font-size: 0.48rem;
+  font-weight: 900;
+}
+
 .cg-membership-vision {
   display: grid;
   grid-template-columns: minmax(0, 0.72fr) 24px minmax(0, 1.28fr);
@@ -4770,7 +4950,7 @@
 .cg-membership-benefits {
   display: grid;
   margin: 13px 0;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 7px;
 }
 
@@ -4795,10 +4975,41 @@
   background: repeating-linear-gradient(90deg, #b49b77 0 5px, #776451 6px 8px);
 }
 
-.cg-membership-benefits article > span.is-future {
-  border-radius: 50% 50% 40% 40%;
-  background: #8c83ad;
-  box-shadow: 5px 3px 0 -2px var(--cg-gold), 8px -3px 0 -3px var(--cg-red);
+.cg-membership-benefits article > span.is-save {
+  background:
+    linear-gradient(#fffaf0 0 0) 50% 52% / 11px 8px no-repeat,
+    #7480b7;
+}
+
+.cg-membership-benefits article > span.is-return {
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at center, #fffaf0 0 4px, transparent 5px),
+    conic-gradient(from 20deg, #7480b7 0 78%, #fffaf0 79% 100%);
+}
+
+.cg-membership-keeps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 12px;
+  border: 1px solid rgba(52, 35, 31, 0.34);
+  background: rgba(223, 233, 189, 0.55);
+  padding: 9px;
+}
+
+.cg-membership-keeps > strong {
+  flex-basis: 100%;
+  font-size: 0.58rem;
+  text-transform: uppercase;
+}
+
+.cg-membership-keeps > span {
+  border: 1px solid rgba(52, 35, 31, 0.32);
+  background: #fffaf0;
+  padding: 4px 6px;
+  color: #6f4c3e;
+  font: 700 0.56rem/1.2 system-ui, sans-serif;
 }
 
 .cg-membership-benefits strong {

@@ -50,6 +50,7 @@ import {
 import { GardenUpdateStatus } from "./GardenUpdateStatus";
 import { GardenOnboarding } from "./GardenOnboarding";
 import { GardenUnlockCelebration } from "./GardenUnlockCelebration";
+import { CareBlossomDiscovery } from "./CareBlossomDiscovery";
 import {
   isGardenOnboardingFinished,
   isGardenOnboardingPlantType,
@@ -189,6 +190,7 @@ export function CommunityGardenApp() {
   const [restoreMessage, setRestoreMessage] = useState("");
   const [membershipReloadToken, setMembershipReloadToken] = useState(0);
   const [unlockNotices, setUnlockNotices] = useState<MyGardenUnlockNotice[]>([]);
+  const [careBlossomFound, setCareBlossomFound] = useState(false);
   const restoredJourneyRef = useRef(false);
   const communityOnboardingPlantingsRef = useRef(0);
   const adLabel = process.env.NEXT_PUBLIC_COMMUNITY_GARDEN_AD_PLACEHOLDER;
@@ -831,6 +833,9 @@ export function CommunityGardenApp() {
       const bonusLabel = contribution.specialFlower
         ? `${SPECIAL_WATERING_FLOWER_NAME}! `
         : "";
+      if (contribution.specialFlower) {
+        setCareBlossomFound(true);
+      }
       if (!session || !memberGarden) {
         const currentPreview = guestPreviewRef.current;
         const continuedPreview = markGuestPreviewContinued(currentPreview);
@@ -1277,6 +1282,9 @@ export function CommunityGardenApp() {
             <small>
               Care <b>{myGarden.careBalance}</b>
             </small>
+            <small className="cg-lifetime-care">
+              Total earned {myGarden.lifetimeCare.toLocaleString()}
+            </small>
           </span>
           {showMyGardenInvitation ||
           showContinueGardenGuidance ||
@@ -1416,13 +1424,13 @@ export function CommunityGardenApp() {
           <button
             className="cg-community-join"
             type="button"
-            aria-label={session ? "Upgrade Garden Membership" : "Join Garden Membership"}
+            aria-label="Upgrade Garden Membership"
             onClick={() => {
               setMembershipOfferStage("soft");
               setMembershipOfferOpen(true);
             }}
           >
-            {session ? "Upgrade" : "Join"}
+            Upgrade
           </button>
         ) : null}
 
@@ -1479,6 +1487,11 @@ export function CommunityGardenApp() {
       <GardenMembershipOffer
         open={membershipOfferOpen}
         planted={myGarden.preview?.plantingsUsed ?? GUEST_SOFT_PAYWALL_PLANTINGS}
+        gardenPlantCount={myGarden.plants.length}
+        gardenPathCount={myGarden.paths.length}
+        gardenElementCount={myGarden.elements.length}
+        careBalance={myGarden.careBalance}
+        lifetimeCare={myGarden.lifetimeCare}
         stage={membershipOfferStage}
         onClose={dismissMembershipOffer}
         checkoutBusy={membershipCheckoutBusy}
@@ -1498,9 +1511,13 @@ export function CommunityGardenApp() {
       />
 
       <GardenUnlockCelebration
-        notice={unlockNotices[0] ?? null}
+        notice={careBlossomFound ? null : (unlockNotices[0] ?? null)}
         onContinue={dismissUnlockNotice}
         onViewGarden={viewUnlockInMyGarden}
+      />
+      <CareBlossomDiscovery
+        open={careBlossomFound}
+        onClose={() => setCareBlossomFound(false)}
       />
     </main>
   );

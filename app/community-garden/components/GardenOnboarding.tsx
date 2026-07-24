@@ -86,7 +86,7 @@ export function GardenOnboarding({
                     ? "Water the highlighted flowers"
                     : "Choose the blue watering square",
                   copy: actionReady
-                    ? "Tap Water below. The red inner corners point back toward Mary, showing the spray direction."
+                    ? "Double tap Water below to send two short sprays through the highlighted flowers."
                     : "Tap the highlighted flowers. Mary will move into range and the Water button will light up.",
                   action: null,
                   onAction: null,

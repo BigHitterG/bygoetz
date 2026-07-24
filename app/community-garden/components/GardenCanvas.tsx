@@ -814,7 +814,7 @@ function getActionState(runtime: Runtime) {
       return {
         action: "expand" as GardenAction,
         label: preview
-          ? "Unlock land · Join"
+          ? "Unlock land · Upgrade"
           : care >= cost
             ? `Unlock parcel · ${cost} Care`
             : `${cost - care} more Care to unlock`,
@@ -892,7 +892,7 @@ function getActionState(runtime: Runtime) {
       return {
         action: "place-element" as GardenAction,
         label: preview
-          ? `Place ${definition.name} · Join`
+          ? `Place ${definition.name} · Upgrade`
           : `Place ${definition.name} · ${definition.careCost} Care`,
         enabled:
           nearby &&
@@ -908,7 +908,7 @@ function getActionState(runtime: Runtime) {
     ) {
       return {
         action: "plant" as GardenAction,
-        label: "Keep growing · Join",
+        label: "Keep growing · Upgrade",
         enabled: nearby && !runtime.actionBusy,
       };
     }
