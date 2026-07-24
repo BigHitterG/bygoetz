@@ -1212,11 +1212,11 @@
 }
 
 .cg-inventory.is-open .cg-inventory-panel header strong {
-  font-size: 1rem;
+  font-size: 1.15rem;
 }
 
 .cg-inventory.is-open .cg-inventory-panel header small {
-  font-size: 0.66rem;
+  font-size: 0.78rem;
 }
 
 .cg-inventory.is-open .cg-inventory-progress {
@@ -1224,34 +1224,34 @@
 }
 
 .cg-inventory.is-open .cg-inventory-progress span {
-  font-size: 0.72rem;
+  font-size: 0.82rem;
 }
 
 .cg-inventory.is-open .cg-inventory-progress small,
 .cg-inventory.is-open .cg-inventory-progress strong {
-  font-size: 0.6rem;
+  font-size: 0.7rem;
 }
 
 .cg-inventory.is-open .cg-inventory-tabs button {
   min-height: 48px;
-  font-size: 0.62rem;
+  font-size: 0.75rem;
 }
 
 .cg-inventory.is-open .cg-inventory-section > p {
   padding: 8px 12px;
-  font-size: 0.66rem;
+  font-size: 0.78rem;
 }
 
 .cg-inventory.is-open .cg-inventory-grid button {
   min-height: 104px;
   gap: 5px;
   padding: 10px 7px;
-  font-size: 0.72rem;
+  font-size: 0.9rem;
   line-height: 1.15;
 }
 
 .cg-inventory.is-open .cg-inventory-grid button small {
-  font-size: 0.57rem;
+  font-size: 0.7rem;
   line-height: 1.25;
 }
 
