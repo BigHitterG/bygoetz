@@ -755,6 +755,20 @@ function findSuggestedWateringCell(runtime: Runtime): NonNullable<SelectedCell> 
     : null;
 }
 
+function refreshTutorialWateringTarget(runtime: Runtime) {
+  if (!runtime.suggestedWateringCell) return;
+  const nextTarget = findSuggestedWateringCell(runtime);
+  runtime.suggestedWateringCell = nextTarget;
+  runtime.selected = null;
+  runtime.target = null;
+  if (nextTarget) {
+    bringTutorialTargetIntoView(runtime, nextTarget, true);
+  }
+  runtime.statusMessage = nextTarget
+    ? "Tap the blue square around a flower with a water drop."
+    : "The garden is finding a flower with a water drop.";
+}
+
 function bringTutorialTargetIntoView(
   runtime: Runtime,
   cell: NonNullable<SelectedCell>,
@@ -1509,6 +1523,9 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
           runtime.wateringCareStatusBoundsKey = boundsKey;
           runtime.wateringCareStatusNextRefreshAt =
             Date.now() + WATERING_STATUS_REFRESH_MS;
+          if (tutorialDimmedRef.current) {
+            refreshTutorialWateringTarget(runtime);
+          }
           publishUi();
         } catch {
           // Shared hydration remains usable if the private Care cues cannot
@@ -1618,8 +1635,8 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
             );
           }
           runtime.statusMessage = runtime.suggestedWateringCell
-            ? "Tap the blue watering square to learn how watering works."
-            : "The garden is finding flowers that need water.";
+            ? "Tap the blue square around a flower with a water drop."
+            : "The garden is finding a flower with a water drop.";
           publishUi();
         },
         showCareReward(value, dailyBonus = false) {
@@ -1953,11 +1970,6 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
                 plantKey(plant.grid_x, plant.grid_y),
                 plant,
               );
-              if (tutorialDimmedRef.current) {
-                // Fresh tutorial flowers provide a deterministic watering
-                // lesson. The server still validates the action.
-                runtime.wateringCareReadyPlantIds.add(plant.id);
-              }
               if (runtime.configured) {
                 rememberRecentCommunityPlant(runtime, plant);
               }
@@ -2072,6 +2084,16 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
             runtime.connection = runtime.configured ? "online" : "offline";
           } catch (error) {
             onActionFailedRef.current?.(runtime.mode, actionState.action, error);
+            const retryTutorialWatering =
+              tutorialDimmedRef.current && actionState.action === "water";
+            if (retryTutorialWatering) {
+              runtime.selected = null;
+              runtime.wateringCareStatusLoaded = false;
+              runtime.wateringCareStatusNextRefreshAt = 0;
+              queueMicrotask(() => {
+                void loadPlantsRef.current();
+              });
+            }
             if (error instanceof GardenConnectionError) {
               runtime.connection = navigator.onLine ? "error" : "offline";
               console.warn("Basil garden action connection issue", {
@@ -2081,8 +2103,11 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
                 message: error.message,
               });
             }
-            runtime.statusMessage =
-              error instanceof Error ? error.message : "That did not work. Please try again.";
+            runtime.statusMessage = retryTutorialWatering
+              ? "Another gardener reached that flower first. Finding a fresh water drop..."
+              : error instanceof Error
+                ? error.message
+                : "That did not work. Please try again.";
           } finally {
             runtime.actionBusy = false;
             runtime.pendingAction = null;

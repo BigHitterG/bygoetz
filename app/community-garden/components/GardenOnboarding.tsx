@@ -35,9 +35,9 @@ export function GardenOnboarding({
   const content =
     step === "plant"
       ? {
-          kicker: "One garden, shared everywhere",
-          title: "Add your flowers to the community",
-          copy: "This shared landscape is shaped by gardeners wherever they are. Choose one plant, then add it three times.",
+          kicker: "The whole world plants here",
+          title: "One public garden, shared by everyone",
+          copy: "Anyone online, anywhere in the world, can plant on this same map for free. No account or username is needed. Choose one flower, then add it three times.",
           desktopHint: "Press Q to open Inventory.",
           action: "Open Inventory",
           onAction: onOpenInventory,

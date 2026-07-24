@@ -23,6 +23,13 @@ const offerSource = await readFile(
   ),
   "utf8",
 );
+const onboardingSource = await readFile(
+  new URL(
+    "../app/community-garden/components/GardenOnboarding.tsx",
+    import.meta.url,
+  ),
+  "utf8",
+);
 
 test("required tutorial gestures cannot move Mary away from the commanded tile", () => {
   assert.match(
@@ -46,15 +53,30 @@ test("three community plantings lead to watering before My Garden", () => {
   );
 });
 
-test("the watering lesson uses a visible tutorial flower", () => {
-  assert.match(
+test("the watering lesson only follows an authoritative water-drop flower", () => {
+  assert.doesNotMatch(
     canvasSource,
     /runtime\.wateringCareReadyPlantIds\.add\(plant\.id\)/,
+  );
+  assert.match(canvasSource, /refreshTutorialWateringTarget\(runtime\)/);
+  assert.match(
+    canvasSource,
+    /Tap the blue square around a flower with a water drop\./,
   );
   assert.match(
     canvasSource,
     /bringTutorialTargetIntoView\(\s*runtime,\s*runtime\.suggestedWateringCell,\s*true/,
   );
+});
+
+test("the opening lesson clearly introduces the worldwide public garden", () => {
+  assert.match(onboardingSource, /The whole world plants here/);
+  assert.match(onboardingSource, /One public garden, shared by everyone/);
+  assert.match(
+    onboardingSource,
+    /Anyone online, anywhere in the world, can plant on this same map for free/,
+  );
+  assert.match(onboardingSource, /No account or username is needed/);
 });
 
 test("My Garden cannot be left before the first guided planting", () => {
