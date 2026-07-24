@@ -7,6 +7,7 @@ import { BasilPolicyLinks } from "./BasilPolicyLinks";
 export type GardenMembershipCredentials = {
   email: string;
   password: string;
+  promoCode?: string;
 };
 
 type GardenMembershipOfferProps = {
@@ -47,6 +48,7 @@ export function GardenMembershipOffer({
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [passwordConfirm, setPasswordConfirm] = useState("");
+  const [promoCode, setPromoCode] = useState("");
   const [formError, setFormError] = useState("");
 
   if (!open) return null;
@@ -80,13 +82,18 @@ export function GardenMembershipOffer({
       return;
     }
     setFormError("");
-    onJoin({ email: normalizedEmail, password });
+    onJoin({
+      email: normalizedEmail,
+      password,
+      promoCode: promoCode.trim().toLowerCase() || undefined,
+    });
   }
 
   function leaveOffer(action: () => void) {
     setFormError("");
     setPassword("");
     setPasswordConfirm("");
+    setPromoCode("");
     action();
   }
 
@@ -166,18 +173,45 @@ export function GardenMembershipOffer({
               <strong>Your private Basil account is ready</strong>
               <span>This payment will stay with the account already signed in.</span>
             </div>
+            <div className="cg-membership-gift-code">
+              <label htmlFor="basil-membership-promo-signed-in">
+                Have a gift code?
+              </label>
+              <input
+                id="basil-membership-promo-signed-in"
+                type="text"
+                value={promoCode}
+                onChange={(event) => setPromoCode(event.target.value.toLowerCase())}
+                autoComplete="off"
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
+                maxLength={32}
+                placeholder="enter code"
+                disabled={checkoutBusy}
+              />
+              <small>A valid gift code skips checkout.</small>
+            </div>
             {checkoutError ? (
               <p className="cg-steward-notice" role="alert">{checkoutError}</p>
             ) : null}
             <button
               className="cg-membership-offer-join"
               type="button"
-              onClick={() => onJoin({ email: "", password: "" })}
+              onClick={() =>
+                onJoin({
+                  email: "",
+                  password: "",
+                  promoCode: promoCode.trim().toLowerCase() || undefined,
+                })
+              }
               disabled={checkoutBusy}
             >
               {checkoutBusy
-                ? "Saving your garden…"
-                : `Pay & keep my garden · ${GARDEN_MEMBERSHIP_PRICE_LABEL}`}
+                ? "Opening your garden…"
+                : promoCode.trim()
+                  ? "Use gift code & keep my garden"
+                  : `Pay & keep my garden · ${GARDEN_MEMBERSHIP_PRICE_LABEL}`}
             </button>
           </div>
         ) : (
@@ -221,6 +255,23 @@ export function GardenMembershipOffer({
             required
           />
           <small>Use at least 10 characters.</small>
+          <div className="cg-membership-gift-code">
+            <label htmlFor="basil-membership-promo">Have a gift code?</label>
+            <input
+              id="basil-membership-promo"
+              type="text"
+              value={promoCode}
+              onChange={(event) => setPromoCode(event.target.value.toLowerCase())}
+              autoComplete="off"
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
+              maxLength={32}
+              placeholder="enter code"
+              disabled={checkoutBusy}
+            />
+            <small>A valid gift code skips checkout.</small>
+          </div>
           {formError || checkoutError ? (
             <>
               <p className="cg-steward-notice" role="alert">
@@ -244,8 +295,10 @@ export function GardenMembershipOffer({
             disabled={checkoutBusy}
           >
             {checkoutBusy
-              ? "Saving your garden…"
-              : `Create account & pay · ${GARDEN_MEMBERSHIP_PRICE_LABEL}`}
+              ? "Opening your garden…"
+              : promoCode.trim()
+                ? "Create account & use gift code"
+                : `Create account & pay · ${GARDEN_MEMBERSHIP_PRICE_LABEL}`}
           </button>
         </form>
         )}

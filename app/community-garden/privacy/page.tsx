@@ -27,7 +27,7 @@ export default function BasilPrivacyPage() {
           <li><strong>Private accounts:</strong> your email address, encrypted password credentials managed by Supabase Auth, verification state, and session information. Basil does not create a public username.</li>
           <li><strong>My Garden:</strong> private plants, paths, objects, Care balance and ledger activity, expansion state, and membership entitlement.</li>
           <li><strong>Feedback:</strong> the category and message you choose to submit through the account area, plus its review status.</li>
-          <li><strong>Purchases:</strong> Stripe checkout, customer, and payment identifiers; amount, currency, status, and purchase time. Basil does not receive or store full card details.</li>
+          <li><strong>Purchases and gifts:</strong> Stripe checkout, customer, and payment identifiers; amount, currency, status, and purchase time. For complimentary access, Basil stores an opaque gift identifier, redemption status, and a short-lived one-way request fingerprint used to limit guessing. Basil does not receive or store full card details, raw gift-code guesses, or raw IP addresses in the gift-code log.</li>
           <li><strong>First-party launch analytics:</strong> a random launch-session ID, funnel milestones, device class, original landing path, referring domain, UTM campaign fields, and a Meta click identifier when one is present in the landing URL. This record does not contain your email.</li>
           <li><strong>Operational security:</strong> one-way hashes derived from an email address or network address may be held briefly for rate limiting. Hosting providers may process request logs, network information, browser/device information, and errors.</li>
         </ul>

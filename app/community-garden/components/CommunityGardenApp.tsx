@@ -333,6 +333,7 @@ export function CommunityGardenApp() {
   const startMembershipCheckout = useCallback(async (
     credentials: GardenMembershipCredentials,
   ) => {
+    const promoCode = credentials.promoCode?.trim().toLowerCase();
     const pendingPreview = {
       ...guestPreviewRef.current,
       journey: {
@@ -355,18 +356,23 @@ export function CommunityGardenApp() {
         preview: getGuestPreviewImport(pendingPreview),
         email: credentials.email,
         password: credentials.password,
+        ...(promoCode ? { promoCode } : {}),
       };
-      let response = await fetch("/api/community-garden/checkout", {
+      const accessEndpoint = promoCode
+        ? "/api/community-garden/promo"
+        : "/api/community-garden/checkout";
+      let activeSession = session;
+      let response = await fetch(accessEndpoint, {
         method: "POST",
         headers: {
           "content-type": "application/json",
-          ...(session
-            ? { authorization: `Bearer ${session.access_token}` }
+          ...(activeSession
+            ? { authorization: `Bearer ${activeSession.access_token}` }
             : {}),
         },
         body: JSON.stringify(checkoutBody),
       });
-      if (response.status === 409 && !session) {
+      if (response.status === 409 && !activeSession) {
         const conflict = (await response.json().catch(() => ({}))) as {
           code?: string;
           error?: string;
@@ -377,7 +383,10 @@ export function CommunityGardenApp() {
 
         const client = getGardenAccountClient();
         if (!client) throw new Error("Private Basil accounts are unavailable right now.");
-        const { data, error } = await client.auth.signInWithPassword(credentials);
+        const { data, error } = await client.auth.signInWithPassword({
+          email: credentials.email,
+          password: credentials.password,
+        });
         if (error || !data.session) {
           throw new Error(
             error?.message.toLowerCase().includes("email not confirmed")
@@ -386,7 +395,8 @@ export function CommunityGardenApp() {
           );
         }
         setSession(data.session);
-        response = await fetch("/api/community-garden/checkout", {
+        activeSession = data.session;
+        response = await fetch(accessEndpoint, {
           method: "POST",
           headers: {
             authorization: `Bearer ${data.session.access_token}`,
@@ -411,6 +421,34 @@ export function CommunityGardenApp() {
         throw new Error(
           await getResponseError(response, "Secure checkout could not start."),
         );
+      }
+      if (promoCode) {
+        if (!activeSession) {
+          const client = getGardenAccountClient();
+          if (!client) {
+            throw new Error(
+              "Your gift was accepted, but Basil could not sign you in automatically.",
+            );
+          }
+          const { data, error } = await client.auth.signInWithPassword({
+            email: credentials.email,
+            password: credentials.password,
+          });
+          if (error || !data.session) {
+            throw new Error(
+              "Your gift was accepted. Open Account and sign in to continue.",
+            );
+          }
+          activeSession = data.session;
+          setSession(data.session);
+        }
+        pendingGardenEntryRef.current = true;
+        setWorld("personal");
+        setMembershipOfferOpen(false);
+        setMembershipCheckoutBusy(false);
+        setRestoreMessage("Gift accepted. Restoring your saved garden…");
+        setMembershipReloadToken((current) => current + 1);
+        return;
       }
       const payload = (await response.json()) as { url?: string; metaEventId?: string };
       if (!payload.url) throw new Error("Stripe did not return a secure checkout page.");
