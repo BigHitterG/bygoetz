@@ -58,6 +58,7 @@ export type RenderGardenState = {
   wateringCareStatusLoaded?: boolean;
   suggestedPlantingCell: SelectedCell;
   suggestedWateringCell: SelectedCell;
+  gardenWorms: Array<{ gridX: number; gridY: number; surfacedAt: number }>;
   tutorialDimmed: boolean;
   effects: GardenEffect[];
   moving: boolean;
@@ -209,6 +210,39 @@ function drawWeed(
   ctx.fillRect(2, -5, 3, 2);
   ctx.fillStyle = "#eee7cf";
   ctx.fillRect(-1, -7, 2, 2);
+  ctx.restore();
+}
+
+function drawGardenWorm(
+  ctx: CanvasRenderingContext2D,
+  worm: { gridX: number; gridY: number; surfacedAt: number },
+  camera: WorldPoint,
+  viewport: GardenViewport,
+  now: number,
+  zoom: number,
+) {
+  const point = worldToScreen(
+    gridToWorld(worm.gridX, worm.gridY),
+    camera,
+    viewport,
+    zoom,
+  );
+  if (!isVisible(point, viewport)) return;
+  const wiggle = Math.sin((now - worm.surfacedAt) / 260) * 1.5;
+  ctx.save();
+  ctx.translate(Math.round(point.x + wiggle), Math.round(point.y + 2));
+  ctx.scale(zoom, zoom);
+  ctx.globalAlpha = 0.92;
+  ctx.fillStyle = "#d88a72";
+  ctx.fillRect(-6, -2, 4, 3);
+  ctx.fillStyle = "#c46f5f";
+  ctx.fillRect(-2, -3, 4, 3);
+  ctx.fillStyle = "#a9514c";
+  ctx.fillRect(2, -2, 5, 3);
+  ctx.fillStyle = "#34231f";
+  ctx.fillRect(5, -1, 1, 1);
+  ctx.fillStyle = "rgba(255, 250, 224, 0.72)";
+  ctx.fillRect(-8, 3, 16, 1);
   ctx.restore();
 }
 
@@ -2005,6 +2039,16 @@ export function renderGarden(ctx: CanvasRenderingContext2D, state: RenderGardenS
     state.zoom,
   );
   drawDampSoil(ctx, visiblePlants, state.camera, state.viewport, state.now, state.zoom);
+  state.gardenWorms.forEach((worm) =>
+    drawGardenWorm(
+      ctx,
+      worm,
+      state.camera,
+      state.viewport,
+      state.now,
+      state.zoom,
+    ),
+  );
   state.weeds.forEach((weed) =>
     drawWeed(ctx, weed, state.camera, state.viewport, state.zoom),
   );

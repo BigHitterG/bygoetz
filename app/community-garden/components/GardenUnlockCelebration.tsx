@@ -8,6 +8,7 @@ import {
 
 type GardenUnlockCelebrationProps = {
   notice: MyGardenUnlockNotice | null;
+  temporary?: boolean;
   onContinue: () => void;
   onViewGarden: () => void;
 };
@@ -27,6 +28,7 @@ const CONFETTI_PIECES = [
 
 export function GardenUnlockCelebration({
   notice,
+  temporary = false,
   onContinue,
   onViewGarden,
 }: GardenUnlockCelebrationProps) {
@@ -109,20 +111,30 @@ export function GardenUnlockCelebration({
         <h2 id="cg-unlock-title">{title}</h2>
         {notice.completedCollection && notice.openedCollection ? (
           <p id="cg-unlock-description">
-            {itemNames} is now in your inventory. You also completed{" "}
-            {notice.completedCollection.name} and opened the{" "}
+            {temporary
+              ? `${itemNames} is now unlocked for this visit. `
+              : `${itemNames} is now in your inventory. `}
+            You also completed {notice.completedCollection.name} and opened the{" "}
             {notice.openedCollection.name} collection.
+            {temporary ? " Join to keep this progress." : ""}
           </p>
         ) : notice.completedCollection ? (
           <p id="cg-unlock-description">
-            {itemNames ? `${itemNames} is now in your inventory. ` : ""}
+            {itemNames
+              ? temporary
+                ? `${itemNames} is now unlocked for this visit. `
+                : `${itemNames} is now in your inventory. `
+              : ""}
             You completed every piece of the{" "}
             {notice.completedCollection.name} collection.
+            {temporary ? " Join to keep this progress." : ""}
           </p>
         ) : (
           <p id="cg-unlock-description">
-            Your care in the Community Garden unlocked {itemNames}. It is ready
-            to place in My Garden.
+            Your Care in the Community Garden unlocked {itemNames}.{" "}
+            {temporary
+              ? "Join to save this progress and use it in My Garden."
+              : "It is ready to place in My Garden."}
           </p>
         )}
         <small>
@@ -130,7 +142,7 @@ export function GardenUnlockCelebration({
         </small>
         <div className="cg-unlock-actions">
           <button type="button" onClick={onViewGarden}>
-            View in My Garden
+            {temporary ? "See My Garden" : "View in My Garden"}
           </button>
           <button type="button" onClick={onContinue}>
             Keep tending

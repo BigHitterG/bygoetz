@@ -6,7 +6,6 @@ import {
   useEffect,
   useImperativeHandle,
   useRef,
-  type KeyboardEvent as ReactKeyboardEvent,
   type PointerEvent as ReactPointerEvent,
 } from "react";
 import {
@@ -66,16 +65,7 @@ const WATERING_RANGE_TILES = 5;
 const WATERING_APPROACH_TILES = 2.125;
 const WATERING_CHAIN_REACH_TILES = 6;
 const WATERING_STATUS_REFRESH_MS = 10 * 60 * 1000;
-const MOVEMENT_KEY_CODES = new Set([
-  "ArrowUp",
-  "ArrowDown",
-  "ArrowLeft",
-  "ArrowRight",
-  "KeyW",
-  "KeyA",
-  "KeyS",
-  "KeyD",
-]);
+const MAX_VISIBLE_GARDEN_WORMS = 5;
 
 export type GardenConnection = "connecting" | "online" | "offline" | "error";
 export type GardenAction =
@@ -184,11 +174,18 @@ type Runtime = {
   personalGarden: MyGardenState | null;
   suggestedPlantingCell: SelectedCell;
   suggestedWateringCell: SelectedCell;
+  gardenWorms: Map<string, GardenWormMarker>;
 };
 
 type RecentCommunityPlant = {
   plant: PlantRecord;
   acceptedAt: number;
+};
+
+type GardenWormMarker = {
+  gridX: number;
+  gridY: number;
+  surfacedAt: number;
 };
 
 const RECENT_COMMUNITY_PLANTS_KEY = "basil-recent-community-plants-v1";
@@ -253,7 +250,68 @@ type GardenCanvasProps = {
     action: GardenAction,
     error: unknown,
   ) => void;
+  onGardenWormDiscovered?: () => void;
 };
+
+function sameSelectedCell(left: SelectedCell, right: SelectedCell) {
+  return Boolean(
+    left &&
+      right &&
+      left.gridX === right.gridX &&
+      left.gridY === right.gridY,
+  );
+}
+
+function canQueueCommunityPlant(runtime: Runtime, selected: SelectedCell) {
+  return Boolean(
+    selected &&
+      runtime.mode === "community" &&
+      runtime.toolMode === "plant" &&
+      isWithinRuntime(runtime, selected.gridX, selected.gridY) &&
+      !getPlantAt(runtime, selected.gridX, selected.gridY) &&
+      !getWeedAt(runtime, selected.gridX, selected.gridY),
+  );
+}
+
+function surfaceGardenWorm(runtime: Runtime, originX: number, originY: number) {
+  const offsets = [
+    [-1, 0],
+    [1, 0],
+    [0, 1],
+    [0, -1],
+    [-1, 1],
+    [1, 1],
+    [-1, -1],
+    [1, -1],
+  ] as const;
+  const openSpot = offsets.find(([dx, dy]) => {
+    const gridX = originX + dx;
+    const gridY = originY + dy;
+    const key = plantKey(gridX, gridY);
+    return (
+      isWithinRuntime(runtime, gridX, gridY) &&
+      !getPlantAt(runtime, gridX, gridY) &&
+      !getWeedAt(runtime, gridX, gridY) &&
+      !runtime.gardenWorms.has(key)
+    );
+  });
+  if (!openSpot) return null;
+
+  const gridX = originX + openSpot[0];
+  const gridY = originY + openSpot[1];
+  const marker = {
+    gridX,
+    gridY,
+    surfacedAt: Date.now(),
+  };
+  runtime.gardenWorms.set(plantKey(gridX, gridY), marker);
+  while (runtime.gardenWorms.size > MAX_VISIBLE_GARDEN_WORMS) {
+    const oldestKey = runtime.gardenWorms.keys().next().value;
+    if (typeof oldestKey !== "string") break;
+    runtime.gardenWorms.delete(oldestKey);
+  }
+  return marker;
+}
 
 function plantKey(gridX: number, gridY: number) {
   return `${gridX}:${gridY}`;
@@ -1070,6 +1128,7 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
       onPersonalGardenMutation,
       onActionCompleted,
       onActionFailed,
+      onGardenWormDiscovered,
     },
     ref,
   ) {
@@ -1079,12 +1138,15 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
     const onPersonalGardenMutationRef = useRef(onPersonalGardenMutation);
     const onActionCompletedRef = useRef(onActionCompleted);
     const onActionFailedRef = useRef(onActionFailed);
+    const onGardenWormDiscoveredRef = useRef(onGardenWormDiscovered);
     const tutorialDimmedRef = useRef(tutorialDimmed);
     const personalGardenRef = useRef(personalGarden);
     const worldSnapshotsRef = useRef<
       Partial<Record<GardenWorldMode, WorldSnapshot>>
     >({});
     const loadPlantsRef = useRef<() => Promise<void>>(async () => undefined);
+    const performActionRef = useRef<() => Promise<void>>(async () => undefined);
+    const queuedPlantingRef = useRef<SelectedCell>(null);
     const lastUiKeyRef = useRef("");
     const pointerGestureRef = useRef<{
       pointerId: number;
@@ -1094,7 +1156,6 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
       lastY: number;
       dragged: boolean;
     } | null>(null);
-    const pressedMovementKeysRef = useRef<Set<string>>(new Set());
     const start = gridToWorld(0, 0);
     const runtimeRef = useRef<Runtime>({
       mary: { ...start },
@@ -1146,6 +1207,7 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
       personalGarden,
       suggestedPlantingCell: null,
       suggestedWateringCell: null,
+      gardenWorms: new Map(),
     });
 
     useEffect(() => {
@@ -1167,6 +1229,10 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
     useEffect(() => {
       onActionFailedRef.current = onActionFailed;
     }, [onActionFailed]);
+
+    useEffect(() => {
+      onGardenWormDiscoveredRef.current = onGardenWormDiscovered;
+    }, [onGardenWormDiscovered]);
 
     useEffect(() => {
       tutorialDimmedRef.current = tutorialDimmed;
@@ -1498,7 +1564,8 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
 
     useImperativeHandle(
       ref,
-      () => ({
+      () => {
+        const handle: GardenCanvasHandle = {
         suggestPlantingSpot() {
           const runtime = runtimeRef.current;
           runtime.toolMode = "plant";
@@ -1653,7 +1720,18 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
           const runtime = runtimeRef.current;
           const selected = runtime.selected;
           const actionState = getActionState(runtime);
-          if (!selected || !actionState.enabled || !actionState.action) return;
+          if (!selected) return;
+          if (!actionState.enabled || !actionState.action) {
+            if (canQueueCommunityPlant(runtime, selected)) {
+              queuedPlantingRef.current = { ...selected };
+              runtime.statusMessage = runtime.actionBusy
+                ? "Your next planting is ready and will follow this one."
+                : "Planting ready. Mary will plant when she reaches the patch.";
+              publishUi();
+            }
+            return;
+          }
+          queuedPlantingRef.current = null;
 
           if (actionState.action === "water") {
             const wateringTargets = getWateringSelection(runtime, selected);
@@ -1852,7 +1930,13 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
                 rememberRecentCommunityPlant(runtime, plant);
               }
               runtime.mapRevision += 1;
-              runtime.selected = { ...selected, plantId: plant.id };
+              const selectionStillCurrent = sameSelectedCell(
+                runtime.selected,
+                selected,
+              );
+              if (selectionStillCurrent) {
+                runtime.selected = { ...selected, plantId: plant.id };
+              }
               runtime.effects.push({
                 kind: "plant",
                 gridX: plant.grid_x,
@@ -1860,14 +1944,21 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
                 startedAt: Date.now(),
               });
               if (contribution?.gardenWorm) {
+                const worm = surfaceGardenWorm(
+                  runtime,
+                  plant.grid_x,
+                  plant.grid_y,
+                );
                 runtime.effects.push({
                   kind: "worm",
-                  gridX: plant.grid_x,
-                  gridY: plant.grid_y,
+                  gridX: worm?.gridX ?? plant.grid_x,
+                  gridY: worm?.gridY ?? plant.grid_y,
                   startedAt: Date.now(),
                 });
               }
-              runtime.statusMessage = `A new ${selectedDefinition.name.toLowerCase()} has taken root.`;
+              if (selectionStillCurrent) {
+                runtime.statusMessage = `A new ${selectedDefinition.name.toLowerCase()} has taken root.`;
+              }
               if (contribution) onCommunityContributionRef.current?.(contribution);
             } else if (actionState.action === "weed") {
               const weed = getWeedAt(runtime, selected.gridX, selected.gridY);
@@ -1956,7 +2047,10 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
             publishUi();
           }
         },
-      }),
+        };
+        performActionRef.current = handle.performAction;
+        return handle;
+      },
       [publishUi],
     );
 
@@ -2008,33 +2102,7 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
         runtime.lastFrame = now;
         runtime.moving = false;
 
-        const pressedKeys = pressedMovementKeysRef.current;
-        const inputX =
-          (pressedKeys.has("ArrowRight") || pressedKeys.has("KeyD") ? 1 : 0) -
-          (pressedKeys.has("ArrowLeft") || pressedKeys.has("KeyA") ? 1 : 0);
-        const inputY =
-          (pressedKeys.has("ArrowDown") || pressedKeys.has("KeyS") ? 1 : 0) -
-          (pressedKeys.has("ArrowUp") || pressedKeys.has("KeyW") ? 1 : 0);
-        const inputLength = Math.hypot(inputX, inputY);
-
-        if (inputLength > 0) {
-          const step = GARDEN_CONFIG.moveSpeed * deltaSeconds;
-          const previousX = runtime.mary.x;
-          const previousY = runtime.mary.y;
-          runtime.mary.x = clampRuntimeCoordinate(
-            runtime,
-            runtime.mary.x + (inputX / inputLength) * step,
-            "x",
-          );
-          runtime.mary.y = clampRuntimeCoordinate(
-            runtime,
-            runtime.mary.y + (inputY / inputLength) * step,
-            "y",
-          );
-          runtime.moving =
-            runtime.mary.x !== previousX || runtime.mary.y !== previousY;
-          runtime.hasMoved ||= runtime.moving;
-        } else if (runtime.target) {
+        if (runtime.target) {
           const dx = runtime.target.x - runtime.mary.x;
           const dy = runtime.target.y - runtime.mary.y;
           const distance = Math.hypot(dx, dy);
@@ -2059,7 +2127,25 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
             runtime.moving = true;
             runtime.hasMoved = true;
           }
+        }
 
+        const queuedPlanting = queuedPlantingRef.current;
+        if (queuedPlanting) {
+          if (
+            !sameSelectedCell(runtime.selected, queuedPlanting) ||
+            !canQueueCommunityPlant(runtime, queuedPlanting)
+          ) {
+            queuedPlantingRef.current = null;
+          } else if (!runtime.actionBusy) {
+            const queuedActionState = getActionState(runtime);
+            if (
+              queuedActionState.action === "plant" &&
+              queuedActionState.enabled
+            ) {
+              queuedPlantingRef.current = null;
+              queueMicrotask(() => void performActionRef.current());
+            }
+          }
         }
 
         if (runtime.moving) {
@@ -2131,6 +2217,7 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
           wateringCareStatusLoaded: runtime.wateringCareStatusLoaded,
           suggestedPlantingCell: runtime.suggestedPlantingCell,
           suggestedWateringCell: runtime.suggestedWateringCell,
+          gardenWorms: Array.from(runtime.gardenWorms.values()),
           tutorialDimmed: tutorialDimmedRef.current,
           effects: runtime.reducedMotion ? [] : runtime.effects,
           moving: runtime.reducedMotion ? false : runtime.moving,
@@ -2182,6 +2269,7 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
 
     function selectCell(gridX: number, gridY: number) {
       const runtime = runtimeRef.current;
+      queuedPlantingRef.current = null;
       const requiredTutorialCell =
         runtime.suggestedPlantingCell ?? runtime.suggestedWateringCell;
       if (tutorialDimmedRef.current && !requiredTutorialCell) {
@@ -2204,6 +2292,22 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
       const lockedParcel = isNextExpansionCell(runtime, gridX, gridY);
       if (!isWithinRuntime(runtime, gridX, gridY) && !lockedParcel) {
         runtime.statusMessage = "You have reached the garden edge.";
+        publishUi();
+        return;
+      }
+
+      const wormKey = plantKey(gridX, gridY);
+      if (runtime.mode === "community" && runtime.gardenWorms.has(wormKey)) {
+        runtime.gardenWorms.delete(wormKey);
+        runtime.effects.push({
+          kind: "worm",
+          gridX,
+          gridY,
+          startedAt: Date.now(),
+        });
+        runtime.statusMessage =
+          "You found a Garden Worm—the soil is especially lively here.";
+        onGardenWormDiscoveredRef.current?.();
         publishUi();
         return;
       }
@@ -2383,28 +2487,6 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
       }
     }
 
-    function onKeyDown(event: ReactKeyboardEvent<HTMLCanvasElement>) {
-      if (!MOVEMENT_KEY_CODES.has(event.code)) return;
-      event.preventDefault();
-      const runtime = runtimeRef.current;
-      pressedMovementKeysRef.current.add(event.code);
-      runtime.statusMessage =
-        runtime.mode === "personal"
-          ? "Exploring My Garden..."
-          : "Exploring the garden...";
-      publishUi();
-    }
-
-    function onKeyUp(event: ReactKeyboardEvent<HTMLCanvasElement>) {
-      if (!pressedMovementKeysRef.current.delete(event.code)) return;
-      event.preventDefault();
-      publishUi();
-    }
-
-    function clearMovementKeys() {
-      pressedMovementKeysRef.current.clear();
-    }
-
     return (
       <canvas
         ref={canvasRef}
@@ -2420,9 +2502,6 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
         onPointerCancel={onPointerCancel}
-        onKeyDown={onKeyDown}
-        onKeyUp={onKeyUp}
-        onBlur={clearMovementKeys}
         onContextMenu={(event) => event.preventDefault()}
       />
     );

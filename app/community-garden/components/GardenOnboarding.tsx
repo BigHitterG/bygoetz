@@ -53,7 +53,7 @@ export function GardenOnboarding({
                 : "Tap the highlighted open ground. Your gardener will walk over to it.",
             desktopHint: actionReady
               ? "Press E to plant."
-              : "Move with WASD or click the glowing patch.",
+              : "Click the glowing patch to walk there.",
             action: null,
             onAction: null,
           }
@@ -84,7 +84,7 @@ export function GardenOnboarding({
                   : "Tap the highlighted ground and walk over to make this space your own.",
                 desktopHint: actionReady
                   ? "Press E to plant."
-                  : "Move with WASD or click the glowing patch.",
+                  : "Click the glowing patch to walk there.",
                 action: null,
                 onAction: null,
               }
@@ -98,8 +98,8 @@ export function GardenOnboarding({
                     ? "Double tap Water below to send two short sprays through the highlighted flowers."
                     : "Tap the highlighted flowers. Mary will move into range and the Water button will light up.",
                   desktopHint: actionReady
-                    ? "Press E twice to water while you keep moving."
-                    : "Move with WASD, then click a flower with a water drop.",
+                    ? "Press E twice to water."
+                    : "Click a flower with a water drop.",
                   action: null,
                   onAction: null,
                 }

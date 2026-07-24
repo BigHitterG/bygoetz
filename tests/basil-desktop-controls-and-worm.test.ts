@@ -16,6 +16,13 @@ const appSource = await readFile(
   ),
   "utf8",
 );
+const celebrationSource = await readFile(
+  new URL(
+    "../app/community-garden/components/GardenUnlockCelebration.tsx",
+    import.meta.url,
+  ),
+  "utf8",
+);
 const serverSource = await readFile(
   new URL("../lib/communityGarden/publicGardenServer.ts", import.meta.url),
   "utf8",
@@ -28,20 +35,32 @@ const wormMigration = await readFile(
   "utf8",
 );
 
-test("desktop movement supports held diagonal input without erasing click-to-walk", () => {
-  assert.match(canvasSource, /pressedMovementKeysRef/);
-  assert.match(canvasSource, /Math\.hypot\(inputX, inputY\)/);
+test("desktop movement stays click-to-walk without WASD movement", () => {
+  assert.doesNotMatch(canvasSource, /pressedMovementKeysRef/);
+  assert.doesNotMatch(canvasSource, /KeyW|KeyA|KeyS|KeyD/);
   assert.match(canvasSource, /runtime\.target = isWateringSelection/);
-  assert.doesNotMatch(
-    canvasSource,
-    /if \(inputLength > 0\) \{\s*runtime\.target = null/,
-  );
 });
 
 test("desktop gameplay actions have reachable primary shortcuts and aliases", () => {
   assert.match(appSource, /code === "KeyQ" \|\| code === "KeyI"/);
   assert.match(appSource, /code === "KeyC" \|\| code === "KeyG"/);
   assert.match(appSource, /code === "KeyE"/);
+});
+
+test("rapid click and E planting buffers one valid planting intent", () => {
+  assert.match(canvasSource, /queuedPlantingRef/);
+  assert.match(canvasSource, /canQueueCommunityPlant/);
+  assert.match(canvasSource, /queueMicrotask\(\(\) => void performActionRef\.current\(\)\)/);
+  assert.match(canvasSource, /selectionStillCurrent/);
+});
+
+test("guest Care milestones use the same visible unlock celebration queue", () => {
+  assert.match(
+    appSource,
+    /continuedPreview\.garden\.lifetimeCare,\s*award\.preview\.garden\.lifetimeCare/,
+  );
+  assert.match(appSource, /temporary=\{!memberGarden\}/);
+  assert.match(celebrationSource, /Join to keep this progress/);
 });
 
 test("Garden Worm rewards are server-authoritative, rare, and idempotent", () => {
@@ -57,4 +76,6 @@ test("Garden Worm rewards are server-authoritative, rare, and idempotent", () =>
     wormMigration,
     /if coalesce\(\(result_payload #>> '\{contribution,gardenWorm\}'\)::boolean, false\) then/,
   );
+  assert.match(canvasSource, /surfaceGardenWorm/);
+  assert.match(appSource, /basil-garden-worm-discovery-v1/);
 });

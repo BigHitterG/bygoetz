@@ -99,6 +99,9 @@ const HEALTH_PULSE_KEY = "basil-health-pulse-at-v1";
 const HEALTH_PULSE_INTERVAL_MS = 5 * 60 * 1000;
 const MEMBER_GARDEN_CACHE_PREFIX = "basil-member-garden-cache-v1:";
 const MEMBERSHIP_RETRY_MAX_DELAY_MS = 30_000;
+const GARDEN_WORM_DISCOVERY_KEY = "basil-garden-worm-discovery-v1";
+const UNLOCK_CELEBRATION_HISTORY_PREFIX =
+  "basil-unlock-celebration-history-v1:";
 
 type AccountResponse =
   | { active: false }
@@ -117,6 +120,60 @@ async function getResponseError(response: Response, fallback: string) {
 
 function getMemberGardenCacheKey(userId: string) {
   return `${MEMBER_GARDEN_CACHE_PREFIX}${userId}`;
+}
+
+function getUnlockNoticeKey(notice: MyGardenUnlockNotice) {
+  return [
+    notice.lifetimeCareRequired,
+    notice.items.map((item) => item.key).join(","),
+    notice.completedCollection?.key ?? "",
+  ].join(":");
+}
+
+function getUnlockCelebrationHistory(userId: string) {
+  if (typeof window === "undefined") return new Set<string>();
+  try {
+    const stored = JSON.parse(
+      window.localStorage.getItem(
+        `${UNLOCK_CELEBRATION_HISTORY_PREFIX}${userId}`,
+      ) ?? "[]",
+    ) as unknown;
+    return new Set(
+      Array.isArray(stored)
+        ? stored.filter((value): value is string => typeof value === "string")
+        : [],
+    );
+  } catch {
+    return new Set<string>();
+  }
+}
+
+function saveUnlockCelebrationHistory(userId: string, history: Set<string>) {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(
+      `${UNLOCK_CELEBRATION_HISTORY_PREFIX}${userId}`,
+      JSON.stringify(Array.from(history)),
+    );
+  } catch {
+    // The live queue still shows celebrations during this visit.
+  }
+}
+
+function getOutstandingUnlockCelebrations(
+  userId: string,
+  lifetimeCare: number,
+) {
+  const reached = getMyGardenUnlockNotices(0, lifetimeCare);
+  if (reached.length === 0) return [] as MyGardenUnlockNotice[];
+  const history = getUnlockCelebrationHistory(userId);
+  if (history.size === 0 && reached.length > 1) {
+    for (const notice of reached.slice(0, -1)) {
+      history.add(getUnlockNoticeKey(notice));
+    }
+    saveUnlockCelebrationHistory(userId, history);
+  }
+  return reached.filter((notice) => !history.has(getUnlockNoticeKey(notice)));
 }
 
 function loadMemberGardenCache(userId: string) {
@@ -452,6 +509,23 @@ export function CommunityGardenApp() {
       lifetimeCareRef.current = nextGarden?.lifetimeCare ?? 0;
       memberGardenRef.current = nextGarden;
       setMemberGarden(nextGarden);
+      if (nextGarden) {
+        const outstanding = getOutstandingUnlockCelebrations(
+          activeSession.user.id,
+          nextGarden.lifetimeCare,
+        );
+        if (outstanding.length > 0) {
+          setUnlockNotices((current) => {
+            const queuedKeys = new Set(current.map(getUnlockNoticeKey));
+            return [
+              ...current,
+              ...outstanding.filter(
+                (notice) => !queuedKeys.has(getUnlockNoticeKey(notice)),
+              ),
+            ];
+          });
+        }
+      }
       saveMemberGardenCache(activeSession.user.id, nextGarden);
       setRestoreMessage((current) =>
         current ===
@@ -826,6 +900,37 @@ export function CommunityGardenApp() {
     };
   }, [guestPreview, guestPreviewReady, memberGarden, world]);
 
+  useEffect(() => {
+    if (!guestPreviewReady || session || memberGarden) return;
+    const guestId = getBasilLaunchSessionId() ?? "guest";
+    const outstanding = getOutstandingUnlockCelebrations(
+      guestId,
+      guestPreview.garden.lifetimeCare,
+    );
+    if (outstanding.length === 0) return;
+    let canceled = false;
+    queueMicrotask(() => {
+      if (canceled) return;
+      setUnlockNotices((current) => {
+        const queuedKeys = new Set(current.map(getUnlockNoticeKey));
+        return [
+          ...current,
+          ...outstanding.filter(
+            (notice) => !queuedKeys.has(getUnlockNoticeKey(notice)),
+          ),
+        ];
+      });
+    });
+    return () => {
+      canceled = true;
+    };
+  }, [
+    guestPreview.garden.lifetimeCare,
+    guestPreviewReady,
+    memberGarden,
+    session,
+  ]);
+
   const onStateChange = useCallback((state: GardenUiState) => {
     setUi(state);
   }, []);
@@ -839,8 +944,6 @@ export function CommunityGardenApp() {
         : "";
       if (contribution.specialFlower) {
         setCareBlossomFound(true);
-      } else if (contribution.gardenWorm) {
-        setGardenWormFound(true);
       }
       if (!session || !memberGarden) {
         const currentPreview = guestPreviewRef.current;
@@ -853,6 +956,21 @@ export function CommunityGardenApp() {
           contribution.careValue,
           contribution.earningPhase,
         );
+        const earnedUnlocks = getMyGardenUnlockNotices(
+          continuedPreview.garden.lifetimeCare,
+          award.preview.garden.lifetimeCare,
+        );
+        if (earnedUnlocks.length > 0) {
+          setUnlockNotices((current) => {
+            const queuedKeys = new Set(current.map(getUnlockNoticeKey));
+            return [
+              ...current,
+              ...earnedUnlocks.filter(
+                (notice) => !queuedKeys.has(getUnlockNoticeKey(notice)),
+              ),
+            ];
+          });
+        }
         commitGuestPreview(award.preview);
         if (award.awardedCare > 0) {
           canvasRef.current?.showCareReward(
@@ -930,24 +1048,33 @@ export function CommunityGardenApp() {
             };
             const previousLifetimeCare = lifetimeCareRef.current;
             lifetimeCareRef.current = award.lifetimeCare;
-            const earnedUnlocks = memberGarden
+            const earnedUnlocks = memberGardenRef.current
               ? getMyGardenUnlockNotices(
                   previousLifetimeCare,
                   award.lifetimeCare,
                 )
               : [];
             if (earnedUnlocks.length > 0) {
-              setUnlockNotices((current) => [...current, ...earnedUnlocks]);
+              setUnlockNotices((current) => {
+                const queuedKeys = new Set(current.map(getUnlockNoticeKey));
+                return [
+                  ...current,
+                  ...earnedUnlocks.filter(
+                    (notice) => !queuedKeys.has(getUnlockNoticeKey(notice)),
+                  ),
+                ];
+              });
             }
-            setMemberGarden((current) =>
-              current
-                ? {
-                    ...current,
-                    careBalance: award.careBalance,
-                    lifetimeCare: award.lifetimeCare,
-                  }
-                : current,
-            );
+            setMemberGarden((current) => {
+              if (!current) return current;
+              const updated = {
+                ...current,
+                careBalance: award.careBalance,
+                lifetimeCare: award.lifetimeCare,
+              };
+              memberGardenRef.current = updated;
+              return updated;
+            });
             canvasRef.current?.showCareReward(
               award.awardedCare,
               award.earningMode === "daily",
@@ -969,6 +1096,26 @@ export function CommunityGardenApp() {
     },
     [commitGuestPreview, memberGarden, session],
   );
+
+  const discoverGardenWorm = useCallback(() => {
+    let alreadyDiscovered = false;
+    try {
+      alreadyDiscovered =
+        window.localStorage.getItem(GARDEN_WORM_DISCOVERY_KEY) === "seen";
+      if (!alreadyDiscovered) {
+        window.localStorage.setItem(GARDEN_WORM_DISCOVERY_KEY, "seen");
+      }
+    } catch {
+      // A restricted browser may show the introduction again next visit.
+    }
+    if (alreadyDiscovered) {
+      setCareAnnouncement(
+        "Garden Worm found—the rare planting bonus was already added to your Care.",
+      );
+      return;
+    }
+    setGardenWormFound(true);
+  }, []);
 
   const mutateMyGarden = useCallback(
     async (mutation: MyGardenMutation) => {
@@ -1254,6 +1401,14 @@ export function CommunityGardenApp() {
   }
 
   function dismissUnlockNotice() {
+    const currentNotice = unlockNotices[0];
+    const celebrationOwner =
+      session?.user.id ?? getBasilLaunchSessionId() ?? "guest";
+    if (currentNotice) {
+      const history = getUnlockCelebrationHistory(celebrationOwner);
+      history.add(getUnlockNoticeKey(currentNotice));
+      saveUnlockCelebrationHistory(celebrationOwner, history);
+    }
     setUnlockNotices((current) => current.slice(1));
   }
 
@@ -1294,6 +1449,7 @@ export function CommunityGardenApp() {
           tutorialDimmed={tutorialMapDimmed}
           onStateChange={onStateChange}
           onCommunityContribution={claimCommunityContribution}
+          onGardenWormDiscovered={discoverGardenWorm}
           onPersonalGardenMutation={mutateMyGarden}
           onActionCompleted={handleGardenActionCompleted}
           onActionFailed={handleGardenActionFailed}
@@ -1623,6 +1779,7 @@ export function CommunityGardenApp() {
             ? null
             : (unlockNotices[0] ?? null)
         }
+        temporary={!memberGarden}
         onContinue={dismissUnlockNotice}
         onViewGarden={viewUnlockInMyGarden}
       />
