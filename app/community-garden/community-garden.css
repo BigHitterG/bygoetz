@@ -603,6 +603,279 @@
   box-shadow: 3px 3px 0 rgba(52, 35, 31, 0.22);
 }
 
+.cg-garden-top-actions {
+  position: absolute;
+  right: max(12px, env(safe-area-inset-right));
+  top: max(82px, calc(env(safe-area-inset-top) + 76px));
+  z-index: 9;
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+}
+
+.cg-garden-top-actions > .cg-compact-support {
+  position: relative;
+  right: auto;
+  top: auto;
+}
+
+.cg-bug-report-trigger {
+  display: grid;
+  width: 48px;
+  min-width: 48px;
+  min-height: 52px;
+  place-items: center;
+  border: 2px solid rgba(52, 35, 31, 0.34);
+  border-radius: 0;
+  background: rgba(255, 244, 223, 0.4);
+  color: var(--cg-ink);
+  cursor: pointer;
+  padding: 0;
+  opacity: 0.42;
+  box-shadow: 2px 2px 0 rgba(52, 35, 31, 0.11);
+  transition:
+    opacity 140ms ease,
+    background-color 140ms ease,
+    border-color 140ms ease;
+}
+
+.cg-bug-report-trigger:hover,
+.cg-bug-report-trigger:focus-visible {
+  border-color: var(--cg-ink);
+  background: rgba(255, 244, 223, 0.9);
+  opacity: 0.9;
+}
+
+.cg-bug-report-trigger svg {
+  width: 22px;
+  height: 22px;
+  fill: currentColor;
+}
+
+.cg-bug-report-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  overflow: auto;
+  overscroll-behavior: contain;
+  background: rgba(52, 35, 31, 0.6);
+  padding:
+    max(18px, env(safe-area-inset-top))
+    max(14px, env(safe-area-inset-right))
+    max(18px, env(safe-area-inset-bottom))
+    max(14px, env(safe-area-inset-left));
+}
+
+.cg-bug-report-dialog {
+  position: relative;
+  width: min(510px, 100%);
+  max-height: calc(var(--basil-viewport-height, 100dvh) - 36px);
+  overflow: auto;
+  border: 3px solid var(--cg-ink);
+  background: var(--cg-cream);
+  padding: clamp(20px, 5vw, 34px);
+  box-shadow:
+    8px 8px 0 rgba(52, 35, 31, 0.34),
+    inset 0 0 0 5px var(--cg-paper);
+}
+
+.cg-bug-report-dialog form {
+  display: grid;
+  gap: 12px;
+}
+
+.cg-bug-report-dialog h2,
+.cg-bug-report-dialog p {
+  margin: 0;
+}
+
+.cg-bug-report-dialog h2 {
+  max-width: 410px;
+  padding-right: 30px;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(1.65rem, 6vw, 2.35rem);
+  line-height: 0.98;
+}
+
+.cg-bug-report-close {
+  position: absolute;
+  right: 12px;
+  top: 12px;
+  z-index: 2;
+  display: grid;
+  width: 38px;
+  height: 38px;
+  place-items: center;
+  border: 2px solid var(--cg-ink);
+  background: var(--cg-paper);
+  color: var(--cg-ink);
+  cursor: pointer;
+  padding: 0 0 3px;
+  font: inherit;
+  font-size: 1.5rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.cg-bug-report-privacy {
+  color: rgba(52, 35, 31, 0.7);
+  font-size: 0.75rem;
+  line-height: 1.45;
+}
+
+.cg-bug-report-kind {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin: 4px 0 0;
+  border: 0;
+  padding: 0;
+}
+
+.cg-bug-report-kind legend,
+.cg-bug-report-dialog form > label {
+  grid-column: 1 / -1;
+  margin-bottom: 2px;
+  font-size: 0.7rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.cg-bug-report-kind button,
+.cg-bug-report-attachment label,
+.cg-bug-report-submit,
+.cg-bug-report-thanks > button {
+  border: 2px solid var(--cg-ink);
+  background: var(--cg-paper);
+  color: var(--cg-ink);
+  cursor: pointer;
+  padding: 11px 14px;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.cg-bug-report-kind button[aria-pressed="true"] {
+  background: var(--cg-red);
+  color: #fff9e9;
+  box-shadow: 3px 3px 0 rgba(52, 35, 31, 0.22);
+}
+
+.cg-bug-report-dialog textarea {
+  width: 100%;
+  min-height: 132px;
+  resize: vertical;
+  border: 2px solid var(--cg-ink);
+  border-radius: 0;
+  background: #fffaf0;
+  color: var(--cg-ink);
+  padding: 12px;
+  font: inherit;
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.cg-bug-report-dialog textarea:focus-visible {
+  outline: 3px solid var(--cg-aqua);
+  outline-offset: 2px;
+}
+
+.cg-bug-report-count {
+  justify-self: end;
+  margin-top: -8px;
+  color: rgba(52, 35, 31, 0.62);
+  font-size: 0.65rem;
+}
+
+.cg-bug-report-attachment {
+  display: grid;
+  gap: 7px;
+}
+
+.cg-bug-report-attachment input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+
+.cg-bug-report-attachment label {
+  justify-self: start;
+  background: transparent;
+}
+
+.cg-bug-report-attachment span {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.65rem;
+}
+
+.cg-bug-report-attachment span button {
+  border: 0;
+  background: transparent;
+  color: var(--cg-red);
+  cursor: pointer;
+  padding: 2px;
+  font: inherit;
+  font-size: inherit;
+  font-weight: 900;
+  text-decoration: underline;
+}
+
+.cg-bug-report-error {
+  border-left: 4px solid var(--cg-red);
+  background: rgba(182, 47, 61, 0.08);
+  color: var(--cg-red);
+  padding: 9px 11px;
+  font-size: 0.72rem;
+  line-height: 1.45;
+}
+
+.cg-bug-report-submit {
+  justify-self: stretch;
+  background: var(--cg-red);
+  color: #fff9e9;
+  font-size: 0.88rem;
+}
+
+.cg-bug-report-submit:disabled,
+.cg-bug-report-close:disabled {
+  cursor: default;
+  opacity: 0.48;
+}
+
+.cg-bug-report-thanks {
+  display: grid;
+  justify-items: start;
+  gap: 12px;
+  padding: 12px 0 2px;
+}
+
+.cg-bug-report-thanks > span {
+  display: grid;
+  width: 50px;
+  height: 50px;
+  place-items: center;
+  border: 2px solid var(--cg-ink);
+  border-radius: 999px;
+  background: var(--cg-aqua);
+  color: #fff;
+  font-size: 1.35rem;
+  font-weight: 900;
+}
+
+.cg-bug-report-thanks > button {
+  margin-top: 6px;
+  background: var(--cg-red);
+  color: #fff9e9;
+}
+
 .cg-compact-support.is-garden-switch {
   border-color: var(--cg-ink);
   background: rgba(244, 216, 159, 0.96);

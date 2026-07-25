@@ -16,8 +16,10 @@ export default function BasilDeleteAccountPage() {
         <h2>What deletion does</h2>
         <p>
           Signed-in account deletion removes the Supabase Auth user and Basil’s private
-          account, My Garden, Care ledger, feedback, and membership entitlement. Sessions
-          are revoked. Anonymous public contributions may remain in the Community Garden.
+          account, My Garden, Care ledger, account-linked feedback, and membership
+          entitlement. Sessions are revoked. Anonymous public contributions and anonymous
+          quick bug or idea reports may remain because Basil cannot connect them back to
+          the deleted account.
         </p>
       </section>
       <DeleteBasilAccount />

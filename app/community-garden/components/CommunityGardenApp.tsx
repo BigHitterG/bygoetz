@@ -52,6 +52,7 @@ import { GardenOnboarding } from "./GardenOnboarding";
 import { GardenUnlockCelebration } from "./GardenUnlockCelebration";
 import { CareBlossomDiscovery } from "./CareBlossomDiscovery";
 import { GardenWormDiscovery } from "./GardenWormDiscovery";
+import { GardenBugReporter } from "./GardenBugReporter";
 import {
   isGardenOnboardingFinished,
   isGardenOnboardingPlantType,
@@ -1593,72 +1594,77 @@ export function CommunityGardenApp() {
           </button>
         </div>
 
-        <button
-          className={`cg-compact-support is-garden-switch${
-            showMyGardenInvitation ||
+        <div className="cg-garden-top-actions">
+          {session && accountChecked && memberGarden ? (
+            <GardenBugReporter accessToken={session.access_token} />
+          ) : null}
+          <button
+            className={`cg-compact-support is-garden-switch${
+              showMyGardenInvitation ||
+              showContinueGardenGuidance ||
+              showMyGardenGrowthNudge ||
+              showMyGardenUnlockNotice
+                ? " is-onboarding-highlight"
+                : ""
+            }`}
+            type="button"
+            disabled={
+              (world === "community" && myGardenTutorialLocked) ||
+              communityGardenTutorialLocked
+            }
+            aria-label={
+              world === "personal"
+                ? communityGardenTutorialLocked
+                  ? "Plant your first rose before returning to Community Garden"
+                  : `Go to Community Garden. ${myGarden.careBalance} Care.`
+                : myGardenTutorialLocked
+                  ? `Plant ${3 - communityOnboardingPlantings} more community flowers before visiting My Garden`
+                  : `Go to My Garden. ${myGarden.careBalance} Care.`
+            }
+            onClick={switchWorld}
+          >
+            <span
+              className={world === "personal" ? "cg-community-mark" : "cg-home-mark"}
+              aria-hidden="true"
+            />
+            <span className="cg-garden-switch-copy">
+              <strong>
+                {world === "personal" ? "Community Garden" : "My Garden"}
+              </strong>
+              <small>
+                Care <b>{myGarden.careBalance}</b>
+              </small>
+              <small className="cg-lifetime-care">
+                Total earned {myGarden.lifetimeCare.toLocaleString()}
+              </small>
+            </span>
+            {showMyGardenInvitation ||
             showContinueGardenGuidance ||
             showMyGardenGrowthNudge ||
-            showMyGardenUnlockNotice
-              ? " is-onboarding-highlight"
-              : ""
-          }`}
-          type="button"
-          disabled={
-            (world === "community" && myGardenTutorialLocked) ||
-            communityGardenTutorialLocked
-          }
-          aria-label={
-            world === "personal"
-              ? communityGardenTutorialLocked
-                ? "Plant your first rose before returning to Community Garden"
-                : `Go to Community Garden. ${myGarden.careBalance} Care.`
-              : myGardenTutorialLocked
-                ? `Plant ${3 - communityOnboardingPlantings} more community flowers before visiting My Garden`
-                : `Go to My Garden. ${myGarden.careBalance} Care.`
-          }
-          onClick={switchWorld}
-        >
-          <span
-            className={world === "personal" ? "cg-community-mark" : "cg-home-mark"}
-            aria-hidden="true"
-          />
-          <span className="cg-garden-switch-copy">
-            <strong>
-              {world === "personal" ? "Community Garden" : "My Garden"}
-            </strong>
-            <small>
-              Care <b>{myGarden.careBalance}</b>
-            </small>
-            <small className="cg-lifetime-care">
-              Total earned {myGarden.lifetimeCare.toLocaleString()}
-            </small>
-          </span>
-          {showMyGardenInvitation ||
-          showContinueGardenGuidance ||
-          showMyGardenGrowthNudge ||
-          showMyGardenUnlockNotice ? (
-            <strong
-              className="cg-my-garden-notice"
-              aria-label={
-                showMyGardenUnlockNotice
-                  ? `${unreadUnlockCount} new My Garden ${
-                      unreadUnlockCount === 1 ? "update" : "updates"
-                    }`
+            showMyGardenUnlockNotice ? (
+              <strong
+                className="cg-my-garden-notice"
+                aria-label={
+                  showMyGardenUnlockNotice
+                    ? `${unreadUnlockCount} new My Garden ${
+                        unreadUnlockCount === 1 ? "update" : "updates"
+                      }`
+                    : showContinueGardenGuidance
+                      ? "Earn more Care in Community Garden"
+                      : showMyGardenGrowthNudge
+                        ? "Care is ready to use in My Garden"
+                        : "My Garden is ready"
+                }
+              >
+                {showMyGardenUnlockNotice
+                  ? Math.min(99, unreadUnlockCount)
                   : showContinueGardenGuidance
-                  ? "Earn more Care in Community Garden"
-                  : showMyGardenGrowthNudge
-                    ? "Care is ready to use in My Garden"
-                  : "My Garden is ready"
-              }
-            >
-              {showMyGardenUnlockNotice
-                ? Math.min(99, unreadUnlockCount)
-                : showContinueGardenGuidance
-                  ? "+"
-                  : "!"}
-            </strong>
-          ) : null}
-        </button>
+                    ? "+"
+                    : "!"}
+              </strong>
+            ) : null}
+          </button>
+        </div>
 
         {world === "personal" && myGarden.preview ? (
           <div className="cg-preview-progress" aria-live="polite">

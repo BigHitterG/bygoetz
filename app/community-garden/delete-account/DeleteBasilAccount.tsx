@@ -102,8 +102,9 @@ export function DeleteBasilAccount() {
       <div className="cg-delete-success" role="status">
         <h2>Your Basil account was deleted</h2>
         <p>
-          Your private account, My Garden, feedback, entitlement, and active sessions
-          were removed. Anonymous contributions may remain in the shared Community Garden.
+          Your private account, My Garden, account-linked feedback, entitlement, and
+          active sessions were removed. Anonymous contributions and anonymous quick
+          reports may remain because they are not connected to your account.
         </p>
         <Link className="cg-legal-action" href={getBasilUrl()}>Return to free community play</Link>
       </div>
@@ -127,12 +128,14 @@ export function DeleteBasilAccount() {
         <h2>This is permanent</h2>
         <p>
           This removes your login, membership access, My Garden, Care history, private
-          feedback, and private account records. It cannot be undone. Stripe may retain
-          transaction records required for payment and legal purposes.
+          account-linked feedback, and private account records. It cannot be undone.
+          Stripe may retain transaction records required for payment and legal purposes.
         </p>
         <p>
           Anonymous Community Garden contributions may remain because they are part of
           the shared canonical landscape and are not publicly tied to your account.
+          Anonymous quick bug and idea reports may also remain because Basil does not
+          store an account identifier with them.
         </p>
       </div>
       <label htmlFor="basil-delete-password">Enter your password again</label>

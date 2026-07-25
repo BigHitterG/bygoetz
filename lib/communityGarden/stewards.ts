@@ -1,4 +1,4 @@
-import { createHash } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import type Stripe from "stripe";
 import { sendBasilPurchaseConversion } from "@/lib/analytics/basilMetaServer";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
@@ -22,6 +22,20 @@ export const GARDEN_FEEDBACK_CATEGORIES = [
 ] as const;
 
 export type GardenFeedbackCategory = (typeof GARDEN_FEEDBACK_CATEGORIES)[number];
+
+export const GARDEN_REPORT_KINDS = ["bug", "idea"] as const;
+export type GardenReportKind = (typeof GARDEN_REPORT_KINDS)[number];
+
+export const GARDEN_REPORT_MAX_MESSAGE_LENGTH = 1200;
+export const GARDEN_REPORT_MAX_ATTACHMENT_BYTES = 2_500_000;
+export const GARDEN_REPORT_ATTACHMENT_TYPES = [
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+] as const;
+
+const GARDEN_REPORT_ATTACHMENT_BUCKET = "garden-feedback-attachments";
+let gardenReportAttachmentBucketReady = false;
 
 const CATEGORY_CANDIDATES: Record<GardenFeedbackCategory, string | null> = {
   plants: "new_global_plant",
@@ -311,4 +325,119 @@ export async function submitGardenFeedback(
 
   if (error) throw error;
   return data;
+}
+
+export async function claimAnonymousGardenReportSlot(userId: string) {
+  const memberKey = createHash("sha256")
+    .update(`basil-anonymous-report:${userId}`)
+    .digest("hex");
+  const { data, error } = await getSupabaseAdmin().rpc(
+    "claim_garden_feedback_report_slot",
+    { p_member_key: memberKey },
+  );
+
+  if (error) throw error;
+  return data === true;
+}
+
+function getGardenReportExtension(contentType: string) {
+  if (contentType === "image/png") return "png";
+  if (contentType === "image/webp") return "webp";
+  return "jpg";
+}
+
+async function ensureGardenReportAttachmentBucket() {
+  if (gardenReportAttachmentBucketReady) return;
+
+  const supabase = getSupabaseAdmin();
+  const { error: readError } = await supabase.storage.getBucket(
+    GARDEN_REPORT_ATTACHMENT_BUCKET,
+  );
+
+  if (!readError) {
+    gardenReportAttachmentBucketReady = true;
+    return;
+  }
+
+  const missingBucket = /not found|does not exist/i.test(readError.message);
+  if (!missingBucket) throw readError;
+
+  const { error: createError } = await supabase.storage.createBucket(
+    GARDEN_REPORT_ATTACHMENT_BUCKET,
+    {
+      public: false,
+      allowedMimeTypes: [...GARDEN_REPORT_ATTACHMENT_TYPES],
+      fileSizeLimit: GARDEN_REPORT_MAX_ATTACHMENT_BYTES,
+    },
+  );
+
+  if (createError && !/already exists|duplicate/i.test(createError.message)) {
+    throw createError;
+  }
+
+  gardenReportAttachmentBucketReady = true;
+}
+
+export async function submitAnonymousGardenReport(input: {
+  kind: GardenReportKind;
+  message: string;
+  attachment?: {
+    bytes: ArrayBuffer;
+    contentType: (typeof GARDEN_REPORT_ATTACHMENT_TYPES)[number];
+    size: number;
+  } | null;
+}) {
+  const supabase = getSupabaseAdmin();
+  const reportId = randomUUID();
+  const attachment = input.attachment ?? null;
+  let attachmentPath: string | null = null;
+
+  if (attachment) {
+    await ensureGardenReportAttachmentBucket();
+    attachmentPath = `reports/${reportId}.${getGardenReportExtension(
+      attachment.contentType,
+    )}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from(GARDEN_REPORT_ATTACHMENT_BUCKET)
+      .upload(attachmentPath, attachment.bytes, {
+        cacheControl: "3600",
+        contentType: attachment.contentType,
+        upsert: false,
+      });
+
+    if (uploadError) throw uploadError;
+  }
+
+  const { data, error } = await supabase
+    .from("garden_feedback")
+    .insert({
+      id: reportId,
+      steward_id: null,
+      category: "other",
+      message: input.message,
+      status: "received",
+      submission_kind: `anonymous_${input.kind}`,
+      attachment_path: attachmentPath,
+      attachment_mime_type: attachment?.contentType ?? null,
+      attachment_size_bytes: attachment?.size ?? null,
+    })
+    .select("id,submission_kind,created_at,attachment_path")
+    .single();
+
+  if (error) {
+    if (attachmentPath) {
+      await supabase.storage
+        .from(GARDEN_REPORT_ATTACHMENT_BUCKET)
+        .remove([attachmentPath]);
+    }
+    throw error;
+  }
+
+  return {
+    id: data.id,
+    kind: input.kind,
+    createdAt: data.created_at,
+    hasAttachment: Boolean(data.attachment_path),
+  };
 }
