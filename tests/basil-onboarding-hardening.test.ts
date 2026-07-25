@@ -108,6 +108,33 @@ test("watering refreshes cannot move Mary after the tutorial target is selected"
   );
 });
 
+test("ordinary guest planting cannot restart the watering tutorial", () => {
+  assert.match(
+    appSource,
+    /const isGuidedCommunityPlanting =[\s\S]*onboardingStep === "community-repeat";/,
+  );
+  assert.match(appSource, /if \(!isGuidedCommunityPlanting\) return;/);
+  assert.match(
+    canvasSource,
+    /if \(!tutorialDimmed && hadTutorialTarget\) \{[\s\S]*runtime\.suggestedWateringCell = null;/,
+  );
+  assert.match(
+    canvasSource,
+    /suggestWateringSpot\(\) \{\s*if \(!tutorialDimmedRef\.current\) return;/,
+  );
+});
+
+test("required tutorial inventory selection cannot be dismissed", () => {
+  assert.match(
+    appSource,
+    /const onboardingPlantSelectionRequired =[\s\S]*onboardingStep === "personal-seed";/,
+  );
+  assert.match(
+    appSource,
+    /if \(onboardingPlantSelectionRequired\) return;\s*setInventoryOpen\(false\);/,
+  );
+});
+
 test("the opening lesson clearly introduces the worldwide public garden", () => {
   assert.match(onboardingSource, /The whole world plants here/);
   assert.match(onboardingSource, /One public garden, shared by everyone/);

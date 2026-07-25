@@ -1336,7 +1336,19 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
     }, [onGardenWormDiscovered]);
 
     useEffect(() => {
+      const runtime = runtimeRef.current;
+      const hadTutorialTarget = Boolean(
+        runtime.suggestedPlantingCell || runtime.suggestedWateringCell,
+      );
       tutorialDimmedRef.current = tutorialDimmed;
+      if (!tutorialDimmed && hadTutorialTarget) {
+        runtime.suggestedPlantingCell = null;
+        runtime.suggestedWateringCell = null;
+        runtime.selected = null;
+        runtime.target = null;
+        runtime.wateringPumpCount = 0;
+        runtime.wateringPumpSelectionKey = "";
+      }
     }, [tutorialDimmed]);
 
     useEffect(() => {
@@ -1686,6 +1698,7 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
       () => {
         const handle: GardenCanvasHandle = {
         suggestPlantingSpot() {
+          if (!tutorialDimmedRef.current) return;
           const runtime = runtimeRef.current;
           runtime.toolMode = "plant";
           runtime.suggestedPlantingCell = findSuggestedPlantingCell(runtime);
@@ -1701,6 +1714,7 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
           publishUi();
         },
         suggestWateringSpot() {
+          if (!tutorialDimmedRef.current) return;
           const runtime = runtimeRef.current;
           runtime.suggestedWateringCell = findSuggestedWateringCell(runtime);
           runtime.suggestedPlantingCell = null;

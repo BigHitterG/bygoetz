@@ -300,6 +300,9 @@ export function CommunityGardenApp() {
     !isGardenOnboardingFinished(onboardingStep);
   const onboardingInventoryLocked =
     Boolean(onboardingStep) && !isGardenOnboardingFinished(onboardingStep);
+  const onboardingPlantSelectionRequired =
+    onboardingStep === "select-seed" ||
+    onboardingStep === "personal-seed";
   const tutorialMapDimmed =
     Boolean(onboardingStep) && !isGardenOnboardingFinished(onboardingStep);
   const tutorialActionAllowed =
@@ -1405,6 +1408,12 @@ export function CommunityGardenApp() {
   const handleGardenActionCompleted = useCallback(
     (mode: GardenWorldMode, action: GardenUiState["action"]) => {
       if (mode === "community" && action === "plant") {
+        const isGuidedCommunityPlanting =
+          onboardingStep === "plant" ||
+          onboardingStep === "select-seed" ||
+          onboardingStep === "community-tile" ||
+          onboardingStep === "community-repeat";
+        if (!isGuidedCommunityPlanting) return;
         const nextPlantings = Math.min(
           3,
           communityOnboardingPlantingsRef.current + 1,
@@ -1682,6 +1691,7 @@ export function CommunityGardenApp() {
           onToggle={() => {
             if (!inventoryOpen) openInventoryForOnboarding();
             else {
+              if (onboardingPlantSelectionRequired) return;
               setInventoryOpen(false);
               if (world === "personal") void acknowledgeInventoryUnlocks();
             }
@@ -1696,8 +1706,7 @@ export function CommunityGardenApp() {
             void trackBasilFunnelEvent("plant_selected");
             canvasRef.current?.selectPlant(plantType);
             const shouldGuideSpot =
-              onboardingStep === "select-seed" ||
-              onboardingStep === "personal-seed";
+              onboardingPlantSelectionRequired;
             transitionOnboarding("community-tile", ["select-seed"]);
             transitionOnboarding("personal-tile", ["personal-seed"]);
             setInventoryOpen(false);
