@@ -69,14 +69,6 @@ export function GardenMenu({
           ))}
         </nav>
 
-        <div id={`garden-${section}-panel`} role="tabpanel" className="cg-library-panel">
-          {section === "play" ? <GardenGuide /> : null}
-          {section === "plants" ? <PlantGlossary /> : null}
-          {section === "elements" ? <GardenElements /> : null}
-          {section === "account" ? <GardenSteward /> : null}
-          {section === "about" ? <GardenFounder /> : null}
-        </div>
-
         <section className="cg-audio-settings" aria-labelledby="garden-sound-title">
           <div className="cg-audio-heading">
             <div>
@@ -136,6 +128,14 @@ export function GardenMenu({
             />
           </label>
         </section>
+
+        <div id={`garden-${section}-panel`} role="tabpanel" className="cg-library-panel">
+          {section === "play" ? <GardenGuide /> : null}
+          {section === "plants" ? <PlantGlossary /> : null}
+          {section === "elements" ? <GardenElements /> : null}
+          {section === "account" ? <GardenSteward /> : null}
+          {section === "about" ? <GardenFounder /> : null}
+        </div>
         <BasilPolicyLinks compact />
       </aside>
     </div>
