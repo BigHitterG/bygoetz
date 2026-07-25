@@ -41,10 +41,12 @@ test("the generated social card excludes live UI and account data", () => {
   assert.match(canvas, /scope === "whole"[\s\S]*sourceCanvas\.width/);
   assert.match(canvas, /mary: hiddenCharacter/);
   assert.match(canvas, /duck: hiddenCharacter/);
+  assert.match(canvas, /shareOnly: true/);
+  assert.match(canvas, /getVisibleCanvasBounds/);
   assert.match(canvas, /nextExpansion: null/);
   assert.doesNotMatch(canvas, /email/i);
   assert.doesNotMatch(publicPage, /care balance/i);
-  assert.match(publicPage, /personal information are not shared/);
+  assert.match(publicPage, /Shared Garden/);
 });
 
 test("share uploads are origin checked, bounded, and exact Basil PNG cards", () => {
@@ -58,8 +60,9 @@ test("share uploads are origin checked, bounded, and exact Basil PNG cards", () 
   assert.ok(formParse > memberCheck);
   assert.match(collectionRoute, /GARDEN_SHARE_MAX_BYTES/);
   assert.match(collectionRoute, /PNG_SIGNATURE/);
-  assert.match(collectionRoute, /getUint32\(16\) !== GARDEN_SHARE_WIDTH/);
-  assert.match(collectionRoute, /getUint32\(20\) !== GARDEN_SHARE_HEIGHT/);
+  assert.match(collectionRoute, /width < GARDEN_SHARE_MIN_WIDTH/);
+  assert.match(collectionRoute, /height < GARDEN_SHARE_MIN_HEIGHT/);
+  assert.match(collectionRoute, /width > GARDEN_SHARE_MAX_DIMENSION/);
 });
 
 test("public links expose only active token-addressed images", () => {

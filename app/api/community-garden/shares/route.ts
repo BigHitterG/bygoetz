@@ -2,10 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { getGardenUser } from "@/lib/communityGarden/auth";
 import {
   createGardenShare,
-  GARDEN_SHARE_HEIGHT,
   GARDEN_SHARE_MAX_BYTES,
+  GARDEN_SHARE_MAX_DIMENSION,
+  GARDEN_SHARE_MIN_HEIGHT,
+  GARDEN_SHARE_MIN_WIDTH,
   GARDEN_SHARE_SCOPES,
-  GARDEN_SHARE_WIDTH,
   listGardenShares,
   type GardenShareScope,
 } from "@/lib/communityGarden/shares";
@@ -86,12 +87,16 @@ export async function POST(request: NextRequest) {
   const bytes = await image.arrayBuffer();
   const signature = new Uint8Array(bytes, 0, Math.min(bytes.byteLength, 8));
   const pngView = bytes.byteLength >= 24 ? new DataView(bytes) : null;
+  const width = pngView?.getUint32(16) ?? 0;
+  const height = pngView?.getUint32(20) ?? 0;
   if (
     signature.length !== PNG_SIGNATURE.length ||
     !PNG_SIGNATURE.every((value, index) => signature[index] === value) ||
     !pngView ||
-    pngView.getUint32(16) !== GARDEN_SHARE_WIDTH ||
-    pngView.getUint32(20) !== GARDEN_SHARE_HEIGHT
+    width < GARDEN_SHARE_MIN_WIDTH ||
+    height < GARDEN_SHARE_MIN_HEIGHT ||
+    width > GARDEN_SHARE_MAX_DIMENSION ||
+    height > GARDEN_SHARE_MAX_DIMENSION
   ) {
     return NextResponse.json(
       { error: "The garden image is not a valid Basil snapshot." },
@@ -104,13 +109,15 @@ export async function POST(request: NextRequest) {
       stewardId: steward.id,
       scope,
       image: bytes,
+      width,
+      height,
     });
     return NextResponse.json(
       {
         share: {
           ...share,
-          width: GARDEN_SHARE_WIDTH,
-          height: GARDEN_SHARE_HEIGHT,
+          width,
+          height,
         },
       },
       { status: 201 },

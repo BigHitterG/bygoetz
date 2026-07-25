@@ -4,8 +4,9 @@ import { getBasilUrl } from "./urls";
 
 export const GARDEN_SHARE_BUCKET = "basil-garden-shares";
 export const GARDEN_SHARE_MAX_BYTES = 2_500_000;
-export const GARDEN_SHARE_WIDTH = 1200;
-export const GARDEN_SHARE_HEIGHT = 630;
+export const GARDEN_SHARE_MIN_WIDTH = 320;
+export const GARDEN_SHARE_MIN_HEIGHT = 240;
+export const GARDEN_SHARE_MAX_DIMENSION = 2400;
 export const GARDEN_SHARE_SCOPES = ["whole", "current"] as const;
 
 const MAX_ACTIVE_SHARES = 20;
@@ -73,6 +74,8 @@ export async function createGardenShare(input: {
   stewardId: string;
   scope: GardenShareScope;
   image: ArrayBuffer;
+  width: number;
+  height: number;
 }) {
   const supabase = getSupabaseAdmin();
   const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
@@ -121,8 +124,8 @@ export async function createGardenShare(input: {
       steward_id: input.stewardId,
       scope: input.scope,
       storage_path: storagePath,
-      image_width: GARDEN_SHARE_WIDTH,
-      image_height: GARDEN_SHARE_HEIGHT,
+      image_width: input.width,
+      image_height: input.height,
     })
     .select(
       "id,share_token,steward_id,scope,storage_path,image_width,image_height,created_at,revoked_at",

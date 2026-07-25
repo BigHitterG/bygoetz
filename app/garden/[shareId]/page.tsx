@@ -68,17 +68,12 @@ export default async function SharedGardenPage({ params }: SharePageProps) {
     <main className={styles.page}>
       <header className={styles.header}>
         <span className={styles.rose} aria-hidden="true" />
-        <div>
-          <strong>Basil</strong>
-          <span>Community Garden</span>
-        </div>
+        <strong>Basil</strong>
+        <span>Shared Garden</span>
+        <a href={getBasilUrl()}>Visit Basil</a>
       </header>
 
-      <section className={styles.card}>
-        <p className={styles.kicker}>
-          {share.scope === "whole" ? "A whole garden" : "A favorite garden view"}
-        </p>
-        <h1>Grown with care</h1>
+      <section className={styles.viewer} aria-label="Shared Basil garden">
         <Image
           className={styles.image}
           src={share.imageUrl}
@@ -88,13 +83,6 @@ export default async function SharedGardenPage({ params }: SharePageProps) {
           unoptimized
           alt="A My Garden snapshot shared from Basil"
         />
-        <p>
-          This is a read-only snapshot from someone&apos;s private My Garden.
-          Their account and personal information are not shared.
-        </p>
-        <a className={styles.cta} href={getBasilUrl()}>
-          Visit the Community Garden
-        </a>
       </section>
     </main>
   );

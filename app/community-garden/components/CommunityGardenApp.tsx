@@ -1619,13 +1619,6 @@ export function CommunityGardenApp() {
         </div>
 
         <div className="cg-garden-top-actions">
-          {world === "personal" && session && accountChecked && memberGarden ? (
-            <GardenShare
-              accessToken={session.access_token}
-              disabled={ui.builder.active}
-              onCapture={captureMyGarden}
-            />
-          ) : null}
           {session && accountChecked && memberGarden ? (
             <GardenBugReporter accessToken={session.access_token} />
           ) : null}
@@ -1712,6 +1705,16 @@ export function CommunityGardenApp() {
             <strong>Continue growing</strong>
             <span>Visit Community Garden to earn Care, then come back here.</span>
           </aside>
+        ) : null}
+
+        {world === "personal" && session && accountChecked && memberGarden ? (
+          <div className="cg-share-tools">
+            <GardenShare
+              accessToken={session.access_token}
+              disabled={ui.builder.active}
+              onCapture={captureMyGarden}
+            />
+          </div>
         ) : null}
 
         <GardenInventory

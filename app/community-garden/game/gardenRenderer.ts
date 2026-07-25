@@ -64,6 +64,7 @@ export type RenderGardenState = {
   moving: boolean;
   now: number;
   mode: GardenWorldMode;
+  shareOnly?: boolean;
   personalGarden?: {
     minX: number;
     minY: number;
@@ -551,14 +552,19 @@ function drawPersonalTerrain(
   width: number,
   height: number,
   nextExpansion: NonNullable<RenderGardenState["personalGarden"]>["nextExpansion"],
+  shareOnly = false,
 ) {
   const { tileSize, tileScreenHeight } = GARDEN_CONFIG;
   const cellWidth = tileSize * zoom;
   const cellHeight = tileScreenHeight * zoom;
   const visible = getVisibleGridBounds(camera, viewport, zoom);
 
-  ctx.fillStyle = "#eee9df";
-  ctx.fillRect(0, 0, viewport.width, viewport.height);
+  if (shareOnly) {
+    ctx.clearRect(0, 0, viewport.width, viewport.height);
+  } else {
+    ctx.fillStyle = "#eee9df";
+    ctx.fillRect(0, 0, viewport.width, viewport.height);
+  }
 
   for (let gridY = visible.minGridY; gridY <= visible.maxGridY; gridY += 1) {
     for (let gridX = visible.minGridX; gridX <= visible.maxGridX; gridX += 1) {
@@ -580,6 +586,8 @@ function drawPersonalTerrain(
         gridX < nextExpansion.minX + nextExpansion.width &&
         gridY >= nextExpansion.minY &&
         gridY < nextExpansion.minY + nextExpansion.height;
+
+      if (shareOnly && !inProperty && !inExpansion) continue;
 
       ctx.fillStyle = inProperty
         ? (gridX + gridY) % 2 === 0
@@ -2312,6 +2320,7 @@ export function renderGarden(ctx: CanvasRenderingContext2D, state: RenderGardenS
       state.personalGarden.width,
       state.personalGarden.height,
       state.personalGarden.nextExpansion,
+      state.shareOnly,
     );
     drawPersonalPaths(
       ctx,
