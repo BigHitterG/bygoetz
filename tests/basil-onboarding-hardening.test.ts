@@ -85,6 +85,25 @@ test("the watering lesson only follows an authoritative water-drop flower", () =
   );
 });
 
+test("watering refreshes cannot move Mary after the tutorial target is selected", () => {
+  assert.match(
+    canvasSource,
+    /function isTutorialWateringInteractionActive\(runtime: Runtime\)/,
+  );
+  assert.match(
+    canvasSource,
+    /if \(isTutorialWateringInteractionActive\(runtime\)\) return;/,
+  );
+  assert.match(
+    canvasSource,
+    /Once the player chooses the tutorial flower, finish that[\s\S]*readyPlantIds\.add\(activeTutorialPlantId\)/,
+  );
+  assert.match(
+    canvasSource,
+    /if \(nextTarget && targetChanged\) \{\s*bringTutorialTargetIntoView/,
+  );
+});
+
 test("the opening lesson clearly introduces the worldwide public garden", () => {
   assert.match(onboardingSource, /The whole world plants here/);
   assert.match(onboardingSource, /One public garden, shared by everyone/);

@@ -758,13 +758,31 @@ function findSuggestedWateringCell(runtime: Runtime): NonNullable<SelectedCell> 
     : null;
 }
 
+function isTutorialWateringInteractionActive(runtime: Runtime) {
+  const suggested = runtime.suggestedWateringCell;
+  if (!suggested) return false;
+  return Boolean(
+    runtime.target ||
+      (runtime.selected &&
+        runtime.selected.gridX === suggested.gridX &&
+        runtime.selected.gridY === suggested.gridY),
+  );
+}
+
 function refreshTutorialWateringTarget(runtime: Runtime) {
   if (!runtime.suggestedWateringCell) return;
+  if (isTutorialWateringInteractionActive(runtime)) return;
+  const previousTarget = runtime.suggestedWateringCell;
   const nextTarget = findSuggestedWateringCell(runtime);
   runtime.suggestedWateringCell = nextTarget;
-  runtime.selected = null;
-  runtime.target = null;
-  if (nextTarget) {
+  const targetChanged =
+    previousTarget.gridX !== nextTarget?.gridX ||
+    previousTarget.gridY !== nextTarget?.gridY;
+  if (targetChanged) {
+    runtime.selected = null;
+    runtime.target = null;
+  }
+  if (nextTarget && targetChanged) {
     bringTutorialTargetIntoView(runtime, nextTarget, true);
   }
   runtime.statusMessage = nextTarget
@@ -1521,7 +1539,22 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
         try {
           const status = await fetchGardenWateringStatus(bounds);
           if (requestId !== runtime.requestId) return;
-          runtime.wateringCareReadyPlantIds = new Set(status.readyPlantIds);
+          const activeTutorialPlantId =
+            tutorialDimmedRef.current &&
+            isTutorialWateringInteractionActive(runtime)
+              ? runtime.suggestedWateringCell?.plantId
+              : null;
+          const readyPlantIds = new Set(status.readyPlantIds);
+          if (
+            activeTutorialPlantId &&
+            runtime.wateringCareReadyPlantIds.has(activeTutorialPlantId)
+          ) {
+            // Once the player chooses the tutorial flower, finish that
+            // interaction before reconciling a possibly newer watering view.
+            // The server remains authoritative when Water is submitted.
+            readyPlantIds.add(activeTutorialPlantId);
+          }
+          runtime.wateringCareReadyPlantIds = readyPlantIds;
           runtime.wateringCareStatusLoaded = true;
           runtime.wateringCareStatusBoundsKey = boundsKey;
           runtime.wateringCareStatusNextRefreshAt =
