@@ -24,6 +24,7 @@
     "test:promo": "node --experimental-strip-types tests/basil-promo-access.test.ts",
     "test:onboarding": "node --experimental-strip-types tests/basil-onboarding-hardening.test.ts",
     "test:phase5": "node --experimental-strip-types tests/basil-phase5-reliability.test.ts",
+    "test:footprints": "node --experimental-strip-types tests/basil-account-footprints.test.ts",
     "test:load:mock": "node scripts/basil-load-test.mjs --mock --users 5 --seconds 3",
     "test:browser:phase5": "node scripts/basil-browser-check.mjs"
   },

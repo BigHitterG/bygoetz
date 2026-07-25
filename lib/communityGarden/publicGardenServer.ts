@@ -1,6 +1,7 @@
 import { createHmac, randomUUID, timingSafeEqual } from "node:crypto";
 import type { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
+import { getGardenUser } from "./auth";
 import { computeFrontierSpawnPoints } from "./frontierSpawns";
 
 const SESSION_COOKIE = "basil-garden-session";
@@ -63,6 +64,42 @@ export function getGardenActor(request: NextRequest) {
   };
 }
 
+export async function getCanonicalGardenActor(
+  request: NextRequest,
+  knownUserId?: string | null,
+) {
+  const guestActor = getGardenActor(request);
+  const userId =
+    knownUserId === undefined
+      ? (await getGardenUser(request))?.id ?? null
+      : knownUserId;
+
+  if (!userId) {
+    return {
+      ...guestActor,
+      guestActorKey: guestActor.actorKey,
+      identityKind: "guest" as const,
+    };
+  }
+
+  const accountActorKey = sign(`account:${userId}`);
+  const { error } = await getSupabaseAdmin().rpc(
+    "reconcile_community_garden_actor_v1",
+    {
+      p_guest_actor_key: guestActor.actorKey,
+      p_account_actor_key: accountActorKey,
+    },
+  );
+  if (error) throw error;
+
+  return {
+    ...guestActor,
+    actorKey: accountActorKey,
+    guestActorKey: guestActor.actorKey,
+    identityKind: "account" as const,
+  };
+}
+
 export function attachGardenSession(
   response: NextResponse,
   session: SignedSession,
@@ -107,6 +144,7 @@ export async function submitCommunityGardenAction(input: {
   actionId: string;
   actorKey: string;
   networkKey: string;
+  identityKind: "guest" | "account";
   action: "plant" | "water" | "weed";
   gridX?: number;
   gridY?: number;
@@ -114,11 +152,12 @@ export async function submitCommunityGardenAction(input: {
   plantIds?: string[];
 }) {
   const { data, error } = await getSupabaseAdmin().rpc(
-    "perform_idempotent_community_garden_action_v8",
+    "perform_idempotent_community_garden_action_v9",
     {
       p_action_id: input.actionId,
       p_actor_key: input.actorKey,
       p_network_key: input.networkKey,
+      p_is_guest: input.identityKind === "guest",
       p_action_type: input.action,
       p_grid_x: input.gridX ?? null,
       p_grid_y: input.gridY ?? null,

@@ -239,6 +239,7 @@ type GardenCanvasProps = {
   onStateChange: (state: GardenUiState) => void;
   onCommunityContribution?: (contribution: GardenContribution) => void;
   mode: GardenWorldMode;
+  accountAccessToken?: string | null;
   personalGarden: MyGardenState | null;
   tutorialDimmed?: boolean;
   onPersonalGardenMutation?: (
@@ -1224,6 +1225,7 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
       onStateChange,
       onCommunityContribution,
       mode,
+      accountAccessToken = null,
       personalGarden,
       tutorialDimmed = false,
       onPersonalGardenMutation,
@@ -1240,6 +1242,7 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
     const onActionCompletedRef = useRef(onActionCompleted);
     const onActionFailedRef = useRef(onActionFailed);
     const onGardenWormDiscoveredRef = useRef(onGardenWormDiscovered);
+    const accountAccessTokenRef = useRef(accountAccessToken);
     const tutorialDimmedRef = useRef(tutorialDimmed);
     const personalGardenRef = useRef(personalGarden);
     const worldSnapshotsRef = useRef<
@@ -1318,6 +1321,10 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
     useEffect(() => {
       onCommunityContributionRef.current = onCommunityContribution;
     }, [onCommunityContribution]);
+
+    useEffect(() => {
+      accountAccessTokenRef.current = accountAccessToken;
+    }, [accountAccessToken]);
 
     useEffect(() => {
       onPersonalGardenMutationRef.current = onPersonalGardenMutation;
@@ -1592,7 +1599,10 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
           return;
         }
         try {
-          const status = await fetchGardenWateringStatus(bounds);
+          const status = await fetchGardenWateringStatus(
+            bounds,
+            accountAccessTokenRef.current,
+          );
           if (requestId !== runtime.requestId) return;
           const activeTutorialPlantId =
             tutorialDimmedRef.current &&
@@ -2046,6 +2056,7 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
                     selected.gridX,
                     selected.gridY,
                     communityPlantType,
+                    accountAccessTokenRef.current,
                   )
                 : {
                     plant: makeLocalPlant(
@@ -2099,7 +2110,10 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
             } else if (actionState.action === "weed") {
               const weed = getWeedAt(runtime, selected.gridX, selected.gridY);
               if (!weed) throw new Error("That weed has already been cleared.");
-              const result = await clearGardenWeed(weed.id);
+              const result = await clearGardenWeed(
+                weed.id,
+                accountAccessTokenRef.current,
+              );
               runtime.weeds.delete(plantKey(weed.grid_x, weed.grid_y));
               runtime.communityWeeds.delete(plantKey(weed.grid_x, weed.grid_y));
               rememberClearedWeed(runtime, weed.id);
@@ -2124,9 +2138,10 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
                 wateringTargets[0];
               const wateredAt = new Date().toISOString();
               const result = runtime.configured
-                ? await waterGardenPlants(
-                    wateringTargets.map((target) => target.id),
-                  )
+                  ? await waterGardenPlants(
+                      wateringTargets.map((target) => target.id),
+                      accountAccessTokenRef.current,
+                    )
                 : {
                     plant: { ...current, last_watered_at: wateredAt },
                     plants: wateringTargets.map((target) => ({

@@ -23,8 +23,8 @@ export default function BasilPrivacyPage() {
       <section>
         <h2>Information Basil handles</h2>
         <ul>
-          <li><strong>Anonymous community play:</strong> tile actions such as planting, watering, and pulling weeds; a pseudonymous signed garden-session key; timestamps; short-lived action and watering-cooldown records; and daily activity totals needed to maintain the shared map, pace Care, share watering opportunities, limit automated abuse, and prevent duplicate rewards. Basil stores a one-way network key for these safeguards rather than a raw IP address.</li>
-          <li><strong>Private accounts:</strong> your email address, encrypted password credentials managed by Supabase Auth, verification state, and session information. Basil does not create a public username.</li>
+          <li><strong>Anonymous community play:</strong> tile actions such as planting, watering, and pulling weeds; a pseudonymous signed garden-session key; timestamps; short-lived action and watering-cooldown records; and daily activity totals needed to maintain the shared map, pace Care, share watering opportunities, limit automated abuse, and prevent duplicate rewards. New signed-out flowers are temporary for 24 hours. Basil stores a one-way network key for these safeguards rather than a raw IP address.</li>
+          <li><strong>Private accounts:</strong> your email address, encrypted password credentials managed by Supabase Auth, verification state, and session information. Basil derives a one-way account key so the same private 100-flower footprint works across signed-in devices without putting an account ID, email, or public username on a Community Garden flower.</li>
           <li><strong>My Garden:</strong> private plants, paths, objects, Care balance and ledger activity, expansion state, and membership entitlement.</li>
           <li><strong>Feedback:</strong> the category and message you choose to submit through the account area, plus its review status.</li>
           <li><strong>Purchases and gifts:</strong> Stripe checkout, customer, and payment identifiers; amount, currency, status, and purchase time. For complimentary access, Basil stores an opaque gift identifier, redemption status, and a short-lived one-way request fingerprint used to limit guessing. Basil does not receive or store full card details, raw gift-code guesses, or raw IP addresses in the gift-code log.</li>
@@ -40,7 +40,9 @@ export default function BasilPrivacyPage() {
           session, tutorial progress, recent local garden actions, a temporary My Garden
           preview, and checkout recovery. A secure, HTTP-only cookie can connect a
           temporary garden to a Stripe return. These are used to make the game and
-          purchase flow work, restore work after a refresh, and avoid duplicate events.
+          purchase flow work, restore work after a refresh, transfer a browser&apos;s
+          temporary Community Garden contributions when the player signs in, and avoid
+          duplicate events.
         </p>
         <p>
           Basil is available primarily at basilcommunitygarden.com and remains compatible
@@ -109,6 +111,7 @@ export default function BasilPrivacyPage() {
           <li>Monthly-letter consent and delivery records remain while the account is active or as reasonably needed to honor an unsubscribe request and prevent duplicate sends.</li>
           <li>The anonymous launch session is designed to last 90 days in the browser; raw first-party funnel sessions and events are designed for 180-day retention.</li>
           <li>Pseudonymous daily Community Garden activity counters are designed for 35-day retention; action deduplication and personal watering-cooldown records are designed for approximately 24-hour retention. A flower&apos;s anonymous shared watering marker may remain with that flower until it returns to the soil.</li>
+          <li>New signed-out Community Garden flowers return after approximately 24 hours at the next ten-minute garden update. If that browser signs in first, its flowers, planted dates, and qualifying care history are transferred to the account-wide anonymous footprint.</li>
           <li>Temporary checkout handoffs expire after seven days; expired, unsuccessful handoffs are cleaned up as the system operates.</li>
           <li>Account-email rate-limit records contain hashes rather than the email text and are cleaned after approximately seven days.</li>
           <li>Operational logs and aggregated health records are kept only as reasonably needed for security and reliability, subject to provider settings.</li>

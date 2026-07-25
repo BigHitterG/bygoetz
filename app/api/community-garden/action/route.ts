@@ -1,7 +1,7 @@
 import { after, NextRequest, NextResponse } from "next/server";
 import {
   attachGardenSession,
-  getGardenActor,
+  getCanonicalGardenActor,
   submitCommunityGardenAction,
 } from "@/lib/communityGarden/publicGardenServer";
 import {
@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
   const startedAt = Date.now();
   const requestId = request.headers.get("x-vercel-id");
   const deviceClass = getGardenDeviceClass(request.headers.get("user-agent"));
-  let actor: ReturnType<typeof getGardenActor> | null = null;
+  let actor: Awaited<ReturnType<typeof getCanonicalGardenActor>> | null = null;
   let actionType = "unknown";
 
   function recordResult(event: "action_ok" | "action_error", errorCode?: string) {
@@ -87,7 +87,7 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    actor = getGardenActor(request);
+    actor = await getCanonicalGardenActor(request);
     const body = (await request.json()) as ActionBody;
     actionType = typeof body.action === "string" ? body.action : "unknown";
     if (
@@ -150,6 +150,7 @@ export async function POST(request: NextRequest) {
       actionId: body.actionId,
       actorKey: actor.actorKey,
       networkKey: actor.networkKey,
+      identityKind: actor.identityKind,
       action: body.action,
       gridX: typeof body.gridX === "number" ? body.gridX : undefined,
       gridY: typeof body.gridY === "number" ? body.gridY : undefined,

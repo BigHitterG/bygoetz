@@ -1520,6 +1520,7 @@ export function CommunityGardenApp() {
         <GardenCanvas
           ref={canvasRef}
           mode={world}
+          accountAccessToken={session?.access_token ?? null}
           personalGarden={myGarden}
           tutorialDimmed={tutorialMapDimmed}
           onStateChange={onStateChange}

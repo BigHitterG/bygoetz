@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
   attachGardenSession,
-  getGardenActor,
+  getCanonicalGardenActor,
   loadCommunityGardenWateringStatus,
 } from "@/lib/communityGarden/publicGardenServer";
 import { hasAllowedBasilRequestOrigin } from "@/lib/communityGarden/urls";
@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const actor = getGardenActor(request);
+  const actor = await getCanonicalGardenActor(request);
   try {
     const status = await loadCommunityGardenWateringStatus({
       actorKey: actor.actorKey,

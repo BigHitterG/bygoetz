@@ -110,9 +110,21 @@ export function GardenGuide() {
             <h5>Your ecological footprint</h5>
             <p>
               In the long run, your footprint in the Community Garden is your newest
-              100 flowers. You can always keep planting. Each new flower beyond that
-              lets one of your oldest flowers return to the earth during a ten-minute
-              garden update, opening space for someone else. Your new flower stays.
+              100 flowers. When you are signed in, that is one account-wide footprint
+              across your devices. You can always keep planting. Each new flower beyond
+              that lets one of your oldest flowers return to the earth during a
+              ten-minute garden update, opening space for someone else. Your new flower
+              stays.
+            </p>
+          </article>
+          <article>
+            <p className="cg-ecology-number">24 hours</p>
+            <h5>Guest flowers</h5>
+            <p>
+              Signed-out flowers share one temporary footprint in this browser and
+              return after a day. Create or sign in to your account before then and
+              Basil carries those flowers into your account footprint without moving
+              them or resetting their planted dates.
             </p>
           </article>
           <article>
@@ -157,8 +169,9 @@ export function GardenGuide() {
 
       <p className="cg-guide-principle">
         Public play needs no account and never labels plants with an owner.
-        Preview Care and flowers are temporary. Membership privately saves them
-        and keeps My Garden available across devices.
+        Signed-out Community Garden flowers last for 24 hours. Signing in privately
+        joins this browser&apos;s flowers to one account-wide footprint; no name or email
+        appears on the shared map. Membership saves My Garden across devices.
       </p>
       <div className="cg-play-notes">
         <h4>Why did a flower leave?</h4>

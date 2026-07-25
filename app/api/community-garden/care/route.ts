@@ -3,7 +3,10 @@ import { getGardenUser } from "@/lib/communityGarden/auth";
 import { claimGardenCare } from "@/lib/communityGarden/myGarden";
 import { getGardenStewardByUserId } from "@/lib/communityGarden/stewards";
 import { hasAllowedBasilRequestOrigin } from "@/lib/communityGarden/urls";
-import { getGardenActor } from "@/lib/communityGarden/publicGardenServer";
+import {
+  attachGardenSession,
+  getCanonicalGardenActor,
+} from "@/lib/communityGarden/publicGardenServer";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -43,10 +46,13 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const { actorKey } = getGardenActor(request);
-    return NextResponse.json(
-      await claimGardenCare(steward.id, payload.receiptToken, actorKey),
+    const actor = await getCanonicalGardenActor(request, user.id);
+    const response = NextResponse.json(
+      await claimGardenCare(steward.id, payload.receiptToken, actor.actorKey),
     );
+    response.headers.set("Cache-Control", "private, no-store");
+    attachGardenSession(response, actor.session);
+    return response;
   } catch (error) {
     return NextResponse.json(
       {

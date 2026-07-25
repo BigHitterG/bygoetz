@@ -205,6 +205,7 @@ export async function fetchGardenSnapshot(): Promise<GardenSnapshot> {
 
 export async function fetchGardenWateringStatus(
   bounds: GardenBounds,
+  accessToken?: string | null,
 ): Promise<GardenWateringStatus> {
   const query = new URLSearchParams({
     minX: String(bounds.minX),
@@ -216,7 +217,12 @@ export async function fetchGardenWateringStatus(
   try {
     response = await fetchGardenRequest(
       `/api/community-garden/watering-status?${query.toString()}`,
-      { cache: "no-store" },
+      {
+        cache: "no-store",
+        headers: accessToken
+          ? { authorization: `Bearer ${accessToken}` }
+          : undefined,
+      },
     );
   } catch (error) {
     throw new GardenConnectionError(
@@ -243,6 +249,7 @@ export async function fetchGardenWateringStatus(
 
 async function submitRawGardenAction(
   payload: Omit<Record<string, unknown>, "actionId">,
+  accessToken?: string | null,
 ) {
   const actionId = createActionId();
   const body = JSON.stringify({ ...payload, actionId });
@@ -253,7 +260,12 @@ async function submitRawGardenAction(
     try {
       response = await fetchGardenRequest("/api/community-garden/action", {
         method: "POST",
-        headers: { "content-type": "application/json" },
+        headers: {
+          "content-type": "application/json",
+          ...(accessToken
+            ? { authorization: `Bearer ${accessToken}` }
+            : {}),
+        },
         body,
       });
       if (response.ok || !isTransientStatus(response.status)) break;
@@ -280,8 +292,9 @@ async function submitRawGardenAction(
 
 async function submitGardenAction(
   payload: Omit<Record<string, unknown>, "actionId">,
+  accessToken?: string | null,
 ): Promise<GardenActionResult> {
-  const data = await submitRawGardenAction(payload);
+  const data = await submitRawGardenAction(payload, accessToken);
 
   if (!data.plant || typeof data.plant !== "object") {
     throw new Error("The garden did not return a plant.");
@@ -322,24 +335,34 @@ export function plantGardenPlant(
   gridX: number,
   gridY: number,
   plantType: CommunityPlantType,
+  accessToken?: string | null,
 ) {
   return submitGardenAction({
     action: "plant",
     gridX,
     gridY,
     plantType,
-  });
+  }, accessToken);
 }
 
-export function waterGardenPlants(plantIds: string[]) {
+export function waterGardenPlants(
+  plantIds: string[],
+  accessToken?: string | null,
+) {
   return submitGardenAction({
     action: "water",
     plantIds: plantIds.slice(0, MAX_WATERING_TARGETS),
-  });
+  }, accessToken);
 }
 
-export async function clearGardenWeed(weedId: string) {
-  const data = await submitRawGardenAction({ action: "weed", weedId });
+export async function clearGardenWeed(
+  weedId: string,
+  accessToken?: string | null,
+) {
+  const data = await submitRawGardenAction(
+    { action: "weed", weedId },
+    accessToken,
+  );
   if (typeof data.removedWeedId !== "string") {
     throw new Error("The garden did not confirm that weed was cleared.");
   }
