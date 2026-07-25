@@ -177,7 +177,7 @@ test("database migrations contain every live client catalog threshold", () => {
   );
   const completeLadderMigration = readFileSync(
     new URL(
-      "../supabase/migrations/20260725033441_complete_basil_collection_ladder.sql",
+      "../supabase/migrations/20260725040805_complete_basil_collection_ladder.sql",
       import.meta.url,
     ),
     "utf8",
