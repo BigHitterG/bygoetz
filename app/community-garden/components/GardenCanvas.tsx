@@ -752,10 +752,28 @@ function findSuggestedWateringCell(runtime: Runtime): NonNullable<SelectedCell> 
         Math.hypot(runtime.mary.x - secondPoint.x, runtime.mary.y - secondPoint.y)
       );
     });
-  const plant = candidates[0];
+  const visibleAboveCandidates = candidates.filter((plant) =>
+    isTutorialWateringCellVisibleAboveMary(runtime, {
+      gridX: plant.grid_x,
+      gridY: plant.grid_y,
+      plantId: plant.id,
+    }),
+  );
+  const plant = visibleAboveCandidates[0] ?? candidates[0];
   return plant
     ? { gridX: plant.grid_x, gridY: plant.grid_y, plantId: plant.id }
     : null;
+}
+
+function isTutorialWateringCellVisibleAboveMary(
+  runtime: Runtime,
+  cell: NonNullable<SelectedCell>,
+) {
+  const maryGridX = Math.floor(runtime.mary.x / GARDEN_CONFIG.tileSize);
+  const maryGridY = Math.floor(runtime.mary.y / GARDEN_CONFIG.tileSize);
+  const horizontalDistance = Math.abs(cell.gridX - maryGridX);
+  const rowsAboveMary = maryGridY - cell.gridY;
+  return horizontalDistance <= 7 && rowsAboveMary >= 2 && rowsAboveMary <= 10;
 }
 
 function isTutorialWateringInteractionActive(runtime: Runtime) {
@@ -783,7 +801,7 @@ function refreshTutorialWateringTarget(runtime: Runtime) {
     runtime.target = null;
   }
   if (nextTarget && targetChanged) {
-    bringTutorialTargetIntoView(runtime, nextTarget, true);
+    guideMaryTowardTutorialWateringTarget(runtime, nextTarget);
   }
   runtime.statusMessage = nextTarget
     ? "Tap the blue square around a flower with a water drop."
@@ -793,25 +811,17 @@ function refreshTutorialWateringTarget(runtime: Runtime) {
 function bringTutorialTargetIntoView(
   runtime: Runtime,
   cell: NonNullable<SelectedCell>,
-  forceSafeWateringPosition = false,
 ) {
   const point = gridToWorld(cell.gridX, cell.gridY);
   const distance = Math.hypot(runtime.mary.x - point.x, runtime.mary.y - point.y);
-  if (!forceSafeWateringPosition && distance <= GARDEN_CONFIG.tileSize * 5) return;
+  if (distance <= GARDEN_CONFIG.tileSize * 5) return;
   const bounds = getRuntimeBounds(runtime);
-  const approachCandidates = forceSafeWateringPosition
-    ? [4, 5, 6, 7].flatMap((rowDistance) =>
-        [0, 1, -1, 2, -2, 3, -3].map((columnOffset) => ({
-          gridX: cell.gridX + columnOffset,
-          gridY: cell.gridY + rowDistance,
-        })),
-      )
-    : [
-        {
-          gridX: cell.gridX > 0 ? cell.gridX - 2 : cell.gridX + 2,
-          gridY: cell.gridY > 0 ? cell.gridY - 1 : cell.gridY + 1,
-        },
-      ];
+  const approachCandidates = [
+    {
+      gridX: cell.gridX > 0 ? cell.gridX - 2 : cell.gridX + 2,
+      gridY: cell.gridY > 0 ? cell.gridY - 1 : cell.gridY + 1,
+    },
+  ];
   const approachCell =
     approachCandidates.find(
       (candidate) =>
@@ -835,6 +845,39 @@ function bringTutorialTargetIntoView(
   runtime.path = [{ ...approach }];
   runtime.target = null;
   runtime.loadedChunkKey = "";
+}
+
+function guideMaryTowardTutorialWateringTarget(
+  runtime: Runtime,
+  cell: NonNullable<SelectedCell>,
+) {
+  if (isTutorialWateringCellVisibleAboveMary(runtime, cell)) return;
+
+  const bounds = getRuntimeBounds(runtime);
+  const approachCandidates = [4, 5, 6, 7].flatMap((rowDistance) =>
+    [0, 1, -1, 2, -2, 3, -3].map((columnOffset) => ({
+      gridX: cell.gridX + columnOffset,
+      gridY: cell.gridY + rowDistance,
+    })),
+  );
+  const approachCell =
+    approachCandidates.find(
+      (candidate) =>
+        candidate.gridX >= bounds.minX &&
+        candidate.gridX <= bounds.maxX &&
+        candidate.gridY >= bounds.minY &&
+        candidate.gridY <= bounds.maxY &&
+        isPlantable(getPlantAt(runtime, candidate.gridX, candidate.gridY)) &&
+        !getWeedAt(runtime, candidate.gridX, candidate.gridY),
+    ) ?? approachCandidates[0];
+  const approach = gridToWorld(
+    Math.max(bounds.minX, Math.min(bounds.maxX, approachCell.gridX)),
+    Math.max(bounds.minY, Math.min(bounds.maxY, approachCell.gridY)),
+  );
+
+  // Tutorial guidance must use the same frame-by-frame movement as a normal
+  // garden tap. Never replace Mary's position, camera, or companion position.
+  runtime.target = approach;
 }
 
 function getDistanceToCell(runtime: Runtime, selected: NonNullable<SelectedCell>) {
@@ -1664,10 +1707,9 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
           runtime.selected = null;
           runtime.target = null;
           if (runtime.suggestedWateringCell) {
-            bringTutorialTargetIntoView(
+            guideMaryTowardTutorialWateringTarget(
               runtime,
               runtime.suggestedWateringCell,
-              true,
             );
           }
           runtime.statusMessage = runtime.suggestedWateringCell

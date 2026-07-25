@@ -65,7 +65,7 @@ test("the watering lesson only follows an authoritative water-drop flower", () =
   );
   assert.match(
     canvasSource,
-    /bringTutorialTargetIntoView\(\s*runtime,\s*runtime\.suggestedWateringCell,\s*true/,
+    /guideMaryTowardTutorialWateringTarget\(\s*runtime,\s*runtime\.suggestedWateringCell/,
   );
   assert.match(
     canvasSource,
@@ -73,15 +73,19 @@ test("the watering lesson only follows an authoritative water-drop flower", () =
   );
   assert.match(
     canvasSource,
-    /\[4, 5, 6, 7\]\.flatMap\(\(rowDistance\)/,
+    /const visibleAboveCandidates = candidates\.filter/,
   );
   assert.match(
     canvasSource,
-    /gridY: cell\.gridY \+ rowDistance/,
+    /function isTutorialWateringCellVisibleAboveMary/,
+  );
+  assert.match(
+    canvasSource,
+    /runtime\.target = approach;/,
   );
   assert.doesNotMatch(
     canvasSource,
-    /gridY: cell\.gridY - 3/,
+    /bringTutorialTargetIntoView\(\s*runtime,\s*runtime\.suggestedWateringCell,\s*true/,
   );
 });
 
@@ -100,7 +104,7 @@ test("watering refreshes cannot move Mary after the tutorial target is selected"
   );
   assert.match(
     canvasSource,
-    /if \(nextTarget && targetChanged\) \{\s*bringTutorialTargetIntoView/,
+    /if \(nextTarget && targetChanged\) \{\s*guideMaryTowardTutorialWateringTarget/,
   );
 });
 
