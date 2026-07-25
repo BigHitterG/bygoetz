@@ -732,7 +732,8 @@ function findSuggestedPlantingCell(runtime: Runtime): NonNullable<SelectedCell> 
 }
 
 function findSuggestedWateringCell(runtime: Runtime): NonNullable<SelectedCell> | null {
-  const candidates = Array.from(runtime.plants.values())
+  const bounds = getRuntimeBounds(runtime);
+  const readyPlants = Array.from(runtime.plants.values())
     .filter((plant) => {
       const state = getPlantVisual(plant).state;
       return (
@@ -740,7 +741,9 @@ function findSuggestedWateringCell(runtime: Runtime): NonNullable<SelectedCell> 
         state !== "dead" &&
         canEarnWateringCareInRuntime(runtime, plant)
       );
-    })
+    });
+  const candidates = readyPlants
+    .filter((plant) => plant.grid_y <= bounds.maxY - 4)
     .sort((first, second) => {
       const firstPoint = gridToWorld(first.grid_x, first.grid_y);
       const secondPoint = gridToWorld(second.grid_x, second.grid_y);
@@ -779,12 +782,12 @@ function bringTutorialTargetIntoView(
   if (!forceSafeWateringPosition && distance <= GARDEN_CONFIG.tileSize * 5) return;
   const bounds = getRuntimeBounds(runtime);
   const approachCandidates = forceSafeWateringPosition
-    ? [
-        { gridX: cell.gridX, gridY: cell.gridY + 3 },
-        { gridX: cell.gridX + 3, gridY: cell.gridY + 1 },
-        { gridX: cell.gridX - 3, gridY: cell.gridY + 1 },
-        { gridX: cell.gridX, gridY: cell.gridY - 3 },
-      ]
+    ? [4, 5, 6, 7].flatMap((rowDistance) =>
+        [0, 1, -1, 2, -2, 3, -3].map((columnOffset) => ({
+          gridX: cell.gridX + columnOffset,
+          gridY: cell.gridY + rowDistance,
+        })),
+      )
     : [
         {
           gridX: cell.gridX > 0 ? cell.gridX - 2 : cell.gridX + 2,

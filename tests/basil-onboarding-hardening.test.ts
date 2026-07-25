@@ -67,6 +67,22 @@ test("the watering lesson only follows an authoritative water-drop flower", () =
     canvasSource,
     /bringTutorialTargetIntoView\(\s*runtime,\s*runtime\.suggestedWateringCell,\s*true/,
   );
+  assert.match(
+    canvasSource,
+    /plant\.grid_y <= bounds\.maxY - 4/,
+  );
+  assert.match(
+    canvasSource,
+    /\[4, 5, 6, 7\]\.flatMap\(\(rowDistance\)/,
+  );
+  assert.match(
+    canvasSource,
+    /gridY: cell\.gridY \+ rowDistance/,
+  );
+  assert.doesNotMatch(
+    canvasSource,
+    /gridY: cell\.gridY - 3/,
+  );
 });
 
 test("the opening lesson clearly introduces the worldwide public garden", () => {
