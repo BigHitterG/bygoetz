@@ -2,6 +2,7 @@ import { createHmac } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { getGardenUser } from "@/lib/communityGarden/auth";
 import { PENDING_GARDEN_CLAIM_COOKIE } from "@/lib/communityGarden/pendingPurchase";
+import { removeGardenShareAssetsForUser } from "@/lib/communityGarden/shares";
 import { hasAllowedBasilRequestOrigin } from "@/lib/communityGarden/urls";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 
@@ -118,6 +119,8 @@ export async function DELETE(request: NextRequest) {
   let stage = "private_cleanup";
 
   try {
+    await removeGardenShareAssetsForUser(user.id);
+
     const { error: pendingByUserError } = await supabase
       .from("garden_pending_purchases")
       .delete()

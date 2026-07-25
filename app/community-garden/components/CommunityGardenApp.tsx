@@ -54,6 +54,10 @@ import { CareBlossomDiscovery } from "./CareBlossomDiscovery";
 import { GardenWormDiscovery } from "./GardenWormDiscovery";
 import { GardenBugReporter } from "./GardenBugReporter";
 import {
+  GardenShare,
+  type GardenShareScope,
+} from "./GardenShare";
+import {
   isGardenOnboardingFinished,
   isGardenOnboardingPlantType,
   loadCommunityOnboardingPlantings,
@@ -279,6 +283,9 @@ export function CommunityGardenApp() {
   const restoredJourneyRef = useRef(false);
   const communityOnboardingPlantingsRef = useRef(0);
   const adLabel = process.env.NEXT_PUBLIC_COMMUNITY_GARDEN_AD_PLACEHOLDER;
+  const captureMyGarden = useCallback((scope: GardenShareScope) => {
+    return canvasRef.current?.captureGarden(scope) ?? Promise.resolve(null);
+  }, []);
   const myGarden = memberGarden ?? guestPreview.garden;
   const unreadUnlockCount = memberGarden
     ? getMyGardenUnreadUnlockCount(
@@ -1612,6 +1619,13 @@ export function CommunityGardenApp() {
         </div>
 
         <div className="cg-garden-top-actions">
+          {world === "personal" && session && accountChecked && memberGarden ? (
+            <GardenShare
+              accessToken={session.access_token}
+              disabled={ui.builder.active}
+              onCapture={captureMyGarden}
+            />
+          ) : null}
           {session && accountChecked && memberGarden ? (
             <GardenBugReporter accessToken={session.access_token} />
           ) : null}

@@ -8,6 +8,7 @@ import {
   useRef,
   type PointerEvent as ReactPointerEvent,
 } from "react";
+import type { GardenShareScope } from "./GardenShare";
 import {
   gridToWorld,
   renderGarden,
@@ -133,6 +134,7 @@ export type GardenCanvasHandle = {
   toggleBuilderMode: () => void;
   undoBuilderStep: () => void;
   clearBuilder: () => void;
+  captureGarden: (scope: GardenShareScope) => Promise<File | null>;
   showCareReward: (value: number, dailyBonus?: boolean) => void;
   zoomIn: () => void;
   zoomOut: () => void;
@@ -1449,6 +1451,169 @@ function seedLocalPlants() {
   ];
 }
 
+const GARDEN_SHARE_WIDTH = 1200;
+const GARDEN_SHARE_HEIGHT = 630;
+const GARDEN_SHARE_FRAME = {
+  x: 40,
+  y: 78,
+  width: 1120,
+  height: 500,
+} as const;
+
+function renderPersonalGardenShare(
+  runtime: Runtime,
+  sourceCanvas: HTMLCanvasElement,
+  scope: GardenShareScope,
+) {
+  const garden = runtime.personalGarden;
+  if (runtime.mode !== "personal" || !garden || runtime.builder) return null;
+
+  const source = document.createElement("canvas");
+  source.width =
+    scope === "whole"
+      ? GARDEN_SHARE_FRAME.width
+      : Math.max(GARDEN_CONFIG.minLogicalWidth, sourceCanvas.width);
+  source.height =
+    scope === "whole"
+      ? GARDEN_SHARE_FRAME.height
+      : Math.max(240, sourceCanvas.height);
+  const sourceContext = source.getContext("2d");
+  if (!sourceContext) return null;
+
+  let camera = { ...runtime.camera };
+  let zoom = runtime.zoom;
+  if (scope === "whole") {
+    const horizontalZoom =
+      (source.width - 104) / (garden.width * GARDEN_CONFIG.tileSize);
+    const verticalZoom =
+      (source.height - 104) /
+      (garden.height * GARDEN_CONFIG.tileScreenHeight);
+    zoom = Math.max(0.28, Math.min(2.2, horizontalZoom, verticalZoom));
+    const centerX =
+      (garden.minX + garden.width / 2) * GARDEN_CONFIG.tileSize;
+    const centerY =
+      (garden.minY + garden.height / 2) * GARDEN_CONFIG.tileSize;
+    const yScale =
+      GARDEN_CONFIG.tileScreenHeight / GARDEN_CONFIG.tileSize;
+    camera = {
+      x: centerX,
+      y:
+        centerY +
+        ((GARDEN_CONFIG.maryScreenYRatio - 0.5) * source.height) /
+          (yScale * zoom),
+    };
+  }
+
+  const hiddenCharacter = {
+    x: camera.x + 1_000_000,
+    y: camera.y + 1_000_000,
+  };
+  renderGarden(sourceContext, {
+    viewport: { width: source.width, height: source.height },
+    camera,
+    zoom,
+    mary: hiddenCharacter,
+    duck: hiddenCharacter,
+    plants: Array.from(runtime.plants.values()),
+    weeds: [],
+    selected: null,
+    wateringTargets: [],
+    suggestedPlantingCell: null,
+    suggestedWateringCell: null,
+    gardenWorms: [],
+    tutorialDimmed: false,
+    effects: [],
+    moving: false,
+    now: Date.now(),
+    mode: "personal",
+    personalGarden: {
+      minX: garden.minX,
+      minY: garden.minY,
+      width: garden.width,
+      height: garden.height,
+      maxWidth: garden.width,
+      maxHeight: garden.height,
+      elements: garden.elements,
+      paths: garden.paths,
+      nextExpansion: null,
+    },
+  });
+
+  const card = document.createElement("canvas");
+  card.width = GARDEN_SHARE_WIDTH;
+  card.height = GARDEN_SHARE_HEIGHT;
+  const context = card.getContext("2d");
+  if (!context) return null;
+
+  context.imageSmoothingEnabled = false;
+  context.fillStyle = "#f7ecd2";
+  context.fillRect(0, 0, card.width, card.height);
+  context.fillStyle = "#c54a52";
+  context.fillRect(44, 23, 24, 24);
+  context.fillStyle = "#de716d";
+  context.fillRect(52, 17, 22, 16);
+  context.fillStyle = "#657548";
+  context.fillRect(54, 42, 5, 22);
+  context.fillStyle = "#34231f";
+  context.font = '700 33px Georgia, "Times New Roman", serif';
+  context.textAlign = "left";
+  context.textBaseline = "middle";
+  context.fillText("BASIL  ·  MY GARDEN", 90, 42);
+
+  context.fillStyle = "#e9e1d3";
+  context.fillRect(
+    GARDEN_SHARE_FRAME.x,
+    GARDEN_SHARE_FRAME.y,
+    GARDEN_SHARE_FRAME.width,
+    GARDEN_SHARE_FRAME.height,
+  );
+  const scale = Math.min(
+    GARDEN_SHARE_FRAME.width / source.width,
+    GARDEN_SHARE_FRAME.height / source.height,
+  );
+  const drawWidth = source.width * scale;
+  const drawHeight = source.height * scale;
+  context.drawImage(
+    source,
+    GARDEN_SHARE_FRAME.x + (GARDEN_SHARE_FRAME.width - drawWidth) / 2,
+    GARDEN_SHARE_FRAME.y + (GARDEN_SHARE_FRAME.height - drawHeight) / 2,
+    drawWidth,
+    drawHeight,
+  );
+  context.strokeStyle = "#34231f";
+  context.lineWidth = 6;
+  context.strokeRect(
+    GARDEN_SHARE_FRAME.x,
+    GARDEN_SHARE_FRAME.y,
+    GARDEN_SHARE_FRAME.width,
+    GARDEN_SHARE_FRAME.height,
+  );
+  context.fillStyle = "#684d42";
+  context.font = '700 16px "Courier New", monospace';
+  context.textAlign = "right";
+  context.textBaseline = "middle";
+  context.fillText(
+    scope === "whole"
+      ? "WHOLE GARDEN · GROWN IN THE COMMUNITY"
+      : "A FAVORITE VIEW · GROWN IN THE COMMUNITY",
+    1158,
+    607,
+  );
+
+  return new Promise<File | null>((resolve) => {
+    card.toBlob(
+      (blob) => {
+        resolve(
+          blob
+            ? new File([blob], "basil-my-garden.png", { type: "image/png" })
+            : null,
+        );
+      },
+      "image/png",
+    );
+  });
+}
+
 export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
   function GardenCanvas(
     {
@@ -1952,6 +2117,11 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
       ref,
       () => {
         const handle: GardenCanvasHandle = {
+        async captureGarden(scope) {
+          const canvas = canvasRef.current;
+          if (!canvas) return null;
+          return renderPersonalGardenShare(runtimeRef.current, canvas, scope);
+        },
         suggestPlantingSpot() {
           if (!tutorialDimmedRef.current) return;
           const runtime = runtimeRef.current;

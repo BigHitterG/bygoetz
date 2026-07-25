@@ -1,0 +1,109 @@
+.page {
+  min-height: 100svh;
+  background:
+    radial-gradient(circle at 15% 12%, rgba(224, 183, 109, 0.2), transparent 28%),
+    repeating-linear-gradient(
+      90deg,
+      transparent 0 31px,
+      rgba(101, 112, 74, 0.055) 32px
+    ),
+    #e9e1d3;
+  color: #34231f;
+  padding: clamp(16px, 4vw, 40px);
+}
+
+.header {
+  display: flex;
+  width: min(920px, 100%);
+  align-items: center;
+  gap: 14px;
+  margin: 0 auto 18px;
+  border: 3px solid #34231f;
+  background: #fff4df;
+  padding: 13px 18px;
+  box-shadow: 5px 5px 0 rgba(52, 35, 31, 0.22);
+}
+
+.header div {
+  display: grid;
+}
+
+.header strong {
+  font-family: Georgia, serif;
+  font-size: clamp(1.45rem, 4vw, 2.2rem);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.header span:not(.rose) {
+  font: 800 0.66rem/1.3 "Courier New", monospace;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.rose {
+  position: relative;
+  display: block;
+  width: 30px;
+  height: 34px;
+  background:
+    linear-gradient(#bb3b48 0 0) 5px 2px / 20px 15px no-repeat,
+    linear-gradient(#dd6c69 0 0) 10px 0 / 15px 10px no-repeat,
+    linear-gradient(#657548 0 0) 13px 17px / 5px 17px no-repeat;
+}
+
+.card {
+  width: min(920px, 100%);
+  margin: 0 auto;
+  border: 3px solid #34231f;
+  background: #fff4df;
+  padding: clamp(18px, 4vw, 34px);
+  box-shadow: 7px 7px 0 rgba(52, 35, 31, 0.25);
+  text-align: center;
+}
+
+.kicker {
+  margin: 0;
+  color: #b43a43;
+  font: 900 0.72rem/1.3 "Courier New", monospace;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.card h1 {
+  margin: 8px 0 20px;
+  font: 700 clamp(2rem, 7vw, 4rem)/0.95 Georgia, serif;
+}
+
+.image {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: 3px solid #34231f;
+  background: #e9e1d3;
+  image-rendering: pixelated;
+}
+
+.card > p:not(.kicker) {
+  max-width: 620px;
+  margin: 20px auto;
+  color: #684d42;
+  font: 1rem/1.6 Georgia, serif;
+}
+
+.cta {
+  display: inline-block;
+  border: 3px solid #34231f;
+  background: #b43a43;
+  color: #fff9e9;
+  padding: 13px 18px;
+  font: 900 0.78rem/1 "Courier New", monospace;
+  text-decoration: none;
+  text-transform: uppercase;
+  box-shadow: 4px 4px 0 rgba(52, 35, 31, 0.24);
+}
+
+.cta:focus-visible {
+  outline: 3px solid #2f8290;
+  outline-offset: 4px;
+}

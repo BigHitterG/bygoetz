@@ -26,6 +26,7 @@ export default function BasilPrivacyPage() {
           <li><strong>Anonymous community play:</strong> tile actions such as planting, watering, and pulling weeds; a pseudonymous signed garden-session key; timestamps; short-lived action and watering-cooldown records; and daily activity totals needed to maintain the shared map, pace Care, share watering opportunities, limit automated abuse, and prevent duplicate rewards. New signed-out flowers are temporary for 24 hours. Basil stores a one-way network key for these safeguards rather than a raw IP address.</li>
           <li><strong>Private accounts:</strong> your email address, encrypted password credentials managed by Supabase Auth, verification state, and session information. Basil derives a one-way account key so the same private 100-flower footprint works across signed-in devices without putting an account ID, email, or public username on a Community Garden flower.</li>
           <li><strong>My Garden:</strong> private plants, paths, objects, Care balance and ledger activity, expansion state, and membership entitlement.</li>
+          <li><strong>Optional garden sharing:</strong> a Garden Member may create an anonymous, read-only image snapshot of My Garden. The public link contains a random identifier and does not show the member&apos;s name, email, account, or Care balance. Snapshot ownership and the private image file are stored so the member can stop sharing later.</li>
           <li><strong>Feedback:</strong> the category and message you choose to submit through the account area, plus its review status. Garden Members can also use the in-game bug button to send a note and optional screenshot. Basil verifies membership before accepting that quick report, then stores it without the member&apos;s account, name, email, or original file name.</li>
           <li><strong>Purchases and gifts:</strong> Stripe checkout, customer, and payment identifiers; amount, currency, status, and purchase time. For complimentary access, Basil stores an opaque gift identifier, redemption status, and a short-lived one-way request fingerprint used to limit guessing. Basil does not receive or store full card details, raw gift-code guesses, or raw IP addresses in the gift-code log.</li>
           <li><strong>First-party launch analytics:</strong> a random launch-session ID, funnel milestones, device class, original landing path, referring domain, UTM campaign fields, and a Meta click identifier when one is present in the landing URL. This record does not contain your email.</li>
@@ -56,7 +57,7 @@ export default function BasilPrivacyPage() {
       <section>
         <h2>Services that receive data</h2>
         <dl>
-          <div><dt>Supabase</dt><dd>Authentication, account and garden database records, private quick-report screenshots, first-party funnel analytics, and server-side security controls.</dd></div>
+          <div><dt>Supabase</dt><dd>Authentication, account and garden database records, private quick-report screenshots, optional private garden-share image storage, first-party funnel analytics, and server-side security controls.</dd></div>
           <div><dt>Stripe</dt><dd>Checkout, payment processing, fraud prevention, receipts, and payment records. Stripe handles payment details under its own privacy terms.</dd></div>
           <div><dt>Resend</dt><dd>Account verification, password-recovery delivery, and the optional monthly Basil Garden Letter, including the destination email, subscription preference, and delivery information.</dd></div>
           <div><dt>Vercel</dt><dd>Website hosting, server execution, security, and operational logs.</dd></div>
@@ -108,6 +109,7 @@ export default function BasilPrivacyPage() {
         <h2>Retention</h2>
         <ul>
           <li>Private account, My Garden, account-linked feedback, and entitlement records remain while the account is active and are removed through the deletion process.</li>
+          <li>A member-created garden snapshot remains available through its random public link until the member stops sharing it or deletes the account. Stopping a share immediately hides the public record and removes its private image file; previously downloaded or reposted copies are outside Basil&apos;s control.</li>
           <li>Quick bug and idea reports are stored without an account identifier. Their optional screenshots remain private and use random server-generated file names. Because Basil cannot connect these reports back to a member after submission, they may remain after account deletion for product review and troubleshooting.</li>
           <li>Monthly-letter consent and delivery records remain while the account is active or as reasonably needed to honor an unsubscribe request and prevent duplicate sends.</li>
           <li>The anonymous launch session is designed to last 90 days in the browser; raw first-party funnel sessions and events are designed for 180-day retention.</li>
@@ -124,8 +126,9 @@ export default function BasilPrivacyPage() {
         <h2>Deletion and the shared garden</h2>
         <p>
           A signed-in player can permanently delete a Basil account. This removes the
-          Supabase Auth user and Basil’s private My Garden, feedback, Care ledger,
-          entitlement, and private account records. It also revokes account sessions.
+          Supabase Auth user and Basil’s private My Garden, garden-share snapshots,
+          feedback, Care ledger, entitlement, and private account records. It also
+          revokes account sessions.
           Anonymous quick bug and idea reports cannot be connected back to the deleted
           account and may remain. Already-anonymous Community Garden contributions may
           remain in the canonical
