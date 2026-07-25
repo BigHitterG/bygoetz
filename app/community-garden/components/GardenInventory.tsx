@@ -22,6 +22,7 @@ import {
   GARDEN_ONBOARDING_PLANT_TYPES,
   isGardenOnboardingPlantType,
 } from "../lib/gardenOnboarding";
+import { GardenCatalogSprite } from "./GardenCatalogSprite";
 
 type GardenInventoryProps = {
   mode: GardenWorldMode;
@@ -32,6 +33,7 @@ type GardenInventoryProps = {
   guidePlantChoice?: boolean;
   onboardingLocked?: boolean;
   toggleLocked?: boolean;
+  designPreviewEnabled?: boolean;
   onToggle: () => void;
   onSelectPlant: (plantType: PlantType) => void;
   onSelectPath: () => void;
@@ -53,6 +55,30 @@ function UnlockLabel({ lifetimeCareRequired }: { lifetimeCareRequired: number })
   return <small>Unlocks at {lifetimeCareRequired.toLocaleString()} lifetime Care</small>;
 }
 
+const DESIGN_PREVIEW_STEPS = [
+  ...new Set([
+    ...MY_GARDEN_CATALOG_UNLOCKS.map((entry) => entry.lifetimeCareRequired),
+    ...MY_GARDEN_COLLECTIONS.map((entry) => entry.lifetimeCareRequired),
+    BASIL_LIFETIME_CARE_GOAL,
+  ]),
+].sort((left, right) => left - right);
+
+function getPreviewStepLabel(lifetimeCare: number) {
+  const collection = MY_GARDEN_COLLECTIONS.find(
+    (entry) => entry.lifetimeCareRequired === lifetimeCare,
+  );
+  const items = MY_GARDEN_CATALOG_UNLOCKS.filter(
+    (entry) => entry.lifetimeCareRequired === lifetimeCare,
+  );
+  return [
+    lifetimeCare.toLocaleString(),
+    collection?.name,
+    items.map((entry) => entry.name).join(", ") || null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+}
+
 export function GardenInventory({
   mode,
   open,
@@ -62,6 +88,7 @@ export function GardenInventory({
   guidePlantChoice = false,
   onboardingLocked = false,
   toggleLocked = false,
+  designPreviewEnabled = false,
   onToggle,
   onSelectPlant,
   onSelectPath,
@@ -69,6 +96,15 @@ export function GardenInventory({
 }: GardenInventoryProps) {
   const [category, setCategory] =
     useState<MyGardenInventoryCategory>("plants");
+  const [previewLifetimeCare, setPreviewLifetimeCare] = useState<number | null>(
+    null,
+  );
+  const effectivePreviewLifetimeCare = designPreviewEnabled
+    ? previewLifetimeCare
+    : null;
+  const displayedLifetimeCare =
+    effectivePreviewLifetimeCare ?? lifetimeCare;
+  const designPreviewActive = effectivePreviewLifetimeCare !== null;
   const availablePlantTypes = onboardingLocked
     ? GARDEN_ONBOARDING_PLANT_TYPES
     : mode === "personal"
@@ -105,27 +141,30 @@ export function GardenInventory({
     [currentCategory],
   );
   const nextUnlock = MY_GARDEN_CATALOG_UNLOCKS.find(
-    (entry) => entry.lifetimeCareRequired > lifetimeCare,
+    (entry) => entry.lifetimeCareRequired > displayedLifetimeCare,
   );
   const currentCollection = [...MY_GARDEN_COLLECTIONS]
     .reverse()
-    .find((collection) => collection.lifetimeCareRequired <= lifetimeCare);
+    .find(
+      (collection) =>
+        collection.lifetimeCareRequired <= displayedLifetimeCare,
+    );
   const nextCollectionCompletion = MY_GARDEN_COLLECTIONS.find(
     (collection) =>
-      collection.completionLifetimeCareRequired > lifetimeCare,
+      collection.completionLifetimeCareRequired > displayedLifetimeCare,
   );
   const nextProgressMessage = nextUnlock
     ? `${(
-        nextUnlock.lifetimeCareRequired - lifetimeCare
+        nextUnlock.lifetimeCareRequired - displayedLifetimeCare
       ).toLocaleString()} until ${nextUnlock.name}`
     : nextCollectionCompletion
       ? `${(
           nextCollectionCompletion.completionLifetimeCareRequired -
-          lifetimeCare
+          displayedLifetimeCare
         ).toLocaleString()} until ${nextCollectionCompletion.name} complete`
-      : lifetimeCare < BASIL_LIFETIME_CARE_GOAL
+      : displayedLifetimeCare < BASIL_LIFETIME_CARE_GOAL
         ? `${(
-            BASIL_LIFETIME_CARE_GOAL - lifetimeCare
+            BASIL_LIFETIME_CARE_GOAL - displayedLifetimeCare
           ).toLocaleString()} until Basil I`
         : "Basil I achieved";
   const newUnlocks = useMemo(
@@ -190,12 +229,45 @@ export function GardenInventory({
           {mode === "personal" && !onboardingLocked ? (
             <>
               <div className="cg-inventory-progress" aria-label="Collection progress">
-                <span>{lifetimeCare.toLocaleString()} lifetime Care</span>
+                <span>
+                  {designPreviewActive ? "Previewing " : ""}
+                  {displayedLifetimeCare.toLocaleString()} lifetime Care
+                </span>
                 <small>{nextProgressMessage}</small>
                 {currentCollection ? (
                   <strong>{currentCollection.name}</strong>
                 ) : null}
               </div>
+              {designPreviewEnabled ? (
+                <div className="cg-inventory-design-preview">
+                  <label htmlFor="garden-design-preview">
+                    Owner progression preview
+                  </label>
+                  <select
+                    id="garden-design-preview"
+                    value={previewLifetimeCare ?? ""}
+                    onChange={(event) => {
+                      setPreviewLifetimeCare(
+                        event.target.value
+                          ? Number(event.target.value)
+                          : null,
+                      );
+                    }}
+                  >
+                    <option value="">
+                      Actual progress · {lifetimeCare.toLocaleString()}
+                    </option>
+                    {DESIGN_PREVIEW_STEPS.map((step) => (
+                      <option key={step} value={step}>
+                        {getPreviewStepLabel(step)}
+                      </option>
+                    ))}
+                  </select>
+                  <small>
+                    Preview only. Your Care, unlocks and saved garden never change.
+                  </small>
+                </div>
+              ) : null}
               <nav className="cg-inventory-tabs" aria-label="Inventory categories">
                 {CATEGORIES.map((entry) => {
                   const hasNewUnlock = MY_GARDEN_CATALOG_UNLOCKS.some(
@@ -233,9 +305,18 @@ export function GardenInventory({
                       : null;
                   const unlocked =
                     !catalogPlant ||
+                    isMyGardenCatalogEntryUnlocked(
+                      catalogPlant,
+                      displayedLifetimeCare,
+                    );
+                  const placeable =
+                    !catalogPlant ||
                     isMyGardenCatalogEntryUnlocked(catalogPlant, lifetimeCare);
+                  const previewOnly =
+                    designPreviewActive && unlocked && !placeable;
                   const isNew =
                     catalogPlant &&
+                    !designPreviewActive &&
                     newUnlocks.has(`plant:${catalogPlant.type}`);
                   return (
                     <button
@@ -247,9 +328,11 @@ export function GardenInventory({
                           : `${plant.name} locked until ${catalogPlant?.lifetimeCareRequired} lifetime Care`
                       }
                       aria-pressed={selectedTool === plantType}
+                      aria-disabled={previewOnly}
                       className={[
                         guidePlantChoice ? "is-onboarding-choice" : "",
                         unlocked ? "" : "is-locked",
+                        previewOnly ? "is-design-preview" : "",
                         isNew ? "is-new-unlock" : "",
                       ]
                         .filter(Boolean)
@@ -258,6 +341,7 @@ export function GardenInventory({
                       onClick={() => {
                         if (
                           unlocked &&
+                          placeable &&
                           (!onboardingLocked ||
                             isGardenOnboardingPlantType(plantType))
                         ) {
@@ -265,9 +349,9 @@ export function GardenInventory({
                         }
                       }}
                     >
-                      <span
-                        className={`cg-plant-glyph is-${plantType}`}
-                        aria-hidden="true"
+                      <GardenCatalogSprite
+                        kind="plant"
+                        type={plantType as MyGardenPlantType}
                       />
                       <span>{plant.name}</span>
                       {catalogPlant && !unlocked ? (
@@ -308,9 +392,17 @@ export function GardenInventory({
                 {categoryElements.map((element) => {
                   const unlocked = isMyGardenCatalogEntryUnlocked(
                     element,
+                    displayedLifetimeCare,
+                  );
+                  const placeable = isMyGardenCatalogEntryUnlocked(
+                    element,
                     lifetimeCare,
                   );
-                  const isNew = newUnlocks.has(`element:${element.type}`);
+                  const previewOnly =
+                    designPreviewActive && unlocked && !placeable;
+                  const isNew =
+                    !designPreviewActive &&
+                    newUnlocks.has(`element:${element.type}`);
                   return (
                     <button
                       key={element.type}
@@ -321,19 +413,20 @@ export function GardenInventory({
                           : `${element.name} locked until ${element.lifetimeCareRequired} lifetime Care`
                       }
                       aria-pressed={selectedTool === element.type}
+                      aria-disabled={previewOnly}
                       className={[
                         unlocked ? "" : "is-locked",
+                        previewOnly ? "is-design-preview" : "",
                         isNew ? "is-new-unlock" : "",
                       ]
                         .filter(Boolean)
                         .join(" ")}
                       disabled={!unlocked}
-                      onClick={() => onSelectElement(element.type)}
+                      onClick={() => {
+                        if (placeable) onSelectElement(element.type);
+                      }}
                     >
-                      <span
-                        className={`cg-item-glyph ${getMyGardenElementGlyphClass(element.type)}`}
-                        aria-hidden="true"
-                      />
+                      <GardenCatalogSprite kind="element" type={element.type} />
                       <span>{element.name}</span>
                       {unlocked ? (
                         <small>
@@ -362,10 +455,18 @@ export function GardenInventory({
                 {categoryElements.map((element) => {
                   const unlocked = isMyGardenCatalogEntryUnlocked(
                     element,
+                    displayedLifetimeCare,
+                  );
+                  const placeable = isMyGardenCatalogEntryUnlocked(
+                    element,
                     lifetimeCare,
                   );
+                  const previewOnly =
+                    designPreviewActive && unlocked && !placeable;
                   const collection = getMyGardenCollection(element.collection);
-                  const isNew = newUnlocks.has(`element:${element.type}`);
+                  const isNew =
+                    !designPreviewActive &&
+                    newUnlocks.has(`element:${element.type}`);
                   return (
                     <button
                       key={element.type}
@@ -376,19 +477,20 @@ export function GardenInventory({
                           : `${element.name} locked with ${collection.name}`
                       }
                       aria-pressed={selectedTool === element.type}
+                      aria-disabled={previewOnly}
                       className={[
                         unlocked ? "" : "is-locked",
+                        previewOnly ? "is-design-preview" : "",
                         isNew ? "is-new-unlock" : "",
                       ]
                         .filter(Boolean)
                         .join(" ")}
                       disabled={!unlocked}
-                      onClick={() => onSelectElement(element.type)}
+                      onClick={() => {
+                        if (placeable) onSelectElement(element.type);
+                      }}
                     >
-                      <span
-                        className={`cg-item-glyph ${getMyGardenElementGlyphClass(element.type)}`}
-                        aria-hidden="true"
-                      />
+                      <GardenCatalogSprite kind="element" type={element.type} />
                       <span>{element.name}</span>
                       {unlocked ? (
                         <small>

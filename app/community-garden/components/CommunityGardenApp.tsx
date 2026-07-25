@@ -105,8 +105,8 @@ const UNLOCK_CELEBRATION_HISTORY_PREFIX =
   "basil-unlock-celebration-history-v1:";
 
 type AccountResponse =
-  | { active: false }
-  | { active: true; myGarden: MyGardenState };
+  | { active: false; admin?: boolean }
+  | { active: true; myGarden: MyGardenState; admin?: boolean };
 
 type MembershipOfferStage = "soft" | "hard" | "expired";
 
@@ -255,6 +255,7 @@ export function CommunityGardenApp() {
   const [membershipCheckoutError, setMembershipCheckoutError] = useState("");
   const [guestPreviewReady, setGuestPreviewReady] = useState(false);
   const [accountChecked, setAccountChecked] = useState(false);
+  const [inventoryDesignAccess, setInventoryDesignAccess] = useState(false);
   const [onboardingStep, setOnboardingStep] =
     useState<GardenOnboardingStep | null>(null);
   const [communityOnboardingPlantings, setCommunityOnboardingPlantings] =
@@ -510,6 +511,7 @@ export function CommunityGardenApp() {
         return memberGardenRef.current;
       }
       const account = (await response.json()) as AccountResponse;
+      setInventoryDesignAccess(Boolean(account.admin));
       let nextGarden = account.active ? account.myGarden : null;
       if (nextGarden) {
         const preview = guestPreviewRef.current;
@@ -780,6 +782,7 @@ export function CommunityGardenApp() {
         lifetimeCareRef.current = 0;
         memberGardenRef.current = null;
         setMemberGarden(null);
+        setInventoryDesignAccess(false);
         setWorld("community");
         setAccountChecked(true);
       } else {
@@ -1679,6 +1682,7 @@ export function CommunityGardenApp() {
           selectedTool={ui.selectedTool}
           lifetimeCare={myGarden.lifetimeCare}
           inventorySeenLifetimeCare={myGarden.inventorySeenLifetimeCare}
+          designPreviewEnabled={inventoryDesignAccess}
           onboardingLocked={onboardingInventoryLocked}
           toggleLocked={
             onboardingInventoryLocked &&

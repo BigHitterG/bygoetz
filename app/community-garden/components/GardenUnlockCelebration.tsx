@@ -1,10 +1,8 @@
 "use client";
 
 import { useEffect, useRef, type CSSProperties } from "react";
-import {
-  getMyGardenElementGlyphClass,
-  type MyGardenUnlockNotice,
-} from "../lib/myGardenCatalog";
+import type { MyGardenUnlockNotice } from "../lib/myGardenCatalog";
+import { GardenCatalogSprite } from "./GardenCatalogSprite";
 
 type GardenUnlockCelebrationProps = {
   notice: MyGardenUnlockNotice | null;
@@ -96,14 +94,10 @@ export function GardenUnlockCelebration({
             : "New My Garden item"}
         </p>
         <div className="cg-unlock-emblem" aria-hidden="true">
-          {primaryItem?.kind === "plant" ? (
-            <span className={`cg-plant-glyph is-${primaryItem.plantType}`} />
+          {primaryItem?.kind === "plant" && primaryItem.plantType ? (
+            <GardenCatalogSprite kind="plant" type={primaryItem.plantType} />
           ) : primaryItem?.elementType ? (
-            <span
-              className={`cg-item-glyph ${getMyGardenElementGlyphClass(
-                primaryItem.elementType,
-              )}`}
-            />
+            <GardenCatalogSprite kind="element" type={primaryItem.elementType} />
           ) : (
             <span className="cg-unlock-star">*</span>
           )}

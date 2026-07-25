@@ -1,8 +1,8 @@
 # Basil My Garden Catalog Rollout
 
-Status: Release 1 implemented. Progression and prices were superseded by the
-quarter-scale open-ended Care economy on July 24, 2026. The authoritative
-numbers are in `basil-uncapped-care-economy.md` and `myGardenCatalog.ts`.
+Status: The full Garden Starter through Basil I ladder is implemented. The
+authoritative numbers are in `basil-uncapped-care-economy.md`,
+`myGardenCatalog.ts`, and the matching Supabase catalog migration.
 
 ## Product rules
 
@@ -28,10 +28,10 @@ numbers are in `basil-uncapped-care-economy.md` and `myGardenCatalog.ts`.
 | Cottage Garden | 500 | First sessions |
 | Pollinator Garden | 3,750 | First week |
 | Water Garden | 12,500 | First few weeks |
-| Woodland Garden | 50,000 | Later release |
-| Working Garden | 125,000 | Later release |
-| Heritage Garden | 300,000 | Later release |
-| Botanical Masterworks | 625,000 | Later release |
+| Woodland Garden | 50,000 | Long-term progression |
+| Working Garden | 125,000 | Long-term progression |
+| Heritage Garden | 300,000 | Long-term progression |
+| Botanical Masterworks | 625,000 | Long-term progression |
 | Basil I | 1,000,000 | Long-term prestige goal |
 
 Timing is deliberately approximate. Basil no longer has diminishing returns or
@@ -101,44 +101,46 @@ Reeds unlock at 12,500, lily pads at 15,000, birdbath at 19,000, stone basin at
 - TypeScript, ESLint, unit tests, production build, database verification,
   Supabase advisors and live mobile/tablet checks pass before production.
 
-## Release 2: Woodland Garden and property styling
+## Woodland Garden: 50,000 lifetime Care
 
-At 50,000 lifetime Care add shrubs, log bench, pine, maple, flowering tree,
-bonsai and grand oak. Add a path-painting workflow and whole-property fence
-skins that follow future land expansions automatically. Ambient birds and
-squirrels can appear when matching habitat items are present.
+Woodland shrub unlocks at 50,000; log bench at 60,000; pine at 70,000; maple at
+80,000; flowering tree at 90,000; bonsai at 105,000; grand oak at 115,000. At
+125,000, Woodland Garden is complete and Working Garden opens.
 
-## Release 3: Working Garden
+## Working Garden: 125,000 lifetime Care
 
-At 125,000 lifetime Care add compost bin, potting table, raised bed, cold frame,
-garden shed and small greenhouse. Raised beds may hold normal personal flowers.
-Nothing requires maintenance or generates Care.
+Compost bin unlocks at 125,000; potting table at 145,000; raised bed at 170,000;
+cold frame at 200,000; garden shed at 235,000; small greenhouse at 275,000. At
+300,000, Working Garden is complete and Heritage Garden opens. Nothing requires
+maintenance or generates Care.
 
-## Release 4: Heritage Garden
+## Heritage Garden: 300,000 lifetime Care
 
-At 300,000 lifetime Care add topiary arch, pergola, greenhouse extension, mosaic
-fountain, formal pond and conservatory. Introduce auto-connecting greenhouse
-bays and more flexible pond shapes.
+Topiary arch unlocks at 300,000; pergola at 350,000; greenhouse extension at
+405,000; mosaic fountain at 465,000; formal pond at 530,000; conservatory at
+590,000. At 625,000, Heritage Garden is complete and Botanical Masterworks
+opens.
 
-## Release 5: Botanical Masterworks
+## Botanical Masterworks: 625,000 lifetime Care
 
-At 625,000 lifetime Care add a grand rose pergola, glass pavilion and botanical
-glasshouse. These are visually dramatic landmarks without statistical bonuses.
+Grand rose pergola unlocks at 625,000; glass pavilion at 750,000; botanical
+glasshouse at 875,000. At 1,000,000, Botanical Masterworks is complete and
+Basil I opens. These are visually dramatic landmarks without statistical
+bonuses.
 
-## Release 6: Basil
+## Basil I: 1,000,000 lifetime Care
 
-At 1,000,000 lifetime Care unlock the first prestige landmark: the Basil I
-Conservatory or Great Basil Topiary. It includes a permanent achievement plaque
-and provides no economic advantage.
+At 1,000,000 lifetime Care, Great Basil Topiary unlocks as the first prestige
+landmark. It provides no economic advantage.
 
-## Instructions for future Codex releases
+## Instructions for future catalog extensions
 
-Implement one release at a time. Audit the live schema and current catalog before
-changing it. Extend the existing catalog architecture instead of creating
-special-case purchase systems. Validate all costs, thresholds, entitlements,
-footprints and collisions in a transactional server-side mutation. Use proper
-Supabase migrations with RLS and least-privilege grants. Preserve historical
-placement costs for refunds. Do not add an empty player-facing collection.
+Audit the live schema and current catalog before changing it. Extend the
+existing catalog architecture instead of creating special-case purchase
+systems. Validate all costs, thresholds, entitlements, footprints and
+collisions in a transactional server-side mutation. Use proper Supabase
+migrations with RLS and least-privilege grants. Preserve historical placement
+costs for refunds. Do not add an empty player-facing collection.
 
 Each release must preserve the Community Garden, onboarding, guest preview,
 membership paywall, account system, existing gardens and $9.99 price. Run the

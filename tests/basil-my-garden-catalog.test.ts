@@ -11,7 +11,7 @@ import {
   isMyGardenCatalogEntryUnlocked,
 } from "../app/community-garden/lib/myGardenCatalog.ts";
 
-test("Release 1 collection thresholds match the approved progression", () => {
+test("the complete collection ladder matches the approved progression", () => {
   assert.deepEqual(
     MY_GARDEN_COLLECTIONS.map((collection) => [
       collection.key,
@@ -22,6 +22,11 @@ test("Release 1 collection thresholds match the approved progression", () => {
       ["cottage", 500],
       ["pollinator", 3_750],
       ["water", 12_500],
+      ["woodland", 50_000],
+      ["working", 125_000],
+      ["heritage", 300_000],
+      ["botanical", 625_000],
+      ["basil", 1_000_000],
     ],
   );
   assert.deepEqual(
@@ -34,6 +39,11 @@ test("Release 1 collection thresholds match the approved progression", () => {
       ["cottage", 3_750],
       ["pollinator", 12_500],
       ["water", 50_000],
+      ["woodland", 125_000],
+      ["working", 300_000],
+      ["heritage", 625_000],
+      ["botanical", 1_000_000],
+      ["basil", 1_000_000],
     ],
   );
 });
@@ -130,32 +140,66 @@ test("placement prices use the approved quarter-scale economy", () => {
       willow_tree: 200,
       fountain: 375,
       small_pond: 625,
+      woodland_shrub: 3,
+      log_bench: 5,
+      pine_tree: 13,
+      maple_tree: 18,
+      flowering_tree: 23,
+      bonsai_tree: 30,
+      grand_oak: 75,
+      compost_bin: 5,
+      potting_table: 12,
+      raised_bed: 20,
+      cold_frame: 30,
+      garden_shed: 75,
+      small_greenhouse: 150,
+      topiary_arch: 60,
+      pergola: 100,
+      greenhouse_extension: 90,
+      mosaic_fountain: 125,
+      formal_pond: 165,
+      conservatory: 375,
+      grand_rose_pergola: 300,
+      glass_pavilion: 625,
+      botanical_glasshouse: 1_000,
+      great_basil_topiary: 2_500,
     },
   );
 });
 
-test("progressive migration contains every client catalog threshold", () => {
-  const migration = readFileSync(
+test("database migrations contain every live client catalog threshold", () => {
+  const quarterScaleMigration = readFileSync(
     new URL(
-      "../supabase/migrations/20260725005701_quarter_scale_care_progression.sql",
+      "../supabase/migrations/20260725012615_quarter_scale_care_progression.sql",
       import.meta.url,
     ),
     "utf8",
   );
-  const plantCostStart = migration.indexOf("care_cost = case plant_type");
-  const elementCostStart = migration.indexOf("care_cost = case element_type");
-  const plantCostSection = migration.slice(
-    plantCostStart,
-    migration.indexOf("updated_at = now()", plantCostStart),
+  const completeLadderMigration = readFileSync(
+    new URL(
+      "../supabase/migrations/20260725033441_complete_basil_collection_ladder.sql",
+      import.meta.url,
+    ),
+    "utf8",
   );
-  const elementCostSection = migration.slice(
+  const plantCostStart = quarterScaleMigration.indexOf(
+    "care_cost = case plant_type",
+  );
+  const elementCostStart = quarterScaleMigration.indexOf(
+    "care_cost = case element_type",
+  );
+  const plantCostSection = quarterScaleMigration.slice(
+    plantCostStart,
+    quarterScaleMigration.indexOf("updated_at = now()", plantCostStart),
+  );
+  const elementCostSection = quarterScaleMigration.slice(
     elementCostStart,
-    migration.indexOf("updated_at = now()", elementCostStart),
+    quarterScaleMigration.indexOf("updated_at = now()", elementCostStart),
   );
 
   for (const plant of MY_GARDEN_PLANTS) {
     assert.ok(
-      migration.includes(
+      quarterScaleMigration.includes(
         `when '${plant.type}' then ${plant.lifetimeCareRequired}`,
       ),
       `missing progressive database threshold for ${plant.type}`,
@@ -167,18 +211,33 @@ test("progressive migration contains every client catalog threshold", () => {
   }
 
   for (const element of MY_GARDEN_ELEMENTS) {
-    assert.ok(
-      migration.includes(
-        `when '${element.type}' then ${element.lifetimeCareRequired}`,
-      ),
-      `missing progressive database threshold for ${element.type}`,
-    );
-    assert.ok(
-      elementCostSection.includes(
-        `when '${element.type}' then ${element.careCost}`,
-      ),
-      `missing quarter-scale database cost for ${element.type}`,
-    );
+    if (element.lifetimeCareRequired < 50_000) {
+      assert.ok(
+        quarterScaleMigration.includes(
+          `when '${element.type}' then ${element.lifetimeCareRequired}`,
+        ),
+        `missing progressive database threshold for ${element.type}`,
+      );
+      assert.ok(
+        elementCostSection.includes(
+          `when '${element.type}' then ${element.careCost}`,
+        ),
+        `missing quarter-scale database cost for ${element.type}`,
+      );
+    } else {
+      assert.ok(
+        completeLadderMigration.includes(
+          `('${element.type}', '${element.name}', '${element.collection}'`,
+        ),
+        `missing complete-ladder database row for ${element.type}`,
+      );
+      assert.ok(
+        completeLadderMigration.includes(
+          `${element.lifetimeCareRequired}, ${element.careCost}, ${element.footprintWidth}, ${element.footprintHeight}`,
+        ),
+        `missing complete-ladder values for ${element.type}`,
+      );
+    }
   }
 });
 
@@ -195,4 +254,45 @@ test("unread unlock count advances by milestones rather than every catalog row",
   assert.equal(getMyGardenUnreadUnlockCount(0, 25), 1);
   assert.equal(getMyGardenUnreadUnlockCount(25, 400), 6);
   assert.equal(getMyGardenUnreadUnlockCount(3_250, 3_750), 1);
+});
+
+test("late collection moments remain visible through Basil I", () => {
+  const woodland = getMyGardenUnlockNotices(49_999, 50_000);
+  assert.equal(woodland[0]?.completedCollection?.key, "water");
+  assert.equal(woodland[0]?.openedCollection?.key, "woodland");
+  assert.deepEqual(woodland[0]?.items.map((item) => item.name), [
+    "Woodland shrub",
+  ]);
+
+  const basil = getMyGardenUnlockNotices(999_999, 1_000_000);
+  assert.equal(basil[0]?.completedCollection?.key, "botanical");
+  assert.equal(basil[0]?.openedCollection?.key, "basil");
+  assert.deepEqual(basil[0]?.items.map((item) => item.name), [
+    "Great Basil topiary",
+  ]);
+});
+
+test("owner progression preview is private and cannot place future items", () => {
+  const inventorySource = readFileSync(
+    new URL(
+      "../app/community-garden/components/GardenInventory.tsx",
+      import.meta.url,
+    ),
+    "utf8",
+  );
+  const accountRoute = readFileSync(
+    new URL(
+      "../app/api/community-garden/account/route.ts",
+      import.meta.url,
+    ),
+    "utf8",
+  );
+
+  assert.match(accountRoute, /isGardenAdmin\(user\)/);
+  assert.match(inventorySource, /Owner progression preview/);
+  assert.match(
+    inventorySource,
+    /Preview only\. Your Care, unlocks and saved garden never change\./,
+  );
+  assert.match(inventorySource, /if \(placeable\) onSelectElement/);
 });

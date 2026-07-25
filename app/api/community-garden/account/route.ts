@@ -7,6 +7,7 @@ import {
   getGardenStewardByUserId,
 } from "@/lib/communityGarden/stewards";
 import { getNewsletterPreference } from "@/lib/communityGarden/newsletter";
+import { isGardenAdmin } from "@/lib/communityGarden/health";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -18,9 +19,10 @@ export async function GET(request: Request) {
   }
 
   const steward = await getGardenStewardByUserId(user.id);
+  const admin = isGardenAdmin(user);
 
   if (!steward) {
-    return NextResponse.json({ active: false, email: user.email });
+    return NextResponse.json({ active: false, email: user.email, admin });
   }
 
   const [almanac, feedback, myGarden, newsletterPreference] = await Promise.all([
@@ -40,6 +42,7 @@ export async function GET(request: Request) {
     almanac,
     feedback,
     myGarden,
+    admin,
     newsletterSubscribed: newsletterPreference !== false,
   });
 }

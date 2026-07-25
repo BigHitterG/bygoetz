@@ -46,6 +46,11 @@ longer. The game does not reduce either player’s reward rate.
 | Cottage Garden | 500 | 3,750 | first sessions |
 | Pollinator Garden | 3,750 | 12,500 | first week |
 | Water Garden | 12,500 | 50,000 | first few weeks |
+| Woodland Garden | 50,000 | 125,000 | long-term progression |
+| Working Garden | 125,000 | 300,000 | long-term progression |
+| Heritage Garden | 300,000 | 625,000 | long-term progression |
+| Botanical Masterworks | 625,000 | 1,000,000 | long-term progression |
+| Basil I | 1,000,000 | 1,000,000 | prestige milestone |
 
 Exact implemented unlocks:
 
@@ -60,13 +65,25 @@ Exact implemented unlocks:
 - Water Garden: Reeds 12,500; Lily pads 15,000; Birdbath 19,000;
   Stone basin 22,500; Willow tree 27,500; Fountain 34,000;
   Small pond 41,500; collection complete 50,000.
+- Woodland Garden: Woodland shrub 50,000; Log bench 60,000; Pine 70,000;
+  Maple 80,000; Flowering tree 90,000; Bonsai 105,000; Grand oak 115,000;
+  collection complete 125,000.
+- Working Garden: Compost bin 125,000; Potting table 145,000; Raised bed
+  170,000; Cold frame 200,000; Garden shed 235,000; Small greenhouse 275,000;
+  collection complete 300,000.
+- Heritage Garden: Topiary arch 300,000; Pergola 350,000; Greenhouse extension
+  405,000; Mosaic fountain 465,000; Formal pond 530,000; Conservatory 590,000;
+  collection complete 625,000.
+- Botanical Masterworks: Grand rose pergola 625,000; Glass pavilion 750,000;
+  Botanical glasshouse 875,000; collection complete 1,000,000.
+- Basil I: Great Basil topiary 1,000,000.
 
-Existing members were converted to the equivalent new milestone so no
-previously earned item was relocked. Spendable Care was not inflated.
+Existing members retain their Lifetime Care, spendable Care and placements.
+The later catalog only adds future unlocks; it does not relock an item.
 
-## Planned long progression
+## Complete long progression
 
-These are the locked rollout anchors for later inventory releases:
+These are the live collection bands:
 
 | Collection or milestone | Lifetime Care |
 | --- | ---: |
@@ -76,9 +93,8 @@ These are the locked rollout anchors for later inventory releases:
 | Botanical Masterworks | 625,000–1,000,000 |
 | Basil I | 1,000,000 |
 
-Future item releases should fill these bands. Basil II and later prestige
-milestones will be designed when their inventory exists rather than making the
-current path artificially long.
+Basil II and later prestige milestones will be designed when their inventory
+exists rather than making the current path artificially long.
 
 ## Technical safety rails
 

@@ -1288,6 +1288,39 @@
   text-transform: uppercase;
 }
 
+.cg-inventory-design-preview {
+  display: grid;
+  gap: 5px;
+  border-bottom: 2px solid var(--cg-ink);
+  background: #dce8c6;
+  padding: 9px 12px;
+}
+
+.cg-inventory-design-preview label {
+  color: var(--cg-red);
+  font-size: 0.62rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.cg-inventory-design-preview select {
+  width: 100%;
+  border: 2px solid var(--cg-ink);
+  border-radius: 0;
+  background: #fff9e9;
+  color: var(--cg-ink);
+  padding: 8px 9px;
+  font: inherit;
+  font-size: 0.68rem;
+  font-weight: 800;
+}
+
+.cg-inventory-design-preview small {
+  color: #55704d;
+  font-size: 0.54rem;
+  font-weight: 800;
+}
+
 .cg-inventory-tabs {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
@@ -1562,6 +1595,23 @@
   box-shadow:
     8px 8px 0 rgba(52, 35, 31, 0.34),
     0 0 0 5px rgba(229, 180, 79, 0.6);
+}
+
+.cg-inventory-grid button.is-design-preview {
+  cursor: default;
+  background: #edf2df;
+  box-shadow:
+    inset 0 -4px 0 #7d9d72,
+    inset 0 0 0 2px #fff9e9;
+}
+
+.cg-catalog-sprite {
+  display: block;
+  width: 92px;
+  height: 84px;
+  max-width: 100%;
+  image-rendering: pixelated;
+  object-fit: contain;
 }
 
 .cg-unlock-card.is-care-blossom {
@@ -1908,6 +1958,27 @@
   width: 5px;
   height: 10px;
   background: #6c4c38;
+}
+
+.cg-item-glyph.is-greenhouse::before {
+  left: 2px;
+  top: 7px;
+  width: 24px;
+  height: 18px;
+  border: 2px solid #5b786a;
+  background: rgba(185, 215, 206, 0.72);
+  content: "";
+}
+
+.cg-item-glyph.is-greenhouse::after {
+  left: 7px;
+  top: 2px;
+  width: 14px;
+  height: 14px;
+  border-left: 2px solid #5b786a;
+  border-top: 2px solid #5b786a;
+  content: "";
+  transform: rotate(45deg);
 }
 
 .cg-item-glyph.is-tool::before {
@@ -6630,6 +6701,14 @@
     font-size: 0.56rem;
   }
 
+  .cg-inventory-design-preview {
+    padding: 8px 10px;
+  }
+
+  .cg-inventory-design-preview select {
+    font-size: 0.58rem;
+  }
+
   .cg-inventory.is-open .cg-inventory-tabs {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
@@ -6661,6 +6740,11 @@
   .cg-inventory.is-open .cg-inventory-grid button small {
     font-size: 0.54rem;
     line-height: 1.25;
+  }
+
+  .cg-catalog-sprite {
+    width: 80px;
+    height: 74px;
   }
 
   .cg-inventory.is-open .cg-plant-glyph,

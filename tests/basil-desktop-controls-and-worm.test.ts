@@ -66,7 +66,7 @@ test("guest Care milestones use the same visible unlock celebration queue", () =
 test("Garden Worm rewards are server-authoritative, rare, and idempotent", () => {
   assert.match(
     serverSource,
-    /perform_idempotent_community_garden_action_v8/,
+    /perform_idempotent_community_garden_action_v9/,
   );
   assert.match(wormMigration, /p_action_type = 'plant'/);
   assert.match(wormMigration, /,[\s\S]*64\s*\)\s*=\s*0/);
