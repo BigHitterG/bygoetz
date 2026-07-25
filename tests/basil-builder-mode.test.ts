@@ -3,8 +3,31 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 import {
   getBuilderAppendResult,
+  getBuilderDirectionalCell,
   MY_GARDEN_BUILDER_MAX_TILES,
 } from "../app/community-garden/lib/myGardenBuilder.ts";
+
+test("Builder screen taps extend one square in the dominant direction", () => {
+  const head = { gridX: 5, gridY: 5 };
+  const screen = { width: 400, height: 800 };
+
+  assert.deepEqual(
+    getBuilderDirectionalCell(head, { ...screen, x: 390, y: 410 }),
+    { gridX: 6, gridY: 5 },
+  );
+  assert.deepEqual(
+    getBuilderDirectionalCell(head, { ...screen, x: 10, y: 390 }),
+    { gridX: 4, gridY: 5 },
+  );
+  assert.deepEqual(
+    getBuilderDirectionalCell(head, { ...screen, x: 210, y: 10 }),
+    { gridX: 5, gridY: 4 },
+  );
+  assert.deepEqual(
+    getBuilderDirectionalCell(head, { ...screen, x: 190, y: 790 }),
+    { gridX: 5, gridY: 6 },
+  );
+});
 
 test("Builder chains append orthogonally and let the player undo", () => {
   const cells = [
@@ -43,7 +66,7 @@ test("Builder chains reject gaps, crossings, and more than ten squares", () => {
 test("Builder migration is member-only, atomic, idempotent, and one-tile", () => {
   const migration = readFileSync(
     new URL(
-      "../supabase/migrations/20260725145302_add_my_garden_builder_mode.sql",
+      "../supabase/migrations/20260725151823_add_my_garden_builder_mode.sql",
       import.meta.url,
     ),
     "utf8",

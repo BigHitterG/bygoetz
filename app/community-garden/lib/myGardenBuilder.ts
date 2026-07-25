@@ -5,11 +5,40 @@ export type MyGardenBuilderCell = {
   gridY: number;
 };
 
+export type BuilderScreenPoint = {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+};
+
 export function sameBuilderCell(
   left: MyGardenBuilderCell,
   right: MyGardenBuilderCell,
 ) {
   return left.gridX === right.gridX && left.gridY === right.gridY;
+}
+
+export function getBuilderDirectionalCell(
+  head: MyGardenBuilderCell,
+  point: BuilderScreenPoint,
+): MyGardenBuilderCell {
+  const halfWidth = Math.max(1, point.width / 2);
+  const halfHeight = Math.max(1, point.height / 2);
+  const horizontal = (point.x - halfWidth) / halfWidth;
+  const vertical = (point.y - halfHeight) / halfHeight;
+
+  if (Math.abs(horizontal) >= Math.abs(vertical)) {
+    return {
+      gridX: head.gridX + (horizontal >= 0 ? 1 : -1),
+      gridY: head.gridY,
+    };
+  }
+
+  return {
+    gridX: head.gridX,
+    gridY: head.gridY + (vertical >= 0 ? 1 : -1),
+  };
 }
 
 export function getBuilderAppendResult(

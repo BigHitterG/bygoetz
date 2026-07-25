@@ -28,6 +28,7 @@ import {
 } from "../lib/myGardenCatalog";
 import {
   getBuilderAppendResult,
+  getBuilderDirectionalCell,
   MY_GARDEN_BUILDER_MAX_TILES,
   type MyGardenBuilderCell,
 } from "../lib/myGardenBuilder";
@@ -3061,6 +3062,19 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
       event.currentTarget.releasePointerCapture(event.pointerId);
       const runtime = runtimeRef.current;
       if (!gesture.dragged) {
+        if (runtime.builder) {
+          const bounds = event.currentTarget.getBoundingClientRect();
+          const head =
+            runtime.builder.cells[runtime.builder.cells.length - 1];
+          const next = getBuilderDirectionalCell(head, {
+            x: event.clientX - bounds.left,
+            y: event.clientY - bounds.top,
+            width: bounds.width,
+            height: bounds.height,
+          });
+          selectCell(next.gridX, next.gridY);
+          return;
+        }
         const cell = getPointerCell(event);
         if (cell) selectCell(cell.gridX, cell.gridY);
         return;

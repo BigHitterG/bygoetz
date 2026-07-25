@@ -1612,48 +1612,6 @@ export function CommunityGardenApp() {
         </div>
 
         <div className="cg-garden-top-actions">
-          {world === "personal" && session && accountChecked && memberGarden ? (
-            <div
-              className={`cg-builder-tools${ui.builder.active ? " is-active" : ""}`}
-            >
-              <button
-                className="cg-builder-toggle"
-                type="button"
-                aria-pressed={ui.builder.active}
-                disabled={!ui.builder.active && !ui.builder.canEnter}
-                title={
-                  ui.builder.active
-                    ? "Close Builder Mode"
-                    : ui.builder.helperText
-                }
-                onClick={() => canvasRef.current?.toggleBuilderMode()}
-              >
-                <span className="cg-builder-icon" aria-hidden="true" />
-                <span>{ui.builder.active ? "Done" : "Builder"}</span>
-              </button>
-              {ui.builder.active ? (
-                <div className="cg-builder-edit-controls" role="group" aria-label="Builder string controls">
-                  <output>
-                    {ui.builder.length}/{ui.builder.maxLength}
-                  </output>
-                  <button
-                    type="button"
-                    disabled={ui.builder.length <= 1}
-                    onClick={() => canvasRef.current?.undoBuilderStep()}
-                  >
-                    Undo
-                  </button>
-                  <button
-                    type="button"
-                    disabled={ui.builder.length <= 1}
-                    onClick={() => canvasRef.current?.clearBuilder()}
-                  >
-                    Clear
-                  </button>
-                </div>
-              ) : null}
-            </div>
-          ) : null}
           {session && accountChecked && memberGarden ? (
             <GardenBugReporter accessToken={session.access_token} />
           ) : null}
@@ -1838,6 +1796,53 @@ export function CommunityGardenApp() {
           />
           <span>{ui.actionLabel}</span>
         </button>
+
+        {world === "personal" && session && accountChecked && memberGarden ? (
+          <div
+            className={`cg-builder-tools${ui.builder.active ? " is-active" : ""}`}
+          >
+            <button
+              className="cg-builder-toggle"
+              type="button"
+              aria-pressed={ui.builder.active}
+              disabled={!ui.builder.active && !ui.builder.canEnter}
+              title={
+                ui.builder.active
+                  ? "Close Builder Mode"
+                  : ui.builder.helperText
+              }
+              onClick={() => canvasRef.current?.toggleBuilderMode()}
+            >
+              <span className="cg-builder-icon" aria-hidden="true" />
+              <span>{ui.builder.active ? "Done" : "Builder"}</span>
+            </button>
+            {ui.builder.active ? (
+              <div
+                className="cg-builder-edit-controls"
+                role="group"
+                aria-label="Builder string controls"
+              >
+                <output>
+                  {ui.builder.length}/{ui.builder.maxLength}
+                </output>
+                <button
+                  type="button"
+                  disabled={ui.builder.length <= 1}
+                  onClick={() => canvasRef.current?.undoBuilderStep()}
+                >
+                  Undo
+                </button>
+                <button
+                  type="button"
+                  disabled={ui.builder.length <= 1}
+                  onClick={() => canvasRef.current?.clearBuilder()}
+                >
+                  Clear
+                </button>
+              </div>
+            ) : null}
+          </div>
+        ) : null}
 
         {showMembershipShortcut ? (
           <button
