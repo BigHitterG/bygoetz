@@ -3087,39 +3087,11 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
         const cost = garden?.nextExpansion?.careCost ?? 0;
         runtime.selected = { gridX, gridY };
         runtime.target = getLockedParcelApproach(runtime, gridX, gridY);
-        if (
-          garden &&
-          !garden.preview &&
-          garden.careBalance >= cost &&
-          onPersonalGardenMutationRef.current &&
-          !runtime.actionBusy
-        ) {
-          runtime.actionBusy = true;
-          runtime.pendingAction = "expand";
-          runtime.statusMessage = `Opening this parcel for ${cost} Care...`;
-          publishUi();
-          void onPersonalGardenMutationRef.current({ action: "expand" })
-            .then((updatedGarden) => {
-              applyPersonalGarden(runtime, updatedGarden);
-              runtime.selected = null;
-              runtime.statusMessage = `Parcel opened. ${updatedGarden.careBalance} Care remains.`;
-            })
-            .catch((error) => {
-              runtime.statusMessage =
-                error instanceof Error
-                  ? error.message
-                  : "That parcel could not be opened.";
-            })
-            .finally(() => {
-              runtime.actionBusy = false;
-              runtime.pendingAction = null;
-              publishUi();
-            });
-          return;
-        }
         runtime.statusMessage = garden?.preview
           ? "Garden Membership saves and expands this land."
-          : `Earn ${Math.max(0, cost - (garden?.careBalance ?? 0))} more Care to open this parcel.`;
+          : (garden?.careBalance ?? 0) >= cost
+            ? `Parcel selected. Confirm below to unlock it for ${cost} Care.`
+            : `Earn ${Math.max(0, cost - (garden?.careBalance ?? 0))} more Care to open this parcel.`;
         publishUi();
         return;
       }

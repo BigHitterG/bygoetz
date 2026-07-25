@@ -53,6 +53,7 @@ import { GardenUnlockCelebration } from "./GardenUnlockCelebration";
 import { CareBlossomDiscovery } from "./CareBlossomDiscovery";
 import { GardenWormDiscovery } from "./GardenWormDiscovery";
 import { GardenBugReporter } from "./GardenBugReporter";
+import { GardenExpansionConfirmation } from "./GardenExpansionConfirmation";
 import {
   GardenShare,
   type GardenShareScope,
@@ -285,6 +286,8 @@ export function CommunityGardenApp() {
   const [unlockNotices, setUnlockNotices] = useState<MyGardenUnlockNotice[]>([]);
   const [careBlossomFound, setCareBlossomFound] = useState(false);
   const [gardenWormFound, setGardenWormFound] = useState(false);
+  const [expansionConfirmationOpen, setExpansionConfirmationOpen] =
+    useState(false);
   const restoredJourneyRef = useRef(false);
   const communityOnboardingPlantingsRef = useRef(0);
   const adLabel = process.env.NEXT_PUBLIC_COMMUNITY_GARDEN_AD_PLACEHOLDER;
@@ -1376,9 +1379,30 @@ export function CommunityGardenApp() {
   ]);
 
   const performSelectedAction = useCallback(() => {
+    if (
+      ui.action === "expand" &&
+      ui.actionEnabled &&
+      !myGarden.preview &&
+      myGarden.nextExpansion
+    ) {
+      playGardenSound("select");
+      setExpansionConfirmationOpen(true);
+      return;
+    }
     if (ui.action === "water" && ui.actionEnabled) playGardenSound("water");
     void canvasRef.current?.performAction();
-  }, [playGardenSound, ui.action, ui.actionEnabled]);
+  }, [
+    myGarden.nextExpansion,
+    myGarden.preview,
+    playGardenSound,
+    ui.action,
+    ui.actionEnabled,
+  ]);
+
+  const confirmGardenExpansion = useCallback(() => {
+    setExpansionConfirmationOpen(false);
+    void canvasRef.current?.performAction();
+  }, []);
 
   useEffect(() => {
     const handleKeyboardShortcut = (event: KeyboardEvent) => {
@@ -1392,6 +1416,7 @@ export function CommunityGardenApp() {
       ) {
         return;
       }
+      if (expansionConfirmationOpen) return;
 
       const code = event.code;
       if (code === "Escape" && ui.builder.active) {
@@ -1411,6 +1436,7 @@ export function CommunityGardenApp() {
           membershipOfferOpen ||
           careBlossomFound ||
           gardenWormFound ||
+          expansionConfirmationOpen ||
           unlockNotices.length > 0 ||
           (!inventoryOpen && inventoryShortcutLocked)
         ) {
@@ -1468,6 +1494,7 @@ export function CommunityGardenApp() {
     acknowledgeInventoryUnlocks,
     careBlossomFound,
     gardenWormFound,
+    expansionConfirmationOpen,
     inventoryOpen,
     ui.builder.active,
     membershipOfferOpen,
@@ -2044,6 +2071,12 @@ export function CommunityGardenApp() {
       <GardenWormDiscovery
         open={gardenWormFound}
         onClose={() => setGardenWormFound(false)}
+      />
+      <GardenExpansionConfirmation
+        open={expansionConfirmationOpen}
+        careCost={myGarden.nextExpansion?.careCost ?? 0}
+        onCancel={() => setExpansionConfirmationOpen(false)}
+        onConfirm={confirmGardenExpansion}
       />
     </main>
   );

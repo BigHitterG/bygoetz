@@ -875,7 +875,6 @@ function drawPersonalDecorations(
     height,
     false,
   );
-  drawPixelShed(ctx, camera, viewport, zoom);
 }
 
 type PersonalGardenElement = NonNullable<
@@ -2365,6 +2364,10 @@ export function renderGarden(ctx: CanvasRenderingContext2D, state: RenderGardenS
       state.now,
       state.zoom,
     );
+    // The house is a fixed foreground structure. Garden items may still be
+    // placed beneath it, but they should read as being behind the building
+    // instead of painting over its roof and walls.
+    drawPixelShed(ctx, state.camera, state.viewport, state.zoom);
     drawDuck(ctx, state.duck, state.camera, state.viewport, state.moving, state.now, state.zoom);
     if (state.tutorialDimmed) {
       drawTutorialDimmer(

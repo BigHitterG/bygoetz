@@ -2271,6 +2271,36 @@
     0 0 0 5px rgba(229, 180, 79, 0.6);
 }
 
+.cg-expansion-confirmation {
+  gap: 12px;
+}
+
+.cg-expansion-confirmation h2,
+.cg-expansion-confirmation p {
+  margin: 0;
+}
+
+.cg-expansion-confirmation-lock {
+  position: relative;
+  display: block;
+  width: 42px;
+  height: 34px;
+  border: 4px solid var(--cg-ink);
+  background: #efd38e;
+  box-shadow: 3px 3px 0 rgba(52, 35, 31, 0.2);
+}
+
+.cg-expansion-confirmation-lock::before {
+  position: absolute;
+  top: -24px;
+  left: 8px;
+  width: 18px;
+  height: 22px;
+  border: 4px solid var(--cg-ink);
+  border-bottom: 0;
+  content: "";
+}
+
 .cg-inventory-grid button.is-design-preview {
   cursor: default;
   background: #edf2df;
