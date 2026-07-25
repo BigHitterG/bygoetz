@@ -12,6 +12,7 @@ const CHECKOUT_TRANSFER_KEY = "basil-guest-garden-checkout-v1";
 const CHECKOUT_TRANSFER_LIFETIME_MS = 7 * 24 * 60 * 60 * 1000;
 export const GUEST_PREVIEW_LIFETIME_MS = 24 * 60 * 60 * 1000;
 const PREVIEW_CARE_TRANSFER_LIMIT = 20;
+const GUEST_PLANT_CARE_COST = 2;
 export const GUEST_SOFT_PAYWALL_PLANTINGS = 3;
 export const GUEST_PLANTING_LIMIT = 10;
 
@@ -127,8 +128,8 @@ export function createGuestGardenPreview(): GuestGardenPreview {
       height: 16,
       maxWidth: 16,
       maxHeight: 16,
-      plantCost: 2,
-      uprootReturn: 1,
+      plantCost: GUEST_PLANT_CARE_COST,
+      uprootReturn: GUEST_PLANT_CARE_COST,
       nextExpansion: {
         level: 2,
         minX: 0,
