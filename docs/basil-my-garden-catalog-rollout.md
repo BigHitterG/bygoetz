@@ -1,6 +1,8 @@
 # Basil My Garden Catalog Rollout
 
-Status: Release 1 authorized for implementation on July 22, 2026.
+Status: Release 1 implemented. Progression and prices were superseded by the
+quarter-scale open-ended Care economy on July 24, 2026. The authoritative
+numbers are in `basil-uncapped-care-economy.md` and `myGardenCatalog.ts`.
 
 ## Product rules
 
@@ -23,18 +25,17 @@ Status: Release 1 authorized for implementation on July 22, 2026.
 | Collection | Lifetime Care | Expected active-player timing |
 | --- | ---: | --- |
 | Garden Starter | Membership | Immediately |
-| Cottage Garden | 250 | 2-5 days |
-| Pollinator Garden | 750 | 4-10 days |
-| Water Garden | 1,500 | 1-3 weeks |
-| Woodland Garden | 3,000 | 2-6 weeks |
-| Working Garden | 6,000 | 1-3 months |
-| Heritage Garden | 12,000 | 2-6 months |
-| Botanical Masterworks | 25,000 | 4-12 months |
-| Basil | 100,000 | Approximately 1.5-3 years |
+| Cottage Garden | 500 | First sessions |
+| Pollinator Garden | 3,750 | First week |
+| Water Garden | 12,500 | First few weeks |
+| Woodland Garden | 50,000 | Later release |
+| Working Garden | 125,000 | Later release |
+| Heritage Garden | 300,000 | Later release |
+| Botanical Masterworks | 625,000 | Later release |
+| Basil I | 1,000,000 | Long-term prestige goal |
 
-Timing is deliberately approximate. Reaching the 600-Care daily ceiling requires
-thousands of helpful actions because Basil tapers rewards after the first 200 and
-400 Care.
+Timing is deliberately approximate. Basil no longer has diminishing returns or
+a visible daily Care ceiling.
 
 ## Release 1: Catalog foundation through Water Garden
 
@@ -43,47 +44,48 @@ progression, categorized inventory and one-tile/multi-tile placement.
 
 ### Garden Starter
 
-Rose, sunflower, lavender, daisy, tulip and wildflowers cost 2 Care. Clay pot
-costs 3; hedge costs 4; stone and gravel pavers cost 1; brick paver costs 2;
-birdhouse costs 6; garden bench costs 10.
+Rose, sunflower, lavender, daisy, tulip and wildflowers cost 1 Care. Clay pot,
+hedge, stone paver, gravel and brick cost 1; birdhouse costs 2; garden bench
+costs 3.
 
 Rose, sunflower, lavender, stone paver, birdhouse and garden bench are the
-membership starter kit. Daisy unlocks at 25 lifetime Care, tulip at 50,
-wildflowers at 75, gravel at 100, brick at 125, clay pot at 150 and hedge at
-200. At 250, Garden Starter is complete and Cottage Garden opens.
+membership starter kit. Daisy unlocks at 25 lifetime Care, tulip at 60,
+wildflowers at 125, gravel at 200, brick at 250, clay pot at 325 and hedge at
+400. At 500, Garden Starter is complete and Cottage Garden opens.
 
-### Cottage Garden: 250 lifetime Care
+### Cottage Garden: 500 lifetime Care
 
-Peony costs 2; fern costs 5; hydrangea, wheelbarrow and wooden planter cost 8;
-bird feeder and rustic bench cost 12; trellis costs 25.
+Peony costs 1; fern costs 6; hydrangea costs 10; wheelbarrow costs 12; wooden
+planter costs 20; bird feeder costs 25; rustic bench costs 30; trellis costs 50.
 
-Peony unlocks at 250, fern at 300, hydrangea at 375, wheelbarrow at 450,
-wooden planter at 525, bird feeder at 600, rustic bench at 675 and trellis at
-725. At 750, Cottage Garden is complete and Pollinator Garden opens.
+Peony unlocks at 500, fern at 750, hydrangea at 1,100, wheelbarrow at 1,500,
+wooden planter at 1,900, bird feeder at 2,250, rustic bench at 2,750 and
+trellis at 3,250. At 3,750, Cottage Garden is complete and Pollinator Garden
+opens.
 
-### Pollinator Garden: 750 lifetime Care
+### Pollinator Garden: 3,750 lifetime Care
 
-Bee balm costs 2; butterfly bush costs 10; pollinator sign costs 12; butterfly
-house costs 20; beehive costs 35; rose-covered trellis costs 50.
+Bee balm costs 1; butterfly bush costs 15; pollinator sign costs 25; butterfly
+house costs 40; beehive costs 60; rose-covered trellis costs 100.
 
 Pollinator visitors are ambient only. They require no feeding, maintenance or
 Care and do not generate Care.
 
-Bee balm unlocks at 750, butterfly bush at 850, pollinator sign at 950,
-butterfly house at 1,050, beehive at 1,200 and rose-covered trellis at 1,400.
-At 1,500, Pollinator Garden is complete and Water Garden opens.
+Bee balm unlocks at 3,750, butterfly bush at 4,750, pollinator sign at 5,750,
+butterfly house at 7,000, beehive at 8,500 and rose-covered trellis at 10,500.
+At 12,500, Pollinator Garden is complete and Water Garden opens.
 
-### Water Garden: 1,500 lifetime Care
+### Water Garden: 12,500 lifetime Care
 
-Reeds and lily pads cost 5; birdbath costs 35; stone basin costs 60; willow tree
-costs 100; garden fountain costs 175; small pond costs 250.
+Reeds cost 3; lily pads cost 4; birdbath costs 60; stone basin costs 125;
+willow tree costs 200; garden fountain costs 375; small pond costs 625.
 
 The fountain and pond are fixed-footprint objects in Release 1. Freeform ponds
 belong in a later release.
 
-Reeds unlock at 1,500, lily pads at 1,650, birdbath at 1,800, stone basin at
-2,000, willow tree at 2,200, garden fountain at 2,500 and small pond at 2,800.
-At 3,000, Water Garden is complete.
+Reeds unlock at 12,500, lily pads at 15,000, birdbath at 19,000, stone basin at
+22,500, willow tree at 27,500, garden fountain at 34,000 and small pond at
+41,500. At 50,000, Water Garden is complete.
 
 ### Release 1 completion gate
 
@@ -101,31 +103,31 @@ At 3,000, Water Garden is complete.
 
 ## Release 2: Woodland Garden and property styling
 
-At 3,000 lifetime Care add shrubs, log bench, pine, maple, flowering tree,
+At 50,000 lifetime Care add shrubs, log bench, pine, maple, flowering tree,
 bonsai and grand oak. Add a path-painting workflow and whole-property fence
 skins that follow future land expansions automatically. Ambient birds and
 squirrels can appear when matching habitat items are present.
 
 ## Release 3: Working Garden
 
-At 6,000 lifetime Care add compost bin, potting table, raised bed, cold frame,
+At 125,000 lifetime Care add compost bin, potting table, raised bed, cold frame,
 garden shed and small greenhouse. Raised beds may hold normal personal flowers.
 Nothing requires maintenance or generates Care.
 
 ## Release 4: Heritage Garden
 
-At 12,000 lifetime Care add topiary arch, pergola, greenhouse extension, mosaic
+At 300,000 lifetime Care add topiary arch, pergola, greenhouse extension, mosaic
 fountain, formal pond and conservatory. Introduce auto-connecting greenhouse
 bays and more flexible pond shapes.
 
 ## Release 5: Botanical Masterworks
 
-At 25,000 lifetime Care add a grand rose pergola, glass pavilion and botanical
+At 625,000 lifetime Care add a grand rose pergola, glass pavilion and botanical
 glasshouse. These are visually dramatic landmarks without statistical bonuses.
 
 ## Release 6: Basil
 
-At 100,000 lifetime Care unlock the final prestige landmark: the Basil
+At 1,000,000 lifetime Care unlock the first prestige landmark: the Basil I
 Conservatory or Great Basil Topiary. It includes a permanent achievement plaque
 and provides no economic advantage.
 

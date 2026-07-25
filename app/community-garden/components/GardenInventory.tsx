@@ -126,8 +126,8 @@ export function GardenInventory({
       : lifetimeCare < BASIL_LIFETIME_CARE_GOAL
         ? `${(
             BASIL_LIFETIME_CARE_GOAL - lifetimeCare
-          ).toLocaleString()} until Basil`
-        : "Basil achieved";
+          ).toLocaleString()} until Basil I`
+        : "Basil I achieved";
   const newUnlocks = useMemo(
     () =>
       new Set(

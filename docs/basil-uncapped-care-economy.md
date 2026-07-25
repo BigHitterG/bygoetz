@@ -31,8 +31,9 @@ actions per minute across walking, selecting, watering, planting, returning to
 My Garden, and arranging items.
 
 At 2–3 hours per day, that is approximately 4,800–8,640 Care per day. A central
-planning estimate of 6,800 Care per day reaches the final 7,500,000 Lifetime
-Care Basil milestone in about 1,103 days, or just over three years.
+planning estimate of 6,800 Care per day reaches the 1,000,000 Lifetime Care
+Basil I milestone in about 147 days, or roughly five months. Later Basil
+prestige levels can extend the progression without slowing the first release.
 
 An unusually optimized farmer can finish sooner. A relaxed player can take much
 longer. The game does not reduce either player’s reward rate.
@@ -41,24 +42,24 @@ longer. The game does not reduce either player’s reward rate.
 
 | Collection | Opens | Completes | Expected skilled-play horizon |
 | --- | ---: | ---: | --- |
-| Garden Starter | 0 | 2,000 | first sessions |
-| Cottage Garden | 2,000 | 15,000 | first week |
-| Pollinator Garden | 15,000 | 50,000 | first few weeks |
-| Water Garden | 50,000 | 200,000 | roughly first month |
+| Garden Starter | 0 | 500 | first session |
+| Cottage Garden | 500 | 3,750 | first sessions |
+| Pollinator Garden | 3,750 | 12,500 | first week |
+| Water Garden | 12,500 | 50,000 | first few weeks |
 
 Exact implemented unlocks:
 
-- Garden Starter: Daisy 100; Tulip 250; Wildflowers 500; Gravel 750;
-  Brick 1,000; Clay pot 1,300; Hedge 1,600; collection complete 2,000.
-- Cottage Garden: Peony 2,000; Fern 3,000; Hydrangea 4,500;
-  Wheelbarrow 6,000; Wooden planter 7,500; Bird feeder 9,000;
-  Rustic bench 11,000; Trellis 13,000; collection complete 15,000.
-- Pollinator Garden: Bee balm 15,000; Butterfly bush 19,000;
-  Pollinator sign 23,000; Butterfly house 28,000; Beehive 34,000;
-  Rose-covered trellis 42,000; collection complete 50,000.
-- Water Garden: Reeds 50,000; Lily pads 60,000; Birdbath 75,000;
-  Stone basin 90,000; Willow tree 110,000; Fountain 135,000;
-  Small pond 165,000; collection complete 200,000.
+- Garden Starter: Daisy 25; Tulip 60; Wildflowers 125; Gravel 200;
+  Brick 250; Clay pot 325; Hedge 400; collection complete 500.
+- Cottage Garden: Peony 500; Fern 750; Hydrangea 1,100;
+  Wheelbarrow 1,500; Wooden planter 1,900; Bird feeder 2,250;
+  Rustic bench 2,750; Trellis 3,250; collection complete 3,750.
+- Pollinator Garden: Bee balm 3,750; Butterfly bush 4,750;
+  Pollinator sign 5,750; Butterfly house 7,000; Beehive 8,500;
+  Rose-covered trellis 10,500; collection complete 12,500.
+- Water Garden: Reeds 12,500; Lily pads 15,000; Birdbath 19,000;
+  Stone basin 22,500; Willow tree 27,500; Fountain 34,000;
+  Small pond 41,500; collection complete 50,000.
 
 Existing members were converted to the equivalent new milestone so no
 previously earned item was relocked. Spendable Care was not inflated.
@@ -69,18 +70,15 @@ These are the locked rollout anchors for later inventory releases:
 
 | Collection or milestone | Lifetime Care |
 | --- | ---: |
-| Woodland Garden | 200,000–500,000 |
-| Working Garden | 500,000–1,200,000 |
-| Heritage Garden | 1,200,000–2,500,000 |
-| Botanical Masterworks | 2,500,000–4,000,000 |
-| Basil I | 4,000,000 |
-| Basil II | 5,000,000 |
-| Basil III | 6,000,000 |
-| Basil IV | 6,750,000 |
-| Basil | 7,500,000 |
+| Woodland Garden | 50,000–125,000 |
+| Working Garden | 125,000–300,000 |
+| Heritage Garden | 300,000–625,000 |
+| Botanical Masterworks | 625,000–1,000,000 |
+| Basil I | 1,000,000 |
 
-Future item releases should fill these bands rather than compressing the
-existing curve.
+Future item releases should fill these bands. Basil II and later prestige
+milestones will be designed when their inventory exists rather than making the
+current path artificially long.
 
 ## Technical safety rails
 
