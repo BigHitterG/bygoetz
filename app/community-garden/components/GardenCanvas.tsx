@@ -20,10 +20,17 @@ import {
 import type { MyGardenState } from "@/lib/communityGarden/myGarden";
 import {
   getMyGardenElement,
+  getMyGardenPlant,
   isMyGardenElementType,
   isMyGardenPlantType,
   type MyGardenElementType,
+  type MyGardenPlantType,
 } from "../lib/myGardenCatalog";
+import {
+  getBuilderAppendResult,
+  MY_GARDEN_BUILDER_MAX_TILES,
+  type MyGardenBuilderCell,
+} from "../lib/myGardenBuilder";
 import type { MyGardenMutation } from "../lib/myGardenMutation";
 import {
   clampWorldCoordinate,
@@ -78,6 +85,8 @@ export type GardenAction =
   | "remove-path"
   | "place-element"
   | "remove-element"
+  | "builder-place"
+  | "builder-remove"
   | null;
 export type GardenTool = PlantType | "path" | MyGardenElementType;
 
@@ -101,6 +110,15 @@ export type GardenUiState = {
   plantMapPoints: Array<{ x: number; y: number; plantType: PlantType }>;
   nextMapUpdateAt: number | null;
   mode: GardenWorldMode;
+  builder: {
+    active: boolean;
+    canEnter: boolean;
+    length: number;
+    maxLength: number;
+    mode: "place" | "remove" | null;
+    careDelta: number;
+    helperText: string;
+  };
 };
 
 export type GardenCanvasHandle = {
@@ -111,6 +129,9 @@ export type GardenCanvasHandle = {
   selectPlant: (plantType: PlantType) => void;
   selectPathTool: () => void;
   selectElement: (elementType: MyGardenElementType) => void;
+  toggleBuilderMode: () => void;
+  undoBuilderStep: () => void;
+  clearBuilder: () => void;
   showCareReward: (value: number, dailyBonus?: boolean) => void;
   zoomIn: () => void;
   zoomOut: () => void;
@@ -175,6 +196,16 @@ type Runtime = {
   suggestedPlantingCell: SelectedCell;
   suggestedWateringCell: SelectedCell;
   gardenWorms: Map<string, GardenWormMarker>;
+  builder: BuilderDraft | null;
+};
+
+type BuilderDraft = {
+  mode: "place" | "remove";
+  category: "plant" | "path" | "element";
+  itemType: GardenTool | null;
+  cells: MyGardenBuilderCell[];
+  invalidCell: MyGardenBuilderCell | null;
+  invalidUntil: number;
 };
 
 type RecentCommunityPlant = {
@@ -614,6 +645,10 @@ function getPendingActionLabel(action: NonNullable<GardenAction>) {
       return "Placing item...";
     case "remove-element":
       return "Picking up item...";
+    case "builder-place":
+      return "Building string...";
+    case "builder-remove":
+      return "Clearing string...";
   }
 
   return "Working...";
@@ -637,6 +672,148 @@ function getPersonalElement(runtime: Runtime, gridX: number, gridY: number) {
       gridY < element.gridY + definition.footprintHeight
     );
   });
+}
+
+function getBuilderCareDelta(runtime: Runtime, builder: BuilderDraft) {
+  if (builder.mode === "place") {
+    if (builder.category === "path") return 0;
+    if (builder.category === "plant") {
+      return -(
+        getMyGardenPlant(builder.itemType as MyGardenPlantType).careCost *
+        builder.cells.length
+      );
+    }
+    return -(
+      getMyGardenElement(builder.itemType as MyGardenElementType).careCost *
+      builder.cells.length
+    );
+  }
+  if (builder.category === "plant") {
+    return (runtime.personalGarden?.uprootReturn ?? 1) * builder.cells.length;
+  }
+  if (builder.category === "element") {
+    return builder.cells.reduce((total, cell) => {
+      const element = getPersonalElement(runtime, cell.gridX, cell.gridY);
+      return total + (element?.careCost ?? 0);
+    }, 0);
+  }
+  return 0;
+}
+
+function canUseBuilderCell(
+  runtime: Runtime,
+  builder: BuilderDraft,
+  cell: MyGardenBuilderCell,
+) {
+  if (!isPersonalBed(runtime, cell.gridX, cell.gridY)) return false;
+  const plant = getPlantAt(runtime, cell.gridX, cell.gridY);
+  const path = hasPersonalPath(runtime, cell.gridX, cell.gridY);
+  const element = getPersonalElement(runtime, cell.gridX, cell.gridY);
+  if (builder.mode === "place") {
+    return !plant && !path && !element;
+  }
+  if (builder.category === "plant") return Boolean(plant);
+  if (builder.category === "path") return path;
+  if (!element) return false;
+  const definition = getMyGardenElement(element.elementType);
+  return (
+    definition.footprintWidth === 1 &&
+    definition.footprintHeight === 1 &&
+    element.gridX === cell.gridX &&
+    element.gridY === cell.gridY
+  );
+}
+
+function createBuilderDraft(runtime: Runtime): BuilderDraft | null {
+  if (
+    runtime.mode !== "personal" ||
+    !runtime.personalGarden ||
+    runtime.personalGarden.preview ||
+    !runtime.selected
+  ) {
+    return null;
+  }
+  const cell = {
+    gridX: runtime.selected.gridX,
+    gridY: runtime.selected.gridY,
+  };
+  if (!isPersonalBed(runtime, cell.gridX, cell.gridY)) return null;
+  const element = getPersonalElement(runtime, cell.gridX, cell.gridY);
+  if (element) {
+    const definition = getMyGardenElement(element.elementType);
+    if (
+      definition.footprintWidth !== 1 ||
+      definition.footprintHeight !== 1 ||
+      element.gridX !== cell.gridX ||
+      element.gridY !== cell.gridY
+    ) {
+      return null;
+    }
+    return {
+      mode: "remove",
+      category: "element",
+      itemType: null,
+      cells: [cell],
+      invalidCell: null,
+      invalidUntil: 0,
+    };
+  }
+  if (getPlantAt(runtime, cell.gridX, cell.gridY)) {
+    return {
+      mode: "remove",
+      category: "plant",
+      itemType: null,
+      cells: [cell],
+      invalidCell: null,
+      invalidUntil: 0,
+    };
+  }
+  if (hasPersonalPath(runtime, cell.gridX, cell.gridY)) {
+    return {
+      mode: "remove",
+      category: "path",
+      itemType: null,
+      cells: [cell],
+      invalidCell: null,
+      invalidUntil: 0,
+    };
+  }
+  if (runtime.toolMode === "element") {
+    const definition = getMyGardenElement(runtime.selectedElementType);
+    if (definition.footprintWidth !== 1 || definition.footprintHeight !== 1) {
+      return null;
+    }
+    return {
+      mode: "place",
+      category: "element",
+      itemType: runtime.selectedElementType,
+      cells: [cell],
+      invalidCell: null,
+      invalidUntil: 0,
+    };
+  }
+  return {
+    mode: "place",
+    category: runtime.toolMode === "path" ? "path" : "plant",
+    itemType:
+      runtime.toolMode === "path" ? "path" : runtime.selectedPlantType,
+    cells: [cell],
+    invalidCell: null,
+    invalidUntil: 0,
+  };
+}
+
+function getBuilderHelperText(runtime: Runtime) {
+  const builder = runtime.builder;
+  if (!builder) {
+    return createBuilderDraft(runtime)
+      ? "Select Builder to begin from this square."
+      : "Choose an open square or a one-tile item first.";
+  }
+  if (builder.mode === "remove") {
+    return "Tap a neighboring matching square. Tap the previous square to undo.";
+  }
+  return "Tap beside the newest square to extend the string.";
 }
 
 function rectanglesOverlap(
@@ -952,6 +1129,58 @@ function canEarnWateringCareInRuntime(runtime: Runtime, plant: PlantRecord) {
 }
 
 function getActionState(runtime: Runtime) {
+  if (runtime.builder) {
+    const builder = runtime.builder;
+    const count = builder.cells.length;
+    const careDelta = getBuilderCareDelta(runtime, builder);
+    const care = runtime.personalGarden?.careBalance ?? 0;
+    const name =
+      builder.category === "path"
+        ? count === 1
+          ? "path"
+          : "paths"
+        : builder.category === "plant"
+          ? builder.mode === "place"
+            ? getMyGardenPlant(builder.itemType as MyGardenPlantType).name
+            : count === 1
+              ? "plant"
+              : "plants"
+          : builder.mode === "place"
+            ? getMyGardenElement(builder.itemType as MyGardenElementType).name
+            : count === 1
+              ? "item"
+              : "items";
+    const verb =
+      builder.mode === "place"
+        ? builder.category === "path"
+          ? "Lay"
+          : builder.category === "plant"
+            ? "Plant"
+            : "Place"
+        : builder.category === "plant"
+          ? "Uproot"
+          : builder.category === "path"
+            ? "Remove"
+            : "Pick up";
+    const careCopy =
+      careDelta < 0
+        ? ` · ${Math.abs(careDelta)} Care`
+        : careDelta > 0
+          ? ` · +${careDelta} Care`
+          : " · Free";
+    return {
+      action: (builder.mode === "place"
+        ? "builder-place"
+        : "builder-remove") as GardenAction,
+      label: `${verb} ${count} ${name}${careCopy}`,
+      enabled:
+        !runtime.actionBusy &&
+        count >= 1 &&
+        count <= MY_GARDEN_BUILDER_MAX_TILES &&
+        care + careDelta >= 0,
+    };
+  }
+
   if (runtime.actionBusy && runtime.pendingAction) {
     return {
       action: runtime.pendingAction,
@@ -1312,6 +1541,7 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
       suggestedPlantingCell: null,
       suggestedWateringCell: null,
       gardenWorms: new Map(),
+      builder: null,
     });
 
     useEffect(() => {
@@ -1428,6 +1658,19 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
             ? runtime.snapshotNextRefreshAt
             : null,
         mode: runtime.mode,
+        builder: {
+          active: Boolean(runtime.builder),
+          canEnter:
+            !runtime.actionBusy &&
+            Boolean(createBuilderDraft(runtime)),
+          length: runtime.builder?.cells.length ?? 0,
+          maxLength: MY_GARDEN_BUILDER_MAX_TILES,
+          mode: runtime.builder?.mode ?? null,
+          careDelta: runtime.builder
+            ? getBuilderCareDelta(runtime, runtime.builder)
+            : 0,
+          helperText: getBuilderHelperText(runtime),
+        },
       };
       const key = JSON.stringify({
         ...state,
@@ -1458,6 +1701,7 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
       runtime.effects = [];
       runtime.suggestedPlantingCell = null;
       runtime.suggestedWateringCell = null;
+      runtime.builder = null;
       if (mode === "community") {
         runtime.toolMode = "plant";
         if (!PLANT_TYPES.some((type) => type === runtime.selectedPlantType)) {
@@ -1810,15 +2054,30 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
           const runtime = runtimeRef.current;
           runtime.selectedPlantType = plantType;
           runtime.toolMode = "plant";
-          runtime.statusMessage = `${getPlantDefinition(plantType).name} seeds selected.`;
+          if (runtime.builder?.mode === "place") {
+            runtime.builder.category = "plant";
+            runtime.builder.itemType = plantType;
+            runtime.builder.cells = runtime.builder.cells.slice(0, 1);
+            runtime.statusMessage = `${getPlantDefinition(plantType).name} selected for this Builder string.`;
+          } else {
+            runtime.statusMessage = `${getPlantDefinition(plantType).name} seeds selected.`;
+          }
           publishUi();
         },
         selectPathTool() {
           const runtime = runtimeRef.current;
           if (runtime.mode !== "personal") return;
           runtime.toolMode = "path";
-          runtime.statusMessage =
-            "Path tool selected. Choose a spot to lay or remove a path for free.";
+          if (runtime.builder?.mode === "place") {
+            runtime.builder.category = "path";
+            runtime.builder.itemType = "path";
+            runtime.builder.cells = runtime.builder.cells.slice(0, 1);
+            runtime.statusMessage =
+              "Path selected for this Builder string. Paths remain free.";
+          } else {
+            runtime.statusMessage =
+              "Path tool selected. Choose a spot to lay or remove a path for free.";
+          }
           publishUi();
         },
         selectElement(elementType) {
@@ -1826,7 +2085,66 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
           if (runtime.mode !== "personal") return;
           runtime.selectedElementType = elementType;
           runtime.toolMode = "element";
-          runtime.statusMessage = `${getMyGardenElement(elementType).name} selected. Choose an open tile.`;
+          const definition = getMyGardenElement(elementType);
+          if (runtime.builder?.mode === "place") {
+            if (
+              definition.footprintWidth !== 1 ||
+              definition.footprintHeight !== 1
+            ) {
+              runtime.statusMessage =
+                "Builder supports one-tile items only. Exit Builder to place that item normally.";
+            } else {
+              runtime.builder.category = "element";
+              runtime.builder.itemType = elementType;
+              runtime.builder.cells = runtime.builder.cells.slice(0, 1);
+              runtime.statusMessage = `${definition.name} selected for this Builder string.`;
+            }
+          } else {
+            runtime.statusMessage = `${definition.name} selected. Choose an open tile.`;
+          }
+          publishUi();
+        },
+        toggleBuilderMode() {
+          const runtime = runtimeRef.current;
+          if (runtime.builder) {
+            runtime.builder = null;
+            runtime.statusMessage =
+              "Builder closed. Returning to Mary and normal garden play.";
+            publishUi();
+            return;
+          }
+          const builder = createBuilderDraft(runtime);
+          if (!builder) {
+            runtime.statusMessage =
+              runtime.personalGarden?.preview
+                ? "Builder Mode is included with Garden Membership."
+                : "Choose an open square or a one-tile item before opening Builder.";
+            publishUi();
+            return;
+          }
+          runtime.target = null;
+          runtime.moving = false;
+          runtime.builder = builder;
+          runtime.statusMessage =
+            "Builder open. Tap beside the newest square to extend your string.";
+          publishUi();
+        },
+        undoBuilderStep() {
+          const runtime = runtimeRef.current;
+          if (!runtime.builder || runtime.builder.cells.length <= 1) return;
+          runtime.builder.cells.pop();
+          const head =
+            runtime.builder.cells[runtime.builder.cells.length - 1];
+          runtime.selected = { ...head };
+          runtime.statusMessage = "Last Builder square removed.";
+          publishUi();
+        },
+        clearBuilder() {
+          const runtime = runtimeRef.current;
+          if (!runtime.builder) return;
+          runtime.builder.cells = runtime.builder.cells.slice(0, 1);
+          runtime.selected = { ...runtime.builder.cells[0] };
+          runtime.statusMessage = "Builder string reset to its first square.";
           publishUi();
         },
         goToMapPosition(mapX, mapY) {
@@ -1928,7 +2246,11 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
           runtime.requestId += 1;
           const selectedDefinition = getPlantDefinition(runtime.selectedPlantType);
           runtime.statusMessage =
-            actionState.action === "expand"
+            actionState.action === "builder-place"
+              ? "Building that garden string..."
+              : actionState.action === "builder-remove"
+                ? "Clearing that garden string..."
+            : actionState.action === "expand"
               ? "Opening your next garden parcel..."
               : actionState.action === "place-element"
                 ? `Placing ${getMyGardenElement(runtime.selectedElementType).name.toLowerCase()}...`
@@ -1965,8 +2287,35 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
               const isElementAction =
                 actionState.action === "place-element" ||
                 actionState.action === "remove-element";
+              const builder = runtime.builder
+                ? {
+                    ...runtime.builder,
+                    cells: runtime.builder.cells.map((cell) => ({ ...cell })),
+                  }
+                : null;
+              const isBuilderAction =
+                actionState.action === "builder-place" ||
+                actionState.action === "builder-remove";
+              const builderCareDelta = builder
+                ? getBuilderCareDelta(runtime, builder)
+                : 0;
               const mutation: MyGardenMutation =
-                actionState.action === "expand"
+                isBuilderAction && builder
+                  ? {
+                      action: "builder",
+                      actionId: crypto.randomUUID(),
+                      mode: builder.mode,
+                      category: builder.category,
+                      itemType:
+                        builder.mode === "remove"
+                          ? null
+                          : (builder.itemType as
+                              | MyGardenElementType
+                              | MyGardenPlantType
+                              | "path"),
+                      cells: builder.cells,
+                    }
+                  : actionState.action === "expand"
                   ? { action: "expand" }
                   : actionState.action === "place-element"
                     ? {
@@ -1999,7 +2348,29 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
                     };
               const updatedGarden = await mutate(mutation);
               applyPersonalGarden(runtime, updatedGarden);
-              if (actionState.action !== "expand") {
+              if (isBuilderAction && builder) {
+                const startedAt = Date.now();
+                builder.cells.forEach((cell, index) => {
+                  runtime.effects.push({
+                    kind:
+                      builder.mode === "remove"
+                        ? "uproot"
+                        : builder.category === "plant"
+                          ? "plant"
+                          : "path",
+                    gridX: cell.gridX,
+                    gridY: cell.gridY,
+                    startedAt: startedAt + index * 35,
+                  });
+                });
+                const count = builder.cells.length;
+                runtime.builder = null;
+                runtime.selected = null;
+                runtime.statusMessage =
+                  builder.mode === "place"
+                    ? `${count} ${count === 1 ? "square" : "squares"} built. ${updatedGarden.careBalance} Care remains.`
+                    : `${count} ${count === 1 ? "square" : "squares"} cleared${builderCareDelta > 0 ? ` for ${builderCareDelta} Care` : ""}.`;
+              } else if (actionState.action !== "expand") {
                 runtime.effects.push({
                   kind: isPathAction || isElementAction
                     ? "path"
@@ -2011,7 +2382,7 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
                   startedAt: Date.now(),
                 });
               }
-              runtime.selected =
+              if (!isBuilderAction) runtime.selected =
                 actionState.action === "expand"
                   ? null
                   : isPathAction || isElementAction
@@ -2022,7 +2393,7 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
                       plantId: getPlantAt(runtime, selected.gridX, selected.gridY)?.id,
                     }
                   : { gridX: selected.gridX, gridY: selected.gridY };
-              runtime.statusMessage =
+              if (!isBuilderAction) runtime.statusMessage =
                 actionState.action === "expand"
                   ? `Parcel opened. The next piece of land is ready when you have ${updatedGarden.nextExpansion?.careCost ?? "more"} Care.`
                   : actionState.action === "place-element"
@@ -2344,8 +2715,13 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
         }
 
         const cameraEase = runtime.reducedMotion ? 1 : Math.min(1, deltaSeconds * 7);
-        runtime.camera.x += (runtime.mary.x - runtime.camera.x) * cameraEase;
-        runtime.camera.y += (runtime.mary.y - runtime.camera.y) * cameraEase;
+        const builderHead =
+          runtime.builder?.cells[runtime.builder.cells.length - 1];
+        const cameraTarget = builderHead
+          ? gridToWorld(builderHead.gridX, builderHead.gridY)
+          : runtime.mary;
+        runtime.camera.x += (cameraTarget.x - runtime.camera.x) * cameraEase;
+        runtime.camera.y += (cameraTarget.y - runtime.camera.y) * cameraEase;
         const wallClockNow = Date.now();
         runtime.effects = runtime.effects.filter(
           (effect) =>
@@ -2418,6 +2794,17 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
                   : null,
               }
             : undefined,
+          builderPreview: runtime.builder
+            ? {
+                mode: runtime.builder.mode,
+                cells: runtime.builder.cells,
+                invalidCell:
+                  runtime.builder.invalidCell &&
+                  Date.now() < runtime.builder.invalidUntil
+                    ? runtime.builder.invalidCell
+                    : null,
+              }
+            : undefined,
         });
         const uiPublishInterval = runtime.moving || runtime.target ? 100 : 1_000;
         if (wallClockNow - runtime.lastUiPublishAt >= uiPublishInterval) {
@@ -2444,6 +2831,46 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
     function selectCell(gridX: number, gridY: number) {
       const runtime = runtimeRef.current;
       queuedPlantingRef.current = null;
+      if (runtime.builder) {
+        const next = { gridX, gridY };
+        const result = getBuilderAppendResult(runtime.builder.cells, next);
+        if (result.kind === "unchanged") return;
+        if (result.kind === "undo") {
+          runtime.builder.cells.pop();
+          const head =
+            runtime.builder.cells[runtime.builder.cells.length - 1];
+          runtime.selected = { ...head };
+          runtime.statusMessage = "Last Builder square removed.";
+          publishUi();
+          return;
+        }
+        if (result.kind === "invalid") {
+          runtime.builder.invalidCell = next;
+          runtime.builder.invalidUntil = Date.now() + 700;
+          runtime.statusMessage = result.reason;
+          publishUi();
+          return;
+        }
+        if (!canUseBuilderCell(runtime, runtime.builder, next)) {
+          runtime.builder.invalidCell = next;
+          runtime.builder.invalidUntil = Date.now() + 700;
+          runtime.statusMessage =
+            runtime.builder.mode === "place"
+              ? "That Builder square must be empty and inside the fence."
+              : "That square does not contain the same kind of one-tile item.";
+          publishUi();
+          return;
+        }
+        runtime.builder.cells.push(next);
+        runtime.builder.invalidCell = null;
+        runtime.selected = { ...next };
+        runtime.statusMessage =
+          runtime.builder.cells.length === MY_GARDEN_BUILDER_MAX_TILES
+            ? "String full. Build these 10 squares or undo one."
+            : `${runtime.builder.cells.length} squares ready. Add another or build now.`;
+        publishUi();
+        return;
+      }
       const requiredTutorialCell =
         runtime.suggestedPlantingCell ?? runtime.suggestedWateringCell;
       if (tutorialDimmedRef.current && !requiredTutorialCell) {
@@ -2642,6 +3069,13 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
       if (tutorialDimmedRef.current) {
         runtime.statusMessage =
           "Finish the highlighted garden step before exploring.";
+        publishUi();
+        return;
+      }
+
+      if (runtime.builder) {
+        runtime.statusMessage =
+          "Builder Mode is active. Tap neighboring squares or close Builder.";
         publishUi();
         return;
       }

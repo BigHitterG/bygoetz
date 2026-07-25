@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getGardenUser } from "@/lib/communityGarden/auth";
 import {
   acknowledgeMyGardenInventory,
+  applyMyGardenBuilderAction,
   expandMyGarden,
   importMyGardenPreview,
   MY_GARDEN_ELEMENTS,
@@ -60,6 +61,11 @@ export async function POST(request: NextRequest) {
     plantId?: unknown;
     elementType?: unknown;
     elementId?: unknown;
+    actionId?: unknown;
+    mode?: unknown;
+    category?: unknown;
+    itemType?: unknown;
+    cells?: unknown;
     careBalance?: unknown;
     plants?: unknown;
     paths?: unknown;
@@ -71,6 +77,80 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    if (payload.action === "builder") {
+      const cells = Array.isArray(payload.cells) ? payload.cells : [];
+      const validCells =
+        cells.length >= 1 &&
+        cells.length <= 10 &&
+        cells.every(
+          (candidate) =>
+            candidate &&
+            typeof candidate === "object" &&
+            isGridCoordinate(
+              (candidate as { gridX?: unknown }).gridX,
+              -100_000,
+              100_000,
+            ) &&
+            isGridCoordinate(
+              (candidate as { gridY?: unknown }).gridY,
+              -100_000,
+              100_000,
+            ),
+        );
+      const validActionId =
+        typeof payload.actionId === "string" &&
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+          payload.actionId,
+        );
+      const validMode = payload.mode === "place" || payload.mode === "remove";
+      const validCategory =
+        payload.category === "plant" ||
+        payload.category === "path" ||
+        payload.category === "element";
+      const validItem =
+        payload.mode === "remove"
+          ? payload.itemType === null || payload.itemType === undefined
+          : payload.category === "plant"
+            ? MY_GARDEN_PLANT_TYPES.includes(
+                payload.itemType as MyGardenPlantType,
+              )
+            : payload.category === "path"
+              ? payload.itemType === "path"
+              : MY_GARDEN_ELEMENTS.some(
+                  (element) =>
+                    element.type === payload.itemType &&
+                    element.footprintWidth === 1 &&
+                    element.footprintHeight === 1,
+                );
+      if (
+        !validActionId ||
+        !validMode ||
+        !validCategory ||
+        !validCells ||
+        !validItem
+      ) {
+        return NextResponse.json(
+          { error: "Choose a valid 1–10 tile Builder string." },
+          { status: 400 },
+        );
+      }
+      return NextResponse.json(
+        await applyMyGardenBuilderAction(steward.id, {
+          actionId: payload.actionId as string,
+          mode: payload.mode as "place" | "remove",
+          category: payload.category as "plant" | "path" | "element",
+          itemType:
+            payload.mode === "remove"
+              ? null
+              : (payload.itemType as
+                  | MyGardenPlantType
+                  | MyGardenElementType
+                  | "path"),
+          cells: cells as Array<{ gridX: number; gridY: number }>,
+        }),
+      );
+    }
+
     if (payload.action === "acknowledge-inventory") {
       return NextResponse.json(
         await acknowledgeMyGardenInventory(steward.id),

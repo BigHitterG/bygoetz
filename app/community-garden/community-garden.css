@@ -619,6 +619,115 @@
   top: auto;
 }
 
+.cg-builder-tools {
+  position: relative;
+  display: grid;
+  align-content: start;
+}
+
+.cg-builder-toggle {
+  display: grid;
+  min-width: 76px;
+  min-height: 52px;
+  place-items: center;
+  gap: 2px;
+  border: 2px solid rgba(52, 35, 31, 0.62);
+  border-radius: 0;
+  background: rgba(255, 244, 223, 0.82);
+  color: var(--cg-ink);
+  cursor: pointer;
+  padding: 5px 8px;
+  font: inherit;
+  font-size: 0.58rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  box-shadow: 2px 2px 0 rgba(52, 35, 31, 0.16);
+}
+
+.cg-builder-toggle:disabled {
+  cursor: default;
+  opacity: 0.42;
+}
+
+.cg-builder-tools.is-active .cg-builder-toggle {
+  border-color: #2f8290;
+  background: #d7fbff;
+  box-shadow: 3px 3px 0 rgba(47, 130, 144, 0.28);
+}
+
+.cg-builder-icon {
+  position: relative;
+  display: block;
+  width: 20px;
+  height: 15px;
+  border: 2px solid currentColor;
+}
+
+.cg-builder-icon::before,
+.cg-builder-icon::after {
+  position: absolute;
+  content: "";
+  border: 2px solid currentColor;
+}
+
+.cg-builder-icon::before {
+  width: 7px;
+  height: 7px;
+  left: -7px;
+  bottom: -7px;
+}
+
+.cg-builder-icon::after {
+  width: 5px;
+  height: 5px;
+  right: -6px;
+  top: -6px;
+}
+
+.cg-builder-edit-controls {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  z-index: 2;
+  display: grid;
+  grid-template-columns: auto auto auto;
+  align-items: stretch;
+  border: 2px solid var(--cg-ink);
+  background: rgba(255, 244, 223, 0.97);
+  box-shadow: 3px 3px 0 rgba(52, 35, 31, 0.2);
+}
+
+.cg-builder-edit-controls > * {
+  min-height: 38px;
+  border: 0;
+  border-right: 1px solid rgba(52, 35, 31, 0.35);
+  background: transparent;
+  color: var(--cg-ink);
+  padding: 6px 9px;
+  font: inherit;
+  font-size: 0.58rem;
+  font-weight: 900;
+}
+
+.cg-builder-edit-controls > *:last-child {
+  border-right: 0;
+}
+
+.cg-builder-edit-controls output {
+  display: grid;
+  place-items: center;
+  color: #2f8290;
+}
+
+.cg-builder-edit-controls button {
+  cursor: pointer;
+}
+
+.cg-builder-edit-controls button:disabled {
+  cursor: default;
+  opacity: 0.38;
+}
+
 .cg-bug-report-trigger {
   display: grid;
   width: 48px;

@@ -87,6 +87,11 @@ export type RenderGardenState = {
       careCost: number;
     };
   };
+  builderPreview?: {
+    mode: "place" | "remove";
+    cells: Array<{ gridX: number; gridY: number }>;
+    invalidCell: { gridX: number; gridY: number } | null;
+  };
 };
 
 type TerrainLayer = "base" | "soil" | "green";
@@ -2076,6 +2081,82 @@ function drawMary(
   ctx.restore();
 }
 
+function drawBuilderPreview(
+  ctx: CanvasRenderingContext2D,
+  preview: NonNullable<RenderGardenState["builderPreview"]>,
+  camera: WorldPoint,
+  viewport: GardenViewport,
+  now: number,
+  zoom: number,
+) {
+  ctx.save();
+  ctx.fillStyle = "rgba(49, 39, 33, 0.34)";
+  ctx.fillRect(0, 0, viewport.width, viewport.height);
+
+  const color = preview.mode === "place" ? "#72d7e5" : "#ef837a";
+  const inner = preview.mode === "place" ? "#d7fbff" : "#ffe0dc";
+  const tileWidth = GARDEN_CONFIG.tileSize * zoom;
+  const tileHeight = GARDEN_CONFIG.tileScreenHeight * zoom;
+  const points = preview.cells.map((cell) =>
+    worldToScreen(gridToWorld(cell.gridX, cell.gridY), camera, viewport, zoom),
+  );
+
+  ctx.strokeStyle = color;
+  ctx.lineWidth = Math.max(2, 4 * zoom);
+  ctx.lineJoin = "miter";
+  ctx.beginPath();
+  points.forEach((point, index) => {
+    if (index === 0) ctx.moveTo(point.x, point.y);
+    else ctx.lineTo(point.x, point.y);
+  });
+  ctx.stroke();
+
+  points.forEach((point, index) => {
+    const isHead = index === points.length - 1;
+    const pulse = isHead ? 0.78 + Math.sin(now / 170) * 0.12 : 0.64;
+    ctx.globalAlpha = pulse;
+    ctx.fillStyle = inner;
+    ctx.fillRect(
+      Math.round(point.x - tileWidth / 2 + 2 * zoom),
+      Math.round(point.y - tileHeight / 2 + 2 * zoom),
+      Math.max(2, Math.round(tileWidth - 4 * zoom)),
+      Math.max(2, Math.round(tileHeight - 4 * zoom)),
+    );
+    ctx.globalAlpha = 1;
+    ctx.strokeStyle = color;
+    ctx.lineWidth = Math.max(2, (isHead ? 4 : 3) * zoom);
+    ctx.strokeRect(
+      Math.round(point.x - tileWidth / 2),
+      Math.round(point.y - tileHeight / 2),
+      Math.round(tileWidth),
+      Math.round(tileHeight),
+    );
+    ctx.fillStyle = "#fff8e7";
+    ctx.font = `900 ${Math.max(10, Math.round(11 * zoom))}px "Courier New", monospace`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(String(index + 1), point.x, point.y);
+  });
+
+  if (preview.invalidCell) {
+    const point = worldToScreen(
+      gridToWorld(preview.invalidCell.gridX, preview.invalidCell.gridY),
+      camera,
+      viewport,
+      zoom,
+    );
+    ctx.strokeStyle = "#e44747";
+    ctx.lineWidth = Math.max(3, 4 * zoom);
+    ctx.strokeRect(
+      Math.round(point.x - tileWidth / 2),
+      Math.round(point.y - tileHeight / 2),
+      Math.round(tileWidth),
+      Math.round(tileHeight),
+    );
+  }
+  ctx.restore();
+}
+
 function drawDuck(
   ctx: CanvasRenderingContext2D,
   point: WorldPoint,
@@ -2304,7 +2385,18 @@ export function renderGarden(ctx: CanvasRenderingContext2D, state: RenderGardenS
       state.zoom,
     );
     drawEffects(ctx, state.effects, state.camera, state.viewport, state.now, state.zoom);
-    drawSelection(ctx, state.selected, state.camera, state.viewport, state.zoom);
+    if (state.builderPreview) {
+      drawBuilderPreview(
+        ctx,
+        state.builderPreview,
+        state.camera,
+        state.viewport,
+        state.now,
+        state.zoom,
+      );
+    } else {
+      drawSelection(ctx, state.selected, state.camera, state.viewport, state.zoom);
+    }
     return;
   }
 

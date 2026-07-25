@@ -5,6 +5,14 @@ import type {
 
 export type MyGardenMutation =
   | {
+      action: "builder";
+      actionId: string;
+      mode: "place" | "remove";
+      category: "plant" | "path" | "element";
+      itemType: MyGardenPlantType | MyGardenElementType | "path" | null;
+      cells: Array<{ gridX: number; gridY: number }>;
+    }
+  | {
       action: "plant";
       gridX: number;
       gridY: number;

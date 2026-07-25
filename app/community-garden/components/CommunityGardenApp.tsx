@@ -94,6 +94,15 @@ const INITIAL_UI: GardenUiState = {
   plantMapPoints: [],
   nextMapUpdateAt: null,
   mode: "community",
+  builder: {
+    active: false,
+    canEnter: false,
+    length: 0,
+    maxLength: 10,
+    mode: null,
+    careDelta: 0,
+    helperText: "Choose a square first.",
+  },
 };
 
 const HEALTH_PULSE_KEY = "basil-health-pulse-at-v1";
@@ -1286,6 +1295,7 @@ export function CommunityGardenApp() {
   }, [memberGarden, session]);
 
   const switchWorld = useCallback(() => {
+    if (ui.builder.active) return;
     if (world === "personal") {
       if (communityGardenTutorialLocked) return;
       if (inventoryOpen) void acknowledgeInventoryUnlocks();
@@ -1311,6 +1321,7 @@ export function CommunityGardenApp() {
     inventoryOpen,
     myGardenTutorialLocked,
     transitionOnboarding,
+    ui.builder.active,
     world,
   ]);
 
@@ -1328,6 +1339,11 @@ export function CommunityGardenApp() {
       }
 
       const code = event.code;
+      if (code === "Escape" && ui.builder.active) {
+        event.preventDefault();
+        canvasRef.current?.toggleBuilderMode();
+        return;
+      }
       const inventoryShortcut = code === "KeyQ" || code === "KeyI";
       const gardenShortcut = code === "KeyC" || code === "KeyG";
       if (inventoryShortcut) {
@@ -1398,6 +1414,7 @@ export function CommunityGardenApp() {
     careBlossomFound,
     gardenWormFound,
     inventoryOpen,
+    ui.builder.active,
     membershipOfferOpen,
     menuOpen,
     onboardingInventoryLocked,
@@ -1595,6 +1612,48 @@ export function CommunityGardenApp() {
         </div>
 
         <div className="cg-garden-top-actions">
+          {world === "personal" && session && accountChecked && memberGarden ? (
+            <div
+              className={`cg-builder-tools${ui.builder.active ? " is-active" : ""}`}
+            >
+              <button
+                className="cg-builder-toggle"
+                type="button"
+                aria-pressed={ui.builder.active}
+                disabled={!ui.builder.active && !ui.builder.canEnter}
+                title={
+                  ui.builder.active
+                    ? "Close Builder Mode"
+                    : ui.builder.helperText
+                }
+                onClick={() => canvasRef.current?.toggleBuilderMode()}
+              >
+                <span className="cg-builder-icon" aria-hidden="true" />
+                <span>{ui.builder.active ? "Done" : "Builder"}</span>
+              </button>
+              {ui.builder.active ? (
+                <div className="cg-builder-edit-controls" role="group" aria-label="Builder string controls">
+                  <output>
+                    {ui.builder.length}/{ui.builder.maxLength}
+                  </output>
+                  <button
+                    type="button"
+                    disabled={ui.builder.length <= 1}
+                    onClick={() => canvasRef.current?.undoBuilderStep()}
+                  >
+                    Undo
+                  </button>
+                  <button
+                    type="button"
+                    disabled={ui.builder.length <= 1}
+                    onClick={() => canvasRef.current?.clearBuilder()}
+                  >
+                    Clear
+                  </button>
+                </div>
+              ) : null}
+            </div>
+          ) : null}
           {session && accountChecked && memberGarden ? (
             <GardenBugReporter accessToken={session.access_token} />
           ) : null}
@@ -1610,7 +1669,8 @@ export function CommunityGardenApp() {
             type="button"
             disabled={
               (world === "community" && myGardenTutorialLocked) ||
-              communityGardenTutorialLocked
+              communityGardenTutorialLocked ||
+              ui.builder.active
             }
             aria-label={
               world === "personal"
@@ -1756,16 +1816,21 @@ export function CommunityGardenApp() {
             className={
               ui.action === "water"
                 ? "cg-water-icon"
-                : ui.action === "uproot"
+                : ui.action === "uproot" || ui.action === "builder-remove"
                   ? "cg-uproot-icon"
                   : ui.action === "place-element" ||
+                      (ui.action === "builder-place" &&
+                        ui.selectedElementType !== null) ||
                       ui.action === "remove-element"
                     ? `cg-item-glyph ${getMyGardenElementGlyphClass(
                         ui.selectedElementType ?? "stone_paver",
                       )}`
                   : ui.action === "expand"
                     ? "cg-lock-icon"
-                  : ui.action === "lay-path" || ui.action === "remove-path"
+                  : ui.action === "lay-path" ||
+                      ui.action === "remove-path" ||
+                      (ui.action === "builder-place" &&
+                        ui.selectedTool === "path")
                     ? "cg-path-icon"
                   : `cg-plant-glyph is-${ui.selectedPlantType}`
             }

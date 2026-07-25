@@ -166,6 +166,19 @@ function getDatabaseMessage(error: unknown, fallback: string) {
     "That garden spot is occupied.",
     "Earn more Care in the Community Garden before placing that item.",
     "That item is no longer in My Garden.",
+    "Choose a valid Builder action.",
+    "Choose a valid Builder string.",
+    "Builder strings can use between 1 and 10 tiles.",
+    "A Builder string cannot cross itself.",
+    "Each Builder tile must touch the previous tile.",
+    "That Builder action identifier was already used.",
+    "Choose a valid Builder path.",
+    "Builder Mode supports one-tile items only.",
+    "Every Builder tile must contain a plant to uproot.",
+    "Every Builder tile must contain a path to remove.",
+    "Every Builder tile must contain a one-tile item to pick up.",
+    "One of those Builder tiles is already occupied.",
+    "One of those Builder tiles is occupied.",
   ];
   return allowedMessages.find((candidate) => message.includes(candidate)) ?? fallback;
 }
@@ -407,6 +420,33 @@ export async function removeMyGardenElement(
   });
   if (error) {
     throw new Error(getDatabaseMessage(error, "That item could not be removed."));
+  }
+  return getMyGarden(stewardId);
+}
+
+export async function applyMyGardenBuilderAction(
+  stewardId: string,
+  input: {
+    actionId: string;
+    mode: "place" | "remove";
+    category: "plant" | "path" | "element";
+    itemType: MyGardenPlantType | MyGardenElementType | "path" | null;
+    cells: Array<{ gridX: number; gridY: number }>;
+  },
+) {
+  const supabase = getSupabaseAdmin();
+  const { error } = await supabase.rpc("apply_my_garden_builder_action", {
+    p_steward_id: stewardId,
+    p_action_id: input.actionId,
+    p_mode: input.mode,
+    p_category: input.category,
+    p_item_type: input.itemType,
+    p_cells: input.cells,
+  });
+  if (error) {
+    throw new Error(
+      getDatabaseMessage(error, "That Builder string could not be applied."),
+    );
   }
   return getMyGarden(stewardId);
 }
