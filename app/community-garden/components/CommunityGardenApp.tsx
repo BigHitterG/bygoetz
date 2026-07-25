@@ -77,6 +77,7 @@ import {
   getMyGardenUnreadUnlockCount,
   type MyGardenUnlockNotice,
 } from "../lib/myGardenCatalog";
+import { useGardenAudio } from "../lib/gardenAudio";
 
 const INITIAL_UI: GardenUiState = {
   action: null,
@@ -239,6 +240,8 @@ function saveMemberGardenCache(userId: string, garden: MyGardenState | null) {
 }
 
 export function CommunityGardenApp() {
+  const gardenAudio = useGardenAudio();
+  const playGardenSound = gardenAudio.play;
   const canvasRef = useRef<GardenCanvasHandle>(null);
   const careClaimQueueRef = useRef<Promise<void>>(Promise.resolve());
   const pendingGardenEntryRef = useRef(false);
@@ -251,6 +254,8 @@ export function CommunityGardenApp() {
   const careBlossomDiscoverySeenRef = useRef(false);
   const membershipRetryTimerRef = useRef<number | null>(null);
   const membershipRetryAttemptRef = useRef(0);
+  const inventoryAudioReadyRef = useRef(false);
+  const unlockAudioKeyRef = useRef<string | null>(null);
   const [ui, setUi] = useState(INITIAL_UI);
   const [world, setWorld] = useState<GardenWorldMode>("community");
   const [menuOpen, setMenuOpen] = useState(false);
@@ -344,6 +349,22 @@ export function CommunityGardenApp() {
     (myGarden.preview?.plantingsUsed ?? 0) <
       (myGarden.preview?.plantingLimit ?? 10) &&
     myGarden.careBalance >= myGarden.plantCost;
+
+  useEffect(() => {
+    if (!inventoryAudioReadyRef.current) {
+      inventoryAudioReadyRef.current = true;
+      return;
+    }
+    playGardenSound("inventory");
+  }, [inventoryOpen, playGardenSound]);
+
+  useEffect(() => {
+    const activeNotice = unlockNotices[0];
+    const activeKey = activeNotice ? getUnlockNoticeKey(activeNotice) : null;
+    if (!activeKey || activeKey === unlockAudioKeyRef.current) return;
+    unlockAudioKeyRef.current = activeKey;
+    playGardenSound("unlock");
+  }, [playGardenSound, unlockNotices]);
 
   const commitGuestPreview = useCallback((next: GuestGardenPreview) => {
     guestPreviewRef.current = next;
@@ -1028,6 +1049,7 @@ export function CommunityGardenApp() {
           claimFirstCareBlossomDiscovery();
         careBlossomDiscoverySeenRef.current = true;
         if (shouldShowDiscovery) {
+          playGardenSound("blossom");
           setCareBlossomFound(true);
         }
       }
@@ -1059,6 +1081,9 @@ export function CommunityGardenApp() {
         }
         commitGuestPreview(award.preview);
         if (award.awardedCare > 0) {
+          if (!contribution.specialFlower && !contribution.gardenWorm) {
+            playGardenSound("care");
+          }
           canvasRef.current?.showCareReward(
             award.awardedCare,
             award.earningMode === "daily",
@@ -1111,6 +1136,13 @@ export function CommunityGardenApp() {
                 contribution.earningPhase,
               );
               commitGuestPreview(award.preview);
+              if (
+                award.awardedCare > 0 &&
+                !contribution.specialFlower &&
+                !contribution.gardenWorm
+              ) {
+                playGardenSound("care");
+              }
               canvasRef.current?.showCareReward(
                 award.awardedCare,
                 award.earningMode === "daily",
@@ -1165,6 +1197,13 @@ export function CommunityGardenApp() {
               award.awardedCare,
               award.earningMode === "daily",
             );
+            if (
+              award.awardedCare > 0 &&
+              !contribution.specialFlower &&
+              !contribution.gardenWorm
+            ) {
+              playGardenSound("care");
+            }
             setCareAnnouncement(
               `${bonusLabel}${award.awardedCare} Care saved. Your balance is ${award.careBalance}.`,
             );
@@ -1180,7 +1219,7 @@ export function CommunityGardenApp() {
           }
         });
     },
-    [commitGuestPreview, memberGarden, session],
+    [commitGuestPreview, memberGarden, playGardenSound, session],
   );
 
   const discoverGardenWorm = useCallback(() => {
@@ -1200,8 +1239,9 @@ export function CommunityGardenApp() {
       );
       return;
     }
+    playGardenSound("worm");
     setGardenWormFound(true);
-  }, []);
+  }, [playGardenSound]);
 
   const mutateMyGarden = useCallback(
     async (mutation: MyGardenMutation) => {
@@ -1307,6 +1347,7 @@ export function CommunityGardenApp() {
       if (communityGardenTutorialLocked) return;
       if (inventoryOpen) void acknowledgeInventoryUnlocks();
       setInventoryOpen(false);
+      playGardenSound("world");
       setWorld("community");
       return;
     }
@@ -1321,16 +1362,23 @@ export function CommunityGardenApp() {
       "my-garden",
     ]);
     void trackBasilFunnelEvent("my_garden_entered");
+    playGardenSound("world");
     setWorld("personal");
   }, [
     acknowledgeInventoryUnlocks,
     communityGardenTutorialLocked,
     inventoryOpen,
     myGardenTutorialLocked,
+    playGardenSound,
     transitionOnboarding,
     ui.builder.active,
     world,
   ]);
+
+  const performSelectedAction = useCallback(() => {
+    if (ui.action === "water" && ui.actionEnabled) playGardenSound("water");
+    void canvasRef.current?.performAction();
+  }, [playGardenSound, ui.action, ui.actionEnabled]);
 
   useEffect(() => {
     const handleKeyboardShortcut = (event: KeyboardEvent) => {
@@ -1410,7 +1458,7 @@ export function CommunityGardenApp() {
           return;
         }
         event.preventDefault();
-        void canvasRef.current?.performAction();
+        performSelectedAction();
       }
     };
 
@@ -1426,6 +1474,7 @@ export function CommunityGardenApp() {
     menuOpen,
     onboardingInventoryLocked,
     onboardingStep,
+    performSelectedAction,
     switchWorld,
     transitionOnboarding,
     tutorialActionAllowed,
@@ -1435,6 +1484,20 @@ export function CommunityGardenApp() {
 
   const handleGardenActionCompleted = useCallback(
     (mode: GardenWorldMode, action: GardenUiState["action"]) => {
+      if (action === "plant") playGardenSound("plant");
+      else if (action === "weed" || action === "uproot") {
+        playGardenSound("uproot");
+      } else if (action === "lay-path" || action === "remove-path") {
+        playGardenSound("path");
+      } else if (action === "place-element" || action === "remove-element") {
+        playGardenSound("element");
+      } else if (action === "builder-place") {
+        playGardenSound("builder");
+      } else if (action === "builder-remove") {
+        playGardenSound("uproot");
+      } else if (action === "expand") {
+        playGardenSound("expand");
+      }
       if (mode === "community" && action === "plant") {
         const isGuidedCommunityPlanting =
           onboardingStep === "plant" ||
@@ -1481,11 +1544,12 @@ export function CommunityGardenApp() {
         );
       }
     },
-    [onboardingStep, transitionOnboarding],
+    [onboardingStep, playGardenSound, transitionOnboarding],
   );
 
   const handleGardenActionFailed = useCallback(
     (mode: GardenWorldMode, action: GardenUiState["action"], error: unknown) => {
+      playGardenSound("error");
       void trackBasilFunnelEvent("garden_action_failed", {
         failure_stage: mode,
         error_code:
@@ -1494,7 +1558,7 @@ export function CommunityGardenApp() {
             : action ?? "unknown",
       });
     },
-    [],
+    [playGardenSound],
   );
 
   function openInventoryForOnboarding() {
@@ -1577,6 +1641,7 @@ export function CommunityGardenApp() {
             type="button"
             aria-label="Open garden menu"
             onClick={() => {
+              playGardenSound("select");
               setMenuSection("play");
               setMenuOpen(true);
             }}
@@ -1749,6 +1814,7 @@ export function CommunityGardenApp() {
             ) {
               return;
             }
+            playGardenSound("select");
             void trackBasilFunnelEvent("plant_selected");
             canvasRef.current?.selectPlant(plantType);
             const shouldGuideSpot =
@@ -1764,11 +1830,13 @@ export function CommunityGardenApp() {
           }}
           onSelectPath={() => {
             if (onboardingInventoryLocked) return;
+            playGardenSound("select");
             canvasRef.current?.selectPathTool();
             setInventoryOpen(false);
           }}
           onSelectElement={(elementType) => {
             if (onboardingInventoryLocked) return;
+            playGardenSound("select");
             canvasRef.current?.selectElement(elementType);
             setInventoryOpen(false);
           }}
@@ -1785,7 +1853,7 @@ export function CommunityGardenApp() {
           }`}
           type="button"
           disabled={!ui.actionEnabled || !tutorialActionAllowed}
-          onClick={() => void canvasRef.current?.performAction()}
+          onClick={performSelectedAction}
         >
           <span
             className={
@@ -1828,7 +1896,10 @@ export function CommunityGardenApp() {
                   ? "Close Builder Mode"
                   : ui.builder.helperText
               }
-              onClick={() => canvasRef.current?.toggleBuilderMode()}
+              onClick={() => {
+                playGardenSound("select");
+                canvasRef.current?.toggleBuilderMode();
+              }}
             >
               <span className="cg-builder-icon" aria-hidden="true" />
               <span>{ui.builder.active ? "Done" : "Builder"}</span>
@@ -1918,11 +1989,16 @@ export function CommunityGardenApp() {
       <GardenMenu
         open={menuOpen}
         section={menuSection}
+        audio={gardenAudio}
         onClose={() => {
+          playGardenSound("select");
           setMenuOpen(false);
           pendingGardenEntryRef.current = false;
         }}
-        onSectionChange={setMenuSection}
+        onSectionChange={(section) => {
+          playGardenSound("select");
+          setMenuSection(section);
+        }}
       />
 
       <GardenMembershipOffer
