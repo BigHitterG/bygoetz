@@ -481,8 +481,14 @@ export function buildCommunityGardenRegionManifest(
       formulaVersion: zonePlan.formulaVersion,
       evaluatedOn: zonePlan.evaluatedOn,
       source: zonePlan.source,
-      heartRegions: zonePlan.heartRegionKeys.length,
-      growthRingRegions: zonePlan.growthRingRegionKeys.length,
+      // Count the final public classifications rather than the intermediate
+      // planner sets so the aggregate always matches the actual manifest.
+      heartRegions: regions.filter(
+        (region) => region.guidanceZone === "heart",
+      ).length,
+      growthRingRegions: regions.filter(
+        (region) => region.guidanceZone === "growth-ring",
+      ).length,
     },
     spawnPoints: Array.isArray(snapshot.spawnPoints)
       ? snapshot.spawnPoints.flatMap((point) => {

@@ -78,6 +78,16 @@ test("the fixed founding garden exposes a ten by ten regional manifest", () => {
   );
   assert.deepEqual(manifest.spawnPoints, [{ gridX: 2, gridY: 3 }]);
   assert.equal(manifest.zonePlan.formulaVersion, 1);
+  assert.equal(
+    manifest.zonePlan.heartRegions,
+    manifest.regions.filter((region) => region.guidanceZone === "heart").length,
+  );
+  assert.equal(
+    manifest.zonePlan.growthRingRegions,
+    manifest.regions.filter(
+      (region) => region.guidanceZone === "growth-ring",
+    ).length,
+  );
   assert.ok(
     manifest.regions.every(
       (region) => !region.isOpen || region.guidanceZone !== null,
