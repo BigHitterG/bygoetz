@@ -45,6 +45,36 @@ const REGION_COLORS = {
   wild: "#e8e4da",
 } as const;
 
+function isLockedRegion(region: GardenUiState["regionMapCells"][number]) {
+  return !region.isOpen && region.stage !== "wild";
+}
+
+function drawRegionLock(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+) {
+  const unit = Math.max(1, Math.min(3, Math.floor(Math.min(width, height) / 8)));
+  const centerX = Math.round(x + width / 2);
+  const centerY = Math.round(y + height / 2);
+  const bodyWidth = 6 * unit;
+  const bodyHeight = 5 * unit;
+  const bodyX = Math.round(centerX - bodyWidth / 2);
+  const bodyY = Math.round(centerY - unit);
+
+  ctx.fillStyle = "rgba(255, 244, 223, 0.9)";
+  ctx.fillRect(bodyX - unit, bodyY - 4 * unit, bodyWidth + 2 * unit, bodyHeight + 5 * unit);
+  ctx.fillStyle = "#5b3b2d";
+  ctx.fillRect(bodyX + unit, bodyY - 3 * unit, unit, 3 * unit);
+  ctx.fillRect(bodyX + 4 * unit, bodyY - 3 * unit, unit, 3 * unit);
+  ctx.fillRect(bodyX + 2 * unit, bodyY - 4 * unit, 2 * unit, unit);
+  ctx.fillRect(bodyX, bodyY, bodyWidth, bodyHeight);
+  ctx.fillStyle = "#f3d88d";
+  ctx.fillRect(centerX - Math.ceil(unit / 2), bodyY + 2 * unit, unit, 2 * unit);
+}
+
 export function GardenMapKey({
   ui,
   canExpand,
@@ -119,6 +149,9 @@ export function GardenMapKey({
           ctx.fillRect(centerX - 1, centerY - 4, 2, 8);
           ctx.fillStyle = "#b67b1d";
           ctx.fillRect(centerX - 2, centerY - 2, 4, 4);
+        }
+        if (isLockedRegion(region)) {
+          drawRegionLock(ctx, x, y, width, height);
         }
       }
     } else {
@@ -202,7 +235,7 @@ export function GardenMapKey({
             ? "Garden overview. Finish this tutorial step before using map travel."
             : ui.mode === "personal"
             ? "My Garden overview. Select a point to walk there. Colored marks show your flowers."
-            : "Community Garden overview. Select open land to travel there. Green shows garden density and gold shows the Growing Edge."
+            : "Community Garden overview. Select open land to travel there. Green is open garden and gold padlocks mark future Growing Edge land."
         }
       >
         <span className="cg-map-north" aria-hidden="true">N</span>
@@ -215,7 +248,7 @@ export function GardenMapKey({
         {ui.mode === "community" && ui.regionMapCells.length > 0
           ? ui.regionMapCells.map((region) => (
               <span
-                className={`cg-map-region is-${region.stage}${region.isOpen ? " is-open" : ""}`}
+                className={`cg-map-region is-${region.stage}${region.isOpen ? " is-open" : ""}${isLockedRegion(region) ? " is-locked" : ""}`}
                 key={region.key}
                 style={{
                   left: `${region.x}%`,
@@ -227,7 +260,11 @@ export function GardenMapKey({
                   ),
                 } as CSSProperties}
                 aria-hidden="true"
-              />
+              >
+                {isLockedRegion(region) ? (
+                  <span className="cg-map-region-lock" />
+                ) : null}
+              </span>
             ))
           : ui.plantMapPoints.map((plant) => (
               <span
@@ -278,7 +315,7 @@ export function GardenMapKey({
               </button>
             </header>
             <p className="cg-expanded-map-help">
-              Choose open garden land to travel there. Golden sections show the Growing Edge.
+              Choose open garden land to travel there. Golden padlocks mark future Growing Edge land that is still locked.
             </p>
             <button
               ref={expandedMapRef}
@@ -299,7 +336,7 @@ export function GardenMapKey({
               <span className="is-player">You</span>
               {ui.regionMapCells.length > 0 ? (
                 <>
-                  <span className="is-growing-edge">Growing edge</span>
+                  <span className="is-growing-edge">Locked growing edge</span>
                   <span className="is-heritage">Heritage</span>
                   <span className="is-resting">Resting</span>
                 </>

@@ -3341,8 +3341,22 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
         return;
       }
       const lockedParcel = isNextExpansionCell(runtime, gridX, gridY);
+      const lockedCommunityRegion =
+        runtime.mode === "community"
+          ? runtime.regionManifest?.regions.find(
+              (region) =>
+                !region.isOpen &&
+                region.publicStage !== "wild" &&
+                gridX >= region.bounds.minX &&
+                gridX <= region.bounds.maxX &&
+                gridY >= region.bounds.minY &&
+                gridY <= region.bounds.maxY,
+            )
+          : null;
       if (!isWithinRuntime(runtime, gridX, gridY) && !lockedParcel) {
-        runtime.statusMessage = "You have reached the garden edge.";
+        runtime.statusMessage = lockedCommunityRegion
+          ? "This Growing Edge land is locked for now. Garden on the open side of the boundary."
+          : "You have reached the garden edge.";
         publishUi();
         return;
       }

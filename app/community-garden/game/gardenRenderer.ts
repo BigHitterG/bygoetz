@@ -461,6 +461,53 @@ function drawBoundaryTree(
   ctx.fillRect(x + 5 * scale + offset / 3, y - 2 * scale, 6 * scale, 5 * scale);
 }
 
+function positiveModulo(value: number, divisor: number) {
+  return ((value % divisor) + divisor) % divisor;
+}
+
+function isGrowingEdgeLockCell(
+  gridX: number,
+  gridY: number,
+  regionX: number,
+  regionY: number,
+  openRegionKeys: ReadonlySet<string> | null,
+) {
+  if (!openRegionKeys) return false;
+  const localX = positiveModulo(gridX, 16);
+  const localY = positiveModulo(gridY, 16);
+  const horizontalMarker = localX % 5 === 2;
+  const verticalMarker = localY % 5 === 2;
+  return (
+    (localX === 0 && verticalMarker && openRegionKeys.has(`${regionX - 1}:${regionY}`)) ||
+    (localX === 15 && verticalMarker && openRegionKeys.has(`${regionX + 1}:${regionY}`)) ||
+    (localY === 0 && horizontalMarker && openRegionKeys.has(`${regionX}:${regionY - 1}`)) ||
+    (localY === 15 && horizontalMarker && openRegionKeys.has(`${regionX}:${regionY + 1}`))
+  );
+}
+
+function drawGrowingEdgeLock(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  zoom: number,
+) {
+  const unit = Math.max(0.75, zoom);
+  const centerX = x + 8 * zoom;
+  const centerY = y + 8 * zoom;
+  ctx.save();
+  ctx.globalAlpha = 0.94;
+  ctx.fillStyle = "#fff4df";
+  ctx.fillRect(centerX - 6 * unit, centerY - 7 * unit, 12 * unit, 13 * unit);
+  ctx.fillStyle = "#5b3b2d";
+  ctx.fillRect(centerX - 3 * unit, centerY - 5 * unit, unit, 4 * unit);
+  ctx.fillRect(centerX + 2 * unit, centerY - 5 * unit, unit, 4 * unit);
+  ctx.fillRect(centerX - 2 * unit, centerY - 6 * unit, 4 * unit, unit);
+  ctx.fillRect(centerX - 4 * unit, centerY - unit, 8 * unit, 6 * unit);
+  ctx.fillStyle = "#f3d88d";
+  ctx.fillRect(centerX - 0.5 * unit, centerY + unit, unit, 2 * unit);
+  ctx.restore();
+}
+
 function drawTerrainLayer(
   ctx: CanvasRenderingContext2D,
   camera: WorldPoint,
@@ -493,7 +540,9 @@ function drawTerrainLayer(
       const x = Math.floor(topLeft.x);
       const y = Math.floor(topLeft.y);
 
-      const regionKey = `${Math.floor(gridX / 16)}:${Math.floor(gridY / 16)}`;
+      const regionX = Math.floor(gridX / 16);
+      const regionY = Math.floor(gridY / 16);
+      const regionKey = `${regionX}:${regionY}`;
       const isOpen = openRegionKeys
         ? openRegionKeys.has(regionKey)
         : isWithinGarden(gridX, gridY);
@@ -511,6 +560,17 @@ function drawTerrainLayer(
             if (atRegionEdge && terrainNoise(gridX, gridY, 67) > 0.62) {
               ctx.fillStyle = growingStage === "ready" ? "#d9ad42" : "#c9aa5c";
               ctx.fillRect(x + 6 * zoom, y + 7 * zoom, 4 * zoom, Math.max(1, zoom));
+            }
+            if (
+              isGrowingEdgeLockCell(
+                gridX,
+                gridY,
+                regionX,
+                regionY,
+                openRegionKeys,
+              )
+            ) {
+              drawGrowingEdgeLock(ctx, x, y, zoom);
             }
           } else {
             drawBoundaryTree(ctx, x, y, zoom, gridX, gridY);

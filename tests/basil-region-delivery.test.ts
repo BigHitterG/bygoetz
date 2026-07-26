@@ -121,3 +121,22 @@ test("the client prefers regional windows and retains the full snapshot fallback
   assert.match(canvas, /fetchGardenRegionWindow/);
   assert.match(canvas, /fetchGardenSnapshot/);
 });
+
+test("closed Growing Edge land is visibly locked on maps and in the world", () => {
+  const map = readFileSync(
+    new URL("../app/community-garden/components/GardenMapKey.tsx", import.meta.url),
+    "utf8",
+  );
+  const renderer = readFileSync(
+    new URL("../app/community-garden/game/gardenRenderer.ts", import.meta.url),
+    "utf8",
+  );
+  const canvas = readFileSync(
+    new URL("../app/community-garden/components/GardenCanvas.tsx", import.meta.url),
+    "utf8",
+  );
+  assert.match(map, /cg-map-region-lock/);
+  assert.match(map, /Locked growing edge/);
+  assert.match(renderer, /drawGrowingEdgeLock/);
+  assert.match(canvas, /This Growing Edge land is locked for now/);
+});

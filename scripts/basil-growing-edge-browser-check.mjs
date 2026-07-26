@@ -85,7 +85,7 @@ const manifest = {
   mapBounds: { minX: -112, maxX: 79, minY: -112, maxY: 79 },
   regionBounds: { minX: -7, maxX: 4, minY: -7, maxY: 4 },
   regions,
-  spawnPoints: [{ gridX: 1, gridY: 1 }, { gridX: -32, gridY: 16 }],
+  spawnPoints: [{ gridX: 62, gridY: 0 }],
 };
 
 const regionalWindow = {
@@ -158,6 +158,9 @@ for (const device of [
     growingEdgeCells: document.querySelectorAll(
       ".cg-map-region.is-edge, .cg-map-region.is-growing, .cg-map-region.is-ready",
     ).length,
+    lockedCells: document.querySelectorAll(
+      ".cg-map-region.is-locked .cg-map-region-lock",
+    ).length,
     playerVisible: Boolean(document.querySelector(".cg-map-player")),
     horizontalOverflow:
       document.documentElement.scrollWidth > document.documentElement.clientWidth + 2,
@@ -177,6 +180,7 @@ if (
     (result) =>
       result.regionCells < 100 ||
       result.growingEdgeCells < 3 ||
+      result.lockedCells < result.growingEdgeCells ||
       !result.playerVisible ||
       result.horizontalOverflow ||
       result.errorOverlay ||
