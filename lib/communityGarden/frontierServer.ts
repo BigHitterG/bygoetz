@@ -4,7 +4,7 @@ export async function evaluateCommunityGardenFrontier(
   evaluationDate?: string,
 ) {
   const { data, error } = await getSupabaseAdmin().rpc(
-    "evaluate_community_garden_frontier_v1",
+    "evaluate_community_garden_frontier_v2",
     {
       p_evaluation_date: evaluationDate ?? null,
     },

@@ -29,6 +29,10 @@ test("the frontier evaluator is scheduled and remains server-authorized", () => 
 });
 
 test("owner health exposes shadow quorum without making the dashboard brittle", () => {
+  const server = readFileSync(
+    new URL("../lib/communityGarden/frontierServer.ts", import.meta.url),
+    "utf8",
+  );
   const health = readFileSync(
     new URL("../lib/communityGarden/health.ts", import.meta.url),
     "utf8",
@@ -38,7 +42,8 @@ test("owner health exposes shadow quorum without making the dashboard brittle", 
     "utf8",
   );
 
-  assert.match(health, /get_community_garden_frontier_dashboard_v1/);
+  assert.match(server, /evaluate_community_garden_frontier_v2/);
+  assert.match(health, /get_community_garden_frontier_dashboard_v2/);
   assert.match(health, /frontier: CommunityGardenFrontierHealth \| null/);
   assert.match(health, /frontierError/);
   assert.match(panel, /Quorum frontier/);

@@ -6,7 +6,7 @@ import { BASIL_COMMONS_POLICY } from "./commonsPolicy.ts";
  * offline simulations aligned with the database policy.
  */
 export const BASIL_FRONTIER_POLICY = {
-  formulaVersion: 1,
+  formulaVersion: 2,
   foundingRegionSide: 10,
   regionSize: BASIL_COMMONS_POLICY.regionSize,
   effectivePlantsPerRegion: BASIL_COMMONS_POLICY.regionRestingAt,
@@ -18,6 +18,8 @@ export const BASIL_FRONTIER_POLICY = {
   supportedPlantsPerRegion: 64,
   supportedSubcellsPerRegion: 8,
   localGardenersPerRegion: 6,
+  guestAssistWeight: 0.25,
+  guestAssistMaximumShare: 0.25,
   activeDaysRequired: 4,
   rollingDays: 7,
   consecutiveQualifyingDays: 3,
@@ -27,6 +29,18 @@ export const BASIL_FRONTIER_POLICY = {
   automaticOpeningEnabled: false,
 } as const;
 
+export type FrontierCommunityStage =
+  | "founding"
+  | "sprouting"
+  | "growing"
+  | "community";
+
+export type FrontierStagePolicy = {
+  id: FrontierCommunityStage;
+  requiredAccounts: number;
+  recommendationCooldownDays: number;
+};
+
 export type FrontierRegionQualification = {
   supportedPlants: number;
   supportedSubcells: number;
@@ -34,7 +48,40 @@ export type FrontierRegionQualification = {
   activeDays: number;
   consecutiveQualifyingDays: number;
   sideAdjacentToEstablished: boolean;
+  requiredGardeners?: number;
 };
+
+export function getFrontierCommunityStage(
+  activeAccounts7d: number,
+): FrontierStagePolicy {
+  const accounts = Math.max(0, Math.trunc(activeAccounts7d));
+  if (accounts <= 3) {
+    return { id: "founding", requiredAccounts: 1, recommendationCooldownDays: 30 };
+  }
+  if (accounts <= 11) {
+    return { id: "sprouting", requiredAccounts: 2, recommendationCooldownDays: 14 };
+  }
+  if (accounts <= 29) {
+    return { id: "growing", requiredAccounts: 3, recommendationCooldownDays: 7 };
+  }
+  return {
+    id: "community",
+    requiredAccounts: BASIL_FRONTIER_POLICY.localGardenersPerRegion,
+    recommendationCooldownDays: 0,
+  };
+}
+
+export function getGuestAssistCredit(
+  guestContribution: number,
+  physicalRequirement: number,
+) {
+  const guests = Math.max(0, Math.trunc(guestContribution));
+  const requirement = Math.max(0, Math.trunc(physicalRequirement));
+  return Math.min(
+    Math.ceil(guests * BASIL_FRONTIER_POLICY.guestAssistWeight),
+    Math.ceil(requirement * BASIL_FRONTIER_POLICY.guestAssistMaximumShare),
+  );
+}
 
 export function getEffectiveGardenCapacity(openRegions: number) {
   return (
@@ -49,7 +96,12 @@ export function getGardenOccupancy(livePlants: number, openRegions: number) {
   return Math.max(0, Math.trunc(livePlants)) / capacity;
 }
 
-export function getFrontierGlobalQuorum(perimeterRegions: number) {
+export function getFrontierGlobalQuorum(
+  perimeterRegions: number,
+  activeAccounts7d = Number.POSITIVE_INFINITY,
+) {
+  const stage = getFrontierCommunityStage(activeAccounts7d);
+  if (stage.id !== "community") return stage.requiredAccounts;
   return Math.max(
     BASIL_FRONTIER_POLICY.minimumGlobalGardeners,
     Math.ceil(
@@ -104,13 +156,14 @@ export function getFrontierCapacityState(
 export function qualifiesFrontierRegion(
   input: FrontierRegionQualification,
 ) {
+  const requiredGardeners =
+    input.requiredGardeners ?? BASIL_FRONTIER_POLICY.localGardenersPerRegion;
   return (
     input.sideAdjacentToEstablished &&
     input.supportedPlants >= BASIL_FRONTIER_POLICY.supportedPlantsPerRegion &&
     input.supportedSubcells >=
       BASIL_FRONTIER_POLICY.supportedSubcellsPerRegion &&
-    input.distinctGardeners >=
-      BASIL_FRONTIER_POLICY.localGardenersPerRegion &&
+    input.distinctGardeners >= requiredGardeners &&
     input.activeDays >= BASIL_FRONTIER_POLICY.activeDaysRequired &&
     input.consecutiveQualifyingDays >=
       BASIL_FRONTIER_POLICY.consecutiveQualifyingDays

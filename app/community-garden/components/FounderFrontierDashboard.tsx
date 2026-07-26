@@ -37,7 +37,7 @@ function cellLevel(
       (
         clampedRatio(cell.eligibleLivePlants, policy.supportedLivePlants) +
         clampedRatio(cell.coveredSubcells, policy.supportedSubcells) +
-        clampedRatio(cell.eligibleAccounts7d, policy.supportedAccounts) +
+        clampedRatio(cell.eligibleAccounts7d, cell.requiredAccounts) +
         clampedRatio(cell.activeDays7d, policy.supportedActiveDays) +
         clampedRatio(
           cell.consecutiveSupportDays,
@@ -189,6 +189,21 @@ export function FounderFrontierDashboard({
         <span aria-hidden="true">{ownerStatus.tone === "clear" ? "✓" : "!"}</span>
       </div>
 
+      <div className="cg-frontier-stage-note">
+        <div>
+          <small>Community stage</small>
+          <strong>{frontier.communityStage}</strong>
+        </div>
+        <p>
+          Guest flowers currently count at {frontier.guestAssist.weightPercent}%
+          physical support, capped at {frontier.guestAssist.maximumSharePercent}%
+          of a region. Guests never count as gardeners.
+          {frontier.recommendationCooldownDays > 0
+            ? ` New expansion recommendations are paced to one every ${frontier.recommendationCooldownDays} days after a land change.`
+            : " Standard community quorum pacing is active."}
+        </p>
+      </div>
+
       <div className="cg-frontier-section-heading">
         <div>
           <p className="cg-kicker">Private stewardship map</p>
@@ -282,7 +297,7 @@ export function FounderFrontierDashboard({
             <ProgressMetric
               label="Unique gardeners"
               value={selected.eligibleAccounts7d}
-              target={frontier.policy.supportedAccounts}
+              target={selected.requiredAccounts}
             />
             <ProgressMetric
               label="Active days"
@@ -297,8 +312,19 @@ export function FounderFrontierDashboard({
             <div className="cg-frontier-region-facts">
               <span><b>{selected.plantCount}</b> living plants</span>
               <span><b>{selected.heritageFlowers}</b> Heritage</span>
+              <span><b>+{selected.guestAssistLivePlants}</b> Guest Assist</span>
               <span><b>{selected.recommendedAction === "none" ? "—" : selected.recommendedAction}</b> recommendation</span>
             </div>
+            {selected.guestLivePlants > 0 ? (
+              <p className="cg-frontier-guest-note">
+                {selected.guestLivePlants} temporary guest flower
+                {selected.guestLivePlants === 1 ? " is" : "s are"} adding {" "}
+                {selected.guestAssistLivePlants} supported-flower credit and {" "}
+                {selected.guestAssistSubcells} coverage section
+                {selected.guestAssistSubcells === 1 ? "" : "s"}. Account activity
+                is still required for the region to advance.
+              </p>
+            ) : null}
             {selected.reasons.length > 0 ? (
               <details>
                 <summary>Why this region is not advancing yet</summary>

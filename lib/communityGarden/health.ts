@@ -40,8 +40,14 @@ export type CommunityGardenFrontierMapCell = {
   occupancyPercent: number;
   pressureState: "healthy" | "busy" | "resting" | null;
   eligibleLivePlants: number;
+  accountLivePlants: number;
+  guestLivePlants: number;
+  guestAssistLivePlants: number;
   coveredSubcells: number;
+  accountSubcells: number;
+  guestAssistSubcells: number;
   eligibleAccounts7d: number;
+  requiredAccounts: number;
   activeDays7d: number;
   consecutiveSupportDays: number;
   locallyQualified: boolean;
@@ -84,6 +90,13 @@ export type CommunityGardenFrontierHealth = {
   mode: "shadow" | "manual" | "automatic";
   evaluatedAt: string | null;
   evaluationDate: string | null;
+  communityStage: "founding" | "sprouting" | "growing" | "community";
+  recommendationCooldownDays: number;
+  guestAssist: {
+    weightPercent: number;
+    maximumSharePercent: number;
+    countsAsGardener: false;
+  };
   regions: {
     total: number;
     founding: number;
@@ -120,6 +133,8 @@ export type CommunityGardenFrontierHealth = {
     supportedLivePlants: number;
     supportedSubcells: number;
     supportedAccounts: number;
+    guestAssistWeightPercent: number;
+    guestAssistMaximumSharePercent: number;
     supportedActiveDays: number;
     supportedConsecutiveDays: number;
     maxRegionsPerActorDay: number;
@@ -259,7 +274,7 @@ export async function getCommunityGardenAdminHealth() {
   ] = await Promise.all([
     getSupabaseAdmin().rpc("get_community_garden_admin_health"),
     getSupabaseAdmin().rpc("get_community_garden_commons_health"),
-    getSupabaseAdmin().rpc("get_community_garden_frontier_dashboard_v1"),
+    getSupabaseAdmin().rpc("get_community_garden_frontier_dashboard_v2"),
     getBasilLaunchFunnelAdmin(),
     getCommunityGardenEconomy(),
   ]);

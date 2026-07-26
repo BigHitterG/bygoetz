@@ -6986,6 +6986,40 @@
   color: var(--cg-red);
 }
 
+.cg-frontier-stage-note {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid rgba(52, 35, 31, 0.2);
+  background: rgba(180, 208, 188, 0.22);
+  padding: 8px 10px;
+}
+
+.cg-frontier-stage-note > div {
+  display: grid;
+  gap: 2px;
+}
+
+.cg-frontier-stage-note small {
+  color: #6f4c3e;
+  font-size: 0.52rem;
+  text-transform: uppercase;
+}
+
+.cg-frontier-stage-note strong {
+  color: var(--cg-olive);
+  font-size: 0.68rem;
+  text-transform: capitalize;
+}
+
+.cg-frontier-stage-note p,
+.cg-frontier-guest-note {
+  margin: 0;
+  color: #5b4238;
+  font: 0.56rem/1.45 system-ui, sans-serif;
+}
+
 .cg-frontier-section-heading {
   display: flex;
   align-items: end;
@@ -7295,6 +7329,12 @@
   font: 700 0.58rem/1.4 system-ui, sans-serif;
 }
 
+.cg-frontier-guest-note {
+  border-left: 3px solid var(--cg-aqua);
+  background: rgba(255, 255, 255, 0.32);
+  padding: 7px 8px;
+}
+
 .cg-frontier-lower-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -7434,6 +7474,10 @@
   }
 
   .cg-frontier-region-facts {
+    grid-template-columns: 1fr;
+  }
+
+  .cg-frontier-stage-note {
     grid-template-columns: 1fr;
   }
 }
