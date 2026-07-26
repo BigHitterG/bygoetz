@@ -1,6 +1,10 @@
 import { GARDEN_CONFIG } from "../../app/community-garden/lib/gardenConfig.ts";
 import { getSupabaseAdmin } from "../supabaseAdmin.ts";
 import { BASIL_COMMONS_POLICY } from "./commonsPolicy.ts";
+import {
+  planCommunityGardenZones,
+  type CommunityGardenGuidanceZone,
+} from "./gardenZones.ts";
 import type { CommunityGardenFrontierHealth } from "./health.ts";
 
 export type CommunityGardenRegionState =
@@ -43,10 +47,11 @@ export type CommunityGardenRegionSummary = {
   weedCount: number;
   plantCapacity: number;
   occupancyPercent: number;
+  guidanceZone: CommunityGardenGuidanceZone | null;
 };
 
 export type CommunityGardenRegionManifest = {
-  schemaVersion: 2;
+  schemaVersion: 3;
   deliveryMode: "regional-window";
   gardenId: "founding-garden";
   snapshotVersion: number;
@@ -57,6 +62,13 @@ export type CommunityGardenRegionManifest = {
   mapBounds: CommunityGardenRegionBounds;
   regionBounds: CommunityGardenRegionBounds;
   regions: CommunityGardenRegionSummary[];
+  zonePlan: {
+    formulaVersion: number;
+    evaluatedOn: string;
+    source: "daily-frontier" | "snapshot-fallback";
+    heartRegions: number;
+    growthRingRegions: number;
+  };
   spawnPoints: Array<{ gridX: number; gridY: number }>;
 };
 
@@ -327,7 +339,7 @@ export function buildCommunityGardenRegionManifest(
       change,
     ]),
   );
-  const regions = Array.from(regionCoordinates.values()).map(
+  const baseRegions = Array.from(regionCoordinates.values()).map(
     ({ regionX, regionY }): CommunityGardenRegionSummary => {
       const regionKey = getCommunityGardenRegionKey(regionX, regionY);
       const rows = byRegion.get(regionKey) ?? { plants: [], weeds: [] };
@@ -398,9 +410,42 @@ export function buildCommunityGardenRegionManifest(
         occupancyPercent: Number(
           Math.min(100, (plantCount / plantCapacity) * 100).toFixed(1),
         ),
+        guidanceZone: null,
       };
     },
   );
+  const zonePlan = planCommunityGardenZones(
+    baseRegions.map((region) => {
+      const cell = frontierCells.get(region.regionKey);
+      return {
+        regionKey: region.regionKey,
+        regionX: region.regionX,
+        regionY: region.regionY,
+        isOpen: region.isOpen,
+        landState: region.state,
+        // Frontier evaluations are daily and therefore keep the public zones
+        // stable while live planting continues between garden snapshots.
+        plantCount: cell?.plantCount ?? region.plantCount,
+        heritagePlantCount:
+          cell?.heritageFlowers ?? region.heritagePlantCount,
+        coveredSubcells: cell?.coveredSubcells,
+        distinctGardeners: cell?.eligibleAccounts7d,
+      };
+    }),
+    {
+      evaluatedOn:
+        frontier?.evaluationDate ?? String(snapshot.generatedAt).slice(0, 10),
+      source: frontier?.evaluationDate
+        ? "daily-frontier"
+        : "snapshot-fallback",
+    },
+  );
+  const regions = baseRegions.map((region) => ({
+    ...region,
+    guidanceZone: region.isOpen
+      ? (zonePlan.zoneByRegionKey.get(region.regionKey) ?? "garden")
+      : null,
+  }));
   regions.sort((left, right) => left.regionY - right.regionY || left.regionX - right.regionX);
 
   const openRegions = regions.filter((region) => region.isOpen);
@@ -416,7 +461,7 @@ export function buildCommunityGardenRegionManifest(
   const regionYs = regions.map((region) => region.regionY);
 
   const manifest: CommunityGardenRegionManifest = {
-    schemaVersion: 2,
+    schemaVersion: 3,
     deliveryMode: "regional-window",
     gardenId: "founding-garden",
     snapshotVersion,
@@ -432,6 +477,13 @@ export function buildCommunityGardenRegionManifest(
       maxY: Math.max(...regionYs),
     },
     regions,
+    zonePlan: {
+      formulaVersion: zonePlan.formulaVersion,
+      evaluatedOn: zonePlan.evaluatedOn,
+      source: zonePlan.source,
+      heartRegions: zonePlan.heartRegionKeys.length,
+      growthRingRegions: zonePlan.growthRingRegionKeys.length,
+    },
     spawnPoints: Array.isArray(snapshot.spawnPoints)
       ? snapshot.spawnPoints.flatMap((point) => {
           if (!point || typeof point !== "object") return [];

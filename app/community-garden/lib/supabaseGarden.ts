@@ -55,6 +55,7 @@ export type GardenRegionStage =
   | "new"
   | "resting"
   | "wild";
+export type GardenGuidanceZone = "garden" | "heart" | "growth-ring";
 export type GardenRegionSummary = {
   regionKey: string;
   regionX: number;
@@ -68,6 +69,7 @@ export type GardenRegionSummary = {
   heritagePlantCount: number;
   weedCount: number;
   occupancyPercent: number;
+  guidanceZone: GardenGuidanceZone | null;
 };
 export type GardenRegionManifest = {
   snapshotVersion: number;
@@ -77,6 +79,13 @@ export type GardenRegionManifest = {
   worldBounds: GardenRegionBounds;
   mapBounds: GardenRegionBounds;
   regions: GardenRegionSummary[];
+  zonePlan: {
+    formulaVersion: number;
+    evaluatedOn: string;
+    source: "daily-frontier" | "snapshot-fallback";
+    heartRegions: number;
+    growthRingRegions: number;
+  } | null;
   spawnPoints: Array<{ gridX: number; gridY: number }>;
 };
 export type GardenRegionWindow = {
@@ -312,6 +321,11 @@ export async function fetchGardenRegionManifest(): Promise<GardenRegionManifest>
     "resting",
     "wild",
   ]);
+  const guidanceZones = new Set<GardenGuidanceZone>([
+    "garden",
+    "heart",
+    "growth-ring",
+  ]);
   const regions = Array.isArray(data.regions)
     ? data.regions.flatMap((value): GardenRegionSummary[] => {
         if (!value || typeof value !== "object") return [];
@@ -320,6 +334,12 @@ export async function fetchGardenRegionManifest(): Promise<GardenRegionManifest>
         const regionX = Number(region.regionX);
         const regionY = Number(region.regionY);
         const publicStage = String(region.publicStage) as GardenRegionStage;
+        const guidanceZoneValue = region.guidanceZone;
+        const guidanceZone =
+          typeof guidanceZoneValue === "string" &&
+          guidanceZones.has(guidanceZoneValue as GardenGuidanceZone)
+            ? (guidanceZoneValue as GardenGuidanceZone)
+            : null;
         const supportLevel = Number(region.supportLevel);
         if (
           typeof region.regionKey !== "string" ||
@@ -344,9 +364,37 @@ export async function fetchGardenRegionManifest(): Promise<GardenRegionManifest>
           heritagePlantCount: Math.max(0, Number(region.heritagePlantCount) || 0),
           weedCount: Math.max(0, Number(region.weedCount) || 0),
           occupancyPercent: Math.min(100, Math.max(0, Number(region.occupancyPercent) || 0)),
+          guidanceZone,
         }];
       })
     : [];
+  const zonePlanValue =
+    data.zonePlan && typeof data.zonePlan === "object"
+      ? (data.zonePlan as Record<string, unknown>)
+      : null;
+  const zonePlanSource = String(zonePlanValue?.source ?? "");
+  const normalizedZonePlanSource:
+    | "daily-frontier"
+    | "snapshot-fallback"
+    | null =
+    zonePlanSource === "daily-frontier" ||
+    zonePlanSource === "snapshot-fallback"
+      ? zonePlanSource
+      : null;
+  const zonePlan =
+    zonePlanValue &&
+    normalizedZonePlanSource
+      ? {
+          formulaVersion: Math.max(1, Number(zonePlanValue.formulaVersion) || 1),
+          evaluatedOn: String(zonePlanValue.evaluatedOn ?? data.generatedAt),
+          source: normalizedZonePlanSource,
+          heartRegions: Math.max(0, Number(zonePlanValue.heartRegions) || 0),
+          growthRingRegions: Math.max(
+            0,
+            Number(zonePlanValue.growthRingRegions) || 0,
+          ),
+        }
+      : null;
   return {
     snapshotVersion: Number(data.snapshotVersion),
     generatedAt: String(data.generatedAt),
@@ -355,6 +403,7 @@ export async function fetchGardenRegionManifest(): Promise<GardenRegionManifest>
     worldBounds,
     mapBounds,
     regions,
+    zonePlan,
     spawnPoints: normalizeSpawnPoints(data.spawnPoints),
   };
 }

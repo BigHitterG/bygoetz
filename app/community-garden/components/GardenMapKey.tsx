@@ -45,6 +45,11 @@ const REGION_COLORS = {
   wild: "#e8e4da",
 } as const;
 
+const ZONE_COLORS = {
+  heart: "#789267",
+  "growth-ring": "#c7b661",
+} as const;
+
 function isLockedRegion(region: GardenUiState["regionMapCells"][number]) {
   return !region.isOpen && region.stage !== "wild";
 }
@@ -133,6 +138,24 @@ export function GardenMapKey({
           ctx.globalAlpha = 0.12 + (region.occupancyPercent / 100) * 0.46;
           ctx.fillStyle = "#657c52";
           ctx.fillRect(x + 1, y + 1, Math.max(1, width - 2), Math.max(1, height - 2));
+        }
+        if (
+          region.isOpen &&
+          (region.guidanceZone === "heart" ||
+            region.guidanceZone === "growth-ring")
+        ) {
+          ctx.globalAlpha = region.guidanceZone === "heart" ? 0.34 : 0.28;
+          ctx.fillStyle = ZONE_COLORS[region.guidanceZone];
+          ctx.fillRect(x + 1, y + 1, Math.max(1, width - 2), Math.max(1, height - 2));
+          ctx.globalAlpha = 0.92;
+          ctx.strokeStyle = ZONE_COLORS[region.guidanceZone];
+          ctx.lineWidth = region.guidanceZone === "growth-ring" ? 2 : 1.5;
+          ctx.strokeRect(
+            x + 1.5,
+            y + 1.5,
+            Math.max(1, width - 3),
+            Math.max(1, height - 3),
+          );
         }
         ctx.globalAlpha = 1;
         ctx.strokeStyle =
@@ -235,7 +258,7 @@ export function GardenMapKey({
             ? "Garden overview. Finish this tutorial step before using map travel."
             : ui.mode === "personal"
             ? "My Garden overview. Select a point to walk there. Colored marks show your flowers."
-            : "Community Garden overview. Select open land to travel there. Green is open garden and gold padlocks mark future Growing Edge land."
+            : "Community Garden overview. Deep green marks the Garden Heart, its pale ring marks connected growth land, and gold padlocks mark future Growing Edge land."
         }
       >
         <span className="cg-map-north" aria-hidden="true">N</span>
@@ -248,7 +271,7 @@ export function GardenMapKey({
         {ui.mode === "community" && ui.regionMapCells.length > 0
           ? ui.regionMapCells.map((region) => (
               <span
-                className={`cg-map-region is-${region.stage}${region.isOpen ? " is-open" : ""}${isLockedRegion(region) ? " is-locked" : ""}`}
+                className={`cg-map-region is-${region.stage}${region.isOpen ? " is-open" : ""}${region.guidanceZone ? ` is-zone-${region.guidanceZone}` : ""}${isLockedRegion(region) ? " is-locked" : ""}`}
                 key={region.key}
                 style={{
                   left: `${region.x}%`,
@@ -315,7 +338,9 @@ export function GardenMapKey({
               </button>
             </header>
             <p className="cg-expanded-map-help">
-              Choose open garden land to travel there. Golden padlocks mark future Growing Edge land that is still locked.
+              Deep green is the established Garden Heart. Its pale outlined Growth
+              Ring is open land where the next connected layer can form. Golden
+              padlocks mark future Growing Edge land.
             </p>
             <button
               ref={expandedMapRef}
@@ -336,6 +361,8 @@ export function GardenMapKey({
               <span className="is-player">You</span>
               {ui.regionMapCells.length > 0 ? (
                 <>
+                  <span className="is-garden-heart">Garden Heart</span>
+                  <span className="is-growth-ring">Growth Ring</span>
                   <span className="is-growing-edge">Locked growing edge</span>
                   <span className="is-heritage">Heritage</span>
                   <span className="is-resting">Resting</span>

@@ -27,7 +27,8 @@ export function GardenGuide() {
           <dt>Travel</dt>
           <dd>
             The map shows the garden&apos;s shape and density without drawing every
-            flower. Tap open land to visit. Soft-gold sections are the Growing Edge.
+            flower. Deep green is the Garden Heart. Its pale outlined Growth Ring
+            is open land. Golden padlocks are future Growing Edge land.
           </dd>
         </div>
         <div>
@@ -77,14 +78,33 @@ export function GardenGuide() {
         <h4 id="garden-numbers-title">The garden numbers</h4>
         <div className="cg-ecology-grid">
           <article>
+            <p className="cg-ecology-number">Established together</p>
+            <h5>The Garden Heart</h5>
+            <p>
+              The Heart is the largest connected part of Basil that has grown
+              strong through shared planting, age, Heritage Flowers, and care.
+              It follows the community&apos;s real shape rather than a fixed circle,
+              so it can lean in any direction as the garden develops.
+            </p>
+          </article>
+          <article>
+            <p className="cg-ecology-number">Open connected land</p>
+            <h5>The Growth Ring</h5>
+            <p>
+              The pale ring is ordinary playable green land surrounding the Heart.
+              Planting and caring there helps form a connected next layer instead of
+              one isolated strip. It is guidance, not a requirement, and this first
+              release does not change Care rewards.
+            </p>
+          </article>
+          <article>
             <p className="cg-ecology-number">Grow together</p>
             <h5>The Growing Edge</h5>
             <p>
-              Golden map sections show places where shared planting and care are
-              helping new ground take root. One person cannot open land by flooding
-              a patch: support must be spread across the area and sustained by
-              different gardeners over time. Help there if you like, or garden
-              anywhere—the edge is an invitation, not a required objective.
+              Golden padlocked sections are future land beyond the open garden.
+              One person cannot open land by flooding a patch: growth must be
+              spread across the adjacent area and sustained by different gardeners
+              over time. The edge is an invitation, not a required objective.
             </p>
           </article>
           <article>

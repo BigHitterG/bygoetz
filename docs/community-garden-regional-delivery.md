@@ -22,6 +22,7 @@ The response contains:
 - open-world and map-display bounds;
 - open regions plus nearby frontier planning cells;
 - aggregate plant, Heritage Flower, weed, pressure, and occupancy values;
+- the daily Garden Heart and adjacent open Growth Ring classification;
 - coarse player-facing Growing Edge stage and support level; and
 - balanced cached arrival points.
 
@@ -59,3 +60,10 @@ the canonical snapshot plus aggregate regional values and coarse public stages.
 They never expose contributor keys, user IDs, network keys, exact quorum
 evidence, support-credit records, or owner-only reasoning. The public manifest
 is sanitized from the service-role-only founder dashboard.
+
+## Player guidance zones
+
+The manifest's schema version 3 adds `guidanceZone` to open regions and a small
+aggregate `zonePlan`. The classification is derived server-side from daily
+frontier aggregates. It is a visual and navigational layer only; see
+`docs/basil-garden-heart.md`. It does not alter the action or Care endpoints.

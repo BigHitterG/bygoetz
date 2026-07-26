@@ -69,6 +69,7 @@ export type RenderGardenState = {
     regionY: number;
     isOpen: boolean;
     publicStage: "garden" | "edge" | "growing" | "ready" | "new" | "resting" | "wild";
+    guidanceZone: "garden" | "heart" | "growth-ring" | null;
   }>;
   shareOnly?: boolean;
   personalGarden?: {
@@ -508,6 +509,55 @@ function drawGrowingEdgeLock(
   ctx.restore();
 }
 
+function drawGuidanceZoneBoundary(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  zoom: number,
+  gridX: number,
+  gridY: number,
+  regionX: number,
+  regionY: number,
+  guidanceZones: ReadonlyMap<string, "heart" | "growth-ring">,
+) {
+  const zone = guidanceZones.get(`${regionX}:${regionY}`);
+  if (!zone) return;
+  const localX = positiveModulo(gridX, 16);
+  const localY = positiveModulo(gridY, 16);
+  const thickness = Math.max(1, Math.round(1.25 * zoom));
+  const cellWidth = GARDEN_CONFIG.tileSize * zoom;
+  const cellHeight = GARDEN_CONFIG.tileScreenHeight * zoom;
+  const color = zone === "heart" ? "#607b55" : "#c3a443";
+  ctx.save();
+  ctx.globalAlpha = zone === "heart" ? 0.42 : 0.56;
+  ctx.fillStyle = color;
+  if (
+    localX === 0 &&
+    guidanceZones.get(`${regionX - 1}:${regionY}`) !== zone
+  ) {
+    ctx.fillRect(x, y, thickness, cellHeight + 1);
+  }
+  if (
+    localX === 15 &&
+    guidanceZones.get(`${regionX + 1}:${regionY}`) !== zone
+  ) {
+    ctx.fillRect(x + cellWidth - thickness, y, thickness, cellHeight + 1);
+  }
+  if (
+    localY === 0 &&
+    guidanceZones.get(`${regionX}:${regionY - 1}`) !== zone
+  ) {
+    ctx.fillRect(x, y, cellWidth + 1, thickness);
+  }
+  if (
+    localY === 15 &&
+    guidanceZones.get(`${regionX}:${regionY + 1}`) !== zone
+  ) {
+    ctx.fillRect(x, y + cellHeight - thickness, cellWidth + 1, thickness);
+  }
+  ctx.restore();
+}
+
 function drawTerrainLayer(
   ctx: CanvasRenderingContext2D,
   camera: WorldPoint,
@@ -517,6 +567,7 @@ function drawTerrainLayer(
   occupiedCells: Set<string>,
   openRegionKeys: ReadonlySet<string> | null,
   growingEdgeStages: ReadonlyMap<string, "edge" | "growing" | "ready">,
+  guidanceZones: ReadonlyMap<string, "heart" | "growth-ring">,
 ) {
   const { tileSize, tileScreenHeight } = GARDEN_CONFIG;
   const cellWidth = tileSize * zoom;
@@ -585,7 +636,13 @@ function drawTerrainLayer(
         ctx.fillStyle = "#bd936e";
         ctx.fillRect(x, y, cellWidth + 1, cellHeight + 1);
       } else if (layer === "green") {
-        ctx.fillStyle = "#9ca67a";
+        const guidanceZone = guidanceZones.get(regionKey);
+        ctx.fillStyle =
+          guidanceZone === "heart"
+            ? "#96aa7c"
+            : guidanceZone === "growth-ring"
+              ? "#a8b184"
+              : "#9ca67a";
         ctx.fillRect(x, y, cellWidth + 1, cellHeight + 1);
       }
 
@@ -618,6 +675,20 @@ function drawTerrainLayer(
           ctx.fillStyle = "#dca08b";
           ctx.fillRect(x + 4 * zoom, y + 8 * zoom, 2 * zoom, 2 * zoom);
         }
+      }
+
+      if (layer === "green") {
+        drawGuidanceZoneBoundary(
+          ctx,
+          x,
+          y,
+          zoom,
+          gridX,
+          gridY,
+          regionX,
+          regionY,
+          guidanceZones,
+        );
       }
     }
   }
@@ -2532,10 +2603,22 @@ export function renderGarden(ctx: CanvasRenderingContext2D, state: RenderGardenS
         : [],
     ),
   );
+  const guidanceZones = new Map(
+    (state.communityRegions ?? []).flatMap((region) =>
+      region.isOpen &&
+      (region.guidanceZone === "heart" ||
+        region.guidanceZone === "growth-ring")
+        ? [[
+            `${region.regionX}:${region.regionY}`,
+            region.guidanceZone,
+          ] as const]
+        : [],
+    ),
+  );
   ctx.imageSmoothingEnabled = false;
   ctx.clearRect(0, 0, state.viewport.width, state.viewport.height);
-  drawTerrainLayer(baseCtx, state.camera, state.viewport, "base", state.zoom, occupiedCells, openRegionKeys, growingEdgeStages);
-  drawTerrainLayer(soilCtx, state.camera, state.viewport, "soil", state.zoom, occupiedCells, openRegionKeys, growingEdgeStages);
+  drawTerrainLayer(baseCtx, state.camera, state.viewport, "base", state.zoom, occupiedCells, openRegionKeys, growingEdgeStages, guidanceZones);
+  drawTerrainLayer(soilCtx, state.camera, state.viewport, "soil", state.zoom, occupiedCells, openRegionKeys, growingEdgeStages, guidanceZones);
   drawColorMask(
     maskCtx,
     visiblePlants,
@@ -2546,7 +2629,7 @@ export function renderGarden(ctx: CanvasRenderingContext2D, state: RenderGardenS
     state.zoom,
   );
   applyMask(soilCtx, maskCtx, maskLayer);
-  drawTerrainLayer(greenCtx, state.camera, state.viewport, "green", state.zoom, occupiedCells, openRegionKeys, growingEdgeStages);
+  drawTerrainLayer(greenCtx, state.camera, state.viewport, "green", state.zoom, occupiedCells, openRegionKeys, growingEdgeStages, guidanceZones);
   drawColorMask(
     maskCtx,
     visiblePlants,

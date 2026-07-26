@@ -106,6 +106,7 @@ const INITIAL_UI: GardenUiState = {
   plantMapPoints: [],
   regionMapCells: [],
   currentRegionStage: null,
+  currentGuidanceZone: null,
   recentlyOpenedRegionKey: null,
   nextMapUpdateAt: null,
   mode: "community",
@@ -122,7 +123,7 @@ const INITIAL_UI: GardenUiState = {
 
 const HEALTH_PULSE_KEY = "basil-health-pulse-at-v1";
 const HEALTH_PULSE_INTERVAL_MS = 5 * 60 * 1000;
-const GROWING_EDGE_INTRO_KEY = "basil-growing-edge-intro-v1";
+const GROWING_EDGE_INTRO_KEY = "basil-garden-zones-intro-v2";
 const GROWING_EDGE_HELPED_KEY = "basil-growing-edge-helped-v1";
 const GROWING_EDGE_OPENED_KEY = "basil-growing-edge-opened-v1";
 const MEMBER_GARDEN_CACHE_PREFIX = "basil-member-garden-cache-v1:";
@@ -274,6 +275,7 @@ export function CommunityGardenApp() {
   const heritageAudioKeyRef = useRef<string | null>(null);
   const heritageMomentIdsRef = useRef(new Set<string>());
   const heritageAcknowledgementIdsRef = useRef(new Set<string>());
+  const lastGuidanceZoneRef = useRef(INITIAL_UI.currentGuidanceZone);
   const [ui, setUi] = useState(INITIAL_UI);
   const [world, setWorld] = useState<GardenWorldMode>("community");
   const [menuOpen, setMenuOpen] = useState(false);
@@ -1211,6 +1213,33 @@ export function CommunityGardenApp() {
     const timeoutId = window.setTimeout(() => setGrowingEdgeNotice(""), 5_500);
     return () => window.clearTimeout(timeoutId);
   }, [growingEdgeNotice]);
+
+  useEffect(() => {
+    const nextZone = ui.currentGuidanceZone;
+    const previousZone = lastGuidanceZoneRef.current;
+    lastGuidanceZoneRef.current = nextZone;
+    if (
+      world !== "community" ||
+      !isGardenOnboardingFinished(onboardingStep) ||
+      previousZone === null ||
+      previousZone === nextZone
+    ) {
+      return;
+    }
+    if (nextZone === "heart") {
+      queueMicrotask(() => {
+        setGrowingEdgeNotice(
+          "Garden Heart: established ground the community has sustained together.",
+        );
+      });
+    } else if (nextZone === "growth-ring") {
+      queueMicrotask(() => {
+        setGrowingEdgeNotice(
+          "Growth Ring: open ground around the Heart where Basil can grow outward.",
+        );
+      });
+    }
+  }, [onboardingStep, ui.currentGuidanceZone, world]);
 
   const claimCommunityContribution = useCallback(
     (contribution: GardenContribution) => {
@@ -2212,11 +2241,12 @@ export function CommunityGardenApp() {
         !inventoryOpen &&
         !membershipOfferOpen ? (
           <aside className="cg-growing-edge-intro" role="dialog" aria-modal="false">
-            <p>Shared garden growth</p>
-            <h2>The garden grows where people gather</h2>
+            <p>How the shared garden grows</p>
+            <h2>Grow from the Heart, outward</h2>
             <span>
-              Golden sections on the map show the Growing Edge. Help there to
-              support new ground—or garden anywhere you like.
+              Deep green is the established Garden Heart. Its pale outer Growth
+              Ring is open land where the next connected layer can form. Golden
+              padlocks mark future Growing Edge land&mdash;or garden anywhere you like.
             </span>
             <button type="button" onClick={() => setGrowingEdgeIntroOpen(false)}>
               Got it

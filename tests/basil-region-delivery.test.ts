@@ -69,7 +69,7 @@ test("the fixed founding garden exposes a ten by ten regional manifest", () => {
   });
 
   const manifest = buildCommunityGardenRegionManifest(snapshot(2_975_001));
-  assert.equal(manifest.schemaVersion, 2);
+  assert.equal(manifest.schemaVersion, 3);
   assert.equal(manifest.deliveryMode, "regional-window");
   assert.equal(manifest.regions.length, 100);
   assert.equal(
@@ -77,6 +77,12 @@ test("the fixed founding garden exposes a ten by ten regional manifest", () => {
     3,
   );
   assert.deepEqual(manifest.spawnPoints, [{ gridX: 2, gridY: 3 }]);
+  assert.equal(manifest.zonePlan.formulaVersion, 1);
+  assert.ok(
+    manifest.regions.every(
+      (region) => !region.isOpen || region.guidanceZone !== null,
+    ),
+  );
 });
 
 test("regional snapshots contain only their own plants and weeds", () => {

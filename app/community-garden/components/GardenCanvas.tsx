@@ -64,6 +64,7 @@ import {
   GardenConnectionError,
   type GardenContribution,
   type GardenMapPlant,
+  type GardenGuidanceZone,
   type GardenRegionManifest,
   type GardenRegionStage,
   type GardenWeed,
@@ -125,8 +126,10 @@ export type GardenUiState = {
     plantCount: number;
     occupancyPercent: number;
     heritagePlantCount: number;
+    guidanceZone: GardenGuidanceZone | null;
   }>;
   currentRegionStage: GardenRegionStage | null;
+  currentGuidanceZone: GardenGuidanceZone | null;
   recentlyOpenedRegionKey: string | null;
   nextMapUpdateAt: number | null;
   mode: GardenWorldMode;
@@ -1872,6 +1875,7 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
               plantCount: region.plantCount,
               occupancyPercent: region.occupancyPercent,
               heritagePlantCount: region.heritagePlantCount,
+              guidanceZone: region.guidanceZone,
             }))
           : [];
       const currentRegion = runtime.regionManifest?.regions.find(
@@ -1931,6 +1935,7 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
         plantMapPoints,
         regionMapCells,
         currentRegionStage: currentRegion?.publicStage ?? null,
+        currentGuidanceZone: currentRegion?.guidanceZone ?? null,
         recentlyOpenedRegionKey: recentlyOpenedRegion?.regionKey ?? null,
         nextMapUpdateAt:
           runtime.mode === "community" && runtime.snapshotNextRefreshAt > 0
@@ -2545,7 +2550,22 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
           runtime.statusMessage =
             runtime.mode === "personal"
               ? "Exploring another part of My Garden."
-              : "Exploring a new part of the garden.";
+              : (() => {
+                  const destinationRegion = runtime.regionManifest?.regions.find(
+                    (region) =>
+                      gridX >= region.bounds.minX &&
+                      gridX <= region.bounds.maxX &&
+                      gridY >= region.bounds.minY &&
+                      gridY <= region.bounds.maxY,
+                  );
+                  if (destinationRegion?.guidanceZone === "heart") {
+                    return "Garden Heart: established ground the community has sustained together.";
+                  }
+                  if (destinationRegion?.guidanceZone === "growth-ring") {
+                    return "Growth Ring: open ground around the Heart where Basil can grow outward.";
+                  }
+                  return "Exploring open Community Garden land.";
+                })();
           publishUi();
         },
         goToGridPosition(requestedGridX, requestedGridY) {
@@ -3221,6 +3241,7 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
                   regionY: region.regionY,
                   isOpen: region.isOpen,
                   publicStage: region.publicStage,
+                  guidanceZone: region.guidanceZone,
                 }))
               : undefined,
           personalGarden: runtime.personalGarden
