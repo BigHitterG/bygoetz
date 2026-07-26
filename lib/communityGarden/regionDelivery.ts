@@ -1,5 +1,7 @@
 import { GARDEN_CONFIG } from "../../app/community-garden/lib/gardenConfig.ts";
+import { getSupabaseAdmin } from "../supabaseAdmin.ts";
 import { BASIL_COMMONS_POLICY } from "./commonsPolicy.ts";
+import type { CommunityGardenFrontierHealth } from "./health.ts";
 
 export type CommunityGardenRegionState =
   | "founding"
@@ -8,6 +10,14 @@ export type CommunityGardenRegionState =
   | "fallow"
   | "wild";
 export type CommunityGardenRegionPressure = "healthy" | "busy" | "resting";
+export type CommunityGardenPublicStage =
+  | "garden"
+  | "edge"
+  | "growing"
+  | "ready"
+  | "new"
+  | "resting"
+  | "wild";
 
 export type CommunityGardenRegionBounds = {
   minX: number;
@@ -23,6 +33,10 @@ export type CommunityGardenRegionSummary = {
   bounds: CommunityGardenRegionBounds;
   state: CommunityGardenRegionState;
   pressureState: CommunityGardenRegionPressure;
+  publicStage: CommunityGardenPublicStage;
+  supportLevel: 0 | 1 | 2 | 3;
+  isOpen: boolean;
+  newlyOpened: boolean;
   version: number;
   plantCount: number;
   heritagePlantCount: number;
@@ -32,14 +46,15 @@ export type CommunityGardenRegionSummary = {
 };
 
 export type CommunityGardenRegionManifest = {
-  schemaVersion: 1;
-  deliveryMode: "compatibility-shadow";
+  schemaVersion: 2;
+  deliveryMode: "regional-window";
   gardenId: "founding-garden";
   snapshotVersion: number;
   generatedAt: string;
   nextRefreshAt: string;
   regionSize: number;
   worldBounds: CommunityGardenRegionBounds;
+  mapBounds: CommunityGardenRegionBounds;
   regionBounds: CommunityGardenRegionBounds;
   regions: CommunityGardenRegionSummary[];
   spawnPoints: Array<{ gridX: number; gridY: number }>;
@@ -47,7 +62,7 @@ export type CommunityGardenRegionManifest = {
 
 export type CommunityGardenRegionSnapshot = {
   schemaVersion: 1;
-  deliveryMode: "compatibility-shadow";
+  deliveryMode: "regional-window";
   gardenId: "founding-garden";
   regionKey: string;
   regionX: number;
@@ -66,15 +81,36 @@ export type CommunityGardenRegionSnapshot = {
   weeds: Record<string, unknown>[];
 };
 
+export type CommunityGardenRegionWindow = {
+  schemaVersion: 1;
+  deliveryMode: "regional-window";
+  gardenId: "founding-garden";
+  snapshotVersion: number;
+  generatedAt: string;
+  nextRefreshAt: string;
+  centerRegionX: number;
+  centerRegionY: number;
+  radius: number;
+  loadedRegionKeys: string[];
+  plants: Record<string, unknown>[];
+  weeds: Record<string, unknown>[];
+};
+
 type CanonicalSnapshot = Record<string, unknown>;
 
-const manifestCache = new Map<number, CommunityGardenRegionManifest>();
+const manifestCache = new Map<string, CommunityGardenRegionManifest>();
 const regionSnapshotCache = new Map<string, CommunityGardenRegionSnapshot>();
+const regionWindowCache = new Map<string, CommunityGardenRegionWindow>();
 const canonicalSnapshotCache = new Map<number, CanonicalSnapshot>();
 const regionRowCache = new Map<
   number,
   Map<string, { plants: Record<string, unknown>[]; weeds: Record<string, unknown>[] }>
 >();
+let frontierOverlayCache:
+  | { expiresAt: number; value: CommunityGardenFrontierHealth | null }
+  | null = null;
+
+const FRONTIER_OVERLAY_CACHE_MS = 5 * 60 * 1000;
 
 function finiteInteger(value: unknown) {
   const number = Number(value);
@@ -140,12 +176,11 @@ export function getCommunityGardenRegionBounds(
   regionY: number,
 ): CommunityGardenRegionBounds {
   const { regionSize } = BASIL_COMMONS_POLICY;
-  const { worldMin, worldMax } = GARDEN_CONFIG;
   return {
-    minX: Math.max(worldMin, regionX * regionSize),
-    maxX: Math.min(worldMax, regionX * regionSize + regionSize - 1),
-    minY: Math.max(worldMin, regionY * regionSize),
-    maxY: Math.min(worldMax, regionY * regionSize + regionSize - 1),
+    minX: regionX * regionSize,
+    maxX: regionX * regionSize + regionSize - 1,
+    minY: regionY * regionSize,
+    maxY: regionY * regionSize + regionSize - 1,
   };
 }
 
@@ -179,7 +214,7 @@ function getRowRegion(row: Record<string, unknown>) {
   const { regionSize } = BASIL_COMMONS_POLICY;
   const regionX = Math.floor(coordinates.gridX / regionSize);
   const regionY = Math.floor(coordinates.gridY / regionSize);
-  return isFoundingGardenRegion(regionX, regionY)
+  return Math.abs(regionX) <= 1_024 && Math.abs(regionY) <= 1_024
     ? { regionX, regionY }
     : null;
 }
@@ -203,11 +238,14 @@ function normalizeSnapshotVersion(snapshot: CanonicalSnapshot) {
 }
 
 function pruneRegionalCaches(currentVersion: number) {
-  for (const version of manifestCache.keys()) {
-    if (version !== currentVersion) manifestCache.delete(version);
+  for (const key of manifestCache.keys()) {
+    if (!key.startsWith(`${currentVersion}:`)) manifestCache.delete(key);
   }
   for (const key of regionSnapshotCache.keys()) {
     if (!key.startsWith(`${currentVersion}:`)) regionSnapshotCache.delete(key);
+  }
+  for (const key of regionWindowCache.keys()) {
+    if (!key.startsWith(`${currentVersion}:`)) regionWindowCache.delete(key);
   }
   for (const version of regionRowCache.keys()) {
     if (version !== currentVersion) regionRowCache.delete(version);
@@ -243,60 +281,156 @@ function getRegionalRows(snapshot: CanonicalSnapshot) {
 
 export function buildCommunityGardenRegionManifest(
   snapshot: CanonicalSnapshot,
+  frontier: CommunityGardenFrontierHealth | null = null,
 ): CommunityGardenRegionManifest {
   const snapshotVersion = normalizeSnapshotVersion(snapshot);
-  const cached = manifestCache.get(snapshotVersion);
+  const frontierVersion = frontier?.evaluatedAt ?? "none";
+  const manifestCacheKey = `${snapshotVersion}:${frontierVersion}`;
+  const cached = manifestCache.get(manifestCacheKey);
   if (cached) return cached;
 
   const byRegion = getRegionalRows(snapshot);
   const regionGrid = getCommunityGardenRegionGridBounds();
-  const regions: CommunityGardenRegionSummary[] = [];
+  const regionCoordinates = new Map<string, { regionX: number; regionY: number }>();
 
   for (let regionY = regionGrid.minY; regionY <= regionGrid.maxY; regionY += 1) {
     for (let regionX = regionGrid.minX; regionX <= regionGrid.maxX; regionX += 1) {
-      const rows = byRegion.get(
-        getCommunityGardenRegionKey(regionX, regionY),
-      ) ?? { plants: [], weeds: [] };
-      const regionPlants = rows.plants;
-      const regionWeeds = rows.weeds;
-      const plantCount = regionPlants.length;
-      regions.push({
-        regionKey: getCommunityGardenRegionKey(regionX, regionY),
+      regionCoordinates.set(getCommunityGardenRegionKey(regionX, regionY), {
         regionX,
         regionY,
-        bounds: getCommunityGardenRegionBounds(regionX, regionY),
-        state: "founding",
-        pressureState: getPressureState(plantCount),
-        version: snapshotVersion,
-        plantCount,
-        heritagePlantCount: regionPlants.filter(isHeritagePlant).length,
-        weedCount: regionWeeds.length,
-        plantCapacity: BASIL_COMMONS_POLICY.regionRestingAt,
-        occupancyPercent: Number(
-          Math.min(
-            100,
-            (plantCount / BASIL_COMMONS_POLICY.regionRestingAt) * 100,
-          ).toFixed(1),
-        ),
       });
     }
   }
 
+  for (const key of byRegion.keys()) {
+    const [regionX, regionY] = key.split(":").map(Number);
+    if (Number.isSafeInteger(regionX) && Number.isSafeInteger(regionY)) {
+      regionCoordinates.set(key, { regionX, regionY });
+    }
+  }
+  for (const cell of frontier?.map.cells ?? []) {
+    regionCoordinates.set(
+      getCommunityGardenRegionKey(cell.regionX, cell.regionY),
+      { regionX: cell.regionX, regionY: cell.regionY },
+    );
+  }
+
+  const frontierCells = new Map(
+    (frontier?.map.cells ?? []).map((cell) => [
+      getCommunityGardenRegionKey(cell.regionX, cell.regionY),
+      cell,
+    ]),
+  );
+  const recentChanges = new Map(
+    (frontier?.recentStateChanges ?? []).map((change) => [
+      getCommunityGardenRegionKey(change.regionX, change.regionY),
+      change,
+    ]),
+  );
+  const regions = Array.from(regionCoordinates.values()).map(
+    ({ regionX, regionY }): CommunityGardenRegionSummary => {
+      const regionKey = getCommunityGardenRegionKey(regionX, regionY);
+      const rows = byRegion.get(regionKey) ?? { plants: [], weeds: [] };
+      const cell = frontierCells.get(regionKey);
+      const plantCount = rows.plants.length;
+      const pressureState = cell?.pressureState ?? getPressureState(plantCount);
+      const isOpen = cell ? cell.regionExists : isFoundingGardenRegion(regionX, regionY);
+      const recentChange = recentChanges.get(regionKey);
+      const newlyOpened = Boolean(
+        isOpen &&
+          recentChange &&
+          recentChange.nextState !== "founding" &&
+          recentChange.nextState !== "fallow" &&
+          Date.now() - Date.parse(recentChange.createdAt) < 14 * 24 * 60 * 60 * 1000,
+      );
+      const supportedLivePlants = Math.max(
+        1,
+        frontier?.policy.supportedLivePlants ?? 64,
+      );
+      const supportedSubcells = Math.max(
+        1,
+        frontier?.policy.supportedSubcells ?? 8,
+      );
+      const supportProgress = cell
+        ? Math.max(
+            cell.eligibleLivePlants / supportedLivePlants,
+            cell.coveredSubcells / supportedSubcells,
+            cell.eligibleAccounts7d / Math.max(1, cell.requiredAccounts),
+          )
+        : 0;
+      const supportLevel: 0 | 1 | 2 | 3 =
+        supportProgress >= 1 ? 3 : supportProgress >= 0.55 ? 2 : supportProgress > 0 ? 1 : 0;
+      const publicStage: CommunityGardenPublicStage = newlyOpened
+        ? "new"
+        : pressureState === "resting" || cell?.landState === "fallow"
+          ? "resting"
+          : isOpen
+            ? cell?.landState === "frontier"
+              ? "edge"
+              : "garden"
+            : cell?.recommendedAction !== "none" || cell?.globallyQualified
+              ? "ready"
+              : supportLevel > 0
+                ? "growing"
+                : cell
+                  ? "edge"
+                  : "wild";
+      const plantCapacity = Math.max(
+        1,
+        cell?.effectiveCapacity ?? BASIL_COMMONS_POLICY.regionRestingAt,
+      );
+      return {
+        regionKey,
+        regionX,
+        regionY,
+        bounds: getCommunityGardenRegionBounds(regionX, regionY),
+        state: cell?.landState ?? "founding",
+        pressureState,
+        publicStage,
+        supportLevel,
+        isOpen,
+        newlyOpened,
+        version: snapshotVersion,
+        plantCount,
+        heritagePlantCount: rows.plants.filter(isHeritagePlant).length,
+        weedCount: rows.weeds.length,
+        plantCapacity,
+        occupancyPercent: Number(
+          Math.min(100, (plantCount / plantCapacity) * 100).toFixed(1),
+        ),
+      };
+    },
+  );
+  regions.sort((left, right) => left.regionY - right.regionY || left.regionX - right.regionX);
+
+  const openRegions = regions.filter((region) => region.isOpen);
+  const boundsFor = (items: CommunityGardenRegionSummary[]) => ({
+    minX: Math.min(...items.map((region) => region.bounds.minX)),
+    maxX: Math.max(...items.map((region) => region.bounds.maxX)),
+    minY: Math.min(...items.map((region) => region.bounds.minY)),
+    maxY: Math.max(...items.map((region) => region.bounds.maxY)),
+  });
+  const worldBounds = boundsFor(openRegions.length > 0 ? openRegions : regions);
+  const mapBounds = boundsFor(regions);
+  const regionXs = regions.map((region) => region.regionX);
+  const regionYs = regions.map((region) => region.regionY);
+
   const manifest: CommunityGardenRegionManifest = {
-    schemaVersion: 1,
-    deliveryMode: "compatibility-shadow",
+    schemaVersion: 2,
+    deliveryMode: "regional-window",
     gardenId: "founding-garden",
     snapshotVersion,
     generatedAt: String(snapshot.generatedAt),
     nextRefreshAt: String(snapshot.nextRefreshAt),
     regionSize: BASIL_COMMONS_POLICY.regionSize,
-    worldBounds: {
-      minX: GARDEN_CONFIG.worldMin,
-      maxX: GARDEN_CONFIG.worldMax,
-      minY: GARDEN_CONFIG.worldMin,
-      maxY: GARDEN_CONFIG.worldMax,
+    worldBounds,
+    mapBounds,
+    regionBounds: {
+      minX: Math.min(...regionXs),
+      maxX: Math.max(...regionXs),
+      minY: Math.min(...regionYs),
+      maxY: Math.max(...regionYs),
     },
-    regionBounds: regionGrid,
     regions,
     spawnPoints: Array.isArray(snapshot.spawnPoints)
       ? snapshot.spawnPoints.flatMap((point) => {
@@ -309,7 +443,7 @@ export function buildCommunityGardenRegionManifest(
       : [],
   };
 
-  manifestCache.set(snapshotVersion, manifest);
+  manifestCache.set(manifestCacheKey, manifest);
   pruneRegionalCaches(snapshotVersion);
   return manifest;
 }
@@ -318,8 +452,8 @@ export function buildCommunityGardenRegionSnapshot(
   snapshot: CanonicalSnapshot,
   regionX: number,
   regionY: number,
+  manifest = buildCommunityGardenRegionManifest(snapshot),
 ): CommunityGardenRegionSnapshot | null {
-  if (!isFoundingGardenRegion(regionX, regionY)) return null;
   const snapshotVersion = normalizeSnapshotVersion(snapshot);
   const cacheKey = `${snapshotVersion}:${regionX}:${regionY}`;
   const cached = regionSnapshotCache.get(cacheKey);
@@ -330,15 +464,14 @@ export function buildCommunityGardenRegionSnapshot(
   ) ?? { plants: [], weeds: [] };
   const plants = rows.plants;
   const weeds = rows.weeds;
-  const manifest = buildCommunityGardenRegionManifest(snapshot);
   const summary = manifest.regions.find(
     (region) => region.regionX === regionX && region.regionY === regionY,
   );
-  if (!summary) return null;
+  if (!summary?.isOpen) return null;
 
   const regionSnapshot: CommunityGardenRegionSnapshot = {
     schemaVersion: 1,
-    deliveryMode: "compatibility-shadow",
+    deliveryMode: "regional-window",
     gardenId: "founding-garden",
     regionKey: summary.regionKey,
     regionX,
@@ -364,7 +497,8 @@ export function buildCommunityGardenRegionSnapshot(
 
 export async function loadCommunityGardenRegionManifest() {
   const snapshot = await loadRegionalSourceSnapshot();
-  return buildCommunityGardenRegionManifest(snapshot);
+  const frontier = await loadPublicFrontierOverlay();
+  return buildCommunityGardenRegionManifest(snapshot, frontier);
 }
 
 export async function loadCommunityGardenRegionSnapshot(
@@ -372,7 +506,79 @@ export async function loadCommunityGardenRegionSnapshot(
   regionY: number,
 ) {
   const snapshot = await loadRegionalSourceSnapshot();
-  return buildCommunityGardenRegionSnapshot(snapshot, regionX, regionY);
+  const frontier = await loadPublicFrontierOverlay();
+  const manifest = buildCommunityGardenRegionManifest(snapshot, frontier);
+  return buildCommunityGardenRegionSnapshot(snapshot, regionX, regionY, manifest);
+}
+
+export async function loadCommunityGardenRegionWindow(
+  centerRegionX: number,
+  centerRegionY: number,
+  radius = 2,
+): Promise<CommunityGardenRegionWindow> {
+  const snapshot = await loadRegionalSourceSnapshot();
+  const frontier = await loadPublicFrontierOverlay();
+  const manifest = buildCommunityGardenRegionManifest(snapshot, frontier);
+  const snapshotVersion = normalizeSnapshotVersion(snapshot);
+  const safeRadius = Math.min(3, Math.max(0, Math.trunc(radius)));
+  const cacheKey = `${snapshotVersion}:${centerRegionX}:${centerRegionY}:${safeRadius}`;
+  const cached = regionWindowCache.get(cacheKey);
+  if (cached) return cached;
+  const loadedRegions = manifest.regions.filter(
+    (region) =>
+      region.isOpen &&
+      Math.abs(region.regionX - centerRegionX) <= safeRadius &&
+      Math.abs(region.regionY - centerRegionY) <= safeRadius,
+  );
+  const rows = getRegionalRows(snapshot);
+  const plants: Record<string, unknown>[] = [];
+  const weeds: Record<string, unknown>[] = [];
+  for (const region of loadedRegions) {
+    const regionRows = rows.get(region.regionKey);
+    if (!regionRows) continue;
+    plants.push(...regionRows.plants);
+    weeds.push(...regionRows.weeds);
+  }
+  const window: CommunityGardenRegionWindow = {
+    schemaVersion: 1,
+    deliveryMode: "regional-window",
+    gardenId: "founding-garden",
+    snapshotVersion,
+    generatedAt: manifest.generatedAt,
+    nextRefreshAt: manifest.nextRefreshAt,
+    centerRegionX,
+    centerRegionY,
+    radius: safeRadius,
+    loadedRegionKeys: loadedRegions.map((region) => region.regionKey),
+    plants,
+    weeds,
+  };
+  regionWindowCache.set(cacheKey, window);
+  pruneRegionalCaches(snapshotVersion);
+  return window;
+}
+
+async function loadPublicFrontierOverlay() {
+  if (frontierOverlayCache && frontierOverlayCache.expiresAt > Date.now()) {
+    return frontierOverlayCache.value;
+  }
+  let value: CommunityGardenFrontierHealth | null = null;
+  try {
+    const { data, error } = await getSupabaseAdmin().rpc(
+      "get_community_garden_frontier_dashboard_v2",
+    );
+    if (!error && data && typeof data === "object") {
+      value = data as CommunityGardenFrontierHealth;
+    }
+  } catch {
+    // Regional gameplay remains available when the private planning overlay is
+    // temporarily unavailable. The founding map is the safe public fallback.
+  }
+  frontierOverlayCache = {
+    value,
+    expiresAt: Date.now() + FRONTIER_OVERLAY_CACHE_MS,
+  };
+  return value;
 }
 
 async function loadRegionalSourceSnapshot() {

@@ -104,6 +104,9 @@ const INITIAL_UI: GardenUiState = {
   selectedTool: "rose",
   pathMapPoints: [],
   plantMapPoints: [],
+  regionMapCells: [],
+  currentRegionStage: null,
+  recentlyOpenedRegionKey: null,
   nextMapUpdateAt: null,
   mode: "community",
   builder: {
@@ -119,6 +122,9 @@ const INITIAL_UI: GardenUiState = {
 
 const HEALTH_PULSE_KEY = "basil-health-pulse-at-v1";
 const HEALTH_PULSE_INTERVAL_MS = 5 * 60 * 1000;
+const GROWING_EDGE_INTRO_KEY = "basil-growing-edge-intro-v1";
+const GROWING_EDGE_HELPED_KEY = "basil-growing-edge-helped-v1";
+const GROWING_EDGE_OPENED_KEY = "basil-growing-edge-opened-v1";
 const MEMBER_GARDEN_CACHE_PREFIX = "basil-member-garden-cache-v1:";
 const MEMBERSHIP_RETRY_MAX_DELAY_MS = 30_000;
 const GARDEN_WORM_DISCOVERY_KEY = "basil-garden-worm-discovery-v1";
@@ -258,6 +264,7 @@ export function CommunityGardenApp() {
   );
   const lifetimeCareRef = useRef(0);
   const memberGardenRef = useRef<MyGardenState | null>(null);
+  const uiRef = useRef(INITIAL_UI);
   const sessionUserIdRef = useRef<string | null>(null);
   const careBlossomDiscoverySeenRef = useRef(false);
   const membershipRetryTimerRef = useRef<number | null>(null);
@@ -299,6 +306,8 @@ export function CommunityGardenApp() {
   const [heritageMoments, setHeritageMoments] = useState<HeritageMoment[]>([]);
   const [expansionConfirmationOpen, setExpansionConfirmationOpen] =
     useState(false);
+  const [growingEdgeIntroOpen, setGrowingEdgeIntroOpen] = useState(false);
+  const [growingEdgeNotice, setGrowingEdgeNotice] = useState("");
   const restoredJourneyRef = useRef(false);
   const communityOnboardingPlantingsRef = useRef(0);
   const adLabel = process.env.NEXT_PUBLIC_COMMUNITY_GARDEN_AD_PLACEHOLDER;
@@ -1157,11 +1166,70 @@ export function CommunityGardenApp() {
   ]);
 
   const onStateChange = useCallback((state: GardenUiState) => {
+    uiRef.current = state;
     setUi(state);
   }, []);
 
+  useEffect(() => {
+    if (
+      world !== "community" ||
+      !accountChecked ||
+      ui.connection === "connecting" ||
+      !isGardenOnboardingFinished(onboardingStep)
+    ) {
+      return;
+    }
+    try {
+      if (window.localStorage.getItem(GROWING_EDGE_INTRO_KEY)) return;
+      window.localStorage.setItem(GROWING_EDGE_INTRO_KEY, "seen");
+    } catch {
+      // The explanation can still appear once in this running session.
+    }
+    queueMicrotask(() => setGrowingEdgeIntroOpen(true));
+  }, [accountChecked, onboardingStep, ui.connection, world]);
+
+  useEffect(() => {
+    const regionKey = ui.recentlyOpenedRegionKey;
+    if (!regionKey || world !== "community") return;
+    try {
+      if (window.localStorage.getItem(GROWING_EDGE_OPENED_KEY) === regionKey) {
+        return;
+      }
+      window.localStorage.setItem(GROWING_EDGE_OPENED_KEY, regionKey);
+    } catch {
+      // The celebration remains harmless if storage is unavailable.
+    }
+    queueMicrotask(() => {
+      setGrowingEdgeNotice(
+        "New ground has opened. The community helped this part of Basil take root.",
+      );
+    });
+  }, [ui.recentlyOpenedRegionKey, world]);
+
+  useEffect(() => {
+    if (!growingEdgeNotice) return;
+    const timeoutId = window.setTimeout(() => setGrowingEdgeNotice(""), 5_500);
+    return () => window.clearTimeout(timeoutId);
+  }, [growingEdgeNotice]);
+
   const claimCommunityContribution = useCallback(
     (contribution: GardenContribution) => {
+      if (
+        uiRef.current.currentRegionStage === "edge" ||
+        uiRef.current.currentRegionStage === "growing" ||
+        uiRef.current.currentRegionStage === "ready"
+      ) {
+        try {
+          if (!window.sessionStorage.getItem(GROWING_EDGE_HELPED_KEY)) {
+            window.sessionStorage.setItem(GROWING_EDGE_HELPED_KEY, "seen");
+            setGrowingEdgeNotice(
+              "You helped the Growing Edge. Shared care helps new garden ground take root.",
+            );
+          }
+        } catch {
+          // Care still applies normally when session storage is unavailable.
+        }
+      }
       const bonusLabel = contribution.specialFlower
         ? `${SPECIAL_WATERING_FLOWER_NAME}! `
         : contribution.gardenWorm
@@ -2136,6 +2204,35 @@ export function CommunityGardenApp() {
           >
             {restoreMessage}
           </p>
+        ) : null}
+
+        {growingEdgeIntroOpen &&
+        world === "community" &&
+        !menuOpen &&
+        !inventoryOpen &&
+        !membershipOfferOpen ? (
+          <aside className="cg-growing-edge-intro" role="dialog" aria-modal="false">
+            <p>Shared garden growth</p>
+            <h2>The garden grows where people gather</h2>
+            <span>
+              Golden sections on the map show the Growing Edge. Help there to
+              support new ground—or garden anywhere you like.
+            </span>
+            <button type="button" onClick={() => setGrowingEdgeIntroOpen(false)}>
+              Got it
+            </button>
+          </aside>
+        ) : null}
+
+        {growingEdgeNotice &&
+        !growingEdgeIntroOpen &&
+        !menuOpen &&
+        !inventoryOpen &&
+        !membershipOfferOpen ? (
+          <aside className="cg-growing-edge-notice" role="status">
+            <span className="cg-growing-edge-sprout" aria-hidden="true" />
+            <span>{growingEdgeNotice}</span>
+          </aside>
         ) : null}
 
         <GardenOnboarding

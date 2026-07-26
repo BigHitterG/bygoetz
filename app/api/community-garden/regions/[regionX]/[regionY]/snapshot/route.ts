@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
-  isFoundingGardenRegion,
   loadCommunityGardenRegionSnapshot,
 } from "@/lib/communityGarden/regionDelivery";
 import {
@@ -33,13 +32,6 @@ export async function GET(request: NextRequest, context: RouteContext) {
       { status: 400 },
     );
   }
-  if (!isFoundingGardenRegion(regionX, regionY)) {
-    return NextResponse.json(
-      { error: "That garden region is not open." },
-      { status: 404 },
-    );
-  }
-
   try {
     const snapshot = await loadCommunityGardenRegionSnapshot(regionX, regionY);
     if (!snapshot) {

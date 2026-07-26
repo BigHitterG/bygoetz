@@ -25,7 +25,10 @@ export function GardenGuide() {
         </div>
         <div>
           <dt>Travel</dt>
-          <dd>Colored dots on the map show planted flowers. Tap anywhere on the map to visit.</dd>
+          <dd>
+            The map shows the garden&apos;s shape and density without drawing every
+            flower. Tap open land to visit. Soft-gold sections are the Growing Edge.
+          </dd>
         </div>
         <div>
           <dt>Care</dt>
@@ -73,6 +76,17 @@ export function GardenGuide() {
       <div className="cg-ecology-guide" aria-labelledby="garden-numbers-title">
         <h4 id="garden-numbers-title">The garden numbers</h4>
         <div className="cg-ecology-grid">
+          <article>
+            <p className="cg-ecology-number">Grow together</p>
+            <h5>The Growing Edge</h5>
+            <p>
+              Golden map sections show places where shared planting and care are
+              helping new ground take root. One person cannot open land by flooding
+              a patch: support must be spread across the area and sustained by
+              different gardeners over time. Help there if you like, or garden
+              anywhere—the edge is an invitation, not a required objective.
+            </p>
+          </article>
           <article>
             <p className="cg-ecology-number">3 at once</p>
             <h5>Watering</h5>

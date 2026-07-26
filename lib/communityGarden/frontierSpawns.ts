@@ -206,21 +206,44 @@ export function computeFrontierSpawnPoints(
     )
     .sort((left, right) => right.score - left.score);
 
-  const spawnPoints: GardenSpawnPoint[] = [];
-  for (const chunk of candidates) {
+  const pointCandidates = candidates.flatMap((chunk) => {
     const point = chooseOpenCell(chunk, occupied, version);
-    if (!point) continue;
-    if (
-      spawnPoints.some(
-        (existing) =>
-          Math.hypot(existing.gridX - point.gridX, existing.gridY - point.gridY) <
-          SPAWN_SEPARATION,
-      )
-    ) {
-      continue;
+    if (!point) return [];
+    const angle = Math.atan2(point.gridY, point.gridX);
+    const sector = Math.floor(((angle + Math.PI) / (Math.PI * 2)) * 8) % 8;
+    return [{ point, sector, score: chunk.score }];
+  });
+  const bySector = Array.from({ length: 8 }, (_, sector) =>
+    pointCandidates
+      .filter((candidate) => candidate.sector === sector)
+      .sort((left, right) => right.score - left.score),
+  );
+  const spawnPoints: GardenSpawnPoint[] = [];
+  const canAdd = (point: GardenSpawnPoint) =>
+    !spawnPoints.some(
+      (existing) =>
+        Math.hypot(existing.gridX - point.gridX, existing.gridY - point.gridY) <
+        SPAWN_SEPARATION,
+    );
+
+  // Take one strong candidate from each direction before filling additional
+  // slots. This spreads arrivals across the shared world without creating a
+  // single public hotspot or tracking live player locations.
+  for (let pass = 0; pass < 3 && spawnPoints.length < SPAWN_COUNT; pass += 1) {
+    for (let sector = 0; sector < bySector.length; sector += 1) {
+      const candidate = bySector[sector][pass];
+      if (candidate && canAdd(candidate.point)) {
+        spawnPoints.push(candidate.point);
+      }
+      if (spawnPoints.length >= SPAWN_COUNT) break;
     }
-    spawnPoints.push(point);
+  }
+
+  for (const candidate of pointCandidates.sort(
+    (left, right) => right.score - left.score,
+  )) {
     if (spawnPoints.length >= SPAWN_COUNT) break;
+    if (canAdd(candidate.point)) spawnPoints.push(candidate.point);
   }
 
   if (spawnPoints.length > 0) return spawnPoints;

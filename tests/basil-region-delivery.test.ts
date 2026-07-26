@@ -69,7 +69,8 @@ test("the fixed founding garden exposes a ten by ten regional manifest", () => {
   });
 
   const manifest = buildCommunityGardenRegionManifest(snapshot(2_975_001));
-  assert.equal(manifest.deliveryMode, "compatibility-shadow");
+  assert.equal(manifest.schemaVersion, 2);
+  assert.equal(manifest.deliveryMode, "regional-window");
   assert.equal(manifest.regions.length, 100);
   assert.equal(
     manifest.regions.reduce((sum, region) => sum + region.plantCount, 0),
@@ -104,11 +105,19 @@ test("unopened coordinates are rejected by the regional delivery foundation", ()
   assert.equal(buildCommunityGardenRegionSnapshot(snapshot(2_975_003), 4, 0), null);
 });
 
-test("the compatibility foundation does not switch the existing client endpoint", () => {
+test("the client prefers regional windows and retains the full snapshot fallback", () => {
   const client = readFileSync(
     new URL("../app/community-garden/lib/supabaseGarden.ts", import.meta.url),
     "utf8",
   );
+  assert.match(client, /regions\/manifest/);
+  assert.match(client, /regions\/window/);
   assert.match(client, /\/api\/community-garden\/snapshot\?version=/);
-  assert.doesNotMatch(client, /regions\/manifest/);
+  const canvas = readFileSync(
+    new URL("../app/community-garden/components/GardenCanvas.tsx", import.meta.url),
+    "utf8",
+  );
+  assert.match(canvas, /fetchGardenRegionManifest/);
+  assert.match(canvas, /fetchGardenRegionWindow/);
+  assert.match(canvas, /fetchGardenSnapshot/);
 });

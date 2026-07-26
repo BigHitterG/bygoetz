@@ -35,6 +35,16 @@ const PLANT_COLORS = {
   bee_balm: "#c44e78",
 } as const;
 
+const REGION_COLORS = {
+  garden: "#c9d8ad",
+  edge: "#e5d9b2",
+  growing: "#d8bd68",
+  ready: "#e6b94e",
+  new: "#b8d38e",
+  resting: "#c9c0ac",
+  wild: "#e8e4da",
+} as const;
+
 export function GardenMapKey({
   ui,
   canExpand,
@@ -74,32 +84,71 @@ export function GardenMapKey({
     ctx.fillStyle = "#eef1e4";
     ctx.fillRect(0, 0, EXPANDED_MAP_SIZE, EXPANDED_MAP_SIZE);
 
-    ctx.strokeStyle = "rgba(101, 112, 74, 0.16)";
-    ctx.lineWidth = 1;
-    for (let index = 1; index < 20; index += 1) {
-      const coordinate = Math.round((index / 20) * EXPANDED_MAP_SIZE) + 0.5;
-      ctx.beginPath();
-      ctx.moveTo(coordinate, 0);
-      ctx.lineTo(coordinate, EXPANDED_MAP_SIZE);
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.moveTo(0, coordinate);
-      ctx.lineTo(EXPANDED_MAP_SIZE, coordinate);
-      ctx.stroke();
-    }
+    if (ui.regionMapCells.length > 0) {
+      for (const region of ui.regionMapCells) {
+        const x = Math.round((region.x / 100) * EXPANDED_MAP_SIZE);
+        const y = Math.round((region.y / 100) * EXPANDED_MAP_SIZE);
+        const width = Math.max(
+          2,
+          Math.ceil((region.width / 100) * EXPANDED_MAP_SIZE),
+        );
+        const height = Math.max(
+          2,
+          Math.ceil((region.height / 100) * EXPANDED_MAP_SIZE),
+        );
+        ctx.globalAlpha = region.isOpen ? 1 : region.stage === "wild" ? 0.22 : 0.7;
+        ctx.fillStyle = REGION_COLORS[region.stage];
+        ctx.fillRect(x, y, width, height);
+        if (region.isOpen && region.plantCount > 0) {
+          ctx.globalAlpha = 0.12 + (region.occupancyPercent / 100) * 0.46;
+          ctx.fillStyle = "#657c52";
+          ctx.fillRect(x + 1, y + 1, Math.max(1, width - 2), Math.max(1, height - 2));
+        }
+        ctx.globalAlpha = 1;
+        ctx.strokeStyle =
+          region.stage === "growing" || region.stage === "ready"
+            ? "#c18c22"
+            : "rgba(76, 74, 55, 0.24)";
+        ctx.lineWidth = region.stage === "ready" ? 3 : 1;
+        ctx.strokeRect(x + 0.5, y + 0.5, Math.max(1, width - 1), Math.max(1, height - 1));
+        if (region.heritagePlantCount > 0) {
+          const centerX = x + width / 2;
+          const centerY = y + height / 2;
+          ctx.fillStyle = "#fff4df";
+          ctx.fillRect(centerX - 4, centerY - 1, 8, 2);
+          ctx.fillRect(centerX - 1, centerY - 4, 2, 8);
+          ctx.fillStyle = "#b67b1d";
+          ctx.fillRect(centerX - 2, centerY - 2, 4, 4);
+        }
+      }
+    } else {
+      ctx.strokeStyle = "rgba(101, 112, 74, 0.16)";
+      ctx.lineWidth = 1;
+      for (let index = 1; index < 20; index += 1) {
+        const coordinate = Math.round((index / 20) * EXPANDED_MAP_SIZE) + 0.5;
+        ctx.beginPath();
+        ctx.moveTo(coordinate, 0);
+        ctx.lineTo(coordinate, EXPANDED_MAP_SIZE);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(0, coordinate);
+        ctx.lineTo(EXPANDED_MAP_SIZE, coordinate);
+        ctx.stroke();
+      }
 
-    for (const path of ui.pathMapPoints) {
-      const x = Math.round((path.x / 100) * EXPANDED_MAP_SIZE);
-      const y = Math.round((path.y / 100) * EXPANDED_MAP_SIZE);
-      ctx.fillStyle = "#c7aa7c";
-      ctx.fillRect(x - 3, y - 3, 6, 6);
-    }
+      for (const path of ui.pathMapPoints) {
+        const x = Math.round((path.x / 100) * EXPANDED_MAP_SIZE);
+        const y = Math.round((path.y / 100) * EXPANDED_MAP_SIZE);
+        ctx.fillStyle = "#c7aa7c";
+        ctx.fillRect(x - 3, y - 3, 6, 6);
+      }
 
-    for (const plant of ui.plantMapPoints) {
-      const x = Math.round((plant.x / 100) * EXPANDED_MAP_SIZE);
-      const y = Math.round((plant.y / 100) * EXPANDED_MAP_SIZE);
-      ctx.fillStyle = PLANT_COLORS[plant.plantType] ?? "#c75f78";
-      ctx.fillRect(x - 2, y - 2, 4, 4);
+      for (const plant of ui.plantMapPoints) {
+        const x = Math.round((plant.x / 100) * EXPANDED_MAP_SIZE);
+        const y = Math.round((plant.y / 100) * EXPANDED_MAP_SIZE);
+        ctx.fillStyle = PLANT_COLORS[plant.plantType] ?? "#c75f78";
+        ctx.fillRect(x - 2, y - 2, 4, 4);
+      }
     }
 
     const playerX = Math.round((ui.mapX / 100) * EXPANDED_MAP_SIZE);
@@ -108,7 +157,14 @@ export function GardenMapKey({
     ctx.fillRect(playerX - 6, playerY - 6, 12, 12);
     ctx.fillStyle = "#1f6e8c";
     ctx.fillRect(playerX - 4, playerY - 4, 8, 8);
-  }, [mapExpanded, ui.mapX, ui.mapY, ui.pathMapPoints, ui.plantMapPoints]);
+  }, [
+    mapExpanded,
+    ui.mapX,
+    ui.mapY,
+    ui.pathMapPoints,
+    ui.plantMapPoints,
+    ui.regionMapCells,
+  ]);
 
   function getMapPosition(event: MouseEvent<HTMLButtonElement>) {
     const bounds = event.currentTarget.getBoundingClientRect();
@@ -146,7 +202,7 @@ export function GardenMapKey({
             ? "Garden overview. Finish this tutorial step before using map travel."
             : ui.mode === "personal"
             ? "My Garden overview. Select a point to walk there. Colored marks show your flowers."
-            : "Community Garden overview. Select a point to travel there. Colored marks show planted flowers."
+            : "Community Garden overview. Select open land to travel there. Green shows garden density and gold shows the Growing Edge."
         }
       >
         <span className="cg-map-north" aria-hidden="true">N</span>
@@ -156,14 +212,31 @@ export function GardenMapKey({
             <span className="cg-map-home" aria-hidden="true" />
           </>
         ) : null}
-        {ui.plantMapPoints.map((plant) => (
-          <span
-            className={`cg-map-plant is-${plant.plantType}`}
-            key={`${plant.x}-${plant.y}`}
-            style={{ left: `${plant.x}%`, top: `${plant.y}%` }}
-            aria-hidden="true"
-          />
-        ))}
+        {ui.mode === "community" && ui.regionMapCells.length > 0
+          ? ui.regionMapCells.map((region) => (
+              <span
+                className={`cg-map-region is-${region.stage}${region.isOpen ? " is-open" : ""}`}
+                key={region.key}
+                style={{
+                  left: `${region.x}%`,
+                  top: `${region.y}%`,
+                  width: `${region.width}%`,
+                  height: `${region.height}%`,
+                  "--cg-region-density": String(
+                    Math.min(0.64, 0.08 + region.occupancyPercent / 170),
+                  ),
+                } as CSSProperties}
+                aria-hidden="true"
+              />
+            ))
+          : ui.plantMapPoints.map((plant) => (
+              <span
+                className={`cg-map-plant is-${plant.plantType}`}
+                key={`${plant.x}-${plant.y}`}
+                style={{ left: `${plant.x}%`, top: `${plant.y}%` }}
+                aria-hidden="true"
+              />
+            ))}
         <span className="cg-map-player" title="You are here" aria-hidden="true" />
       </button>
 
@@ -205,7 +278,7 @@ export function GardenMapKey({
               </button>
             </header>
             <p className="cg-expanded-map-help">
-              Choose any part of the map to travel there.
+              Choose open garden land to travel there. Golden sections show the Growing Edge.
             </p>
             <button
               ref={expandedMapRef}
@@ -224,12 +297,22 @@ export function GardenMapKey({
             </button>
             <footer className="cg-expanded-map-legend" aria-label="Map legend">
               <span className="is-player">You</span>
-              {ui.pathMapPoints.length > 0 ? (
+              {ui.regionMapCells.length > 0 ? (
+                <>
+                  <span className="is-growing-edge">Growing edge</span>
+                  <span className="is-heritage">Heritage</span>
+                  <span className="is-resting">Resting</span>
+                </>
+              ) : ui.pathMapPoints.length > 0 ? (
                 <span className="is-path">Path</span>
               ) : null}
-              <span className="is-rose">Rose</span>
-              <span className="is-sunflower">Sunflower</span>
-              <span className="is-lavender">Lavender</span>
+              {ui.regionMapCells.length === 0 ? (
+                <>
+                  <span className="is-rose">Rose</span>
+                  <span className="is-sunflower">Sunflower</span>
+                  <span className="is-lavender">Lavender</span>
+                </>
+              ) : null}
             </footer>
           </section>
         </div>

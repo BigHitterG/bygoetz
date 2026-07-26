@@ -103,10 +103,29 @@ first planted.
 - Public ten-minute snapshots remain the visible synchronization rhythm, not
   the authority for deciding whether quorum exists.
 
+## Player-facing Growing Edge
+
+Players see the friendly term **Growing Edge**, not quorum scores or account
+counts. The public minimap uses privacy-safe region states:
+
+- Garden: open land for normal play.
+- Growing Edge: community activity is helping prospective land take root.
+- Ready: the owner may safely review the section for a manual opening.
+- Newly opened: recently discovered land.
+- Resting: open land taking an ecological pause.
+
+The small map is available to everyone. Membership expands it with Heritage
+markers and more regional detail. Exact quorum evidence and opening decisions
+remain private in the founder dashboard.
+
 ## Delivery migration
 
-The first release adds a region manifest and immutable 16 by 16 snapshot routes
-without replacing the existing full-snapshot gameplay path. After parity and
-device tests, the client can move to visible-and-adjacent regional delivery.
-Future 160 by 160 areas are map/minimap sectors on the same global coordinate
-plane, not separate databases or duplicate games.
+The active client now loads a cached manifest plus one five-by-five regional
+window centered on the player. It does not request 25 individual regions and
+does not normally hydrate the entire world. The prior full snapshot remains an
+automatic recovery path if regional delivery fails, which protects existing
+Play state, optimistic recent flowers, and reconnect behavior.
+
+Future areas remain sectors on the same global coordinate plane, not separate
+databases or duplicate games. Actual land opening remains manual; this release
+does not turn on automatic expansion.

@@ -35,12 +35,9 @@ import {
 } from "../lib/myGardenBuilder";
 import type { MyGardenMutation } from "../lib/myGardenMutation";
 import {
-  clampWorldCoordinate,
   GARDEN_CONFIG,
   getChunkKey,
-  getGridFromMapPercentage,
   getLoadedBounds,
-  getMapPercentage,
 } from "../lib/gardenConfig";
 import {
   canEarnWateringCare,
@@ -60,11 +57,15 @@ import {
 } from "../lib/wateringSelection";
 import {
   clearGardenWeed,
+  fetchGardenRegionManifest,
+  fetchGardenRegionWindow,
   fetchGardenSnapshot,
   fetchGardenWateringStatus,
   GardenConnectionError,
   type GardenContribution,
   type GardenMapPlant,
+  type GardenRegionManifest,
+  type GardenRegionStage,
   type GardenWeed,
   isGardenConfigured,
   plantGardenPlant,
@@ -112,6 +113,21 @@ export type GardenUiState = {
   selectedTool: GardenTool;
   pathMapPoints: Array<{ x: number; y: number }>;
   plantMapPoints: Array<{ x: number; y: number; plantType: PlantType }>;
+  regionMapCells: Array<{
+    key: string;
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    stage: GardenRegionStage;
+    supportLevel: 0 | 1 | 2 | 3;
+    isOpen: boolean;
+    plantCount: number;
+    occupancyPercent: number;
+    heritagePlantCount: number;
+  }>;
+  currentRegionStage: GardenRegionStage | null;
+  recentlyOpenedRegionKey: string | null;
   nextMapUpdateAt: number | null;
   mode: GardenWorldMode;
   builder: {
@@ -173,6 +189,8 @@ type Runtime = {
   wateringCareStatusBoundsKey: string;
   wateringCareStatusNextRefreshAt: number;
   snapshotNextRefreshAt: number;
+  regionManifest: GardenRegionManifest | null;
+  loadedRegionWindowKey: string;
   effects: GardenEffect[];
   path: WorldPoint[];
   lastFrame: number;
@@ -487,7 +505,10 @@ function getCommunityBounds() {
 }
 
 function getRuntimeBounds(runtime: Runtime) {
-  if (runtime.mode === "community" || !runtime.personalGarden) {
+  if (runtime.mode === "community") {
+    return runtime.regionManifest?.worldBounds ?? getCommunityBounds();
+  }
+  if (!runtime.personalGarden) {
     return getCommunityBounds();
   }
   return {
@@ -499,7 +520,10 @@ function getRuntimeBounds(runtime: Runtime) {
 }
 
 function getRuntimeMapBounds(runtime: Runtime) {
-  if (runtime.mode === "community" || !runtime.personalGarden) {
+  if (runtime.mode === "community") {
+    return runtime.regionManifest?.mapBounds ?? getCommunityBounds();
+  }
+  if (!runtime.personalGarden) {
     return getCommunityBounds();
   }
   const expansion = runtime.personalGarden.nextExpansion;
@@ -515,12 +539,48 @@ function getRuntimeMapBounds(runtime: Runtime) {
 
 function isWithinRuntime(runtime: Runtime, gridX: number, gridY: number) {
   const bounds = getRuntimeBounds(runtime);
-  return (
+  const withinBounds =
     gridX >= bounds.minX &&
     gridX <= bounds.maxX &&
     gridY >= bounds.minY &&
-    gridY <= bounds.maxY
+    gridY <= bounds.maxY;
+  if (!withinBounds || runtime.mode !== "community" || !runtime.regionManifest) {
+    return withinBounds;
+  }
+  return runtime.regionManifest.regions.some(
+    (region) =>
+      region.isOpen &&
+      gridX >= region.bounds.minX &&
+      gridX <= region.bounds.maxX &&
+      gridY >= region.bounds.minY &&
+      gridY <= region.bounds.maxY,
   );
+}
+
+function getNearestOpenGrid(runtime: Runtime, gridX: number, gridY: number) {
+  if (runtime.mode !== "community" || !runtime.regionManifest) {
+    return { gridX, gridY };
+  }
+  if (isWithinRuntime(runtime, gridX, gridY)) return { gridX, gridY };
+  const candidates = runtime.regionManifest.regions
+    .filter((region) => region.isOpen)
+    .map((region) => {
+      const candidateX = Math.min(
+        region.bounds.maxX,
+        Math.max(region.bounds.minX, gridX),
+      );
+      const candidateY = Math.min(
+        region.bounds.maxY,
+        Math.max(region.bounds.minY, gridY),
+      );
+      return {
+        gridX: candidateX,
+        gridY: candidateY,
+        distance: Math.hypot(candidateX - gridX, candidateY - gridY),
+      };
+    })
+    .sort((left, right) => left.distance - right.distance);
+  return candidates[0] ?? { gridX: 0, gridY: 0 };
 }
 
 function clampRuntimeCoordinate(
@@ -528,7 +588,6 @@ function clampRuntimeCoordinate(
   value: number,
   axis: "x" | "y",
 ) {
-  if (runtime.mode === "community") return clampWorldCoordinate(value);
   const bounds = getRuntimeBounds(runtime);
   const minimum = (axis === "x" ? bounds.minX : bounds.minY) + 0.5;
   const maximum = (axis === "x" ? bounds.maxX : bounds.maxY) + 0.5;
@@ -543,7 +602,6 @@ function getRuntimeMapPercentage(
   coordinate: number,
   axis: "x" | "y",
 ) {
-  if (runtime.mode === "community") return getMapPercentage(coordinate);
   const bounds = getRuntimeMapBounds(runtime);
   const minimum = axis === "x" ? bounds.minX : bounds.minY;
   const maximum = axis === "x" ? bounds.maxX : bounds.maxY;
@@ -558,7 +616,6 @@ function getRuntimeGridFromMapPercentage(
   percentage: number,
   axis: "x" | "y",
 ) {
-  if (runtime.mode === "community") return getGridFromMapPercentage(percentage);
   const bounds = getRuntimeMapBounds(runtime);
   const minimum = axis === "x" ? bounds.minX : bounds.minY;
   const maximum = axis === "x" ? bounds.maxX : bounds.maxY;
@@ -1684,6 +1741,8 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
       wateringCareStatusBoundsKey: "",
       wateringCareStatusNextRefreshAt: 0,
       snapshotNextRefreshAt: 0,
+      regionManifest: null,
+      loadedRegionWindowKey: "",
       effects: [],
       path: [{ ...start }],
       lastFrame: 0,
@@ -1794,6 +1853,37 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
         x: getRuntimeMapPercentage(runtime, path.gridX, "x"),
         y: getRuntimeMapPercentage(runtime, path.gridY, "y"),
       }));
+      const mapBounds = getRuntimeMapBounds(runtime);
+      const mapWidth = Math.max(1, mapBounds.maxX - mapBounds.minX + 1);
+      const mapHeight = Math.max(1, mapBounds.maxY - mapBounds.minY + 1);
+      const regionMapCells =
+        runtime.mode === "community"
+          ? (runtime.regionManifest?.regions ?? []).map((region) => ({
+              key: region.regionKey,
+              x: ((region.bounds.minX - mapBounds.minX) / mapWidth) * 100,
+              y: ((region.bounds.minY - mapBounds.minY) / mapHeight) * 100,
+              width:
+                ((region.bounds.maxX - region.bounds.minX + 1) / mapWidth) * 100,
+              height:
+                ((region.bounds.maxY - region.bounds.minY + 1) / mapHeight) * 100,
+              stage: region.publicStage,
+              supportLevel: region.supportLevel,
+              isOpen: region.isOpen,
+              plantCount: region.plantCount,
+              occupancyPercent: region.occupancyPercent,
+              heritagePlantCount: region.heritagePlantCount,
+            }))
+          : [];
+      const currentRegion = runtime.regionManifest?.regions.find(
+        (region) =>
+          gridX >= region.bounds.minX &&
+          gridX <= region.bounds.maxX &&
+          gridY >= region.bounds.minY &&
+          gridY <= region.bounds.maxY,
+      );
+      const recentlyOpenedRegion = runtime.regionManifest?.regions.find(
+        (region) => region.newlyOpened,
+      );
       const state: GardenUiState = {
         action: action.action,
         actionLabel: action.label,
@@ -1807,11 +1897,23 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
         mapWidthPercentage:
           runtime.mode === "personal" && runtime.personalGarden
             ? (runtime.personalGarden.width / runtime.personalGarden.maxWidth) * 100
-            : 100,
+            : runtime.regionManifest
+              ? ((runtime.regionManifest.worldBounds.maxX -
+                  runtime.regionManifest.worldBounds.minX +
+                  1) /
+                  mapWidth) *
+                100
+              : 100,
         mapHeightPercentage:
           runtime.mode === "personal" && runtime.personalGarden
             ? (runtime.personalGarden.height / runtime.personalGarden.maxHeight) * 100
-            : 100,
+            : runtime.regionManifest
+              ? ((runtime.regionManifest.worldBounds.maxY -
+                  runtime.regionManifest.worldBounds.minY +
+                  1) /
+                  mapHeight) *
+                100
+              : 100,
         zoom: runtime.zoom,
         canZoomIn: runtime.zoom < GARDEN_CONFIG.maxCameraZoom,
         canZoomOut: runtime.zoom > GARDEN_CONFIG.minCameraZoom,
@@ -1827,6 +1929,9 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
               : runtime.selectedPlantType,
         pathMapPoints,
         plantMapPoints,
+        regionMapCells,
+        currentRegionStage: currentRegion?.publicStage ?? null,
+        recentlyOpenedRegionKey: recentlyOpenedRegion?.regionKey ?? null,
         nextMapUpdateAt:
           runtime.mode === "community" && runtime.snapshotNextRefreshAt > 0
             ? runtime.snapshotNextRefreshAt
@@ -2007,6 +2112,79 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
         return;
       }
 
+      const applyInitialSpawn = (
+        spawnPoints: Array<{ gridX: number; gridY: number }>,
+      ) => {
+        if (
+          runtime.spawnApplied ||
+          runtime.hasMoved ||
+          runtime.target ||
+          spawnPoints.length === 0
+        ) {
+          return;
+        }
+        let spawnIndex = -1;
+        try {
+          const savedIndex = Number(
+            window.sessionStorage.getItem("basil-community-spawn-index-v1"),
+          );
+          if (Number.isSafeInteger(savedIndex) && savedIndex >= 0) {
+            spawnIndex = savedIndex % spawnPoints.length;
+          }
+        } catch {
+          // A random balanced spawn remains safe when session storage is blocked.
+        }
+        if (spawnIndex < 0) {
+          spawnIndex = Math.floor(Math.random() * spawnPoints.length);
+          try {
+            window.sessionStorage.setItem(
+              "basil-community-spawn-index-v1",
+              String(spawnIndex),
+            );
+          } catch {
+            // The selected spawn still applies for this running client.
+          }
+        }
+        const spawn = spawnPoints[spawnIndex];
+        const destination = gridToWorld(spawn.gridX, spawn.gridY);
+        runtime.mary = { ...destination };
+        runtime.camera = { ...destination };
+        runtime.duck = {
+          x: clampRuntimeCoordinate(runtime, destination.x - 18, "x"),
+          y: clampRuntimeCoordinate(runtime, destination.y + 10, "y"),
+        };
+        runtime.path = [{ ...destination }];
+        runtime.loadedChunkKey = "";
+        runtime.spawnApplied = true;
+        bounds = getLoadedBounds(spawn.gridX, spawn.gridY);
+      };
+
+      let regionalDeliveryAvailable = true;
+      try {
+        if (
+          !runtime.regionManifest ||
+          Date.now() >= runtime.snapshotNextRefreshAt
+        ) {
+          const manifest = await fetchGardenRegionManifest();
+          if (requestId !== runtime.requestId) return;
+          runtime.regionManifest = manifest;
+          runtime.snapshotNextRefreshAt = Date.parse(manifest.nextRefreshAt);
+          runtime.mapRevision += 1;
+        }
+        applyInitialSpawn(runtime.regionManifest.spawnPoints);
+      } catch {
+        regionalDeliveryAvailable = false;
+      }
+
+      const centerGridX = Math.floor(runtime.mary.x / GARDEN_CONFIG.tileSize);
+      const centerGridY = Math.floor(runtime.mary.y / GARDEN_CONFIG.tileSize);
+      const regionSize = runtime.regionManifest?.regionSize ?? GARDEN_CONFIG.chunkSize;
+      const centerRegionX = Math.floor(centerGridX / regionSize);
+      const centerRegionY = Math.floor(centerGridY / regionSize);
+      const desiredRegionWindowKey = runtime.regionManifest
+        ? `${runtime.regionManifest.snapshotVersion}:${centerRegionX}:${centerRegionY}:2`
+        : "";
+
       const refreshWateringStatus = async () => {
         const boundsKey = `${bounds.minX}:${bounds.maxX}:${bounds.minY}:${bounds.maxY}`;
         if (
@@ -2058,6 +2236,8 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
       };
 
       if (
+        desiredRegionWindowKey.length > 0 &&
+        runtime.loadedRegionWindowKey === desiredRegionWindowKey &&
         runtime.snapshotNextRefreshAt > 0 &&
         Date.now() < runtime.snapshotNextRefreshAt
       ) {
@@ -2068,50 +2248,54 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
       }
 
       try {
-        const snapshot = await fetchGardenSnapshot();
+        if (!regionalDeliveryAvailable || !runtime.regionManifest) {
+          throw new Error("Regional delivery is temporarily unavailable.");
+        }
+        const regionalWindow = await fetchGardenRegionWindow(
+          centerRegionX,
+          centerRegionY,
+          runtime.regionManifest.snapshotVersion,
+          2,
+        );
         if (requestId !== runtime.requestId) return;
-
         reconcileCommunitySnapshot(
           runtime,
-          snapshot.plants,
-          snapshot.generatedAt,
+          regionalWindow.plants,
+          regionalWindow.generatedAt,
         );
         runtime.communityWeeds = new Map(
-          snapshot.weeds
+          regionalWindow.weeds
             .filter((weed) => !runtime.recentlyClearedWeeds.has(weed.id))
             .map((weed) => [plantKey(weed.grid_x, weed.grid_y), weed]),
         );
+        runtime.loadedRegionWindowKey = desiredRegionWindowKey;
+        runtime.snapshotNextRefreshAt = Date.parse(regionalWindow.nextRefreshAt);
         runtime.mapRevision += 1;
-        runtime.snapshotNextRefreshAt = Date.parse(snapshot.nextRefreshAt);
-        if (
-          !runtime.spawnApplied &&
-          !runtime.hasMoved &&
-          !runtime.target &&
-          snapshot.spawnPoints.length > 0
-        ) {
-          const spawn =
-            snapshot.spawnPoints[
-              Math.floor(Math.random() * snapshot.spawnPoints.length)
-            ];
-          const destination = gridToWorld(spawn.gridX, spawn.gridY);
-          runtime.mary = { ...destination };
-          runtime.camera = { ...destination };
-          runtime.duck = {
-            x: clampRuntimeCoordinate(runtime, destination.x - 18, "x"),
-            y: clampRuntimeCoordinate(runtime, destination.y + 10, "y"),
-          };
-          runtime.path = [{ ...destination }];
-          runtime.loadedChunkKey = "";
-          runtime.spawnApplied = true;
-          bounds = getLoadedBounds(spawn.gridX, spawn.gridY);
-        }
         showLocalSnapshot();
         runtime.connection = "online";
         runtime.statusMessage = "The shared garden is connected.";
-      } catch (error) {
-        runtime.connection = "error";
-        runtime.statusMessage =
-          error instanceof Error ? error.message : "The garden could not refresh.";
+      } catch {
+        try {
+          const snapshot = await fetchGardenSnapshot();
+          if (requestId !== runtime.requestId) return;
+          reconcileCommunitySnapshot(runtime, snapshot.plants, snapshot.generatedAt);
+          runtime.communityWeeds = new Map(
+            snapshot.weeds
+              .filter((weed) => !runtime.recentlyClearedWeeds.has(weed.id))
+              .map((weed) => [plantKey(weed.grid_x, weed.grid_y), weed]),
+          );
+          applyInitialSpawn(snapshot.spawnPoints);
+          runtime.loadedRegionWindowKey = "full-snapshot-fallback";
+          runtime.snapshotNextRefreshAt = Date.parse(snapshot.nextRefreshAt);
+          runtime.mapRevision += 1;
+          showLocalSnapshot();
+          runtime.connection = "online";
+          runtime.statusMessage = "The shared garden is connected.";
+        } catch (error) {
+          runtime.connection = "error";
+          runtime.statusMessage =
+            error instanceof Error ? error.message : "The garden could not refresh.";
+        }
       }
       publishUi();
       await refreshWateringStatus();
@@ -2339,8 +2523,13 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
             "y",
           );
           const bounds = getRuntimeBounds(runtime);
-          const gridX = Math.min(bounds.maxX, Math.max(bounds.minX, requestedGridX));
-          const gridY = Math.min(bounds.maxY, Math.max(bounds.minY, requestedGridY));
+          const clampedX = Math.min(bounds.maxX, Math.max(bounds.minX, requestedGridX));
+          const clampedY = Math.min(bounds.maxY, Math.max(bounds.minY, requestedGridY));
+          const { gridX, gridY } = getNearestOpenGrid(
+            runtime,
+            clampedX,
+            clampedY,
+          );
           const destination = gridToWorld(gridX, gridY);
           runtime.selected = null;
           runtime.target = null;
@@ -2362,13 +2551,18 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
         goToGridPosition(requestedGridX, requestedGridY) {
           const runtime = runtimeRef.current;
           const bounds = getRuntimeBounds(runtime);
-          const gridX = Math.min(
+          const clampedX = Math.min(
             bounds.maxX,
             Math.max(bounds.minX, Math.round(requestedGridX)),
           );
-          const gridY = Math.min(
+          const clampedY = Math.min(
             bounds.maxY,
             Math.max(bounds.minY, Math.round(requestedGridY)),
+          );
+          const { gridX, gridY } = getNearestOpenGrid(
+            runtime,
+            clampedX,
+            clampedY,
           );
           const destination = gridToWorld(gridX, gridY);
           runtime.selected = null;
@@ -3020,6 +3214,15 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
           moving: runtime.reducedMotion ? false : runtime.moving,
           now: Date.now(),
           mode: runtime.mode,
+          communityRegions:
+            runtime.mode === "community"
+              ? runtime.regionManifest?.regions.map((region) => ({
+                  regionX: region.regionX,
+                  regionY: region.regionY,
+                  isOpen: region.isOpen,
+                  publicStage: region.publicStage,
+                }))
+              : undefined,
           personalGarden: runtime.personalGarden
             ? {
                 minX: runtime.personalGarden.minX,

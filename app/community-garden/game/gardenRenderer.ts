@@ -64,6 +64,12 @@ export type RenderGardenState = {
   moving: boolean;
   now: number;
   mode: GardenWorldMode;
+  communityRegions?: Array<{
+    regionX: number;
+    regionY: number;
+    isOpen: boolean;
+    publicStage: "garden" | "edge" | "growing" | "ready" | "new" | "resting" | "wild";
+  }>;
   shareOnly?: boolean;
   personalGarden?: {
     minX: number;
@@ -103,11 +109,7 @@ let greenLayer: HTMLCanvasElement | null = null;
 let maskLayer: HTMLCanvasElement | null = null;
 
 function terrainCellKey(gridX: number, gridY: number) {
-  const worldSize = GARDEN_CONFIG.worldMax - GARDEN_CONFIG.worldMin + 1;
-  return (
-    (gridY - GARDEN_CONFIG.worldMin) * worldSize +
-    (gridX - GARDEN_CONFIG.worldMin)
-  );
+  return `${gridX}:${gridY}`;
 }
 
 function ensureLayer(current: HTMLCanvasElement | null, viewport: GardenViewport) {
@@ -465,7 +467,9 @@ function drawTerrainLayer(
   viewport: GardenViewport,
   layer: TerrainLayer,
   zoom: number,
-  occupiedCells: Set<number>,
+  occupiedCells: Set<string>,
+  openRegionKeys: ReadonlySet<string> | null,
+  growingEdgeStages: ReadonlyMap<string, "edge" | "growing" | "ready">,
 ) {
   const { tileSize, tileScreenHeight } = GARDEN_CONFIG;
   const cellWidth = tileSize * zoom;
@@ -489,11 +493,28 @@ function drawTerrainLayer(
       const x = Math.floor(topLeft.x);
       const y = Math.floor(topLeft.y);
 
-      if (!isWithinGarden(gridX, gridY)) {
+      const regionKey = `${Math.floor(gridX / 16)}:${Math.floor(gridY / 16)}`;
+      const isOpen = openRegionKeys
+        ? openRegionKeys.has(regionKey)
+        : isWithinGarden(gridX, gridY);
+      if (!isOpen) {
         if (layer === "base") {
-          ctx.fillStyle = "#d9d5ca";
+          const growingStage = growingEdgeStages.get(regionKey);
+          ctx.fillStyle = growingStage ? "#ded5b9" : "#d9d5ca";
           ctx.fillRect(x, y, cellWidth + 1, cellHeight + 1);
-          drawBoundaryTree(ctx, x, y, zoom, gridX, gridY);
+          if (growingStage) {
+            const atRegionEdge =
+              Math.abs(gridX % 16) <= 1 ||
+              Math.abs(gridY % 16) <= 1 ||
+              Math.abs(gridX % 16) >= 14 ||
+              Math.abs(gridY % 16) >= 14;
+            if (atRegionEdge && terrainNoise(gridX, gridY, 67) > 0.62) {
+              ctx.fillStyle = growingStage === "ready" ? "#d9ad42" : "#c9aa5c";
+              ctx.fillRect(x + 6 * zoom, y + 7 * zoom, 4 * zoom, Math.max(1, zoom));
+            }
+          } else {
+            drawBoundaryTree(ctx, x, y, zoom, gridX, gridY);
+          }
         }
         continue;
       }
@@ -2431,10 +2452,30 @@ export function renderGarden(ctx: CanvasRenderingContext2D, state: RenderGardenS
       ...state.weeds.map((weed) => terrainCellKey(weed.grid_x, weed.grid_y)),
     ],
   );
+  const openRegionKeys = state.communityRegions
+    ? new Set(
+        state.communityRegions
+          .filter((region) => region.isOpen)
+          .map((region) => `${region.regionX}:${region.regionY}`),
+      )
+    : null;
+  const growingEdgeStages = new Map(
+    (state.communityRegions ?? []).flatMap((region) =>
+      !region.isOpen &&
+      (region.publicStage === "edge" ||
+        region.publicStage === "growing" ||
+        region.publicStage === "ready")
+        ? [[
+            `${region.regionX}:${region.regionY}`,
+            region.publicStage as "edge" | "growing" | "ready",
+          ] as const]
+        : [],
+    ),
+  );
   ctx.imageSmoothingEnabled = false;
   ctx.clearRect(0, 0, state.viewport.width, state.viewport.height);
-  drawTerrainLayer(baseCtx, state.camera, state.viewport, "base", state.zoom, occupiedCells);
-  drawTerrainLayer(soilCtx, state.camera, state.viewport, "soil", state.zoom, occupiedCells);
+  drawTerrainLayer(baseCtx, state.camera, state.viewport, "base", state.zoom, occupiedCells, openRegionKeys, growingEdgeStages);
+  drawTerrainLayer(soilCtx, state.camera, state.viewport, "soil", state.zoom, occupiedCells, openRegionKeys, growingEdgeStages);
   drawColorMask(
     maskCtx,
     visiblePlants,
@@ -2445,7 +2486,7 @@ export function renderGarden(ctx: CanvasRenderingContext2D, state: RenderGardenS
     state.zoom,
   );
   applyMask(soilCtx, maskCtx, maskLayer);
-  drawTerrainLayer(greenCtx, state.camera, state.viewport, "green", state.zoom, occupiedCells);
+  drawTerrainLayer(greenCtx, state.camera, state.viewport, "green", state.zoom, occupiedCells, openRegionKeys, growingEdgeStages);
   drawColorMask(
     maskCtx,
     visiblePlants,

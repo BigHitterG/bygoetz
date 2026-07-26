@@ -8,6 +8,19 @@ let playwright;
 try {
   playwright = require("playwright");
 } catch {
+  const directRuntimePackage = join(
+    homedir(),
+    ".cache",
+    "codex-runtimes",
+    "codex-primary-runtime",
+    "dependencies",
+    "node",
+    "node_modules",
+    "playwright",
+  );
+  try {
+    playwright = require(directRuntimePackage);
+  } catch {
   const pnpmDirectory = join(
     homedir(),
     ".cache",
@@ -30,6 +43,7 @@ try {
       "playwright",
     ),
   );
+  }
 }
 
 const baseUrl = process.argv[2] ?? "http://127.0.0.1:3010/community-garden";
@@ -83,6 +97,7 @@ for (const device of cases) {
   });
   const page = await context.newPage();
   const errors = [];
+  const failedResponses = [];
   page.on("console", (message) => {
     const text = message.text();
     if (
@@ -93,6 +108,11 @@ for (const device of cases) {
     }
   });
   page.on("pageerror", (error) => errors.push(error.message));
+  page.on("response", (response) => {
+    if (response.status() >= 400) {
+      failedResponses.push(`${response.status()} ${response.url()}`);
+    }
+  });
   await page.goto(baseUrl, { waitUntil: "domcontentloaded", timeout: 30_000 });
   await page.locator(".cg-game-frame").waitFor({
     state: "visible",
@@ -140,6 +160,16 @@ for (const device of cases) {
     basilVisible: document.body.innerText.includes("BASIL"),
     inventoryVisible: document.body.innerText.toLowerCase().includes("inventory"),
     gardenControlVisible: document.body.innerText.toLowerCase().includes("my garden"),
+    regionCells: document.querySelectorAll(".cg-map-region").length,
+    growingEdgeCells: document.querySelectorAll(
+      ".cg-map-region.is-edge, .cg-map-region.is-growing, .cg-map-region.is-ready",
+    ).length,
+    miniMapBounds: (() => {
+      const bounds = document.querySelector(".cg-mini-map")?.getBoundingClientRect();
+      return bounds
+        ? { left: bounds.left, top: bounds.top, width: bounds.width, height: bounds.height }
+        : null;
+    })(),
     errorOverlay: Boolean(
       document.querySelector(
         "[data-nextjs-dialog], .vite-error-overlay, #webpack-dev-server-client-overlay",
@@ -148,7 +178,11 @@ for (const device of cases) {
     horizontalOverflow:
       document.documentElement.scrollWidth > document.documentElement.clientWidth + 2,
   }));
-  results.push({ ...device, ...result, inventoryModal, errors });
+  await page.screenshot({
+    path: join(tmpdir(), `basil-browser-${device.name}.png`),
+    fullPage: true,
+  });
+  results.push({ ...device, ...result, inventoryModal, errors, failedResponses });
   await context.close();
 }
 

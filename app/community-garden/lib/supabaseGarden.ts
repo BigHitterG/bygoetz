@@ -41,6 +41,55 @@ export type GardenSnapshot = {
   weeds: GardenWeed[];
   spawnPoints: Array<{ gridX: number; gridY: number }>;
 };
+export type GardenRegionBounds = {
+  minX: number;
+  maxX: number;
+  minY: number;
+  maxY: number;
+};
+export type GardenRegionStage =
+  | "garden"
+  | "edge"
+  | "growing"
+  | "ready"
+  | "new"
+  | "resting"
+  | "wild";
+export type GardenRegionSummary = {
+  regionKey: string;
+  regionX: number;
+  regionY: number;
+  bounds: GardenRegionBounds;
+  publicStage: GardenRegionStage;
+  supportLevel: 0 | 1 | 2 | 3;
+  isOpen: boolean;
+  newlyOpened: boolean;
+  plantCount: number;
+  heritagePlantCount: number;
+  weedCount: number;
+  occupancyPercent: number;
+};
+export type GardenRegionManifest = {
+  snapshotVersion: number;
+  generatedAt: string;
+  nextRefreshAt: string;
+  regionSize: number;
+  worldBounds: GardenRegionBounds;
+  mapBounds: GardenRegionBounds;
+  regions: GardenRegionSummary[];
+  spawnPoints: Array<{ gridX: number; gridY: number }>;
+};
+export type GardenRegionWindow = {
+  snapshotVersion: number;
+  generatedAt: string;
+  nextRefreshAt: string;
+  centerRegionX: number;
+  centerRegionY: number;
+  radius: number;
+  loadedRegionKeys: string[];
+  plants: PlantRecord[];
+  weeds: GardenWeed[];
+};
 
 type GardenActionResult = {
   plant: PlantRecord;
@@ -88,6 +137,58 @@ async function responseError(response: Response, fallback: string) {
   } catch {
     return fallback;
   }
+}
+
+function normalizeBounds(value: unknown): GardenRegionBounds | null {
+  if (!value || typeof value !== "object") return null;
+  const candidate = value as Record<string, unknown>;
+  const minX = Number(candidate.minX);
+  const maxX = Number(candidate.maxX);
+  const minY = Number(candidate.minY);
+  const maxY = Number(candidate.maxY);
+  return [minX, maxX, minY, maxY].every(Number.isSafeInteger) &&
+    minX <= maxX &&
+    minY <= maxY
+    ? { minX, maxX, minY, maxY }
+    : null;
+}
+
+function normalizeSpawnPoints(value: unknown) {
+  return Array.isArray(value)
+    ? value.flatMap((point) => {
+        if (!point || typeof point !== "object") return [];
+        const candidate = point as Record<string, unknown>;
+        const gridX = Number(candidate.gridX);
+        const gridY = Number(candidate.gridY);
+        return Number.isInteger(gridX) && Number.isInteger(gridY)
+          ? [{ gridX, gridY }]
+          : [];
+      })
+    : [];
+}
+
+function normalizeWeeds(value: unknown, generatedAt: unknown) {
+  return Array.isArray(value)
+    ? value.flatMap((candidate) => {
+        if (!candidate || typeof candidate !== "object") return [];
+        const weed = candidate as Record<string, unknown>;
+        const gridX = Number(weed.grid_x);
+        const gridY = Number(weed.grid_y);
+        if (
+          typeof weed.id !== "string" ||
+          !Number.isInteger(gridX) ||
+          !Number.isInteger(gridY)
+        ) {
+          return [];
+        }
+        return [{
+          id: weed.id,
+          grid_x: gridX,
+          grid_y: gridY,
+          spawned_at: String(weed.spawned_at ?? generatedAt),
+        }];
+      })
+    : [];
 }
 
 export async function fetchGardenRequest(
@@ -165,38 +266,8 @@ export async function fetchGardenSnapshot(): Promise<GardenSnapshot> {
         )
         .map(normalizePlant)
     : [];
-  const spawnPoints = Array.isArray(data.spawnPoints)
-    ? data.spawnPoints.flatMap((point) => {
-        if (!point || typeof point !== "object") return [];
-        const candidate = point as Record<string, unknown>;
-        const gridX = Number(candidate.gridX);
-        const gridY = Number(candidate.gridY);
-        return Number.isInteger(gridX) && Number.isInteger(gridY)
-          ? [{ gridX, gridY }]
-          : [];
-      })
-    : [];
-  const weeds = Array.isArray(data.weeds)
-    ? data.weeds.flatMap((value) => {
-        if (!value || typeof value !== "object") return [];
-        const weed = value as Record<string, unknown>;
-        const gridX = Number(weed.grid_x);
-        const gridY = Number(weed.grid_y);
-        if (
-          typeof weed.id !== "string" ||
-          !Number.isInteger(gridX) ||
-          !Number.isInteger(gridY)
-        ) {
-          return [];
-        }
-        return [{
-          id: weed.id,
-          grid_x: gridX,
-          grid_y: gridY,
-          spawned_at: String(weed.spawned_at ?? data.generatedAt),
-        }];
-      })
-    : [];
+  const spawnPoints = normalizeSpawnPoints(data.spawnPoints);
+  const weeds = normalizeWeeds(data.weeds, data.generatedAt);
   return {
     version: Number(data.version),
     generatedAt: String(data.generatedAt),
@@ -205,6 +276,138 @@ export async function fetchGardenSnapshot(): Promise<GardenSnapshot> {
     plants,
     weeds,
     spawnPoints,
+  };
+}
+
+export async function fetchGardenRegionManifest(): Promise<GardenRegionManifest> {
+  const version = getCurrentSnapshotVersion();
+  let response: Response;
+  try {
+    response = await fetchGardenRequest(
+      `/api/community-garden/regions/manifest?version=${version}`,
+      { cache: "force-cache" },
+    );
+  } catch (error) {
+    throw new GardenConnectionError(
+      isAbortError(error)
+        ? "The garden map took too long to refresh."
+        : "The garden map connection was interrupted.",
+    );
+  }
+  if (!response.ok) {
+    throw new Error(await responseError(response, "The garden map could not refresh."));
+  }
+  const data = (await response.json()) as Record<string, unknown>;
+  const worldBounds = normalizeBounds(data.worldBounds);
+  const mapBounds = normalizeBounds(data.mapBounds) ?? worldBounds;
+  if (!worldBounds || !mapBounds) {
+    throw new Error("The garden map returned invalid boundaries.");
+  }
+  const stages = new Set<GardenRegionStage>([
+    "garden",
+    "edge",
+    "growing",
+    "ready",
+    "new",
+    "resting",
+    "wild",
+  ]);
+  const regions = Array.isArray(data.regions)
+    ? data.regions.flatMap((value): GardenRegionSummary[] => {
+        if (!value || typeof value !== "object") return [];
+        const region = value as Record<string, unknown>;
+        const bounds = normalizeBounds(region.bounds);
+        const regionX = Number(region.regionX);
+        const regionY = Number(region.regionY);
+        const publicStage = String(region.publicStage) as GardenRegionStage;
+        const supportLevel = Number(region.supportLevel);
+        if (
+          typeof region.regionKey !== "string" ||
+          !bounds ||
+          !Number.isSafeInteger(regionX) ||
+          !Number.isSafeInteger(regionY) ||
+          !stages.has(publicStage) ||
+          ![0, 1, 2, 3].includes(supportLevel)
+        ) {
+          return [];
+        }
+        return [{
+          regionKey: region.regionKey,
+          regionX,
+          regionY,
+          bounds,
+          publicStage,
+          supportLevel: supportLevel as 0 | 1 | 2 | 3,
+          isOpen: region.isOpen === true,
+          newlyOpened: region.newlyOpened === true,
+          plantCount: Math.max(0, Number(region.plantCount) || 0),
+          heritagePlantCount: Math.max(0, Number(region.heritagePlantCount) || 0),
+          weedCount: Math.max(0, Number(region.weedCount) || 0),
+          occupancyPercent: Math.min(100, Math.max(0, Number(region.occupancyPercent) || 0)),
+        }];
+      })
+    : [];
+  return {
+    snapshotVersion: Number(data.snapshotVersion),
+    generatedAt: String(data.generatedAt),
+    nextRefreshAt: String(data.nextRefreshAt),
+    regionSize: Math.max(1, Number(data.regionSize) || 16),
+    worldBounds,
+    mapBounds,
+    regions,
+    spawnPoints: normalizeSpawnPoints(data.spawnPoints),
+  };
+}
+
+export async function fetchGardenRegionWindow(
+  centerRegionX: number,
+  centerRegionY: number,
+  snapshotVersion: number,
+  radius = 2,
+): Promise<GardenRegionWindow> {
+  const query = new URLSearchParams({
+    centerX: String(centerRegionX),
+    centerY: String(centerRegionY),
+    radius: String(radius),
+    version: String(snapshotVersion),
+  });
+  let response: Response;
+  try {
+    response = await fetchGardenRequest(
+      `/api/community-garden/regions/window?${query.toString()}`,
+      { cache: "force-cache" },
+    );
+  } catch (error) {
+    throw new GardenConnectionError(
+      isAbortError(error)
+        ? "This part of the garden took too long to refresh."
+        : "This part of the garden could not connect.",
+    );
+  }
+  if (!response.ok) {
+    throw new Error(await responseError(response, "This part of the garden could not refresh."));
+  }
+  const data = (await response.json()) as Record<string, unknown>;
+  const plants = Array.isArray(data.plants)
+    ? data.plants
+        .filter(
+          (plant): plant is Record<string, unknown> =>
+            Boolean(plant) && typeof plant === "object",
+        )
+        .map(normalizePlant)
+    : [];
+  return {
+    snapshotVersion: Number(data.snapshotVersion),
+    generatedAt: String(data.generatedAt),
+    nextRefreshAt: String(data.nextRefreshAt),
+    centerRegionX: Number(data.centerRegionX),
+    centerRegionY: Number(data.centerRegionY),
+    radius: Number(data.radius),
+    loadedRegionKeys: Array.isArray(data.loadedRegionKeys)
+      ? data.loadedRegionKeys.filter((key): key is string => typeof key === "string")
+      : [],
+    plants,
+    weeds: normalizeWeeds(data.weeds, data.generatedAt),
   };
 }
 
