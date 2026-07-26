@@ -3,6 +3,7 @@
 import type { Session } from "@supabase/supabase-js";
 import { useCallback, useEffect, useState } from "react";
 import type { CommunityGardenHealth } from "@/lib/communityGarden/health";
+import { FounderFrontierDashboard } from "./FounderFrontierDashboard";
 
 type HealthState =
   | { status: "checking" }
@@ -298,6 +299,13 @@ export function GardenHealthPanel({ session }: { session: Session }) {
               : "No land opens automatically in this release."}
           </small>
         </div>
+      ) : null}
+
+      {health.frontier ? (
+        <FounderFrontierDashboard
+          frontier={health.frontier}
+          measuredAt={health.measuredAt}
+        />
       ) : null}
 
       <div className="cg-funnel-heading">

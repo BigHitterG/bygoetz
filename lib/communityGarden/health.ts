@@ -28,6 +28,56 @@ export type CommunityGardenFrontierRecommendation = {
   reasons: string[];
 };
 
+export type CommunityGardenFrontierMapCell = {
+  regionX: number;
+  regionY: number;
+  regionExists: boolean;
+  landState: "founding" | "established" | "frontier" | "fallow";
+  isFounding: boolean;
+  ringIndex: number | null;
+  plantCount: number;
+  effectiveCapacity: number;
+  occupancyPercent: number;
+  pressureState: "healthy" | "busy" | "resting" | null;
+  eligibleLivePlants: number;
+  coveredSubcells: number;
+  eligibleAccounts7d: number;
+  activeDays7d: number;
+  consecutiveSupportDays: number;
+  locallyQualified: boolean;
+  globallyQualified: boolean;
+  recommendedAction: "none" | "prepare" | "establish" | "restore";
+  reasons: string[];
+  heritageFlowers: number;
+  heritageCapacity: number;
+  evaluatedAt: string;
+};
+
+export type CommunityGardenFrontierTrend = {
+  date: string;
+  evaluatedAt: string;
+  plants: number;
+  effectiveCapacity: number;
+  occupancyPercent: number;
+  accessibleRegions: number;
+  perimeterRegions: number;
+  activeAccounts7d: number;
+  requiredAccounts: number;
+  globallyQualified: boolean;
+  qualifyingFrontierRegions: number;
+  recommendedExpansionCount: number;
+};
+
+export type CommunityGardenRegionStateChange = {
+  id: number;
+  regionX: number;
+  regionY: number;
+  previousState: "founding" | "established" | "frontier" | "fallow" | null;
+  nextState: "founding" | "established" | "frontier" | "fallow";
+  reason: string;
+  createdAt: string;
+};
+
 export type CommunityGardenFrontierHealth = {
   policyVersion: string;
   automationEnabled: boolean;
@@ -62,6 +112,30 @@ export type CommunityGardenFrontierHealth = {
     grandfatheredFlowers: number;
   };
   recommendations: CommunityGardenFrontierRecommendation[];
+  policy: {
+    effectiveRegionCapacity: number;
+    preparePercent: number;
+    expandPercent: number;
+    targetPercent: number;
+    supportedLivePlants: number;
+    supportedSubcells: number;
+    supportedAccounts: number;
+    supportedActiveDays: number;
+    supportedConsecutiveDays: number;
+    maxRegionsPerActorDay: number;
+    heritageCapacityPerRegion: number;
+  };
+  map: {
+    bounds: {
+      minX: number;
+      maxX: number;
+      minY: number;
+      maxY: number;
+    };
+    cells: CommunityGardenFrontierMapCell[];
+  };
+  trends: CommunityGardenFrontierTrend[];
+  recentStateChanges: CommunityGardenRegionStateChange[];
 };
 
 export type CommunityGardenHealth = {
@@ -185,7 +259,7 @@ export async function getCommunityGardenAdminHealth() {
   ] = await Promise.all([
     getSupabaseAdmin().rpc("get_community_garden_admin_health"),
     getSupabaseAdmin().rpc("get_community_garden_commons_health"),
-    getSupabaseAdmin().rpc("get_community_garden_frontier_health_v1"),
+    getSupabaseAdmin().rpc("get_community_garden_frontier_dashboard_v1"),
     getBasilLaunchFunnelAdmin(),
     getCommunityGardenEconomy(),
   ]);

@@ -38,7 +38,7 @@ test("owner health exposes shadow quorum without making the dashboard brittle", 
     "utf8",
   );
 
-  assert.match(health, /get_community_garden_frontier_health_v1/);
+  assert.match(health, /get_community_garden_frontier_dashboard_v1/);
   assert.match(health, /frontier: CommunityGardenFrontierHealth \| null/);
   assert.match(health, /frontierError/);
   assert.match(panel, /Quorum frontier/);
