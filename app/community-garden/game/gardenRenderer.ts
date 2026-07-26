@@ -9,6 +9,10 @@ import {
   isSpecialWateringFlower,
   type PlantRecord,
 } from "../lib/roseLifecycle";
+import {
+  HERITAGE_GOLD_DARK,
+  HERITAGE_GOLD_LIGHT,
+} from "../lib/heritageDiscovery";
 import { getTerrainTile, terrainNoise } from "./terrainGenerator";
 
 export type WorldPoint = { x: number; y: number };
@@ -1658,6 +1662,7 @@ function drawSeedOrSprout(
   ctx: CanvasRenderingContext2D,
   plant: PlantRecord,
   state: "seed" | "sprout",
+  heritage = false,
 ) {
   if (state === "seed") {
     ctx.fillStyle = plant.plant_type === "sunflower" ? "#4f4434" : "#705443";
@@ -1667,7 +1672,11 @@ function drawSeedOrSprout(
     return;
   }
 
-  ctx.fillStyle = plant.plant_type === "lavender" ? "#69755e" : "#68764f";
+  ctx.fillStyle = heritage
+    ? HERITAGE_GOLD_DARK
+    : plant.plant_type === "lavender"
+      ? "#69755e"
+      : "#68764f";
   ctx.fillRect(-1, -5, 2, 6);
   ctx.fillRect(-4, -4, 3, 2);
   ctx.fillRect(1, -2, 2, 2);
@@ -1677,24 +1686,31 @@ function drawRosePlant(
   ctx: CanvasRenderingContext2D,
   plant: PlantRecord,
   state: "young" | "mature" | "blooming" | "wilting",
+  heritage = false,
 ) {
   const wilting = state === "wilting";
   const plantVariant = Math.abs(plant.grid_x * 17 + plant.grid_y * 13) % 2;
   const stemLean = plantVariant === 0 ? -1 : 1;
   if (state === "young") {
-    ctx.fillStyle = "#45643f";
+    ctx.fillStyle = heritage ? HERITAGE_GOLD_DARK : "#45643f";
     ctx.fillRect(-1, -4, 2, 5);
     ctx.fillRect(-1 + stemLean, -9, 2, 5);
     ctx.fillRect(-4 + stemLean, -7, 3, 2);
     ctx.fillRect(1, -3, 3, 2);
-    ctx.fillStyle = "#718054";
+    ctx.fillStyle = heritage ? HERITAGE_GOLD_LIGHT : "#718054";
     ctx.fillRect(-2 + stemLean, -10, 4, 3);
     return;
   }
 
   const leftLeafY = plantVariant === 0 ? -7 : -6;
   const rightLeafY = plantVariant === 0 ? -2 : -3;
-  ctx.fillStyle = wilting ? "#677052" : "#45643f";
+  ctx.fillStyle = heritage
+    ? wilting
+      ? HERITAGE_GOLD_DARK
+      : HERITAGE_GOLD_LIGHT
+    : wilting
+      ? "#677052"
+      : "#45643f";
   ctx.fillRect(-1, -4, 2, 5);
   ctx.fillRect(-1 + stemLean, -9, 2, 5);
   ctx.fillRect(-5 + stemLean, leftLeafY, 4, 2);
@@ -1722,17 +1738,24 @@ function drawRosePlant(
 function drawSunflowerPlant(
   ctx: CanvasRenderingContext2D,
   state: "young" | "mature" | "blooming" | "wilting",
+  heritage = false,
 ) {
   const wilting = state === "wilting";
   ctx.save();
   if (wilting) ctx.rotate(0.16);
-  ctx.fillStyle = wilting ? "#6f7151" : "#42633e";
+  ctx.fillStyle = heritage
+    ? wilting
+      ? HERITAGE_GOLD_DARK
+      : HERITAGE_GOLD_LIGHT
+    : wilting
+      ? "#6f7151"
+      : "#42633e";
   ctx.fillRect(-1, -12, 2, 13);
   ctx.fillRect(-6, -7, 5, 3);
   ctx.fillRect(1, -4, 6, 3);
 
   if (state === "young") {
-    ctx.fillStyle = "#758454";
+    ctx.fillStyle = heritage ? HERITAGE_GOLD_LIGHT : "#758454";
     ctx.fillRect(-3, -14, 6, 3);
     ctx.restore();
     return;
@@ -1754,9 +1777,16 @@ function drawSunflowerPlant(
 function drawLavenderPlant(
   ctx: CanvasRenderingContext2D,
   state: "young" | "mature" | "blooming" | "wilting",
+  heritage = false,
 ) {
   const wilting = state === "wilting";
-  ctx.fillStyle = wilting ? "#73735d" : "#536a50";
+  ctx.fillStyle = heritage
+    ? wilting
+      ? HERITAGE_GOLD_DARK
+      : HERITAGE_GOLD_LIGHT
+    : wilting
+      ? "#73735d"
+      : "#536a50";
   ctx.fillRect(-7, -5, 14, 5);
   ctx.fillRect(-5, -8, 3, 7);
   ctx.fillRect(-1, -10, 2, 10);
@@ -1780,8 +1810,9 @@ function drawLavenderPlant(
 function drawMyGardenFlower(
   ctx: CanvasRenderingContext2D,
   plantType: "daisy" | "tulip" | "wildflowers" | "peony" | "bee_balm",
+  heritage = false,
 ) {
-  ctx.fillStyle = "#4f7047";
+  ctx.fillStyle = heritage ? HERITAGE_GOLD_LIGHT : "#4f7047";
   ctx.fillRect(-1, -10, 2, 11);
   ctx.fillRect(-5, -5, 4, 2);
   ctx.fillRect(1, -7, 5, 2);
@@ -1800,7 +1831,7 @@ function drawMyGardenFlower(
     ctx.fillStyle = "#a7354e";
     ctx.fillRect(-2, -14, 4, 5);
   } else if (plantType === "wildflowers") {
-    ctx.fillStyle = "#4f7047";
+    ctx.fillStyle = heritage ? HERITAGE_GOLD_LIGHT : "#4f7047";
     ctx.fillRect(-6, -9, 2, 10);
     ctx.fillRect(5, -8, 2, 9);
     ctx.fillStyle = "#f0c04b";
@@ -1848,21 +1879,10 @@ function drawPlant(
   if (!isVisible(point, viewport)) return;
   const visual = getPlantVisual(plant, now);
   if (visual.state === "expired") return;
+  const heritage = Boolean(plant.heritage_at);
   ctx.save();
   ctx.translate(Math.round(point.x), Math.round(point.y));
   ctx.scale(zoom, zoom);
-
-  if (plant.heritage_at) {
-    const shimmer = 0.72 + Math.sin(now / 900 + plant.grid_x + plant.grid_y) * 0.12;
-    ctx.save();
-    ctx.globalAlpha = shimmer;
-    ctx.strokeStyle = "#f4d36b";
-    ctx.lineWidth = 1;
-    ctx.strokeRect(-8.5, -8.5, 17, 11);
-    ctx.fillStyle = "#fff2b3";
-    ctx.fillRect(-1, -12, 3, 3);
-    ctx.restore();
-  }
 
   if (visual.state === "dead") {
     ctx.fillStyle = plant.plant_type === "lavender" ? "#706756" : "#6f573d";
@@ -1874,7 +1894,7 @@ function drawPlant(
   }
 
   if (visual.state === "seed" || visual.state === "sprout") {
-    drawSeedOrSprout(ctx, plant, visual.state);
+    drawSeedOrSprout(ctx, plant, visual.state, heritage);
     if (showCareCue && (careReady ?? canEarnWateringCare(plant, now))) {
       drawCareReadyCue(ctx, now, plant);
     }
@@ -1883,9 +1903,9 @@ function drawPlant(
   }
 
   if (plant.plant_type === "sunflower") {
-    drawSunflowerPlant(ctx, visual.state);
+    drawSunflowerPlant(ctx, visual.state, heritage);
   } else if (plant.plant_type === "lavender") {
-    drawLavenderPlant(ctx, visual.state);
+    drawLavenderPlant(ctx, visual.state, heritage);
   } else if (
     plant.plant_type === "daisy" ||
     plant.plant_type === "tulip" ||
@@ -1893,9 +1913,21 @@ function drawPlant(
     plant.plant_type === "peony" ||
     plant.plant_type === "bee_balm"
   ) {
-    drawMyGardenFlower(ctx, plant.plant_type);
+    drawMyGardenFlower(ctx, plant.plant_type, heritage);
   } else {
-    drawRosePlant(ctx, plant, visual.state);
+    drawRosePlant(ctx, plant, visual.state, heritage);
+  }
+  if (heritage) {
+    const shimmer = 0.68 + Math.sin(now / 900 + plant.grid_x + plant.grid_y) * 0.2;
+    ctx.save();
+    ctx.globalAlpha = shimmer;
+    ctx.fillStyle = HERITAGE_GOLD_LIGHT;
+    ctx.fillRect(-8, -16, 2, 2);
+    ctx.fillRect(6, -10, 2, 2);
+    ctx.fillStyle = "#fff4bd";
+    ctx.fillRect(-7, -17, 1, 1);
+    ctx.fillRect(7, -11, 1, 1);
+    ctx.restore();
   }
   if (showCareCue && (careReady ?? canEarnWateringCare(plant, now))) {
     drawCareReadyCue(ctx, now, plant);
@@ -1908,6 +1940,7 @@ export function drawMyGardenPlantPreview(
   plantType: PlantRecord["plant_type"],
   viewport: GardenViewport,
   now = Date.now(),
+  heritage = false,
 ) {
   const camera = gridToWorld(0, 0);
   const timestamp = new Date(now).toISOString();
@@ -1922,6 +1955,7 @@ export function drawMyGardenPlantPreview(
       last_watered_at: timestamp,
       created_at: timestamp,
       permanent: true,
+      heritage_at: heritage ? timestamp : null,
     },
     camera,
     viewport,

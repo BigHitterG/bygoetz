@@ -11,8 +11,8 @@ import type {
 } from "../lib/myGardenCatalog";
 
 type GardenCatalogSpriteProps =
-  | { kind: "plant"; type: MyGardenPlantType }
-  | { kind: "element"; type: MyGardenElementType };
+  | { kind: "plant"; type: MyGardenPlantType; heritage?: boolean }
+  | { kind: "element"; type: MyGardenElementType; heritage?: never };
 
 const PREVIEW_WIDTH = 104;
 const PREVIEW_HEIGHT = 96;
@@ -20,6 +20,7 @@ const PREVIEW_HEIGHT = 96;
 export function GardenCatalogSprite({
   kind,
   type,
+  heritage = false,
 }: GardenCatalogSpriteProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -37,11 +38,11 @@ export function GardenCatalogSprite({
     context.imageSmoothingEnabled = false;
     const viewport = { width: PREVIEW_WIDTH, height: PREVIEW_HEIGHT };
     if (kind === "plant") {
-      drawMyGardenPlantPreview(context, type, viewport);
+      drawMyGardenPlantPreview(context, type, viewport, Date.now(), heritage);
     } else {
       drawMyGardenElementPreview(context, type, viewport);
     }
-  }, [kind, type]);
+  }, [heritage, kind, type]);
 
   return (
     <canvas

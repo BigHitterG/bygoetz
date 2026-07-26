@@ -81,7 +81,10 @@ test("Heritage news is explicit, private, and integrated without modal overlap",
 
   assert.match(app, /onHeritageMoments=\{queueHeritageMoments\}/);
   assert.match(app, /<HeritageFlowerCelebration/);
-  assert.match(app, /visibleHeritageMoment \|\| careBlossomFound/);
+  assert.match(
+    app,
+    /visibleHeritageMoment \|\|\s+visibleHeritageEncounter \|\|\s+careBlossomFound/,
+  );
   assert.match(app, /goToGridPosition\(current\.gridX, current\.gridY\)/);
   assert.match(canvas, /heritagePlantIds/);
   assert.match(canvas, /onHeritageMomentsRef\.current\?\.\(heritageMoments\)/);

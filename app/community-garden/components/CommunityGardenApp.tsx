@@ -51,6 +51,7 @@ import { GardenUpdateStatus } from "./GardenUpdateStatus";
 import { GardenOnboarding } from "./GardenOnboarding";
 import { GardenUnlockCelebration } from "./GardenUnlockCelebration";
 import { HeritageFlowerCelebration } from "./HeritageFlowerCelebration";
+import { HeritageFlowerDiscovery } from "./HeritageFlowerDiscovery";
 import { CareBlossomDiscovery } from "./CareBlossomDiscovery";
 import { GardenWormDiscovery } from "./GardenWormDiscovery";
 import { GardenBugReporter } from "./GardenBugReporter";
@@ -85,6 +86,10 @@ import {
   parseHeritageMoments,
   type HeritageMoment,
 } from "../lib/heritageNotifications";
+import {
+  HERITAGE_DISCOVERY_STORAGE_KEY,
+  type HeritageFlowerEncounter,
+} from "../lib/heritageDiscovery";
 
 const INITIAL_UI: GardenUiState = {
   action: null,
@@ -204,6 +209,28 @@ function claimFirstCareBlossomDiscovery() {
   }
 }
 
+function markHeritageFlowerDiscoverySeen() {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(HERITAGE_DISCOVERY_STORAGE_KEY, "seen");
+  } catch {
+    // The in-memory guard still prevents repeat notices during this visit.
+  }
+}
+
+function claimFirstHeritageFlowerDiscovery() {
+  if (typeof window === "undefined") return false;
+  try {
+    if (window.localStorage.getItem(HERITAGE_DISCOVERY_STORAGE_KEY) === "seen") {
+      return false;
+    }
+    markHeritageFlowerDiscoverySeen();
+    return true;
+  } catch {
+    return true;
+  }
+}
+
 function getOutstandingUnlockCelebrations(
   userId: string,
   lifetimeCare: number,
@@ -275,6 +302,7 @@ export function CommunityGardenApp() {
   const heritageAudioKeyRef = useRef<string | null>(null);
   const heritageMomentIdsRef = useRef(new Set<string>());
   const heritageAcknowledgementIdsRef = useRef(new Set<string>());
+  const heritageEncounterClaimedRef = useRef(false);
   const lastGuidanceZoneRef = useRef(INITIAL_UI.currentGuidanceZone);
   const [ui, setUi] = useState(INITIAL_UI);
   const [world, setWorld] = useState<GardenWorldMode>("community");
@@ -306,6 +334,8 @@ export function CommunityGardenApp() {
   const [careBlossomFound, setCareBlossomFound] = useState(false);
   const [gardenWormFound, setGardenWormFound] = useState(false);
   const [heritageMoments, setHeritageMoments] = useState<HeritageMoment[]>([]);
+  const [heritageEncounter, setHeritageEncounter] =
+    useState<HeritageFlowerEncounter | null>(null);
   const [expansionConfirmationOpen, setExpansionConfirmationOpen] =
     useState(false);
   const [growingEdgeIntroOpen, setGrowingEdgeIntroOpen] = useState(false);
@@ -384,6 +414,17 @@ export function CommunityGardenApp() {
     unlockNotices.length === 0
       ? (heritageMoments[0] ?? null)
       : null;
+  const visibleHeritageEncounter =
+    heritageMoments.length === 0 &&
+    !menuOpen &&
+    !inventoryOpen &&
+    !membershipOfferOpen &&
+    !expansionConfirmationOpen &&
+    !careBlossomFound &&
+    !gardenWormFound &&
+    unlockNotices.length === 0
+      ? heritageEncounter
+      : null;
 
   useEffect(() => {
     if (!inventoryAudioReadyRef.current) {
@@ -419,10 +460,28 @@ export function CommunityGardenApp() {
       return true;
     });
     if (fresh.length === 0) return;
+    heritageEncounterClaimedRef.current = true;
+    markHeritageFlowerDiscoverySeen();
+    setHeritageEncounter(null);
     setHeritageMoments((current) =>
       mergeHeritageMomentQueue(current, fresh),
     );
   }, []);
+
+  const discoverHeritageFlower = useCallback(
+    (encounter: HeritageFlowerEncounter) => {
+      if (
+        heritageEncounterClaimedRef.current ||
+        !isGardenOnboardingFinished(onboardingStep)
+      ) {
+        return;
+      }
+      heritageEncounterClaimedRef.current = true;
+      if (!claimFirstHeritageFlowerDiscovery()) return;
+      setHeritageEncounter(encounter);
+    },
+    [onboardingStep],
+  );
 
   const flushHeritageAcknowledgements = useCallback(
     async (activeSession: Session) => {
@@ -1657,6 +1716,7 @@ export function CommunityGardenApp() {
           expansionConfirmationOpen ||
           unlockNotices.length > 0 ||
           heritageMoments.length > 0 ||
+          Boolean(heritageEncounter) ||
           (!inventoryOpen && inventoryShortcutLocked)
         ) {
           return;
@@ -1682,7 +1742,8 @@ export function CommunityGardenApp() {
           careBlossomFound ||
           gardenWormFound ||
           unlockNotices.length > 0 ||
-          heritageMoments.length > 0
+          heritageMoments.length > 0 ||
+          Boolean(heritageEncounter)
         ) {
           return;
         }
@@ -1700,6 +1761,7 @@ export function CommunityGardenApp() {
           gardenWormFound ||
           unlockNotices.length > 0 ||
           heritageMoments.length > 0 ||
+          Boolean(heritageEncounter) ||
           !tutorialActionAllowed
         ) {
           return;
@@ -1715,6 +1777,7 @@ export function CommunityGardenApp() {
     acknowledgeInventoryUnlocks,
     careBlossomFound,
     gardenWormFound,
+    heritageEncounter,
     heritageMoments.length,
     expansionConfirmationOpen,
     inventoryOpen,
@@ -1891,6 +1954,10 @@ export function CommunityGardenApp() {
           onCommunityContribution={claimCommunityContribution}
           onGardenWormDiscovered={discoverGardenWorm}
           onHeritageMoments={queueHeritageMoments}
+          onHeritageEncounter={discoverHeritageFlower}
+          heritageEncountersEnabled={
+            accountChecked && isGardenOnboardingFinished(onboardingStep)
+          }
           onPersonalGardenMutation={mutateMyGarden}
           onActionCompleted={handleGardenActionCompleted}
           onActionFailed={handleGardenActionFailed}
@@ -2335,9 +2402,16 @@ export function CommunityGardenApp() {
         onClose={dismissHeritageMoment}
         onVisit={visitHeritageMoment}
       />
+      <HeritageFlowerDiscovery
+        encounter={visibleHeritageEncounter}
+        onClose={() => setHeritageEncounter(null)}
+      />
       <GardenUnlockCelebration
         notice={
-          visibleHeritageMoment || careBlossomFound || gardenWormFound
+          visibleHeritageMoment ||
+          visibleHeritageEncounter ||
+          careBlossomFound ||
+          gardenWormFound
             ? null
             : (unlockNotices[0] ?? null)
         }

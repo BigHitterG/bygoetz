@@ -73,6 +73,10 @@ import {
   waterGardenPlants,
 } from "../lib/supabaseGarden";
 import type { HeritageMoment } from "../lib/heritageNotifications";
+import {
+  findNearbyHeritageFlower,
+  type HeritageFlowerEncounter,
+} from "../lib/heritageDiscovery";
 
 const WATERING_RANGE_TILES = 5;
 const WATERING_APPROACH_TILES = 2.125;
@@ -224,6 +228,8 @@ type Runtime = {
   suggestedWateringCell: SelectedCell;
   gardenWorms: Map<string, GardenWormMarker>;
   builder: BuilderDraft | null;
+  heritageEncounterPlantId: string | null;
+  heritageEncounterNextCheckAt: number;
 };
 
 type BuilderDraft = {
@@ -311,6 +317,8 @@ type GardenCanvasProps = {
   ) => void;
   onGardenWormDiscovered?: () => void;
   onHeritageMoments?: (moments: HeritageMoment[]) => void;
+  onHeritageEncounter?: (encounter: HeritageFlowerEncounter) => void;
+  heritageEncountersEnabled?: boolean;
 };
 
 function sameSelectedCell(left: SelectedCell, right: SelectedCell) {
@@ -1690,6 +1698,8 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
       onActionFailed,
       onGardenWormDiscovered,
       onHeritageMoments,
+      onHeritageEncounter,
+      heritageEncountersEnabled = false,
     },
     ref,
   ) {
@@ -1701,6 +1711,8 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
     const onActionFailedRef = useRef(onActionFailed);
     const onGardenWormDiscoveredRef = useRef(onGardenWormDiscovered);
     const onHeritageMomentsRef = useRef(onHeritageMoments);
+    const onHeritageEncounterRef = useRef(onHeritageEncounter);
+    const heritageEncountersEnabledRef = useRef(heritageEncountersEnabled);
     const accountAccessTokenRef = useRef(accountAccessToken);
     const tutorialDimmedRef = useRef(tutorialDimmed);
     const personalGardenRef = useRef(personalGarden);
@@ -1774,6 +1786,8 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
       suggestedWateringCell: null,
       gardenWorms: new Map(),
       builder: null,
+      heritageEncounterPlantId: null,
+      heritageEncounterNextCheckAt: 0,
     });
 
     useEffect(() => {
@@ -1807,6 +1821,14 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
     useEffect(() => {
       onHeritageMomentsRef.current = onHeritageMoments;
     }, [onHeritageMoments]);
+
+    useEffect(() => {
+      onHeritageEncounterRef.current = onHeritageEncounter;
+    }, [onHeritageEncounter]);
+
+    useEffect(() => {
+      heritageEncountersEnabledRef.current = heritageEncountersEnabled;
+    }, [heritageEncountersEnabled]);
 
     useEffect(() => {
       const runtime = runtimeRef.current;
@@ -3184,6 +3206,23 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
         runtime.camera.x += (cameraTarget.x - runtime.camera.x) * cameraEase;
         runtime.camera.y += (cameraTarget.y - runtime.camera.y) * cameraEase;
         const wallClockNow = Date.now();
+        if (
+          runtime.mode === "community" &&
+          heritageEncountersEnabledRef.current &&
+          !tutorialDimmedRef.current &&
+          wallClockNow >= runtime.heritageEncounterNextCheckAt
+        ) {
+          runtime.heritageEncounterNextCheckAt = wallClockNow + 1_000;
+          const encounter = findNearbyHeritageFlower(
+            runtime.plants.values(),
+            Math.floor(runtime.mary.x / GARDEN_CONFIG.tileSize),
+            Math.floor(runtime.mary.y / GARDEN_CONFIG.tileSize),
+          );
+          if (encounter?.plantId !== runtime.heritageEncounterPlantId) {
+            runtime.heritageEncounterPlantId = encounter?.plantId ?? null;
+            if (encounter) onHeritageEncounterRef.current?.(encounter);
+          }
+        }
         runtime.effects = runtime.effects.filter(
           (effect) =>
             wallClockNow - effect.startedAt <
