@@ -15,6 +15,55 @@ export type GardenHealthEvent =
   | "action_ok"
   | "action_error";
 
+export type CommunityGardenFrontierRecommendation = {
+  regionX: number;
+  regionY: number;
+  currentState: "founding" | "established" | "frontier" | "fallow";
+  recommendedAction: "prepare" | "establish" | "restore";
+  eligibleLivePlants: number;
+  coveredSubcells: number;
+  eligibleAccounts7d: number;
+  activeDays7d: number;
+  consecutiveSupportDays: number;
+  reasons: string[];
+};
+
+export type CommunityGardenFrontierHealth = {
+  policyVersion: string;
+  automationEnabled: boolean;
+  mode: "shadow" | "manual" | "automatic";
+  evaluatedAt: string | null;
+  evaluationDate: string | null;
+  regions: {
+    total: number;
+    founding: number;
+    established: number;
+    frontier: number;
+    fallow: number;
+    qualifyingFrontier: number;
+  };
+  capacity: {
+    plants: number;
+    effectiveCapacity: number;
+    occupancyPercent: number;
+    prepareAtPercent: number;
+    expandAtPercent: number;
+    targetPercent: number;
+  };
+  quorum: {
+    perimeterRegions: number;
+    requiredAccounts: number;
+    activeAccounts7d: number;
+    globallyQualified: boolean;
+  };
+  heritage: {
+    flowers: number;
+    capacity: number;
+    grandfatheredFlowers: number;
+  };
+  recommendations: CommunityGardenFrontierRecommendation[];
+};
+
 export type CommunityGardenHealth = {
   measuredAt: string;
   status: "healthy" | "elevated" | "degraded";
@@ -58,6 +107,7 @@ export type CommunityGardenHealth = {
     gardenOccupancyPercent: number;
     expansionRecommended: boolean;
   };
+  frontier: CommunityGardenFrontierHealth | null;
   economy: CommunityGardenEconomyAdmin;
   funnel: BasilLaunchFunnel;
 };
@@ -126,9 +176,16 @@ export async function recordCommunityGardenHealth(input: {
 }
 
 export async function getCommunityGardenAdminHealth() {
-  const [{ data, error }, { data: commons, error: commonsError }, funnel, economy] = await Promise.all([
+  const [
+    { data, error },
+    { data: commons, error: commonsError },
+    { data: frontier, error: frontierError },
+    funnel,
+    economy,
+  ] = await Promise.all([
     getSupabaseAdmin().rpc("get_community_garden_admin_health"),
     getSupabaseAdmin().rpc("get_community_garden_commons_health"),
+    getSupabaseAdmin().rpc("get_community_garden_frontier_health_v1"),
     getBasilLaunchFunnelAdmin(),
     getCommunityGardenEconomy(),
   ]);
@@ -140,9 +197,21 @@ export async function getCommunityGardenAdminHealth() {
   if (!commons || typeof commons !== "object") {
     throw new Error("The garden commons summary was unavailable.");
   }
+  if (frontierError) {
+    console.warn("Basil frontier health is temporarily unavailable", {
+      code: frontierError.code,
+    });
+  }
   return {
-    ...(data as Omit<CommunityGardenHealth, "funnel" | "commons" | "economy">),
+    ...(data as Omit<
+      CommunityGardenHealth,
+      "funnel" | "commons" | "frontier" | "economy"
+    >),
     commons,
+    frontier:
+      !frontierError && frontier && typeof frontier === "object"
+        ? (frontier as CommunityGardenFrontierHealth)
+        : null,
     economy,
     funnel,
   } as CommunityGardenHealth;

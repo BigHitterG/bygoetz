@@ -1,8 +1,8 @@
 {
   "crons": [
     {
-      "path": "/api/cron/basil-newsletter?mode=first",
-      "schedule": "30 0 * * *"
+      "path": "/api/cron/basil-frontier",
+      "schedule": "17 6 * * *"
     },
     {
       "path": "/api/cron/basil-newsletter?mode=monthly",

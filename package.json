@@ -30,6 +30,11 @@
     "test:shares": "node --experimental-strip-types tests/basil-garden-sharing.test.ts",
     "test:audio": "node --experimental-strip-types tests/basil-garden-audio.test.ts",
     "test:garden-structure": "node --experimental-strip-types tests/basil-house-and-expansion.test.ts",
+    "test:frontier": "node --experimental-strip-types tests/basil-frontier-policy.test.ts",
+    "test:frontier-server": "node --experimental-strip-types tests/basil-frontier-server.test.ts",
+    "test:frontier-migration": "node --experimental-strip-types tests/basil-quorum-frontier-migration.test.ts",
+    "test:heritage-news": "node --experimental-strip-types tests/basil-heritage-notifications.test.ts",
+    "test:regions": "node --experimental-strip-types tests/basil-region-delivery.test.ts",
     "test:guest-refund": "node --experimental-strip-types tests/basil-guest-garden-refund.test.ts",
     "test:load:mock": "node scripts/basil-load-test.mjs --mock --users 5 --seconds 3",
     "test:browser:phase5": "node scripts/basil-browser-check.mjs"

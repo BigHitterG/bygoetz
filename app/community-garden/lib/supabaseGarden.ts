@@ -5,6 +5,10 @@ import {
 } from "./roseLifecycle";
 import type { GardenBounds } from "./gardenConfig";
 import { MAX_WATERING_TARGETS } from "./wateringSelection";
+import {
+  parseHeritageMoments,
+  type HeritageMoment,
+} from "./heritageNotifications";
 
 export type GardenMapPlant = Pick<
   PlantRecord,
@@ -43,6 +47,7 @@ type GardenActionResult = {
   plants: PlantRecord[];
   wateringClaimedPlantIds: string[];
   heritagePlantIds: string[];
+  heritageMoments: HeritageMoment[];
   contribution: GardenContribution | null;
 };
 
@@ -322,11 +327,13 @@ async function submitGardenAction(
         (plantId): plantId is string => typeof plantId === "string",
       )
     : [];
+  const heritageMoments = parseHeritageMoments(data.heritageMoments);
   return {
     plant,
     plants: plants.length > 0 ? plants : [plant],
     wateringClaimedPlantIds,
     heritagePlantIds,
+    heritageMoments,
     contribution,
   };
 }

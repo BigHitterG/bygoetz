@@ -190,6 +190,116 @@ export function GardenHealthPanel({ session }: { session: Session }) {
         </p>
       </div>
 
+      {health.frontier ? (
+        <div className="cg-economy-panel">
+          <div className="cg-funnel-heading">
+            <div>
+              <strong>Quorum frontier</strong>
+              <small>
+                {health.frontier.automationEnabled
+                  ? "Automatic regional growth"
+                  : "Shadow measurement only - land changes require review"}
+              </small>
+            </div>
+            <span>
+              {health.frontier.quorum.globallyQualified
+                ? "Quorum ready"
+                : "Gathering support"}
+            </span>
+          </div>
+          <div className="cg-funnel-breakdowns">
+            <div>
+              <strong>Shared capacity</strong>
+              <ul>
+                <li>
+                  <span>Living flowers</span>
+                  <b>{health.frontier.capacity.plants}</b>
+                </li>
+                <li>
+                  <span>Effective capacity</span>
+                  <b>{health.frontier.capacity.effectiveCapacity}</b>
+                </li>
+                <li>
+                  <span>Occupancy</span>
+                  <b>{health.frontier.capacity.occupancyPercent}%</b>
+                </li>
+              </ul>
+            </div>
+            <div>
+              <strong>Community quorum</strong>
+              <ul>
+                <li>
+                  <span>Active gardeners (7 days)</span>
+                  <b>{health.frontier.quorum.activeAccounts7d}</b>
+                </li>
+                <li>
+                  <span>Required gardeners</span>
+                  <b>{health.frontier.quorum.requiredAccounts}</b>
+                </li>
+                <li>
+                  <span>Perimeter regions</span>
+                  <b>{health.frontier.quorum.perimeterRegions}</b>
+                </li>
+              </ul>
+            </div>
+            <div>
+              <strong>Regional memory</strong>
+              <ul>
+                <li>
+                  <span>Open regions</span>
+                  <b>
+                    {health.frontier.regions.founding +
+                      health.frontier.regions.established +
+                      health.frontier.regions.frontier +
+                      health.frontier.regions.fallow}
+                  </b>
+                </li>
+                <li>
+                  <span>Qualifying frontier</span>
+                  <b>{health.frontier.regions.qualifyingFrontier}</b>
+                </li>
+                <li>
+                  <span>New Heritage capacity</span>
+                  <b>
+                    {health.frontier.heritage.flowers} /{" "}
+                    {health.frontier.heritage.capacity}
+                  </b>
+                </li>
+                <li>
+                  <span>Founding Heritage</span>
+                  <b>{health.frontier.heritage.grandfatheredFlowers}</b>
+                </li>
+              </ul>
+            </div>
+          </div>
+          {health.frontier.recommendations.length > 0 ? (
+            <div className="cg-funnel-breakdowns">
+              <div>
+                <strong>Review candidates</strong>
+                <ul>
+                  {health.frontier.recommendations.slice(0, 6).map((region) => (
+                    <li key={`${region.regionX}:${region.regionY}`}>
+                      <span>
+                        Region {region.regionX}, {region.regionY}
+                        {region.reasons.length > 0
+                          ? ` - ${region.reasons.join(", ")}`
+                          : " - sustained community support"}
+                      </span>
+                      <b>{region.recommendedAction}</b>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          ) : null}
+          <small>
+            Last evaluated {formatTime(health.frontier.evaluatedAt)}. {health.frontier.automationEnabled
+              ? "Automatic growth is enabled."
+              : "No land opens automatically in this release."}
+          </small>
+        </div>
+      ) : null}
+
       <div className="cg-funnel-heading">
         <div>
           <strong>Launch funnel</strong>

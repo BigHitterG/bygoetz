@@ -2324,6 +2324,42 @@
     0 0 0 5px rgba(102, 201, 226, 0.58);
 }
 
+.cg-unlock-card.is-heritage-flower {
+  box-shadow:
+    8px 8px 0 rgba(52, 35, 31, 0.34),
+    0 0 0 5px rgba(229, 180, 79, 0.68);
+}
+
+.cg-unlock-emblem.is-heritage-flower {
+  position: relative;
+  overflow: visible;
+  background:
+    radial-gradient(circle at center, #fff9e9 0 46%, transparent 47%),
+    #dfe9bd;
+}
+
+.cg-unlock-emblem.is-heritage-flower .cg-catalog-sprite {
+  width: 84px;
+  height: 78px;
+}
+
+.cg-heritage-celebration-star {
+  position: absolute;
+  right: -9px;
+  top: -13px;
+  display: grid;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  border: 2px solid var(--cg-ink);
+  border-radius: 50%;
+  background: var(--cg-gold);
+  color: #fff9e9;
+  font: 900 1.2rem/1 "Courier New", ui-monospace, monospace;
+  text-shadow: 1px 1px 0 var(--cg-red);
+  box-shadow: 2px 2px 0 rgba(52, 35, 31, 0.24);
+}
+
 .cg-unlock-emblem.is-care-blossom {
   background: #ccece8;
 }

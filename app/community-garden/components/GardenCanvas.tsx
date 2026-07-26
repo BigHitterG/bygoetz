@@ -48,6 +48,7 @@ import {
   getPlantVisual,
   isPlantable,
   PLANT_TYPES,
+  type CommunityPlantType,
   type PlantRecord,
   type PlantType,
 } from "../lib/roseLifecycle";
@@ -69,6 +70,7 @@ import {
   plantGardenPlant,
   waterGardenPlants,
 } from "../lib/supabaseGarden";
+import type { HeritageMoment } from "../lib/heritageNotifications";
 
 const WATERING_RANGE_TILES = 5;
 const WATERING_APPROACH_TILES = 2.125;
@@ -128,6 +130,7 @@ export type GardenCanvasHandle = {
   suggestPlantingSpot: () => void;
   suggestWateringSpot: () => void;
   goToMapPosition: (mapX: number, mapY: number) => void;
+  goToGridPosition: (gridX: number, gridY: number) => void;
   selectPlant: (plantType: PlantType) => void;
   selectPathTool: () => void;
   selectElement: (elementType: MyGardenElementType) => void;
@@ -286,6 +289,7 @@ type GardenCanvasProps = {
     error: unknown,
   ) => void;
   onGardenWormDiscovered?: () => void;
+  onHeritageMoments?: (moments: HeritageMoment[]) => void;
 };
 
 function sameSelectedCell(left: SelectedCell, right: SelectedCell) {
@@ -1625,6 +1629,7 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
       onActionCompleted,
       onActionFailed,
       onGardenWormDiscovered,
+      onHeritageMoments,
     },
     ref,
   ) {
@@ -1635,6 +1640,7 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
     const onActionCompletedRef = useRef(onActionCompleted);
     const onActionFailedRef = useRef(onActionFailed);
     const onGardenWormDiscoveredRef = useRef(onGardenWormDiscovered);
+    const onHeritageMomentsRef = useRef(onHeritageMoments);
     const accountAccessTokenRef = useRef(accountAccessToken);
     const tutorialDimmedRef = useRef(tutorialDimmed);
     const personalGardenRef = useRef(personalGarden);
@@ -1735,6 +1741,10 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
     useEffect(() => {
       onGardenWormDiscoveredRef.current = onGardenWormDiscovered;
     }, [onGardenWormDiscovered]);
+
+    useEffect(() => {
+      onHeritageMomentsRef.current = onHeritageMoments;
+    }, [onHeritageMoments]);
 
     useEffect(() => {
       const runtime = runtimeRef.current;
@@ -2349,6 +2359,32 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
               : "Exploring a new part of the garden.";
           publishUi();
         },
+        goToGridPosition(requestedGridX, requestedGridY) {
+          const runtime = runtimeRef.current;
+          const bounds = getRuntimeBounds(runtime);
+          const gridX = Math.min(
+            bounds.maxX,
+            Math.max(bounds.minX, Math.round(requestedGridX)),
+          );
+          const gridY = Math.min(
+            bounds.maxY,
+            Math.max(bounds.minY, Math.round(requestedGridY)),
+          );
+          const destination = gridToWorld(gridX, gridY);
+          runtime.selected = null;
+          runtime.target = null;
+          runtime.mary = { ...destination };
+          runtime.camera = { ...destination };
+          runtime.duck = {
+            x: clampRuntimeCoordinate(runtime, destination.x - 18, "x"),
+            y: clampRuntimeCoordinate(runtime, destination.y + 10, "y"),
+          };
+          runtime.path = [{ ...destination }];
+          runtime.loadedChunkKey = "";
+          runtime.hasMoved = true;
+          runtime.statusMessage = "Visiting a Heritage Flower.";
+          publishUi();
+        },
         async performAction() {
           const runtime = runtimeRef.current;
           const selected = runtime.selected;
@@ -2689,6 +2725,8 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
                       last_watered_at: wateredAt,
                     })),
                     wateringClaimedPlantIds: [],
+                    heritagePlantIds: [],
+                    heritageMoments: [],
                     contribution: null,
                   };
               const { plants, contribution } = result;
@@ -2696,6 +2734,39 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
                 "heritagePlantIds" in result && Array.isArray(result.heritagePlantIds)
                   ? result.heritagePlantIds
                   : [];
+              const responseHeritageMoments =
+                "heritageMoments" in result &&
+                Array.isArray(result.heritageMoments)
+                  ? result.heritageMoments
+                  : [];
+              const reportedHeritagePlantIds = new Set(
+                responseHeritageMoments.map((moment) => moment.plantId),
+              );
+              const compatibilityHeritageMoments = heritagePlantIds.flatMap(
+                (plantId): HeritageMoment[] => {
+                  if (reportedHeritagePlantIds.has(plantId)) return [];
+                  const candidate = plants.find((plant) => plant.id === plantId);
+                  if (!candidate) return [];
+                  if (
+                    !PLANT_TYPES.includes(
+                      candidate.plant_type as CommunityPlantType,
+                    )
+                  ) {
+                    return [];
+                  }
+                  const becameHeritageAt =
+                    candidate.heritage_at ?? new Date().toISOString();
+                  return [{
+                    eventId: `legacy:${plantId}`,
+                    plantId,
+                    plantType: candidate.plant_type as CommunityPlantType,
+                    gridX: candidate.grid_x,
+                    gridY: candidate.grid_y,
+                    role: "helper",
+                    becameHeritageAt,
+                  }];
+                },
+              );
               const heritageSet = new Set(heritagePlantIds);
               for (const candidate of plants) {
                 const plant = heritageSet.has(candidate.id)
@@ -2717,6 +2788,13 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
                 : plants.length === 1
                   ? `The ${getPlantDefinition(plants[0].plant_type).name.toLowerCase()} looks brighter already.`
                   : `${plants.length} nearby flowers look brighter already.`;
+              const heritageMoments = [
+                ...responseHeritageMoments,
+                ...compatibilityHeritageMoments,
+              ];
+              if (heritageMoments.length > 0) {
+                onHeritageMomentsRef.current?.(heritageMoments);
+              }
               runtime.wateringPumpCount = 0;
               runtime.wateringPumpSelectionKey = "";
               runtime.selected = null;

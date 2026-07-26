@@ -50,6 +50,7 @@ import {
 import { GardenUpdateStatus } from "./GardenUpdateStatus";
 import { GardenOnboarding } from "./GardenOnboarding";
 import { GardenUnlockCelebration } from "./GardenUnlockCelebration";
+import { HeritageFlowerCelebration } from "./HeritageFlowerCelebration";
 import { CareBlossomDiscovery } from "./CareBlossomDiscovery";
 import { GardenWormDiscovery } from "./GardenWormDiscovery";
 import { GardenBugReporter } from "./GardenBugReporter";
@@ -79,6 +80,11 @@ import {
   type MyGardenUnlockNotice,
 } from "../lib/myGardenCatalog";
 import { useGardenAudio } from "../lib/gardenAudio";
+import {
+  mergeHeritageMomentQueue,
+  parseHeritageMoments,
+  type HeritageMoment,
+} from "../lib/heritageNotifications";
 
 const INITIAL_UI: GardenUiState = {
   action: null,
@@ -117,6 +123,7 @@ const MEMBER_GARDEN_CACHE_PREFIX = "basil-member-garden-cache-v1:";
 const MEMBERSHIP_RETRY_MAX_DELAY_MS = 30_000;
 const GARDEN_WORM_DISCOVERY_KEY = "basil-garden-worm-discovery-v1";
 const CARE_BLOSSOM_DISCOVERY_KEY = "basil-care-blossom-discovery-v1";
+const HERITAGE_NOTIFICATION_REFRESH_MS = 5 * 60 * 1000;
 const UNLOCK_CELEBRATION_HISTORY_PREFIX =
   "basil-unlock-celebration-history-v1:";
 
@@ -257,6 +264,9 @@ export function CommunityGardenApp() {
   const membershipRetryAttemptRef = useRef(0);
   const inventoryAudioReadyRef = useRef(false);
   const unlockAudioKeyRef = useRef<string | null>(null);
+  const heritageAudioKeyRef = useRef<string | null>(null);
+  const heritageMomentIdsRef = useRef(new Set<string>());
+  const heritageAcknowledgementIdsRef = useRef(new Set<string>());
   const [ui, setUi] = useState(INITIAL_UI);
   const [world, setWorld] = useState<GardenWorldMode>("community");
   const [menuOpen, setMenuOpen] = useState(false);
@@ -286,6 +296,7 @@ export function CommunityGardenApp() {
   const [unlockNotices, setUnlockNotices] = useState<MyGardenUnlockNotice[]>([]);
   const [careBlossomFound, setCareBlossomFound] = useState(false);
   const [gardenWormFound, setGardenWormFound] = useState(false);
+  const [heritageMoments, setHeritageMoments] = useState<HeritageMoment[]>([]);
   const [expansionConfirmationOpen, setExpansionConfirmationOpen] =
     useState(false);
   const restoredJourneyRef = useRef(false);
@@ -352,6 +363,16 @@ export function CommunityGardenApp() {
     (myGarden.preview?.plantingsUsed ?? 0) <
       (myGarden.preview?.plantingLimit ?? 10) &&
     myGarden.careBalance >= myGarden.plantCost;
+  const visibleHeritageMoment =
+    !menuOpen &&
+    !inventoryOpen &&
+    !membershipOfferOpen &&
+    !expansionConfirmationOpen &&
+    !careBlossomFound &&
+    !gardenWormFound &&
+    unlockNotices.length === 0
+      ? (heritageMoments[0] ?? null)
+      : null;
 
   useEffect(() => {
     if (!inventoryAudioReadyRef.current) {
@@ -368,6 +389,84 @@ export function CommunityGardenApp() {
     unlockAudioKeyRef.current = activeKey;
     playGardenSound("unlock");
   }, [playGardenSound, unlockNotices]);
+
+  useEffect(() => {
+    if (
+      !visibleHeritageMoment ||
+      visibleHeritageMoment.eventId === heritageAudioKeyRef.current
+    ) {
+      return;
+    }
+    heritageAudioKeyRef.current = visibleHeritageMoment.eventId;
+    playGardenSound("unlock");
+  }, [playGardenSound, visibleHeritageMoment]);
+
+  const queueHeritageMoments = useCallback((incoming: HeritageMoment[]) => {
+    const fresh = incoming.filter((moment) => {
+      if (heritageMomentIdsRef.current.has(moment.eventId)) return false;
+      heritageMomentIdsRef.current.add(moment.eventId);
+      return true;
+    });
+    if (fresh.length === 0) return;
+    setHeritageMoments((current) =>
+      mergeHeritageMomentQueue(current, fresh),
+    );
+  }, []);
+
+  const flushHeritageAcknowledgements = useCallback(
+    async (activeSession: Session) => {
+      const notificationIds = Array.from(
+        heritageAcknowledgementIdsRef.current,
+      ).slice(0, 20);
+      if (notificationIds.length === 0) return;
+      try {
+        const response = await fetch(
+          "/api/community-garden/heritage-notifications",
+          {
+            method: "POST",
+            cache: "no-store",
+            headers: {
+              authorization: `Bearer ${activeSession.access_token}`,
+              "content-type": "application/json",
+            },
+            body: JSON.stringify({ notificationIds }),
+          },
+        );
+        if (!response.ok) return;
+        for (const notificationId of notificationIds) {
+          heritageAcknowledgementIdsRef.current.delete(notificationId);
+        }
+      } catch {
+        // The next account refresh retries acknowledgement without blocking play.
+      }
+    },
+    [],
+  );
+
+  const loadHeritageNotifications = useCallback(
+    async (activeSession: Session) => {
+      void flushHeritageAcknowledgements(activeSession);
+      try {
+        const response = await fetch(
+          "/api/community-garden/heritage-notifications",
+          {
+            cache: "no-store",
+            headers: {
+              authorization: `Bearer ${activeSession.access_token}`,
+            },
+          },
+        );
+        if (!response.ok) return;
+        const payload = (await response.json()) as { notifications?: unknown };
+        queueHeritageMoments(
+          parseHeritageMoments(payload.notifications, "planter"),
+        );
+      } catch {
+        // Heritage news is durable on the server and can arrive after reconnecting.
+      }
+    },
+    [flushHeritageAcknowledgements, queueHeritageMoments],
+  );
 
   const commitGuestPreview = useCallback((next: GuestGardenPreview) => {
     guestPreviewRef.current = next;
@@ -824,6 +923,9 @@ export function CommunityGardenApp() {
         memberGardenRef.current = null;
         setMemberGarden(null);
         setInventoryDesignAccess(false);
+        heritageMomentIdsRef.current.clear();
+        heritageAcknowledgementIdsRef.current.clear();
+        setHeritageMoments([]);
         setWorld("community");
         setAccountChecked(true);
       } else {
@@ -839,6 +941,25 @@ export function CommunityGardenApp() {
     if (!guestPreviewReady || !session) return;
     queueMicrotask(() => void loadMembership(session));
   }, [guestPreviewReady, loadMembership, membershipReloadToken, session]);
+
+  useEffect(() => {
+    if (!session) return;
+    const activeSession = session;
+    const refresh = () => {
+      if (document.visibilityState === "hidden") return;
+      void loadHeritageNotifications(activeSession);
+    };
+    refresh();
+    const intervalId = window.setInterval(
+      refresh,
+      HERITAGE_NOTIFICATION_REFRESH_MS,
+    );
+    document.addEventListener("visibilitychange", refresh);
+    return () => {
+      window.clearInterval(intervalId);
+      document.removeEventListener("visibilitychange", refresh);
+    };
+  }, [loadHeritageNotifications, session]);
 
   useEffect(() => {
     if (!onboardingInventoryLocked) return;
@@ -1438,6 +1559,7 @@ export function CommunityGardenApp() {
           gardenWormFound ||
           expansionConfirmationOpen ||
           unlockNotices.length > 0 ||
+          heritageMoments.length > 0 ||
           (!inventoryOpen && inventoryShortcutLocked)
         ) {
           return;
@@ -1462,7 +1584,8 @@ export function CommunityGardenApp() {
           inventoryOpen ||
           careBlossomFound ||
           gardenWormFound ||
-          unlockNotices.length > 0
+          unlockNotices.length > 0 ||
+          heritageMoments.length > 0
         ) {
           return;
         }
@@ -1479,6 +1602,7 @@ export function CommunityGardenApp() {
           careBlossomFound ||
           gardenWormFound ||
           unlockNotices.length > 0 ||
+          heritageMoments.length > 0 ||
           !tutorialActionAllowed
         ) {
           return;
@@ -1494,6 +1618,7 @@ export function CommunityGardenApp() {
     acknowledgeInventoryUnlocks,
     careBlossomFound,
     gardenWormFound,
+    heritageMoments.length,
     expansionConfirmationOpen,
     inventoryOpen,
     ui.builder.active,
@@ -1616,6 +1741,29 @@ export function CommunityGardenApp() {
     void trackBasilFunnelEvent("inventory_opened");
   }
 
+  const dismissHeritageMoment = useCallback(() => {
+    const current = heritageMoments[0];
+    if (current?.notificationId && session) {
+      heritageAcknowledgementIdsRef.current.add(current.notificationId);
+      void flushHeritageAcknowledgements(session);
+    }
+    setHeritageMoments((queued) => queued.slice(1));
+  }, [flushHeritageAcknowledgements, heritageMoments, session]);
+
+  const visitHeritageMoment = useCallback(() => {
+    const current = heritageMoments[0];
+    if (!current) return;
+    dismissHeritageMoment();
+    setMenuOpen(false);
+    setInventoryOpen(false);
+    setWorld("community");
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => {
+        canvasRef.current?.goToGridPosition(current.gridX, current.gridY);
+      });
+    });
+  }, [dismissHeritageMoment, heritageMoments]);
+
   function dismissMembershipOffer() {
     if (membershipOfferStage === "soft") {
       const isFirstDecline =
@@ -1645,6 +1793,7 @@ export function CommunityGardenApp() {
           onStateChange={onStateChange}
           onCommunityContribution={claimCommunityContribution}
           onGardenWormDiscovered={discoverGardenWorm}
+          onHeritageMoments={queueHeritageMoments}
           onPersonalGardenMutation={mutateMyGarden}
           onActionCompleted={handleGardenActionCompleted}
           onActionFailed={handleGardenActionFailed}
@@ -2054,9 +2203,14 @@ export function CommunityGardenApp() {
         onJoin={(credentials) => void startMembershipCheckout(credentials)}
       />
 
+      <HeritageFlowerCelebration
+        moment={visibleHeritageMoment}
+        onClose={dismissHeritageMoment}
+        onVisit={visitHeritageMoment}
+      />
       <GardenUnlockCelebration
         notice={
-          careBlossomFound || gardenWormFound
+          visibleHeritageMoment || careBlossomFound || gardenWormFound
             ? null
             : (unlockNotices[0] ?? null)
         }
