@@ -96,6 +96,10 @@ test("Supabase wakes half-hour steward sessions while Vercel evaluates the front
   assert.match(cron, /basil_founding_stewards_failed/);
   assert.match(cron, /claim_community_garden_founding_steward_tick/);
   assert.match(cron, /export async function POST/);
+  assert.match(cron, /refreshFrontierIfOverdue\(now\)/);
+  assert.match(cron, /community_garden_frontier_world_evaluations/);
+  assert.match(cron, /data\?\.evaluation_date === today/);
+  assert.match(cron, /basil_frontier_self_heal_failed/);
   assert.match(schedulerMigration, /'basil-founding-stewards-half-hour'/);
   assert.match(schedulerMigration, /'\*\/30 \* \* \* \*'/);
   assert.match(schedulerMigration, /net\.http_post/);

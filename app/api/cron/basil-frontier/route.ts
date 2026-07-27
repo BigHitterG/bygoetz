@@ -55,6 +55,25 @@ async function runFoundingStewards(now: Date) {
   }
 }
 
+async function refreshFrontierIfOverdue(now: Date) {
+  // The primary frontier evaluation is Vercel's daily GET at 06:17 UTC. The
+  // existing Supabase half-hour heartbeat provides a free self-healing path:
+  // after 06:00 UTC it performs one cheap date lookup and only runs the full
+  // evaluator when today's row is missing.
+  if (now.getUTCHours() < 6) return null;
+
+  const today = now.toISOString().slice(0, 10);
+  const { data, error } = await getSupabaseAdmin()
+    .from("community_garden_frontier_world_evaluations")
+    .select("evaluation_date")
+    .order("evaluation_date", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) throw error;
+  if (data?.evaluation_date === today) return null;
+  return evaluateCommunityGardenFrontier(today);
+}
+
 export async function GET(request: Request) {
   if (!authorized(request)) {
     return NextResponse.json({ error: "Not authorized." }, { status: 401 });
@@ -88,6 +107,16 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Not authorized." }, { status: 401 });
   }
 
-  const foundingStewards = await runFoundingStewards(new Date());
-  return NextResponse.json({ ok: true, foundingStewards });
+  const now = new Date();
+  const foundingStewards = await runFoundingStewards(now);
+  let frontier = null;
+  try {
+    frontier = await refreshFrontierIfOverdue(now);
+  } catch (error) {
+    console.error(JSON.stringify({
+      event: "basil_frontier_self_heal_failed",
+      message: error instanceof Error ? error.message : "unknown",
+    }));
+  }
+  return NextResponse.json({ ok: true, foundingStewards, frontier });
 }
