@@ -108,6 +108,9 @@ export function PlantGlossary() {
           <p className="cg-care-note">
             Heritage Flowers no longer count against their planter&apos;s newest
             100 and do not return with the ordinary season or watering clocks.
+            Their eight neighboring tiles receive 4× each flower&apos;s normal
+            maximum season, while the next ring receives 2×. Overlapping auras
+            never stack; the strongest nearby protection applies.
           </p>
         </article>
         <article className="cg-plant-entry is-weed">

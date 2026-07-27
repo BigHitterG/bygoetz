@@ -13,6 +13,7 @@ import {
   HERITAGE_GOLD_DARK,
   HERITAGE_GOLD_LIGHT,
 } from "../lib/heritageDiscovery";
+import { findHeritageAuraAnchor } from "../lib/heritageAura";
 import { getTerrainTile, terrainNoise } from "./terrainGenerator";
 
 export type WorldPoint = { x: number; y: number };
@@ -143,8 +144,10 @@ export function worldToScreen(
 ): WorldPoint {
   const yScale = GARDEN_CONFIG.tileScreenHeight / GARDEN_CONFIG.tileSize;
   return {
-    x: viewport.width / 2 + (point.x - camera.x) * zoom,
-    y: getMaryScreenY(viewport) + (point.y - camera.y) * yScale * zoom,
+    x: Math.round(viewport.width / 2 + (point.x - camera.x) * zoom),
+    y: Math.round(
+      getMaryScreenY(viewport) + (point.y - camera.y) * yScale * zoom,
+    ),
   };
 }
 
@@ -718,7 +721,7 @@ function drawPersonalTerrain(
   if (shareOnly) {
     ctx.clearRect(0, 0, viewport.width, viewport.height);
   } else {
-    ctx.fillStyle = "#eee9df";
+    ctx.fillStyle = "#234b35";
     ctx.fillRect(0, 0, viewport.width, viewport.height);
   }
 
@@ -743,26 +746,112 @@ function drawPersonalTerrain(
         gridY >= nextExpansion.minY &&
         gridY < nextExpansion.minY + nextExpansion.height;
 
-      if (shareOnly && !inProperty && !inExpansion) continue;
+      if (shareOnly && !inProperty) continue;
 
-      ctx.fillStyle = inProperty
-        ? (gridX + gridY) % 2 === 0
-          ? "#91ad78"
-          : "#98b47f"
-        : inExpansion
-          ? (gridX + gridY) % 3 === 0
-            ? "#f4f1e9"
-            : "#eeebe3"
-          : (gridX + gridY) % 3 === 0
-            ? "#e3ded2"
-            : "#e9e4da";
-      ctx.fillRect(x, y, cellWidth + 1, cellHeight + 1);
+      if (inProperty) {
+        ctx.fillStyle = (gridX + gridY) % 2 === 0 ? "#91ad78" : "#98b47f";
+        ctx.fillRect(x, y, cellWidth + 1, cellHeight + 1);
+      } else if (!shareOnly) {
+        // A continuous, lightweight canopy replaces the old white grid. The
+        // next parcel is still forested until it is unlocked, when the normal
+        // playable lawn automatically replaces it.
+        ctx.fillStyle = inExpansion ? "#315d42" : "#274f38";
+        ctx.fillRect(x, y, cellWidth + 1, cellHeight + 1);
+        const canopy = terrainNoise(gridX, gridY, 211);
+        if (canopy > 0.33) {
+          ctx.fillStyle = canopy > 0.72 ? "#173c2b" : "#3c6948";
+          const inset = Math.max(1, Math.round(2 * zoom));
+          ctx.fillRect(
+            x + inset,
+            y + inset,
+            Math.max(2, cellWidth - inset * 2),
+            Math.max(2, cellHeight - inset * 2),
+          );
+          if (canopy > 0.82) {
+            ctx.fillStyle = "#527858";
+            ctx.fillRect(
+              x + Math.round(6 * zoom),
+              y + Math.round(3 * zoom),
+              Math.max(1, Math.round(3 * zoom)),
+              Math.max(1, Math.round(2 * zoom)),
+            );
+          }
+        }
+      }
 
       if (inProperty && terrainNoise(gridX, gridY, 73) > 0.66) {
         drawGroundMark(ctx, x, y, zoom, "#6f895d");
       }
     }
   }
+}
+
+function drawHeritageAura(
+  ctx: CanvasRenderingContext2D,
+  plants: ReadonlyArray<PlantRecord>,
+  selected: SelectedCell,
+  camera: WorldPoint,
+  viewport: GardenViewport,
+  zoom: number,
+) {
+  if (!selected) return;
+  const anchor = findHeritageAuraAnchor(
+    plants,
+    selected.gridX,
+    selected.gridY,
+  );
+  if (!anchor) return;
+
+  const { tileSize, tileScreenHeight } = GARDEN_CONFIG;
+  const width = tileSize * zoom;
+  const height = tileScreenHeight * zoom;
+  ctx.save();
+  ctx.lineWidth = Math.max(1, zoom);
+
+  for (let offsetY = -2; offsetY <= 2; offsetY += 1) {
+    for (let offsetX = -2; offsetX <= 2; offsetX += 1) {
+      const distance = Math.max(Math.abs(offsetX), Math.abs(offsetY));
+      if (distance === 0 || distance > 2) continue;
+      const topLeft = worldToScreen(
+        {
+          x: (anchor.grid_x + offsetX) * tileSize,
+          y: (anchor.grid_y + offsetY) * tileSize,
+        },
+        camera,
+        viewport,
+        zoom,
+      );
+      ctx.fillStyle =
+        distance === 1 ? "rgba(232, 191, 85, 0.16)" : "rgba(232, 191, 85, 0.08)";
+      ctx.strokeStyle =
+        distance === 1 ? "rgba(255, 220, 125, 0.72)" : "rgba(255, 220, 125, 0.42)";
+      ctx.setLineDash(distance === 1 ? [] : [Math.max(2, 3 * zoom), Math.max(2, 3 * zoom)]);
+      ctx.fillRect(topLeft.x, topLeft.y, width, height);
+      ctx.strokeRect(
+        topLeft.x + 0.5,
+        topLeft.y + 0.5,
+        Math.max(1, width - 1),
+        Math.max(1, height - 1),
+      );
+    }
+  }
+
+  const anchorTopLeft = worldToScreen(
+    { x: anchor.grid_x * tileSize, y: anchor.grid_y * tileSize },
+    camera,
+    viewport,
+    zoom,
+  );
+  ctx.setLineDash([]);
+  ctx.strokeStyle = "rgba(255, 229, 146, 0.92)";
+  ctx.lineWidth = Math.max(2, 2 * zoom);
+  ctx.strokeRect(
+    anchorTopLeft.x + 1,
+    anchorTopLeft.y + 1,
+    Math.max(1, width - 2),
+    Math.max(1, height - 2),
+  );
+  ctx.restore();
 }
 
 function drawPersonalPaths(
@@ -2678,6 +2767,14 @@ export function renderGarden(ctx: CanvasRenderingContext2D, state: RenderGardenS
   ctx.drawImage(baseLayer, 0, 0);
   ctx.drawImage(soilLayer, 0, 0);
   ctx.drawImage(greenLayer, 0, 0);
+  drawHeritageAura(
+    ctx,
+    visiblePlants,
+    state.selected,
+    state.camera,
+    state.viewport,
+    state.zoom,
+  );
   drawSuggestedPlantingHighlight(
     ctx,
     state.suggestedPlantingCell,

@@ -694,8 +694,8 @@ export const MY_GARDEN_ELEMENTS = [
   },
   {
     type: "great_basil_topiary",
-    name: "Great Basil topiary",
-    careCost: 2_500,
+    name: "Basil Heritage Plant",
+    careCost: 1,
     collection: "basil",
     lifetimeCareRequired: 1_000_000,
     category: "nature",

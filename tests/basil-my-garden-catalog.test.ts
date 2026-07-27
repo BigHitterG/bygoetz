@@ -162,7 +162,7 @@ test("placement prices use the approved quarter-scale economy", () => {
       grand_rose_pergola: 300,
       glass_pavilion: 625,
       botanical_glasshouse: 1_000,
-      great_basil_topiary: 2_500,
+      great_basil_topiary: 1,
     },
   );
 });
@@ -178,6 +178,13 @@ test("database migrations contain every live client catalog threshold", () => {
   const completeLadderMigration = readFileSync(
     new URL(
       "../supabase/migrations/20260725040805_complete_basil_collection_ladder.sql",
+      import.meta.url,
+    ),
+    "utf8",
+  );
+  const heritageAuraMigration = readFileSync(
+    new URL(
+      "../supabase/migrations/20260727194822_heritage_aura_and_basil_mastery.sql",
       import.meta.url,
     ),
     "utf8",
@@ -225,6 +232,17 @@ test("database migrations contain every live client catalog threshold", () => {
         `missing quarter-scale database cost for ${element.type}`,
       );
     } else {
+      if (element.type === "great_basil_topiary") {
+        assert.ok(
+          completeLadderMigration.includes(
+            `('${element.type}', 'Great Basil topiary', '${element.collection}'`,
+          ),
+          `missing original complete-ladder database row for ${element.type}`,
+        );
+        assert.match(heritageAuraMigration, /display_name = 'Basil Heritage Plant'/);
+        assert.match(heritageAuraMigration, /care_cost = 1/);
+        continue;
+      }
       assert.ok(
         completeLadderMigration.includes(
           `('${element.type}', '${element.name}', '${element.collection}'`,
@@ -268,7 +286,7 @@ test("late collection moments remain visible through Basil I", () => {
   assert.equal(basil[0]?.completedCollection?.key, "botanical");
   assert.equal(basil[0]?.openedCollection?.key, "basil");
   assert.deepEqual(basil[0]?.items.map((item) => item.name), [
-    "Great Basil topiary",
+    "Basil Heritage Plant",
   ]);
 });
 

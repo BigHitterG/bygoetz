@@ -3281,9 +3281,20 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
               );
               const heritageSet = new Set(heritagePlantIds);
               for (const candidate of plants) {
+                const existing = runtime.communityPlants.get(
+                  plantKey(candidate.grid_x, candidate.grid_y),
+                );
                 const plant = heritageSet.has(candidate.id)
-                  ? { ...candidate, heritage_at: new Date().toISOString() }
-                  : candidate;
+                  ? {
+                      ...candidate,
+                      heritage_at:
+                        candidate.heritage_at ??
+                        existing?.heritage_at ??
+                        new Date().toISOString(),
+                    }
+                  : existing?.heritage_at && !candidate.heritage_at
+                    ? { ...candidate, heritage_at: existing.heritage_at }
+                    : candidate;
                 runtime.wateringCareReadyPlantIds.delete(plant.id);
                 runtime.plants.set(plantKey(plant.grid_x, plant.grid_y), plant);
                 runtime.communityPlants.set(
