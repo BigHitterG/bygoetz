@@ -2006,7 +2006,7 @@ export function CommunityGardenApp() {
             type="button"
             title="Zoom out"
             aria-label="Zoom out to see more of the garden"
-            disabled={!ui.canZoomOut}
+            disabled={!ui.canZoomOut || tutorialMapDimmed}
             onClick={() => canvasRef.current?.zoomOut()}
           >
             -
@@ -2016,7 +2016,7 @@ export function CommunityGardenApp() {
             type="button"
             title="Zoom in"
             aria-label="Zoom in for a closer garden view"
-            disabled={!ui.canZoomIn}
+            disabled={!ui.canZoomIn || tutorialMapDimmed}
             onClick={() => canvasRef.current?.zoomIn()}
           >
             +

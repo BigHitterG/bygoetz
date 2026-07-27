@@ -4,9 +4,11 @@ export const GARDEN_CONFIG = {
   minLogicalWidth: 220,
   maxLogicalWidth: 900,
   defaultCameraZoom: 1,
-  minCameraZoom: 1,
+  minCameraZoom: 0.35,
+  minCommunityCameraZoom: 0.5,
+  minPersonalCameraZoom: 0.35,
   maxCameraZoom: 2,
-  cameraZoomStep: 0.5,
+  cameraZoomStops: [0.35, 0.5, 0.75, 1, 1.5, 2],
   maryScreenYRatio: 0.56,
   tileSize: 16,
   tileScreenHeight: 13,
@@ -20,6 +22,30 @@ export const GARDEN_CONFIG = {
   // once per ten-minute garden window.
   pollIntervalMs: 60_000,
 } as const;
+
+export type GardenViewportSize = {
+  width: number;
+  height: number;
+};
+
+export function getAdaptiveChunkLoadRadius(
+  zoom: number,
+  viewport: GardenViewportSize,
+) {
+  const safeZoom = Math.max(GARDEN_CONFIG.minCommunityCameraZoom, zoom);
+  const horizontalHalfTiles =
+    viewport.width / (2 * GARDEN_CONFIG.tileSize * safeZoom);
+  const verticalHalfTiles =
+    viewport.height / (2 * GARDEN_CONFIG.tileScreenHeight * safeZoom);
+  const visibleHalfTiles = Math.max(horizontalHalfTiles, verticalHalfTiles) + 2;
+  return Math.min(
+    3,
+    Math.max(
+      GARDEN_CONFIG.chunkLoadRadius,
+      Math.ceil(visibleHalfTiles / GARDEN_CONFIG.chunkSize),
+    ),
+  );
+}
 
 export type GardenBounds = {
   minX: number;

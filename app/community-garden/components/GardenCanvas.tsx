@@ -7,6 +7,7 @@ import {
   useImperativeHandle,
   useRef,
   type PointerEvent as ReactPointerEvent,
+  type WheelEvent as ReactWheelEvent,
 } from "react";
 import type { GardenShareScope } from "./GardenShare";
 import {
@@ -36,6 +37,7 @@ import {
 import type { MyGardenMutation } from "../lib/myGardenMutation";
 import {
   GARDEN_CONFIG,
+  getAdaptiveChunkLoadRadius,
   getChunkKey,
   getLoadedBounds,
 } from "../lib/gardenConfig";
@@ -176,6 +178,7 @@ type Runtime = {
   mary: WorldPoint;
   duck: WorldPoint;
   camera: WorldPoint;
+  cameraAnchor: WorldPoint | null;
   zoom: number;
   target: WorldPoint | null;
   selected: SelectedCell;
@@ -295,6 +298,8 @@ type WorldSnapshot = {
   mary: WorldPoint;
   duck: WorldPoint;
   camera: WorldPoint;
+  cameraAnchor: WorldPoint | null;
+  zoom: number;
   path: WorldPoint[];
   hasMoved: boolean;
 };
@@ -686,11 +691,124 @@ function applyPersonalGarden(runtime: Runtime, garden: MyGardenState) {
   runtime.mapRevision += 1;
 }
 
-function clampZoom(value: number) {
+function getPersonalFitZoom(
+  runtime: Runtime,
+  viewport?: { width: number; height: number },
+) {
+  const garden = runtime.personalGarden;
+  if (!garden || !viewport || viewport.width <= 0 || viewport.height <= 0) {
+    return 0.5;
+  }
+  const horizontalZoom =
+    viewport.width /
+    ((garden.width + 4) * GARDEN_CONFIG.tileSize);
+  const verticalZoom =
+    viewport.height /
+    ((garden.height + 8) * GARDEN_CONFIG.tileScreenHeight);
+  return Math.max(
+    GARDEN_CONFIG.minPersonalCameraZoom,
+    Math.min(0.5, horizontalZoom, verticalZoom),
+  );
+}
+
+function getRuntimeMinimumZoom(
+  runtime: Runtime,
+  viewport?: { width: number; height: number },
+) {
+  return runtime.mode === "community"
+    ? GARDEN_CONFIG.minCommunityCameraZoom
+    : getPersonalFitZoom(runtime, viewport);
+}
+
+function clampZoom(
+  runtime: Runtime,
+  value: number,
+  viewport?: { width: number; height: number },
+) {
   return Math.min(
     GARDEN_CONFIG.maxCameraZoom,
-    Math.max(GARDEN_CONFIG.minCameraZoom, value),
+    Math.max(getRuntimeMinimumZoom(runtime, viewport), value),
   );
+}
+
+function getSteppedZoom(
+  runtime: Runtime,
+  direction: "in" | "out",
+  viewport?: { width: number; height: number },
+) {
+  const minimum = getRuntimeMinimumZoom(runtime, viewport);
+  const stops = Array.from(
+    new Set([
+      minimum,
+      ...GARDEN_CONFIG.cameraZoomStops.filter((stop) => stop >= minimum),
+    ]),
+  ).sort((left, right) => left - right);
+  const epsilon = 0.001;
+  if (direction === "in") {
+    return (
+      stops.find((stop) => stop > runtime.zoom + epsilon) ??
+      GARDEN_CONFIG.maxCameraZoom
+    );
+  }
+  return (
+    [...stops].reverse().find((stop) => stop < runtime.zoom - epsilon) ?? minimum
+  );
+}
+
+function getPersonalGardenOverviewCamera(
+  runtime: Runtime,
+  viewport: { width: number; height: number },
+  zoom: number,
+) {
+  const garden = runtime.personalGarden;
+  if (!garden) return { ...runtime.mary };
+  const centerX =
+    (garden.minX + garden.width / 2) * GARDEN_CONFIG.tileSize;
+  const centerY =
+    (garden.minY + garden.height / 2) * GARDEN_CONFIG.tileSize;
+  const yScale =
+    GARDEN_CONFIG.tileScreenHeight / GARDEN_CONFIG.tileSize;
+  return {
+    x: centerX,
+    y:
+      centerY +
+      ((GARDEN_CONFIG.maryScreenYRatio - 0.5) * viewport.height) /
+        (yScale * zoom),
+  };
+}
+
+function getWorldAtScreenPoint(
+  camera: WorldPoint,
+  screen: WorldPoint,
+  viewport: { width: number; height: number },
+  zoom: number,
+) {
+  const yScale =
+    GARDEN_CONFIG.tileScreenHeight / GARDEN_CONFIG.tileSize;
+  return {
+    x: camera.x + (screen.x - viewport.width / 2) / zoom,
+    y:
+      camera.y +
+      (screen.y - viewport.height * GARDEN_CONFIG.maryScreenYRatio) /
+        (yScale * zoom),
+  };
+}
+
+function getCameraForScreenAnchor(
+  anchorWorld: WorldPoint,
+  screen: WorldPoint,
+  viewport: { width: number; height: number },
+  zoom: number,
+) {
+  const yScale =
+    GARDEN_CONFIG.tileScreenHeight / GARDEN_CONFIG.tileSize;
+  return {
+    x: anchorWorld.x - (screen.x - viewport.width / 2) / zoom,
+    y:
+      anchorWorld.y -
+      (screen.y - viewport.height * GARDEN_CONFIG.maryScreenYRatio) /
+        (yScale * zoom),
+  };
 }
 
 function getPlantAt(runtime: Runtime, gridX: number, gridY: number) {
@@ -1091,6 +1209,7 @@ function bringTutorialTargetIntoView(
   );
   runtime.mary = { ...approach };
   runtime.camera = { ...approach };
+  runtime.cameraAnchor = null;
   runtime.duck = {
     x: clampRuntimeCoordinate(runtime, approach.x - 18, "x"),
     y: clampRuntimeCoordinate(runtime, approach.y + 10, "y"),
@@ -1731,11 +1850,21 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
       lastY: number;
       dragged: boolean;
     } | null>(null);
+    const activePointersRef = useRef(
+      new Map<number, { x: number; y: number }>(),
+    );
+    const pinchGestureRef = useRef<{
+      pointerIds: [number, number];
+      startDistance: number;
+      startZoom: number;
+      anchorWorld: WorldPoint;
+    } | null>(null);
     const start = gridToWorld(0, 0);
     const runtimeRef = useRef<Runtime>({
       mary: { ...start },
       duck: { x: start.x - 18, y: start.y + 10 },
       camera: { ...start },
+      cameraAnchor: null,
       zoom: GARDEN_CONFIG.defaultCameraZoom,
       target: null,
       selected: null,
@@ -1940,9 +2069,20 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
                   mapHeight) *
                 100
               : 100,
-        zoom: runtime.zoom,
+        zoom: Math.round(runtime.zoom * 100) / 100,
         canZoomIn: runtime.zoom < GARDEN_CONFIG.maxCameraZoom,
-        canZoomOut: runtime.zoom > GARDEN_CONFIG.minCameraZoom,
+        canZoomOut:
+          runtime.zoom >
+          getRuntimeMinimumZoom(
+            runtime,
+            canvasRef.current
+              ? {
+                  width: canvasRef.current.width,
+                  height: canvasRef.current.height,
+                }
+              : undefined,
+          ) +
+            0.001,
         selectedPlantType: runtime.selectedPlantType,
         selectedElementType:
           selectedElement?.elementType ??
@@ -1996,6 +2136,10 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
           mary: { ...runtime.mary },
           duck: { ...runtime.duck },
           camera: { ...runtime.camera },
+          cameraAnchor: runtime.cameraAnchor
+            ? { ...runtime.cameraAnchor }
+            : null,
+          zoom: runtime.zoom,
           path: runtime.path.map((point) => ({ ...point })),
           hasMoved: runtime.hasMoved,
         };
@@ -2003,6 +2147,7 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
       runtime.mode = mode;
       runtime.selected = null;
       runtime.target = null;
+      runtime.cameraAnchor = null;
       runtime.loadedChunkKey = "";
       runtime.effects = [];
       runtime.suggestedPlantingCell = null;
@@ -2026,6 +2171,19 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
             y: clampRuntimeCoordinate(runtime, saved.mary.y, "y"),
           };
           runtime.camera = { ...saved.camera };
+          runtime.cameraAnchor = saved.cameraAnchor
+            ? { ...saved.cameraAnchor }
+            : null;
+          runtime.zoom = clampZoom(
+            runtime,
+            saved.zoom,
+            canvasRef.current
+              ? {
+                  width: canvasRef.current.width,
+                  height: canvasRef.current.height,
+                }
+              : undefined,
+          );
           runtime.duck = { ...saved.duck };
           runtime.path = saved.path.map((point) => ({ ...point }));
           runtime.hasMoved = saved.hasMoved;
@@ -2038,6 +2196,7 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
           );
           runtime.mary = { ...destination };
           runtime.camera = { ...destination };
+          runtime.cameraAnchor = null;
           runtime.duck = { x: destination.x - 18, y: destination.y + 10 };
           runtime.path = [{ ...destination }];
         }
@@ -2054,6 +2213,19 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
         if (saved) {
           runtime.mary = { ...saved.mary };
           runtime.camera = { ...saved.camera };
+          runtime.cameraAnchor = saved.cameraAnchor
+            ? { ...saved.cameraAnchor }
+            : null;
+          runtime.zoom = clampZoom(
+            runtime,
+            saved.zoom,
+            canvasRef.current
+              ? {
+                  width: canvasRef.current.width,
+                  height: canvasRef.current.height,
+                }
+              : undefined,
+          );
           runtime.duck = { ...saved.duck };
           runtime.path = saved.path.map((point) => ({ ...point }));
           runtime.hasMoved = saved.hasMoved;
@@ -2061,6 +2233,7 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
           const destination = gridToWorld(0, 0);
           runtime.mary = { ...destination };
           runtime.camera = { ...destination };
+          runtime.cameraAnchor = null;
           runtime.duck = { x: destination.x - 18, y: destination.y + 10 };
           runtime.path = [{ ...destination }];
         }
@@ -2069,6 +2242,16 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
           ? "Connecting to the shared garden..."
           : "Preview mode: shared planting is not connected.";
       }
+      runtime.zoom = clampZoom(
+        runtime,
+        runtime.zoom,
+        canvasRef.current
+          ? {
+              width: canvasRef.current.width,
+              height: canvasRef.current.height,
+            }
+          : undefined,
+      );
       lastUiKeyRef.current = "";
       publishUi();
     }, [mode, publishUi]);
@@ -2076,7 +2259,26 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
     useEffect(() => {
       if (mode !== "personal" || !personalGarden) return;
       const runtime = runtimeRef.current;
+      const viewport = canvasRef.current
+        ? {
+            width: canvasRef.current.width,
+            height: canvasRef.current.height,
+          }
+        : undefined;
+      const wasOverview =
+        viewport &&
+        runtime.zoom <= getRuntimeMinimumZoom(runtime, viewport) + 0.001;
       applyPersonalGarden(runtime, personalGarden);
+      runtime.zoom = clampZoom(runtime, runtime.zoom, viewport);
+      if (viewport && wasOverview) {
+        const camera = getPersonalGardenOverviewCamera(
+          runtime,
+          viewport,
+          runtime.zoom,
+        );
+        runtime.camera = camera;
+        runtime.cameraAnchor = camera;
+      }
       publishUi();
     }, [mode, personalGarden, publishUi]);
 
@@ -2086,9 +2288,22 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
         publishUi();
         return;
       }
-      const gridX = Math.floor(runtime.mary.x / GARDEN_CONFIG.tileSize);
-      const gridY = Math.floor(runtime.mary.y / GARDEN_CONFIG.tileSize);
-      let bounds = getLoadedBounds(gridX, gridY);
+      const gridX = Math.floor(runtime.camera.x / GARDEN_CONFIG.tileSize);
+      const gridY = Math.floor(runtime.camera.y / GARDEN_CONFIG.tileSize);
+      const viewport = canvasRef.current
+        ? {
+            width: canvasRef.current.width,
+            height: canvasRef.current.height,
+          }
+        : {
+            width: GARDEN_CONFIG.logicalWidth,
+            height: GARDEN_CONFIG.logicalHeight,
+          };
+      const regionWindowRadius = getAdaptiveChunkLoadRadius(
+        runtime.zoom,
+        viewport,
+      );
+      let bounds = getLoadedBounds(gridX, gridY, regionWindowRadius);
       const requestId = ++runtime.requestId;
       overlayRecentCommunityPlants(runtime);
       ensureClearedWeedsLoaded(runtime);
@@ -2176,6 +2391,7 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
         const destination = gridToWorld(spawn.gridX, spawn.gridY);
         runtime.mary = { ...destination };
         runtime.camera = { ...destination };
+        runtime.cameraAnchor = null;
         runtime.duck = {
           x: clampRuntimeCoordinate(runtime, destination.x - 18, "x"),
           y: clampRuntimeCoordinate(runtime, destination.y + 10, "y"),
@@ -2183,7 +2399,11 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
         runtime.path = [{ ...destination }];
         runtime.loadedChunkKey = "";
         runtime.spawnApplied = true;
-        bounds = getLoadedBounds(spawn.gridX, spawn.gridY);
+        bounds = getLoadedBounds(
+          spawn.gridX,
+          spawn.gridY,
+          regionWindowRadius,
+        );
       };
 
       let regionalDeliveryAvailable = true;
@@ -2203,13 +2423,13 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
         regionalDeliveryAvailable = false;
       }
 
-      const centerGridX = Math.floor(runtime.mary.x / GARDEN_CONFIG.tileSize);
-      const centerGridY = Math.floor(runtime.mary.y / GARDEN_CONFIG.tileSize);
+      const centerGridX = Math.floor(runtime.camera.x / GARDEN_CONFIG.tileSize);
+      const centerGridY = Math.floor(runtime.camera.y / GARDEN_CONFIG.tileSize);
       const regionSize = runtime.regionManifest?.regionSize ?? GARDEN_CONFIG.chunkSize;
       const centerRegionX = Math.floor(centerGridX / regionSize);
       const centerRegionY = Math.floor(centerGridY / regionSize);
       const desiredRegionWindowKey = runtime.regionManifest
-        ? `${runtime.regionManifest.snapshotVersion}:${centerRegionX}:${centerRegionY}:2`
+        ? `${runtime.regionManifest.snapshotVersion}:${centerRegionX}:${centerRegionY}:${regionWindowRadius}`
         : "";
 
       const refreshWateringStatus = async () => {
@@ -2282,7 +2502,7 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
           centerRegionX,
           centerRegionY,
           runtime.regionManifest.snapshotVersion,
-          2,
+          regionWindowRadius,
         );
         if (requestId !== runtime.requestId) return;
         reconcileCommunitySnapshot(
@@ -2331,6 +2551,59 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
     useEffect(() => {
       loadPlantsRef.current = loadPlants;
     }, [loadPlants]);
+
+    const getCanvasViewport = useCallback(() => {
+      const canvas = canvasRef.current;
+      return canvas
+        ? { width: canvas.width, height: canvas.height }
+        : undefined;
+    }, []);
+
+    const applyZoom = useCallback(
+      (
+        requestedZoom: number,
+        screenAnchor?: { screen: WorldPoint; world: WorldPoint },
+      ) => {
+        const runtime = runtimeRef.current;
+        const viewport = getCanvasViewport();
+        const previousRadius = viewport
+          ? getAdaptiveChunkLoadRadius(runtime.zoom, viewport)
+          : GARDEN_CONFIG.chunkLoadRadius;
+        const zoom = clampZoom(runtime, requestedZoom, viewport);
+        runtime.zoom = zoom;
+
+        if (
+          viewport &&
+          runtime.mode === "personal" &&
+          zoom <= getRuntimeMinimumZoom(runtime, viewport) + 0.001
+        ) {
+          const camera = getPersonalGardenOverviewCamera(runtime, viewport, zoom);
+          runtime.camera = camera;
+          runtime.cameraAnchor = camera;
+        } else if (viewport && screenAnchor) {
+          const camera = getCameraForScreenAnchor(
+            screenAnchor.world,
+            screenAnchor.screen,
+            viewport,
+            zoom,
+          );
+          runtime.camera = camera;
+          runtime.cameraAnchor = camera;
+        } else {
+          runtime.cameraAnchor = null;
+        }
+
+        if (
+          runtime.mode === "community" &&
+          viewport &&
+          previousRadius !== getAdaptiveChunkLoadRadius(zoom, viewport)
+        ) {
+          runtime.loadedChunkKey = "";
+        }
+        publishUi();
+      },
+      [getCanvasViewport, publishUi],
+    );
 
     useImperativeHandle(
       ref,
@@ -2393,13 +2666,13 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
         },
         zoomIn() {
           const runtime = runtimeRef.current;
-          runtime.zoom = clampZoom(runtime.zoom + GARDEN_CONFIG.cameraZoomStep);
+          applyZoom(getSteppedZoom(runtime, "in", getCanvasViewport()));
           runtime.statusMessage = "Zoomed in for a closer garden view.";
           publishUi();
         },
         zoomOut() {
           const runtime = runtimeRef.current;
-          runtime.zoom = clampZoom(runtime.zoom - GARDEN_CONFIG.cameraZoomStep);
+          applyZoom(getSteppedZoom(runtime, "out", getCanvasViewport()));
           runtime.statusMessage = "Zoomed out to see more of the garden.";
           publishUi();
         },
@@ -2423,8 +2696,9 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
           );
           runtime.mary = { ...destination };
           runtime.camera = { ...destination };
+          runtime.cameraAnchor = null;
           runtime.target = null;
-          runtime.zoom = clampZoom(zoom);
+          applyZoom(zoom);
           if (selectedTool === "path" && runtime.mode === "personal") {
             runtime.toolMode = "path";
           } else if (
@@ -2562,6 +2836,7 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
           runtime.target = null;
           runtime.mary = { ...destination };
           runtime.camera = { ...destination };
+          runtime.cameraAnchor = null;
           runtime.duck = {
             x: clampRuntimeCoordinate(runtime, destination.x - 18, "x"),
             y: clampRuntimeCoordinate(runtime, destination.y + 10, "y"),
@@ -2611,6 +2886,7 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
           runtime.target = null;
           runtime.mary = { ...destination };
           runtime.camera = { ...destination };
+          runtime.cameraAnchor = null;
           runtime.duck = {
             x: clampRuntimeCoordinate(runtime, destination.x - 18, "x"),
             y: clampRuntimeCoordinate(runtime, destination.y + 10, "y"),
@@ -3079,7 +3355,7 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
         performActionRef.current = handle.performAction;
         return handle;
       },
-      [publishUi],
+      [applyZoom, getCanvasViewport, publishUi],
     );
 
     useEffect(() => {
@@ -3091,6 +3367,15 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
       const resizeCanvas = () => {
         const bounds = canvas.getBoundingClientRect();
         if (bounds.width <= 0 || bounds.height <= 0) return;
+        const runtime = runtimeRef.current;
+        const previousViewport = {
+          width: canvas.width || GARDEN_CONFIG.logicalWidth,
+          height: canvas.height || GARDEN_CONFIG.logicalHeight,
+        };
+        const previousRadius = getAdaptiveChunkLoadRadius(
+          runtime.zoom,
+          previousViewport,
+        );
         const responsiveWidth = Math.round(
           GARDEN_CONFIG.logicalHeight * (bounds.width / bounds.height),
         );
@@ -3099,6 +3384,26 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
           Math.max(GARDEN_CONFIG.minLogicalWidth, responsiveWidth),
         );
         canvas.height = GARDEN_CONFIG.logicalHeight;
+        const viewport = { width: canvas.width, height: canvas.height };
+        runtime.zoom = clampZoom(runtime, runtime.zoom, viewport);
+        if (
+          runtime.mode === "personal" &&
+          runtime.zoom <= getRuntimeMinimumZoom(runtime, viewport) + 0.001
+        ) {
+          const camera = getPersonalGardenOverviewCamera(
+            runtime,
+            viewport,
+            runtime.zoom,
+          );
+          runtime.camera = camera;
+          runtime.cameraAnchor = camera;
+        }
+        if (
+          runtime.mode === "community" &&
+          previousRadius !== getAdaptiveChunkLoadRadius(runtime.zoom, viewport)
+        ) {
+          runtime.loadedChunkKey = "";
+        }
       };
       resizeCanvas();
       const resizeObserver =
@@ -3202,7 +3507,7 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
           runtime.builder?.cells[runtime.builder.cells.length - 1];
         const cameraTarget = builderHead
           ? gridToWorld(builderHead.gridX, builderHead.gridY)
-          : runtime.mary;
+          : runtime.cameraAnchor ?? runtime.mary;
         runtime.camera.x += (cameraTarget.x - runtime.camera.x) * cameraEase;
         runtime.camera.y += (cameraTarget.y - runtime.camera.y) * cameraEase;
         const wallClockNow = Date.now();
@@ -3229,8 +3534,8 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
             (effect.kind === "care" ? 1100 : effect.kind === "worm" ? 1800 : 900),
         );
 
-        const gridX = Math.floor(runtime.mary.x / GARDEN_CONFIG.tileSize);
-        const gridY = Math.floor(runtime.mary.y / GARDEN_CONFIG.tileSize);
+        const gridX = Math.floor(runtime.camera.x / GARDEN_CONFIG.tileSize);
+        const gridY = Math.floor(runtime.camera.y / GARDEN_CONFIG.tileSize);
         const chunkKey = getChunkKey(gridX, gridY);
         if (chunkKey !== runtime.loadedChunkKey) {
           runtime.loadedChunkKey = chunkKey;
@@ -3400,6 +3705,7 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
         publishUi();
         return;
       }
+      runtime.cameraAnchor = null;
       const lockedParcel = isNextExpansionCell(runtime, gridX, gridY);
       const lockedCommunityRegion =
         runtime.mode === "community"
@@ -3500,18 +3806,27 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
       publishUi();
     }
 
+    function getCanvasScreenPoint(clientX: number, clientY: number) {
+      const canvas = canvasRef.current;
+      if (!canvas) return null;
+      const bounds = canvas.getBoundingClientRect();
+      if (bounds.width <= 0 || bounds.height <= 0) return null;
+      return {
+        x: ((clientX - bounds.left) / bounds.width) * canvas.width,
+        y: ((clientY - bounds.top) / bounds.height) * canvas.height,
+      };
+    }
+
     function getPointerCell(
       event: ReactPointerEvent<HTMLCanvasElement>,
     ) {
       event.preventDefault();
       const canvas = canvasRef.current;
-      if (!canvas) return null;
-      const bounds = canvas.getBoundingClientRect();
-      const screenX = ((event.clientX - bounds.left) / bounds.width) * canvas.width;
-      const screenY = ((event.clientY - bounds.top) / bounds.height) * canvas.height;
+      const screen = getCanvasScreenPoint(event.clientX, event.clientY);
+      if (!canvas || !screen) return null;
       return screenToGrid(
-        screenX,
-        screenY,
+        screen.x,
+        screen.y,
         runtimeRef.current.camera,
         { width: canvas.width, height: canvas.height },
         runtimeRef.current.zoom,
@@ -3520,7 +3835,45 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
 
     function onPointerDown(event: ReactPointerEvent<HTMLCanvasElement>) {
       event.preventDefault();
-      if (pointerGestureRef.current) return;
+      activePointersRef.current.set(event.pointerId, {
+        x: event.clientX,
+        y: event.clientY,
+      });
+      event.currentTarget.setPointerCapture(event.pointerId);
+      event.currentTarget.focus({ preventScroll: true });
+
+      if (activePointersRef.current.size >= 2) {
+        if (pointerGestureRef.current) pointerGestureRef.current.dragged = true;
+        if (tutorialDimmedRef.current || runtimeRef.current.builder) return;
+        const [first, second] = Array.from(
+          activePointersRef.current.entries(),
+        ).slice(0, 2);
+        const midpoint = {
+          x: (first[1].x + second[1].x) / 2,
+          y: (first[1].y + second[1].y) / 2,
+        };
+        const screen = getCanvasScreenPoint(midpoint.x, midpoint.y);
+        const viewport = getCanvasViewport();
+        if (!screen || !viewport) return;
+        const runtime = runtimeRef.current;
+        pinchGestureRef.current = {
+          pointerIds: [first[0], second[0]],
+          startDistance: Math.max(
+            1,
+            Math.hypot(first[1].x - second[1].x, first[1].y - second[1].y),
+          ),
+          startZoom: runtime.zoom,
+          anchorWorld: getWorldAtScreenPoint(
+            runtime.camera,
+            screen,
+            viewport,
+            runtime.zoom,
+          ),
+        };
+        pointerGestureRef.current = null;
+        return;
+      }
+
       pointerGestureRef.current = {
         pointerId: event.pointerId,
         startX: event.clientX,
@@ -3529,11 +3882,37 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
         lastY: event.clientY,
         dragged: false,
       };
-      event.currentTarget.setPointerCapture(event.pointerId);
-      event.currentTarget.focus({ preventScroll: true });
     }
 
     function onPointerMove(event: ReactPointerEvent<HTMLCanvasElement>) {
+      if (activePointersRef.current.has(event.pointerId)) {
+        activePointersRef.current.set(event.pointerId, {
+          x: event.clientX,
+          y: event.clientY,
+        });
+      }
+      const pinch = pinchGestureRef.current;
+      if (pinch && pinch.pointerIds.includes(event.pointerId)) {
+        event.preventDefault();
+        const first = activePointersRef.current.get(pinch.pointerIds[0]);
+        const second = activePointersRef.current.get(pinch.pointerIds[1]);
+        if (!first || !second) return;
+        const distance = Math.max(
+          1,
+          Math.hypot(first.x - second.x, first.y - second.y),
+        );
+        const midpoint = {
+          x: (first.x + second.x) / 2,
+          y: (first.y + second.y) / 2,
+        };
+        const screen = getCanvasScreenPoint(midpoint.x, midpoint.y);
+        if (!screen) return;
+        applyZoom(pinch.startZoom * (distance / pinch.startDistance), {
+          screen,
+          world: pinch.anchorWorld,
+        });
+        return;
+      }
       const gesture = pointerGestureRef.current;
       if (!gesture || gesture.pointerId !== event.pointerId) return;
       event.preventDefault();
@@ -3550,11 +3929,23 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
     }
 
     function onPointerUp(event: ReactPointerEvent<HTMLCanvasElement>) {
+      const pinch = pinchGestureRef.current;
+      activePointersRef.current.delete(event.pointerId);
+      if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+        event.currentTarget.releasePointerCapture(event.pointerId);
+      }
+      if (pinch && pinch.pointerIds.includes(event.pointerId)) {
+        event.preventDefault();
+        pinchGestureRef.current = null;
+        pointerGestureRef.current = null;
+        runtimeRef.current.statusMessage = "Garden view adjusted.";
+        publishUi();
+        return;
+      }
       const gesture = pointerGestureRef.current;
       if (!gesture || gesture.pointerId !== event.pointerId) return;
       event.preventDefault();
       pointerGestureRef.current = null;
-      event.currentTarget.releasePointerCapture(event.pointerId);
       const runtime = runtimeRef.current;
       if (!gesture.dragged) {
         if (runtime.builder) {
@@ -3592,6 +3983,7 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
       const worldDx = -(event.clientX - gesture.startX) / runtime.zoom;
       const worldDy = -(event.clientY - gesture.startY) / runtime.zoom;
       runtime.selected = null;
+      runtime.cameraAnchor = null;
       runtime.target = {
         x: clampRuntimeCoordinate(runtime, runtime.mary.x + worldDx, "x"),
         y: clampRuntimeCoordinate(runtime, runtime.mary.y + worldDy, "y"),
@@ -3604,11 +3996,37 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
     }
 
     function onPointerCancel(event: ReactPointerEvent<HTMLCanvasElement>) {
-      if (pointerGestureRef.current?.pointerId !== event.pointerId) return;
-      pointerGestureRef.current = null;
+      activePointersRef.current.delete(event.pointerId);
+      if (pinchGestureRef.current?.pointerIds.includes(event.pointerId)) {
+        pinchGestureRef.current = null;
+      }
+      if (pointerGestureRef.current?.pointerId === event.pointerId) {
+        pointerGestureRef.current = null;
+      }
       if (event.currentTarget.hasPointerCapture(event.pointerId)) {
         event.currentTarget.releasePointerCapture(event.pointerId);
       }
+    }
+
+    function onWheel(event: ReactWheelEvent<HTMLCanvasElement>) {
+      if (tutorialDimmedRef.current || runtimeRef.current.builder) return;
+      event.preventDefault();
+      const screen = getCanvasScreenPoint(event.clientX, event.clientY);
+      const viewport = getCanvasViewport();
+      if (!screen || !viewport) return;
+      const runtime = runtimeRef.current;
+      const anchorWorld = getWorldAtScreenPoint(
+        runtime.camera,
+        screen,
+        viewport,
+        runtime.zoom,
+      );
+      const sensitivity = event.ctrlKey ? 0.01 : 0.002;
+      applyZoom(runtime.zoom * Math.exp(-event.deltaY * sensitivity), {
+        screen,
+        world: anchorWorld,
+      });
+      runtime.statusMessage = "Garden view adjusted.";
     }
 
     return (
@@ -3626,6 +4044,7 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
         onPointerCancel={onPointerCancel}
+        onWheel={onWheel}
         onContextMenu={(event) => event.preventDefault()}
       />
     );
