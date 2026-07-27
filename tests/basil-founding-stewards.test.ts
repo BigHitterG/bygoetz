@@ -91,7 +91,8 @@ test("daily action IDs are deterministic and distinct", () => {
 
 test("Supabase wakes half-hour steward sessions while Vercel evaluates the frontier daily", () => {
   assert.match(cron, /runCommunityGardenFoundingStewardSession\(now\)/);
-  assert.match(cron, /shouldEvaluateFrontier/);
+  assert.match(cron, /const frontier = await evaluateCommunityGardenFrontier\(\)/);
+  assert.doesNotMatch(cron, /getUTCMinutes|shouldEvaluateFrontier/);
   assert.match(cron, /basil_founding_stewards_failed/);
   assert.match(cron, /claim_community_garden_founding_steward_tick/);
   assert.match(cron, /export async function POST/);

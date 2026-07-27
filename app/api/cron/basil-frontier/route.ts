@@ -63,12 +63,11 @@ export async function GET(request: Request) {
   try {
     const now = new Date();
     const foundingStewards = await runFoundingStewards(now);
-    // Vercel wakes this GET once daily. Supabase Cron wakes the private POST
-    // below every 30 minutes for the natural steward sessions.
-    const shouldEvaluateFrontier = now.getUTCHours() === 6 && now.getUTCMinutes() < 30;
-    const frontier = shouldEvaluateFrontier
-      ? await evaluateCommunityGardenFrontier()
-      : null;
+    // Vercel wakes this GET once daily. Hobby cron delivery may occur at any
+    // point within the configured hour, so the daily evaluation must not use
+    // a narrower minute gate. Supabase Cron wakes the private POST below every
+    // 30 minutes for the natural steward sessions.
+    const frontier = await evaluateCommunityGardenFrontier();
     return NextResponse.json({ ok: true, foundingStewards, frontier });
   } catch (error) {
     console.error(
