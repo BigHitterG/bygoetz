@@ -23,10 +23,7 @@ import {
 import { GardenHealthPanel } from "./GardenHealthPanel";
 import { BasilPolicyLinks } from "./BasilPolicyLinks";
 import { GardenCatalogSprite } from "./GardenCatalogSprite";
-import type {
-  HeritageSeedCandidate,
-  HeritageSeedStatus,
-} from "@/lib/communityGarden/heritageSeeds";
+import type { HeritageSeedStatus } from "@/lib/communityGarden/heritageSeeds";
 
 const PENDING_VERIFICATION_KEY = "basil-account-verification-pending-v1";
 
@@ -159,7 +156,7 @@ type GardenStewardProps = {
   onVisitHeritage?: (gridX: number, gridY: number) => void;
 };
 
-function flowerName(type: HeritageSeedCandidate["plantType"]) {
+function flowerName(type: "rose" | "sunflower" | "lavender") {
   return type.charAt(0).toUpperCase() + type.slice(1);
 }
 
@@ -593,49 +590,6 @@ export function GardenSteward({ onVisitHeritage }: GardenStewardProps) {
       await loadAccount(session);
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "The idea could not be sent.");
-    } finally {
-      setBusy(null);
-    }
-  }
-
-  async function nominateHeritage(candidate: HeritageSeedCandidate) {
-    if (!session || accountState.status !== "active") return;
-    setBusy(`heritage:${candidate.id}`);
-    setNotice("");
-    try {
-      const response = await fetch("/api/community-garden/heritage-seed", {
-        method: "POST",
-        headers: {
-          authorization: `Bearer ${session.access_token}`,
-          "content-type": "application/json",
-        },
-        body: JSON.stringify({ plantId: candidate.id }),
-      });
-      if (!response.ok) {
-        throw new Error(
-          await getResponseError(response, "That flower could not be nominated."),
-        );
-      }
-      const payload = (await response.json()) as { heritage: HeritageSeedStatus };
-      setAccountState((current) =>
-        current.status === "active"
-          ? {
-              ...current,
-              account: { ...current.account, heritage: payload.heritage },
-            }
-          : current,
-      );
-      setNotice(
-        payload.heritage.status === "heritage"
-          ? "Your flower met every condition and became a Heritage Flower."
-          : "Heritage Seed placed. Care for this flower with the community and watch its progress.",
-      );
-    } catch (error) {
-      setNotice(
-        error instanceof Error
-          ? error.message
-          : "That flower could not be nominated.",
-      );
     } finally {
       setBusy(null);
     }
@@ -1279,86 +1233,12 @@ export function GardenSteward({ onVisitHeritage }: GardenStewardProps) {
                   </div>
                 </div>
               ) : (
-                <>
-                  <p>
-                    Choose one flower you planted in the Community Garden. It becomes
-                    Heritage as soon as it is five days old, cared for on three days by
-                    three gardeners, and growing beside six neighbors in a region with
-                    an open Heritage place. If it returns to earth first, your seed is
-                    returned; plant a new flower to begin another attempt.
-                  </p>
-
-                  {accountState.account.heritage.nominatedFlower ? (
-                    <div className="cg-heritage-nomination">
-                      <GardenCatalogSprite
-                        kind="plant"
-                        type={accountState.account.heritage.nominatedFlower.plantType}
-                      />
-                      <div>
-                        <strong>
-                          {flowerName(accountState.account.heritage.nominatedFlower.plantType)} nominated
-                        </strong>
-                        <div className="cg-heritage-progress" aria-label="Heritage progress">
-                          <span className={accountState.account.heritage.nominatedFlower.ageDays >= 5 ? "is-met" : ""}>
-                            {Math.min(accountState.account.heritage.nominatedFlower.ageDays, 5)}/5 days
-                          </span>
-                          <span className={accountState.account.heritage.nominatedFlower.careDays >= 3 ? "is-met" : ""}>
-                            {Math.min(accountState.account.heritage.nominatedFlower.careDays, 3)}/3 care days
-                          </span>
-                          <span className={accountState.account.heritage.nominatedFlower.gardeners >= 3 ? "is-met" : ""}>
-                            {Math.min(accountState.account.heritage.nominatedFlower.gardeners, 3)}/3 gardeners
-                          </span>
-                          <span className={accountState.account.heritage.nominatedFlower.neighbors >= 6 ? "is-met" : ""}>
-                            {Math.min(accountState.account.heritage.nominatedFlower.neighbors, 6)}/6 neighbors
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  ) : null}
-
-                  {!accountState.account.heritage.nominatedFlower &&
-                  accountState.account.heritage.candidates.length ? (
-                    <details className="cg-heritage-choices" open>
-                      <summary>Choose your Heritage Flower</summary>
-                      <div className="cg-heritage-candidate-list">
-                        {accountState.account.heritage.candidates.map((candidate) => (
-                          <article
-                            className={`cg-heritage-candidate${candidate.nominated ? " is-nominated" : ""}`}
-                            key={candidate.id}
-                          >
-                            <span
-                              className={`cg-plant-glyph is-${candidate.plantType}`}
-                              aria-hidden="true"
-                            />
-                            <div>
-                              <strong>{flowerName(candidate.plantType)}</strong>
-                              <small>Plot {candidate.gridX}, {candidate.gridY}</small>
-                              <span>
-                                {candidate.ageDays}/5 days · {candidate.careDays}/3 care days · {candidate.gardeners}/3 gardeners · {candidate.neighbors}/6 neighbors
-                              </span>
-                            </div>
-                            <button
-                              type="button"
-                              disabled={candidate.nominated || busy === `heritage:${candidate.id}`}
-                              onClick={() => void nominateHeritage(candidate)}
-                            >
-                              {candidate.nominated
-                                ? "Nominated"
-                                : busy === `heritage:${candidate.id}`
-                                  ? "Placing seed…"
-                                  : "Nominate"}
-                            </button>
-                          </article>
-                        ))}
-                      </div>
-                    </details>
-                  ) : !accountState.account.heritage.nominatedFlower ? (
-                    <p className="cg-heritage-empty">
-                      Plant a new flower in the Community Garden, then return here to
-                      place your Heritage Seed.
-                    </p>
-                  ) : null}
-                </>
+                <p className="cg-heritage-empty">
+                  Keep planting and caring for the Community Garden. One of your
+                  flowers may naturally become Heritage after it grows with enough
+                  time, community care, and neighboring flowers. When that happens,
+                  Basil will let you know here and in the garden.
+                </p>
               )}
             </section>
           ) : null}

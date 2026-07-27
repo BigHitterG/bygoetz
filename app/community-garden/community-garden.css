@@ -4760,8 +4760,7 @@
   box-shadow: 2px 2px 0 rgba(52, 35, 31, 0.18);
 }
 
-.cg-heritage-earned,
-.cg-heritage-nomination {
+.cg-heritage-earned {
   display: grid;
   margin-top: 12px;
   grid-template-columns: 92px minmax(0, 1fr);
@@ -4772,8 +4771,7 @@
   padding: 10px;
 }
 
-.cg-heritage-earned .cg-catalog-sprite,
-.cg-heritage-nomination .cg-catalog-sprite {
+.cg-heritage-earned .cg-catalog-sprite {
   width: 92px;
   height: 84px;
 }
@@ -4783,91 +4781,6 @@
   color: #5b4238;
   font-size: 0.7rem;
   line-height: 1.45;
-}
-
-.cg-heritage-progress {
-  display: flex;
-  margin-top: 7px;
-  flex-wrap: wrap;
-  gap: 5px;
-}
-
-.cg-heritage-progress span {
-  border: 1px solid rgba(52, 35, 31, 0.3);
-  background: rgba(255, 244, 223, 0.78);
-  padding: 4px 6px;
-  color: #6f4c3e;
-  font-size: 0.57rem;
-  font-weight: 800;
-}
-
-.cg-heritage-progress span.is-met {
-  border-color: #4b7543;
-  background: rgba(75, 117, 67, 0.16);
-  color: #315c35;
-}
-
-.cg-heritage-choices {
-  margin-top: 12px;
-  border-top: 1px dashed rgba(52, 35, 31, 0.4);
-  padding-top: 10px;
-}
-
-.cg-heritage-choices summary {
-  cursor: pointer;
-  color: var(--cg-red);
-  font-size: 0.68rem;
-  font-weight: 900;
-  text-transform: uppercase;
-}
-
-.cg-heritage-candidate-list {
-  display: grid;
-  max-height: 480px;
-  margin-top: 9px;
-  gap: 7px;
-  overflow-y: auto;
-  padding-right: 3px;
-}
-
-.cg-heritage-candidate {
-  display: grid;
-  grid-template-columns: 58px minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 8px;
-  border: 1px solid rgba(52, 35, 31, 0.28);
-  background: rgba(255, 244, 223, 0.68);
-  padding: 6px;
-}
-
-.cg-heritage-candidate.is-nominated {
-  border-color: #8a6427;
-  background: rgba(241, 207, 119, 0.2);
-}
-
-.cg-heritage-candidate .cg-plant-glyph {
-  width: 58px;
-  height: 54px;
-  transform: scale(0.78);
-}
-
-.cg-heritage-candidate > div {
-  display: grid;
-  min-width: 0;
-  gap: 2px;
-}
-
-.cg-heritage-candidate small,
-.cg-heritage-candidate span {
-  color: #6f4c3e;
-  font-size: 0.55rem;
-  line-height: 1.35;
-}
-
-.cg-heritage-candidate button {
-  min-height: 34px;
-  padding: 6px 8px;
-  font-size: 0.61rem;
 }
 
 .cg-heritage-empty {

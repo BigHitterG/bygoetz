@@ -13,52 +13,47 @@ const account = readFileSync(
   new URL("../app/community-garden/components/GardenSteward.tsx", import.meta.url),
   "utf8",
 );
-const route = readFileSync(
-  new URL("../app/api/community-garden/heritage-seed/route.ts", import.meta.url),
-  "utf8",
-);
-const retryMigration = readFileSync(
+const naturalMigration = readFileSync(
   new URL(
-    "../supabase/migrations/20260727151041_lock_heritage_seed_retries.sql",
+    "../supabase/migrations/20260727155145_automate_account_heritage_flowers.sql",
     import.meta.url,
   ),
   "utf8",
 );
 
-test("a Heritage Seed is private, explicit, retryable, and consumed only by promotion", () => {
+test("the one-per-account Heritage record stays private", () => {
   assert.match(migration, /create table public\.community_garden_heritage_seeds/);
   assert.match(migration, /owner_actor_key text primary key/);
   assert.match(migration, /nominated_plant_id uuid unique/);
   assert.match(migration, /heritage_plant_id uuid unique/);
   assert.match(migration, /on delete set null/);
-  assert.match(migration, /seed\.nominated_plant_id is distinct from new\.id/);
-  assert.match(migration, /seed\.redeemed_at is not null/);
-  assert.match(migration, /redeemed_at = new\.heritage_at/);
-  assert.match(migration, /count\(\*\)::integer[\s\S]+plant\.heritage_at is not null/);
+  assert.match(migration, /enable row level security/);
+  assert.match(migration, /grant select, insert, update, delete[\s\S]+to service_role/);
 });
 
-test("members can choose, monitor, and visit their one Heritage Flower", () => {
-  assert.match(account, /Choose your Heritage Flower/);
-  assert.doesNotMatch(account, /Choose a different flower/);
+test("members naturally grow and can visit their one Heritage Flower", () => {
+  assert.doesNotMatch(account, /Choose your Heritage Flower/);
+  assert.doesNotMatch(account, /Nominate/);
+  assert.doesNotMatch(account, /\/api\/community-garden\/heritage-seed/);
+  assert.match(account, /may naturally become Heritage/);
   assert.match(account, /Visit your Heritage Flower/);
   assert.match(account, /Heritage Gardener/);
-  assert.match(account, /\/api\/community-garden\/heritage-seed/);
-  assert.match(route, /hasAllowedBasilRequestOrigin/);
-  assert.match(route, /getGardenUser/);
 });
 
 test("Founding Stewards receive the same single lifetime opportunity", () => {
   assert.match(migration, /owner_kind in \('member', 'founding_steward'\)/);
   assert.match(migration, /insert into public\.community_garden_heritage_seeds[\s\S]+community_garden_founding_stewards/);
-  assert.match(migration, /nominate_founding_steward_heritage_seed_v1/);
+  assert.match(naturalMigration, /seed_owner_kind := 'founding_steward'/);
 });
 
-test("a failed attempt returns the seed but requires a newly planted flower", () => {
-  assert.match(migration, /release_failed_community_garden_heritage_seed_v1/);
-  assert.match(migration, /available_since = statement_timestamp\(\)/);
-  assert.match(migration, /plant\.planted_at >= seed\.available_since/);
-  assert.match(migration, /Heritage Seed is already growing with its nominated flower/);
-  assert.match(retryMigration, /guard_community_garden_heritage_nomination_v1/);
-  assert.match(retryMigration, /get_community_garden_heritage_seed_v2/);
-  assert.match(retryMigration, /candidate\.planted_at < old\.available_since/);
+test("automatic promotion selects only a qualifying owner flower and is concurrency safe", () => {
+  assert.match(naturalMigration, /get_community_garden_heritage_seed_v3/);
+  assert.match(naturalMigration, /active paid members and the three private Founding Stewards/);
+  assert.match(naturalMigration, /pg_advisory_xact_lock/);
+  assert.match(naturalMigration, /redeemed_at is not null/);
+  assert.match(naturalMigration, /nominated_plant_id = new\.id/);
+  assert.match(naturalMigration, /account-heritage-natural-v1/);
+  assert.match(naturalMigration, /where redeemed_at is null/);
+  assert.match(naturalMigration, /where plant\.region_x = new\.region_x/);
+  assert.doesNotMatch(naturalMigration, /create trigger nominate_founding_steward/);
 });

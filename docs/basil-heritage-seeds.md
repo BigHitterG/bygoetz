@@ -2,12 +2,12 @@
 
 ## Player rule
 
-Every active Garden Membership receives one lifetime Heritage Seed. The seed
-can only be placed on a living Community Garden flower planted by that same
-account. Ownership remains private and never appears in the public snapshot.
+Every active Garden Membership can naturally grow one lifetime Heritage
+Flower. The player never chooses or nominates a candidate. Normal Community
+Garden play selects the first qualifying flower planted by that account.
+Ownership remains private and never appears in the public snapshot.
 
-The nomination is locked while that flower is trying to establish. It becomes
-a Heritage Flower immediately after all of these are true:
+A flower becomes Heritage immediately after all of these are true:
 
 - at least 5 days old;
 - cared for on at least 3 UTC dates;
@@ -16,21 +16,17 @@ a Heritage Flower immediately after all of these are true:
 - planted in founding or established land; and
 - its region has fewer than 9 Heritage Flowers.
 
-There is no 14-day promotion batch. The action that completes the criteria, or
-the nomination of an already-qualified flower, promotes it transactionally.
-
-## Failure and retry
-
-The seed is consumed only by successful Heritage promotion. A nomination
-cannot be moved to another existing flower. If the candidate returns to earth,
-the seed is returned and its new `available_since` timestamp is recorded. Only
-a flower planted after that loss can receive the next nomination.
+There is no 14-day promotion batch and no failed nomination. Until one flower
+qualifies, the opportunity remains available across all of the member's living
+flowers. The water action that completes the criteria promotes the flower
+transactionally; after that, the account has earned its one lifetime Heritage
+Flower.
 
 ## Steward rule
 
 Rowan, Clover, and Wren each receive the same one lifetime opportunity. Their
-first eligible new planting is nominated automatically. They use the same age,
-care, gardener, neighborhood, land, and regional-capacity checks as a member.
+first naturally qualifying flower uses the same age, care, gardener,
+neighborhood, land, and regional-capacity checks as a member.
 
 ## Existing garden
 
@@ -43,6 +39,7 @@ be linked to that account's badge; unknown public flowers remain anonymous.
 ## Privacy and deletion
 
 `community_garden_heritage_seeds` is RLS-protected, has no client policies, and
-is granted only to `service_role`. Account deletion cascades the private seed
-mapping while the already-anonymous public Heritage Flower and event remain in
-the canonical Community Garden.
+is granted only to `service_role`. Candidate lists and nomination controls are
+not exposed. Account deletion cascades the private Heritage mapping while the
+already-anonymous public Heritage Flower and event remain in the canonical
+Community Garden.
