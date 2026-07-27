@@ -1,5 +1,11 @@
 import { GARDEN_CONFIG, isWithinGarden } from "../lib/gardenConfig";
 import {
+  gridToWorld,
+  worldToScreen,
+  type GardenViewport,
+  type WorldPoint,
+} from "../lib/cameraProjection";
+import {
   getMyGardenElement,
   type MyGardenElementType,
 } from "../lib/myGardenCatalog";
@@ -16,8 +22,13 @@ import {
 import { findHeritageAuraAnchor } from "../lib/heritageAura";
 import { getTerrainTile, terrainNoise } from "./terrainGenerator";
 
-export type WorldPoint = { x: number; y: number };
-export type GardenViewport = { width: number; height: number };
+export {
+  getWorldScreenOrigin,
+  gridToWorld,
+  screenToGrid,
+  worldToScreen,
+} from "../lib/cameraProjection";
+export type { GardenViewport, WorldPoint } from "../lib/cameraProjection";
 export type GardenWorldMode = "community" | "personal";
 export type SelectedCell = {
   gridX: number;
@@ -125,46 +136,8 @@ function ensureLayer(current: HTMLCanvasElement | null, viewport: GardenViewport
   return canvas;
 }
 
-export function gridToWorld(gridX: number, gridY: number): WorldPoint {
-  return {
-    x: (gridX + 0.5) * GARDEN_CONFIG.tileSize,
-    y: (gridY + 0.5) * GARDEN_CONFIG.tileSize,
-  };
-}
-
 function getMaryScreenY(viewport: GardenViewport) {
   return viewport.height * GARDEN_CONFIG.maryScreenYRatio;
-}
-
-export function worldToScreen(
-  point: WorldPoint,
-  camera: WorldPoint,
-  viewport: GardenViewport,
-  zoom: number = GARDEN_CONFIG.defaultCameraZoom,
-): WorldPoint {
-  const yScale = GARDEN_CONFIG.tileScreenHeight / GARDEN_CONFIG.tileSize;
-  return {
-    x: Math.round(viewport.width / 2 + (point.x - camera.x) * zoom),
-    y: Math.round(
-      getMaryScreenY(viewport) + (point.y - camera.y) * yScale * zoom,
-    ),
-  };
-}
-
-export function screenToGrid(
-  screenX: number,
-  screenY: number,
-  camera: WorldPoint,
-  viewport: GardenViewport,
-  zoom: number = GARDEN_CONFIG.defaultCameraZoom,
-) {
-  const yScale = GARDEN_CONFIG.tileScreenHeight / GARDEN_CONFIG.tileSize;
-  const worldX = camera.x + (screenX - viewport.width / 2) / zoom;
-  const worldY = camera.y + (screenY - getMaryScreenY(viewport)) / (yScale * zoom);
-  return {
-    gridX: Math.floor(worldX / GARDEN_CONFIG.tileSize),
-    gridY: Math.floor(worldY / GARDEN_CONFIG.tileSize),
-  };
 }
 
 function getVisibleGridBounds(

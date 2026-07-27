@@ -41,6 +41,7 @@ import {
   getChunkKey,
   getLoadedBounds,
 } from "../lib/gardenConfig";
+import { getFrameStableCameraEase } from "../lib/cameraMotion";
 import {
   canEarnWateringCare,
   getPlantDefinition,
@@ -3390,11 +3391,13 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
         const responsiveWidth = Math.round(
           GARDEN_CONFIG.logicalHeight * (bounds.width / bounds.height),
         );
-        canvas.width = Math.min(
+        const nextWidth = Math.min(
           GARDEN_CONFIG.maxLogicalWidth,
           Math.max(GARDEN_CONFIG.minLogicalWidth, responsiveWidth),
         );
-        canvas.height = GARDEN_CONFIG.logicalHeight;
+        const nextHeight = GARDEN_CONFIG.logicalHeight;
+        if (canvas.width !== nextWidth) canvas.width = nextWidth;
+        if (canvas.height !== nextHeight) canvas.height = nextHeight;
         const viewport = { width: canvas.width, height: canvas.height };
         runtime.zoom = clampZoom(runtime, runtime.zoom, viewport);
         if (
@@ -3513,7 +3516,9 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
           runtime.duck.y += (duckDy / duckDistance) * duckStep;
         }
 
-        const cameraEase = runtime.reducedMotion ? 1 : Math.min(1, deltaSeconds * 7);
+        const cameraEase = runtime.reducedMotion
+          ? 1
+          : getFrameStableCameraEase(deltaSeconds);
         const builderHead =
           runtime.builder?.cells[runtime.builder.cells.length - 1];
         const cameraTarget = builderHead
