@@ -2,8 +2,11 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 import {
+  buildHeritageAuraField,
   findHeritageAuraAnchor,
+  getHeritageAuraFieldMultiplier,
   getHeritageAuraMultiplier,
+  getHeritageGrowthProfile,
 } from "../app/community-garden/lib/heritageAura.ts";
 import type { PlantRecord } from "../app/community-garden/lib/roseLifecycle.ts";
 
@@ -47,6 +50,29 @@ test("the nearest Heritage Flower gives one strongest non-stacking aura", () => 
   assert.equal(findHeritageAuraAnchor([heritage, overlapping], 11, 10)?.id, "heritage");
 });
 
+test("the render field gives protected flowers two distinct maturation forms", () => {
+  const field = buildHeritageAuraField([heritage]);
+
+  assert.equal(getHeritageAuraFieldMultiplier(field, 11, 11), 4);
+  assert.equal(getHeritageAuraFieldMultiplier(field, 12, 10), 2);
+  assert.equal(getHeritageAuraFieldMultiplier(field, 13, 10), 1);
+  assert.equal(getHeritageGrowthProfile(4).phase, "deep-rooted");
+  assert.equal(getHeritageGrowthProfile(2).phase, "sheltered");
+  assert.ok(
+    getHeritageGrowthProfile(4).verticalScale >
+      getHeritageGrowthProfile(2).verticalScale,
+  );
+
+  const overlapping = plant(
+    "second-heritage",
+    13,
+    10,
+    "2026-07-27T01:00:00.000Z",
+  );
+  const overlappingField = buildHeritageAuraField([heritage, overlapping]);
+  assert.equal(getHeritageAuraFieldMultiplier(overlappingField, 12, 10), 4);
+});
+
 test("the release is lifetime-Care based and keeps collapse behavior out of scope", () => {
   const migration = readFileSync(
     new URL(
@@ -80,6 +106,7 @@ test("watering preserves canonical Heritage appearance and the forest is lightwe
 
   assert.match(canvas, /existing\?\.heritage_at && !candidate\.heritage_at/);
   assert.match(renderer, /function drawHeritageAura/);
+  assert.match(renderer, /buildHeritageAuraField\(visiblePlants\)/);
+  assert.match(renderer, /visual\.state === "wilting" \? 1 : heritageAuraMultiplier/);
   assert.match(renderer, /ctx\.fillStyle = "#234b35"/);
-  assert.match(renderer, /x: Math\.round\(viewport\.width/);
 });

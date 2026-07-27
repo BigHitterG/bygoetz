@@ -136,7 +136,9 @@ export function GardenGuide() {
               different days from three gardeners, and lives in a healthy cluster
               can become a Heritage Flower. Heritage Flowers leave your 100-flower
               footprint, keep their place permanently, and mark the parts of the
-              shared garden the community sustained together.
+              shared garden the community sustained together. Nearby flowers grow
+              into richer protected forms: the closest ring receives 4x its normal
+              maximum season, and the next ring receives 2x.
             </p>
           </article>
           <article>

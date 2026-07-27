@@ -19,7 +19,14 @@ import {
   HERITAGE_GOLD_DARK,
   HERITAGE_GOLD_LIGHT,
 } from "../lib/heritageDiscovery";
-import { findHeritageAuraAnchor } from "../lib/heritageAura";
+import {
+  buildHeritageAuraField,
+  findHeritageAuraAnchor,
+  getHeritageAuraFieldMultiplier,
+  getHeritageGrowthProfile,
+  type HeritageAuraMultiplier,
+  type HeritageGrowthPhase,
+} from "../lib/heritageAura";
 import { getTerrainTile, terrainNoise } from "./terrainGenerator";
 
 export {
@@ -1674,11 +1681,21 @@ function drawColorMask(
   now: number,
   kind: "soil" | "green",
   zoom: number,
+  heritageAuraField?: ReadonlyMap<string, HeritageAuraMultiplier>,
 ) {
   ctx.clearRect(0, 0, viewport.width, viewport.height);
   for (const plant of plants) {
     const visual = getPlantVisual(plant, now);
     if (visual.colorRadius <= 0) continue;
+    const auraMultiplier =
+      plant.heritage_at || !heritageAuraField
+        ? 1
+        : getHeritageAuraFieldMultiplier(
+            heritageAuraField,
+            plant.grid_x,
+            plant.grid_y,
+          );
+    const growth = getHeritageGrowthProfile(auraMultiplier);
     const point = worldToScreen(
       gridToWorld(plant.grid_x, plant.grid_y),
       camera,
@@ -1686,11 +1703,15 @@ function drawColorMask(
       zoom,
     );
     const radiusMultiplier = kind === "soil" ? 1.55 : 0.9;
-    const radius = visual.colorRadius * zoom * radiusMultiplier;
+    const radius =
+      (visual.colorRadius + growth.colorRadiusBoost) * zoom * radiusMultiplier;
     const strength =
       kind === "soil"
-        ? Math.min(0.84, 0.36 + visual.colorStrength * 0.48)
-        : visual.colorStrength;
+        ? Math.min(
+            0.9,
+            0.36 + (visual.colorStrength + growth.colorStrengthBoost) * 0.48,
+          )
+        : Math.min(0.94, visual.colorStrength + growth.colorStrengthBoost);
     const gradient = ctx.createRadialGradient(point.x, point.y, 4, point.x, point.y, radius);
     gradient.addColorStop(0, `rgba(255,255,255,${strength})`);
     gradient.addColorStop(kind === "soil" ? 0.58 : 0.7, `rgba(255,255,255,${strength * 0.68})`);
@@ -1744,22 +1765,38 @@ function drawSeedOrSprout(
   ctx.fillRect(1, -2, 2, 2);
 }
 
+function protectedColor(
+  ordinary: string,
+  sheltered: string,
+  deepRooted: string,
+  phase: HeritageGrowthPhase,
+  muted = false,
+) {
+  if (muted || phase === "ordinary") return ordinary;
+  return phase === "deep-rooted" ? deepRooted : sheltered;
+}
+
 function drawRosePlant(
   ctx: CanvasRenderingContext2D,
   plant: PlantRecord,
   state: "young" | "mature" | "blooming" | "wilting",
   heritage = false,
+  protectedGrowth: HeritageGrowthPhase = "ordinary",
 ) {
   const wilting = state === "wilting";
   const plantVariant = Math.abs(plant.grid_x * 17 + plant.grid_y * 13) % 2;
   const stemLean = plantVariant === 0 ? -1 : 1;
   if (state === "young") {
-    ctx.fillStyle = heritage ? HERITAGE_GOLD_DARK : "#45643f";
+    ctx.fillStyle = heritage
+      ? HERITAGE_GOLD_DARK
+      : protectedColor("#45643f", "#3d653b", "#2d6235", protectedGrowth);
     ctx.fillRect(-1, -4, 2, 5);
     ctx.fillRect(-1 + stemLean, -9, 2, 5);
     ctx.fillRect(-4 + stemLean, -7, 3, 2);
     ctx.fillRect(1, -3, 3, 2);
-    ctx.fillStyle = heritage ? HERITAGE_GOLD_LIGHT : "#718054";
+    ctx.fillStyle = heritage
+      ? HERITAGE_GOLD_LIGHT
+      : protectedColor("#718054", "#68844d", "#578342", protectedGrowth);
     ctx.fillRect(-2 + stemLean, -10, 4, 3);
     return;
   }
@@ -1772,7 +1809,7 @@ function drawRosePlant(
       : HERITAGE_GOLD_LIGHT
     : wilting
       ? "#677052"
-      : "#45643f";
+      : protectedColor("#45643f", "#3d653b", "#2d6235", protectedGrowth);
   ctx.fillRect(-1, -4, 2, 5);
   ctx.fillRect(-1 + stemLean, -9, 2, 5);
   ctx.fillRect(-5 + stemLean, leftLeafY, 4, 2);
@@ -1781,17 +1818,31 @@ function drawRosePlant(
   ctx.fillRect(0, rightLeafY + 1, 2, 1);
 
   if (state === "mature") {
-    ctx.fillStyle = "#bc5f5f";
+    ctx.fillStyle = protectedColor(
+      "#bc5f5f",
+      "#c94d5b",
+      "#d53b51",
+      protectedGrowth,
+    );
     ctx.fillRect(-3 + stemLean, -12, 6, 4);
-    ctx.fillStyle = "#8f4548";
+    ctx.fillStyle = protectedColor(
+      "#8f4548",
+      "#96343f",
+      "#9f2638",
+      protectedGrowth,
+    );
     ctx.fillRect(-1 + stemLean, -13, 3, 3);
     return;
   }
 
-  ctx.fillStyle = wilting ? "#a76d62" : "#d94a4e";
+  ctx.fillStyle = wilting
+    ? "#a76d62"
+    : protectedColor("#d94a4e", "#e03e50", "#eb2f4a", protectedGrowth);
   ctx.fillRect(-4, -14, 8, 7);
   ctx.fillRect(-6, -12, 12, 3);
-  ctx.fillStyle = wilting ? "#845047" : "#a51f31";
+  ctx.fillStyle = wilting
+    ? "#845047"
+    : protectedColor("#a51f31", "#a91732", "#a9072c", protectedGrowth);
   ctx.fillRect(-2, -13, 4, 4);
   ctx.fillStyle = "#f2a36f";
   ctx.fillRect(-1, -12, 2, 2);
@@ -1801,6 +1852,7 @@ function drawSunflowerPlant(
   ctx: CanvasRenderingContext2D,
   state: "young" | "mature" | "blooming" | "wilting",
   heritage = false,
+  protectedGrowth: HeritageGrowthPhase = "ordinary",
 ) {
   const wilting = state === "wilting";
   ctx.save();
@@ -1811,20 +1863,26 @@ function drawSunflowerPlant(
       : HERITAGE_GOLD_LIGHT
     : wilting
       ? "#6f7151"
-      : "#42633e";
+      : protectedColor("#42633e", "#38663a", "#276334", protectedGrowth);
   ctx.fillRect(-1, -12, 2, 13);
   ctx.fillRect(-6, -7, 5, 3);
   ctx.fillRect(1, -4, 6, 3);
 
   if (state === "young") {
-    ctx.fillStyle = heritage ? HERITAGE_GOLD_LIGHT : "#758454";
+    ctx.fillStyle = heritage
+      ? HERITAGE_GOLD_LIGHT
+      : protectedColor("#758454", "#6d894d", "#5d8941", protectedGrowth);
     ctx.fillRect(-3, -14, 6, 3);
     ctx.restore();
     return;
   }
 
-  const petal = wilting ? "#b78f4c" : "#e4b53f";
-  const center = wilting ? "#705243" : "#5b4335";
+  const petal = wilting
+    ? "#b78f4c"
+    : protectedColor("#e4b53f", "#edb72c", "#f4b913", protectedGrowth);
+  const center = wilting
+    ? "#705243"
+    : protectedColor("#5b4335", "#55392d", "#472d24", protectedGrowth);
   const headY = state === "mature" ? -14 : -16;
   ctx.fillStyle = petal;
   ctx.fillRect(-5, headY - 3, 10, 8);
@@ -1840,6 +1898,7 @@ function drawLavenderPlant(
   ctx: CanvasRenderingContext2D,
   state: "young" | "mature" | "blooming" | "wilting",
   heritage = false,
+  protectedGrowth: HeritageGrowthPhase = "ordinary",
 ) {
   const wilting = state === "wilting";
   ctx.fillStyle = heritage
@@ -1848,7 +1907,7 @@ function drawLavenderPlant(
       : HERITAGE_GOLD_LIGHT
     : wilting
       ? "#73735d"
-      : "#536a50";
+      : protectedColor("#536a50", "#496d49", "#386a40", protectedGrowth);
   ctx.fillRect(-7, -5, 14, 5);
   ctx.fillRect(-5, -8, 3, 7);
   ctx.fillRect(-1, -10, 2, 10);
@@ -1856,8 +1915,12 @@ function drawLavenderPlant(
 
   if (state === "young") return;
 
-  const flower = wilting ? "#827688" : "#7876a8";
-  const flowerLight = wilting ? "#9b8c92" : "#a39bc4";
+  const flower = wilting
+    ? "#827688"
+    : protectedColor("#7876a8", "#7069b0", "#6558b8", protectedGrowth);
+  const flowerLight = wilting
+    ? "#9b8c92"
+    : protectedColor("#a39bc4", "#aaa0d2", "#b3a6e2", protectedGrowth);
   const topOffset = state === "mature" ? 2 : 0;
   ctx.fillStyle = flower;
   ctx.fillRect(-6, -13 + topOffset, 3, 6);
@@ -1931,6 +1994,7 @@ function drawPlant(
   zoom: number,
   showCareCue = false,
   careReady?: boolean,
+  heritageAuraMultiplier: HeritageAuraMultiplier = 1,
 ) {
   const point = worldToScreen(
     gridToWorld(plant.grid_x, plant.grid_y),
@@ -1964,10 +2028,18 @@ function drawPlant(
     return;
   }
 
+  // Protected growth is a visual maturation state, not a replacement for the
+  // underlying life cycle. A flower that needs water must still read as wilted.
+  const growth = getHeritageGrowthProfile(
+    heritage || visual.state === "wilting" ? 1 : heritageAuraMultiplier,
+  );
+  ctx.save();
+  ctx.scale(growth.horizontalScale, growth.verticalScale);
+
   if (plant.plant_type === "sunflower") {
-    drawSunflowerPlant(ctx, visual.state, heritage);
+    drawSunflowerPlant(ctx, visual.state, heritage, growth.phase);
   } else if (plant.plant_type === "lavender") {
-    drawLavenderPlant(ctx, visual.state, heritage);
+    drawLavenderPlant(ctx, visual.state, heritage, growth.phase);
   } else if (
     plant.plant_type === "daisy" ||
     plant.plant_type === "tulip" ||
@@ -1977,8 +2049,9 @@ function drawPlant(
   ) {
     drawMyGardenFlower(ctx, plant.plant_type, heritage);
   } else {
-    drawRosePlant(ctx, plant, visual.state, heritage);
+    drawRosePlant(ctx, plant, visual.state, heritage, growth.phase);
   }
+  ctx.restore();
   if (heritage) {
     const shimmer = 0.68 + Math.sin(now / 900 + plant.grid_x + plant.grid_y) * 0.2;
     ctx.save();
@@ -2673,6 +2746,7 @@ export function renderGarden(ctx: CanvasRenderingContext2D, state: RenderGardenS
   const visiblePlants = state.plants.filter(
     (plant) => getPlantVisual(plant, state.now).state !== "expired",
   );
+  const heritageAuraField = buildHeritageAuraField(visiblePlants);
   const occupiedCells = new Set(
     [
       ...visiblePlants.map((plant) => terrainCellKey(plant.grid_x, plant.grid_y)),
@@ -2723,6 +2797,7 @@ export function renderGarden(ctx: CanvasRenderingContext2D, state: RenderGardenS
     state.now,
     "soil",
     state.zoom,
+    heritageAuraField,
   );
   applyMask(soilCtx, maskCtx, maskLayer);
   drawTerrainLayer(greenCtx, state.camera, state.viewport, "green", state.zoom, occupiedCells, openRegionKeys, growingEdgeStages, guidanceZones);
@@ -2734,6 +2809,7 @@ export function renderGarden(ctx: CanvasRenderingContext2D, state: RenderGardenS
     state.now,
     "green",
     state.zoom,
+    heritageAuraField,
   );
   applyMask(greenCtx, maskCtx, maskLayer);
 
@@ -2787,6 +2863,14 @@ export function renderGarden(ctx: CanvasRenderingContext2D, state: RenderGardenS
       state.now,
       state.zoom,
       false,
+      undefined,
+      plant.heritage_at
+        ? 1
+        : getHeritageAuraFieldMultiplier(
+            heritageAuraField,
+            plant.grid_x,
+            plant.grid_y,
+          ),
     ),
   );
   visiblePlants.forEach((plant) =>
