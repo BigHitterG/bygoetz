@@ -2369,6 +2369,17 @@ export function CommunityGardenApp() {
           playGardenSound("select");
           setMenuSection(section);
         }}
+        onVisitHeritage={(gridX, gridY) => {
+          playGardenSound("select");
+          setMenuOpen(false);
+          setInventoryOpen(false);
+          setWorld("community");
+          window.requestAnimationFrame(() => {
+            window.requestAnimationFrame(() => {
+              canvasRef.current?.goToGridPosition(gridX, gridY);
+            });
+          });
+        }}
       />
 
       <GardenMembershipOffer

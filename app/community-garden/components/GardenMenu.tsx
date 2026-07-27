@@ -24,6 +24,7 @@ type GardenMenuProps = {
   audio: GardenAudioControls;
   onClose: () => void;
   onSectionChange: (section: LibrarySection) => void;
+  onVisitHeritage?: (gridX: number, gridY: number) => void;
 };
 
 export function GardenMenu({
@@ -32,6 +33,7 @@ export function GardenMenu({
   audio,
   onClose,
   onSectionChange,
+  onVisitHeritage,
 }: GardenMenuProps) {
   if (!open) return null;
 
@@ -133,7 +135,9 @@ export function GardenMenu({
           {section === "play" ? <GardenGuide /> : null}
           {section === "plants" ? <PlantGlossary /> : null}
           {section === "elements" ? <GardenElements /> : null}
-          {section === "account" ? <GardenSteward /> : null}
+          {section === "account" ? (
+            <GardenSteward onVisitHeritage={onVisitHeritage} />
+          ) : null}
           {section === "about" ? <GardenFounder /> : null}
         </div>
         <BasilPolicyLinks compact />

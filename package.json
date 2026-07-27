@@ -37,6 +37,7 @@
     "test:frontier-guests": "node --experimental-strip-types tests/basil-guest-frontier-assist.test.ts",
     "test:founding-stewards": "node --experimental-strip-types tests/basil-founding-stewards.test.ts",
     "test:heritage-news": "node --experimental-strip-types tests/basil-heritage-notifications.test.ts",
+    "test:heritage-seeds": "node --experimental-strip-types tests/basil-heritage-seeds.test.ts",
     "test:regions": "node --experimental-strip-types tests/basil-region-delivery.test.ts",
     "test:zones": "node --experimental-strip-types tests/basil-garden-zones.test.ts",
     "test:guest-refund": "node --experimental-strip-types tests/basil-guest-garden-refund.test.ts",
