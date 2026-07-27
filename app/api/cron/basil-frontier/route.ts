@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { runCommunityGardenFoundingStewards } from "@/lib/communityGarden/foundingStewards";
 import { evaluateCommunityGardenFrontier } from "@/lib/communityGarden/frontierServer";
 
 export const runtime = "nodejs";
@@ -17,8 +18,17 @@ export async function GET(request: Request) {
   }
 
   try {
+    let foundingStewards: Awaited<ReturnType<typeof runCommunityGardenFoundingStewards>> | null = null;
+    try {
+      foundingStewards = await runCommunityGardenFoundingStewards();
+    } catch (error) {
+      console.error(JSON.stringify({
+        event: "basil_founding_stewards_failed",
+        message: error instanceof Error ? error.message : "unknown",
+      }));
+    }
     const result = await evaluateCommunityGardenFrontier();
-    return NextResponse.json({ ok: true, ...result });
+    return NextResponse.json({ ok: true, foundingStewards, ...result });
   } catch (error) {
     console.error(
       JSON.stringify({

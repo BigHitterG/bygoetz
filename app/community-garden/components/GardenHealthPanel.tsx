@@ -308,6 +308,69 @@ export function GardenHealthPanel({ session }: { session: Session }) {
         />
       ) : null}
 
+      {health.foundingStewards ? (
+        <div className="cg-economy-panel">
+          <div className="cg-funnel-heading">
+            <div>
+              <strong>Founding Stewards</strong>
+              <small>Private paid-world support · never shown as players</small>
+            </div>
+            <span>
+              {health.foundingStewards.active} / {health.foundingStewards.configured} active
+            </span>
+          </div>
+          <div className="cg-funnel-breakdowns">
+            <div>
+              <strong>Latest daily run</strong>
+              <ul>
+                <li><span>Status</span><b>{health.foundingStewards.latestRun?.status ?? "Not run"}</b></li>
+                <li><span>Paid members available</span><b>{health.foundingStewards.latestRun?.paidMemberCount ?? 0}</b></li>
+                <li><span>Successful actions</span><b>{health.foundingStewards.latestRun?.actionsSucceeded ?? 0}</b></li>
+                <li><span>Failed actions</span><b>{health.foundingStewards.latestRun?.actionsFailed ?? 0}</b></li>
+              </ul>
+            </div>
+            <div>
+              <strong>Last 7 days</strong>
+              <ul>
+                <li><span>Flowers planted</span><b>{health.foundingStewards.last7Days.plantsPlaced}</b></li>
+                <li><span>Watering actions</span><b>{health.foundingStewards.last7Days.wateringActions}</b></li>
+                <li><span>Regions supported</span><b>{health.foundingStewards.last7Days.regionsTouched}</b></li>
+                <li><span>Failures</span><b>{health.foundingStewards.last7Days.failed}</b></li>
+              </ul>
+            </div>
+            <div>
+              <strong>Heritage contribution</strong>
+              <ul>
+                <li><span>Care records</span><b>{health.foundingStewards.heritage.careRecords}</b></li>
+                <li><span>Promotions completed</span><b>{health.foundingStewards.heritage.promotionsCompleted}</b></li>
+                <li><span>Steward flowers promoted</span><b>{health.foundingStewards.heritage.stewardPlantsPromoted}</b></li>
+              </ul>
+            </div>
+          </div>
+          <div className="cg-funnel-breakdowns">
+            <div>
+              <strong>Individual stewards</strong>
+              <ul>
+                {health.foundingStewards.stewards.map((steward) => (
+                  <li key={steward.stewardId}>
+                    <span>
+                      {steward.displayName} · {steward.plants7d} planted · {steward.waterings7d} watered
+                    </span>
+                    <b>{steward.enabled ? "Active" : "Paused"}</b>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+          <small>
+            The stewards only work near paid-member or steward flowers, avoid tutorial spawn areas,
+            and use the same footprints and Heritage rules as account players. Last run {formatTime(
+              health.foundingStewards.latestRun?.completedAt ?? null,
+            )}.
+          </small>
+        </div>
+      ) : null}
+
       <div className="cg-funnel-heading">
         <div>
           <strong>Launch funnel</strong>

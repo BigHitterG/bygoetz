@@ -35,6 +35,7 @@
     "test:frontier-migration": "node --experimental-strip-types tests/basil-quorum-frontier-migration.test.ts",
     "test:frontier-dashboard": "node --experimental-strip-types tests/basil-founder-frontier-dashboard.test.ts",
     "test:frontier-guests": "node --experimental-strip-types tests/basil-guest-frontier-assist.test.ts",
+    "test:founding-stewards": "node --experimental-strip-types tests/basil-founding-stewards.test.ts",
     "test:heritage-news": "node --experimental-strip-types tests/basil-heritage-notifications.test.ts",
     "test:regions": "node --experimental-strip-types tests/basil-region-delivery.test.ts",
     "test:zones": "node --experimental-strip-types tests/basil-garden-zones.test.ts",

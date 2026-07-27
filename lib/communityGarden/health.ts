@@ -153,6 +153,59 @@ export type CommunityGardenFrontierHealth = {
   recentStateChanges: CommunityGardenRegionStateChange[];
 };
 
+export type CommunityGardenFoundingStewardHealth = {
+  configured: number;
+  active: number;
+  paidOnly: boolean;
+  visibleAsPlayers: boolean;
+  latestRun: null | {
+    runDate: string;
+    status: "running" | "completed" | "partial" | "skipped" | "failed";
+    paidMemberCount: number;
+    actionsAttempted: number;
+    actionsSucceeded: number;
+    actionsFailed: number;
+    plantsPlaced: number;
+    flowersWatered: number;
+    heritagePromotionsCompleted: number;
+    startedAt: string;
+    completedAt: string | null;
+  };
+  last7Days: {
+    actions: number;
+    successful: number;
+    failed: number;
+    plantsPlaced: number;
+    wateringActions: number;
+    regionsTouched: number;
+  };
+  allTime: {
+    actions: number;
+    successful: number;
+    failed: number;
+    plantsPlaced: number;
+    wateringActions: number;
+    regionsTouched: number;
+  };
+  heritage: {
+    careRecords: number;
+    promotionsCompleted: number;
+    stewardPlantsPromoted: number;
+  };
+  stewards: Array<{
+    stewardId: number;
+    displayName: string;
+    enabled: boolean;
+    dailyPlantActions: number;
+    dailyWaterActions: number;
+    lastActionAt: string | null;
+    actions7d: number;
+    plants7d: number;
+    waterings7d: number;
+    failures7d: number;
+  }>;
+};
+
 export type CommunityGardenHealth = {
   measuredAt: string;
   status: "healthy" | "elevated" | "degraded";
@@ -197,6 +250,7 @@ export type CommunityGardenHealth = {
     expansionRecommended: boolean;
   };
   frontier: CommunityGardenFrontierHealth | null;
+  foundingStewards: CommunityGardenFoundingStewardHealth | null;
   economy: CommunityGardenEconomyAdmin;
   funnel: BasilLaunchFunnel;
 };
@@ -269,12 +323,14 @@ export async function getCommunityGardenAdminHealth() {
     { data, error },
     { data: commons, error: commonsError },
     { data: frontier, error: frontierError },
+    { data: foundingStewards, error: foundingStewardsError },
     funnel,
     economy,
   ] = await Promise.all([
     getSupabaseAdmin().rpc("get_community_garden_admin_health"),
     getSupabaseAdmin().rpc("get_community_garden_commons_health"),
     getSupabaseAdmin().rpc("get_community_garden_frontier_dashboard_v2"),
+    getSupabaseAdmin().rpc("get_community_garden_founding_steward_dashboard_v1"),
     getBasilLaunchFunnelAdmin(),
     getCommunityGardenEconomy(),
   ]);
@@ -291,15 +347,24 @@ export async function getCommunityGardenAdminHealth() {
       code: frontierError.code,
     });
   }
+  if (foundingStewardsError) {
+    console.warn("Basil Founding Steward health is temporarily unavailable", {
+      code: foundingStewardsError.code,
+    });
+  }
   return {
     ...(data as Omit<
       CommunityGardenHealth,
-      "funnel" | "commons" | "frontier" | "economy"
+      "funnel" | "commons" | "frontier" | "foundingStewards" | "economy"
     >),
     commons,
     frontier:
       !frontierError && frontier && typeof frontier === "object"
         ? (frontier as CommunityGardenFrontierHealth)
+        : null,
+    foundingStewards:
+      !foundingStewardsError && foundingStewards && typeof foundingStewards === "object"
+        ? (foundingStewards as CommunityGardenFoundingStewardHealth)
         : null,
     economy,
     funnel,
