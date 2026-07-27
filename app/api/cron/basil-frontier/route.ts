@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { runCommunityGardenFoundingStewards } from "@/lib/communityGarden/foundingStewards";
+import { runCommunityGardenFoundingStewardSession } from "@/lib/communityGarden/foundingStewards";
 import { evaluateCommunityGardenFrontier } from "@/lib/communityGarden/frontierServer";
 
 export const runtime = "nodejs";
@@ -18,17 +18,23 @@ export async function GET(request: Request) {
   }
 
   try {
-    let foundingStewards: Awaited<ReturnType<typeof runCommunityGardenFoundingStewards>> | null = null;
+    const now = new Date();
+    let foundingStewards: Awaited<ReturnType<typeof runCommunityGardenFoundingStewardSession>> | null = null;
     try {
-      foundingStewards = await runCommunityGardenFoundingStewards();
+      foundingStewards = await runCommunityGardenFoundingStewardSession(now);
     } catch (error) {
       console.error(JSON.stringify({
         event: "basil_founding_stewards_failed",
         message: error instanceof Error ? error.message : "unknown",
       }));
     }
-    const result = await evaluateCommunityGardenFrontier();
-    return NextResponse.json({ ok: true, foundingStewards, ...result });
+    // The endpoint now wakes every 30 minutes for natural steward sessions,
+    // but frontier state remains a once-daily, idempotent evaluation.
+    const shouldEvaluateFrontier = now.getUTCHours() === 6 && now.getUTCMinutes() < 30;
+    const frontier = shouldEvaluateFrontier
+      ? await evaluateCommunityGardenFrontier()
+      : null;
+    return NextResponse.json({ ok: true, foundingStewards, frontier });
   } catch (error) {
     console.error(
       JSON.stringify({

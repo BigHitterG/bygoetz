@@ -2,7 +2,7 @@
   "crons": [
     {
       "path": "/api/cron/basil-frontier",
-      "schedule": "17 6 * * *"
+      "schedule": "*/30 * * * *"
     },
     {
       "path": "/api/cron/basil-newsletter?mode=monthly",

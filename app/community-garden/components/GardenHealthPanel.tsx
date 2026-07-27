@@ -321,11 +321,14 @@ export function GardenHealthPanel({ session }: { session: Session }) {
           </div>
           <div className="cg-funnel-breakdowns">
             <div>
-              <strong>Latest daily run</strong>
+              <strong>Today&apos;s pace</strong>
               <ul>
                 <li><span>Status</span><b>{health.foundingStewards.latestRun?.status ?? "Not run"}</b></li>
                 <li><span>Paid members available</span><b>{health.foundingStewards.latestRun?.paidMemberCount ?? 0}</b></li>
-                <li><span>Successful actions</span><b>{health.foundingStewards.latestRun?.actionsSucceeded ?? 0}</b></li>
+                <li><span>Successful actions</span><b>{health.foundingStewards.latestRun?.actionsSucceeded ?? 0} / {health.foundingStewards.latestRun?.targetActions ?? 0}</b></li>
+                <li><span>Flowers planted</span><b>{health.foundingStewards.latestRun?.plantsPlaced ?? 0} / {health.foundingStewards.latestRun?.targetPlantActions ?? 0}</b></li>
+                <li><span>Water actions</span><b>{health.foundingStewards.latestRun ? Math.max(0, health.foundingStewards.latestRun.actionsSucceeded - health.foundingStewards.latestRun.plantsPlaced - health.foundingStewards.latestRun.weedsRemoved) : 0} / {health.foundingStewards.latestRun?.targetWaterActions ?? 0}</b></li>
+                <li><span>Weeds removed</span><b>{health.foundingStewards.latestRun?.weedsRemoved ?? 0} / {health.foundingStewards.latestRun?.targetWeedActions ?? 0}</b></li>
                 <li><span>Failed actions</span><b>{health.foundingStewards.latestRun?.actionsFailed ?? 0}</b></li>
               </ul>
             </div>
@@ -334,6 +337,8 @@ export function GardenHealthPanel({ session }: { session: Session }) {
               <ul>
                 <li><span>Flowers planted</span><b>{health.foundingStewards.last7Days.plantsPlaced}</b></li>
                 <li><span>Watering actions</span><b>{health.foundingStewards.last7Days.wateringActions}</b></li>
+                <li><span>Flowers reached</span><b>{health.foundingStewards.last7Days.flowersAffected}</b></li>
+                <li><span>Weeds removed</span><b>{health.foundingStewards.last7Days.weedsRemoved}</b></li>
                 <li><span>Regions supported</span><b>{health.foundingStewards.last7Days.regionsTouched}</b></li>
                 <li><span>Failures</span><b>{health.foundingStewards.last7Days.failed}</b></li>
               </ul>
@@ -356,15 +361,17 @@ export function GardenHealthPanel({ session }: { session: Session }) {
                     <span>
                       {steward.displayName} · {steward.plants7d} planted · {steward.waterings7d} watered
                     </span>
-                    <b>{steward.enabled ? "Active" : "Paused"}</b>
+                    <b>{steward.enabled
+                      ? `${steward.actionsToday} / ${steward.dailyTarget} today`
+                      : "Paused"}</b>
                   </li>
                 ))}
               </ul>
             </div>
           </div>
           <small>
-            The stewards only work near paid-member or steward flowers, avoid tutorial spawn areas,
-            and use the same footprints and Heritage rules as account players. Last run {formatTime(
+            The stewards work in local rows, patches, and watering chains; avoid tutorial spawn areas;
+            and use the same Care, footprints, and one-per-account Heritage rules as players. Last completed day {formatTime(
               health.foundingStewards.latestRun?.completedAt ?? null,
             )}.
           </small>

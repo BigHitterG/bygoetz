@@ -158,15 +158,21 @@ export type CommunityGardenFoundingStewardHealth = {
   active: number;
   paidOnly: boolean;
   visibleAsPlayers: boolean;
+  localDate: string;
   latestRun: null | {
     runDate: string;
     status: "running" | "completed" | "partial" | "skipped" | "failed";
     paidMemberCount: number;
+    targetActions: number;
+    targetPlantActions: number;
+    targetWaterActions: number;
+    targetWeedActions: number;
     actionsAttempted: number;
     actionsSucceeded: number;
     actionsFailed: number;
     plantsPlaced: number;
     flowersWatered: number;
+    weedsRemoved: number;
     heritagePromotionsCompleted: number;
     startedAt: string;
     completedAt: string | null;
@@ -177,6 +183,8 @@ export type CommunityGardenFoundingStewardHealth = {
     failed: number;
     plantsPlaced: number;
     wateringActions: number;
+    weedsRemoved: number;
+    flowersAffected: number;
     regionsTouched: number;
   };
   allTime: {
@@ -185,6 +193,8 @@ export type CommunityGardenFoundingStewardHealth = {
     failed: number;
     plantsPlaced: number;
     wateringActions: number;
+    weedsRemoved: number;
+    flowersAffected: number;
     regionsTouched: number;
   };
   heritage: {
@@ -198,10 +208,19 @@ export type CommunityGardenFoundingStewardHealth = {
     enabled: boolean;
     dailyPlantActions: number;
     dailyWaterActions: number;
+    dailyWeedActions: number;
+    dailyTarget: number;
+    actionsToday: number;
+    plantsToday: number;
+    wateringsToday: number;
+    weedsToday: number;
+    flowersAffectedToday: number;
+    regionsToday: number;
     lastActionAt: string | null;
     actions7d: number;
     plants7d: number;
     waterings7d: number;
+    weeds7d: number;
     failures7d: number;
   }>;
 };
@@ -330,7 +349,7 @@ export async function getCommunityGardenAdminHealth() {
     getSupabaseAdmin().rpc("get_community_garden_admin_health"),
     getSupabaseAdmin().rpc("get_community_garden_commons_health"),
     getSupabaseAdmin().rpc("get_community_garden_frontier_dashboard_v2"),
-    getSupabaseAdmin().rpc("get_community_garden_founding_steward_dashboard_v1"),
+    getSupabaseAdmin().rpc("get_community_garden_founding_steward_dashboard_v2"),
     getBasilLaunchFunnelAdmin(),
     getCommunityGardenEconomy(),
   ]);

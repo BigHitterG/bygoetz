@@ -2,52 +2,68 @@
 
 ## Purpose
 
-Basil starts with three low-volume, server-run Founding Stewards so paid-member
-areas can receive a little cooperative planting and watering while the human
-community is still small. They are support, not simulated visible players.
+Basil starts with three server-run Founding Stewards—Rowan, Clover, and Wren—so
+the shared garden behaves like a small but active community while the real
+membership grows. They are controlled test accounts, not visible simulated
+players.
 
-## Player-facing behavior
+## Same garden rules as players
 
-- No steward avatar, name, cursor, movement, or presence is sent to a browser.
-- Their ordinary flowers appear only through the normal shared-garden snapshot.
-- They never target guest-owned tutorial flowers.
-- Their actions stay at least eight tiles from the current tutorial spawn points.
-- They work only when at least one active paid Basil member exists.
-- They work around flowers owned by paid members or by the three stewards.
+Every steward action calls the same idempotent Community Garden action used by
+an account player. That means the normal Care rewards, 100-plant footprint,
+100-watering footprint, weeds, tile conflicts, regional pressure, and Heritage
+Flower qualification all apply. Each steward may naturally establish one
+Heritage Flower under the same one-per-account rule.
 
-## Daily limits
+Stewards do not have My Garden, cannot unlock land, never create browser
+presence or an avatar, and receive no private-member inventory progression.
+Their actions cannot directly bypass or force a frontier unlock.
 
-The existing daily frontier cron runs the steward batch before measuring the
-frontier. Each enabled steward may perform at most:
+## Daily pace
 
-- 2 plant actions; and
-- 4 watering actions.
+Each enabled steward is scheduled for:
 
-That is a maximum of 18 successful actions per day across all three stewards.
-The limits are stored in the private steward table and can be paused or lowered
-without a browser release.
+- 105 planting actions;
+- 360 watering actions; and
+- 12 weed-removal actions.
 
-## Fairness and safety
+That is 477 actions per steward per Central-time day and 1,431 across all three.
+There is no population-based slowdown. Work is divided over 32 half-hour slots
+from 7:00 a.m. through 10:59 p.m. Central. A session may catch up safely, but is
+limited to 24 actions per steward so the work remains bursty and bounded.
 
-Stewards call `perform_idempotent_community_garden_action_v9` through the same
-server action wrapper as players. Therefore the normal 100-plant footprint,
-100-watering footprint, regional pressure, tile conflicts, action rails, and
-Heritage Flower qualification rules still apply. Their deterministic daily
-action IDs make cron retries safe.
+## Human-like movement model
 
-The database tables and plan RPC are service-role-only with RLS enabled. The
-private founder dashboard receives aggregate counts and friendly internal
-names, never the steward actor or network keys and never player email.
+The server does not animate an invisible avatar. Instead it gives each steward
+a local session anchor and makes choices that correspond to ordinary play:
+
+- planting advances along a short row, bend, or compact patch;
+- watering starts on an eligible droplet flower and follows a connected local
+  chain of up to six eligible flowers, using the normal watering action;
+- weed removal prefers nearby weeds;
+- one session stays local, while later sessions may begin in another region;
+- work stays at least 12 tiles from all current tutorial spawn points; and
+- stewards never target guest-owned tutorial flowers.
+
+This creates visible garden effects without scatterplot planting, teleport-like
+target selection, or onboarding interference.
+
+## Reliability and privacy
+
+The half-hour worker is resumable. Every scheduled action has a deterministic
+daily ID, so duplicate cron deliveries cannot award duplicate Care or mutate the
+garden twice. Database planning and audit functions are service-role-only with
+RLS enabled. Actor and network keys never appear in the founder dashboard.
 
 ## Founder monitoring
 
-The existing private Garden Health panel shows:
+The private Garden Health panel shows:
 
-- whether all three stewards are enabled;
-- the latest daily run and its success/failure counts;
-- seven-day planting, watering, and regional activity;
-- Heritage care records and completed promotions; and
-- a per-steward seven-day summary.
+- progress against all daily planting, watering, weed, and combined targets;
+- flowers reached by watering chains;
+- seven-day work, failures, and regions supported;
+- per-steward progress for the current Central-time day; and
+- Heritage care and promotion totals.
 
-This is deliberately measurable and reversible. Disabling all three steward
-rows stops future work without removing any legitimate garden history.
+Disabling a steward row stops future work without deleting legitimate garden
+history. If there are no paid Basil members, the worker skips the session.
