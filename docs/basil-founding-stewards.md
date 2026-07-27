@@ -52,8 +52,11 @@ target selection, or onboarding interference.
 
 The half-hour worker is resumable. Every scheduled action has a deterministic
 daily ID, so duplicate cron deliveries cannot award duplicate Care or mutate the
-garden twice. Database planning and audit functions are service-role-only with
-RLS enabled. Actor and network keys never appear in the founder dashboard.
+garden twice. Supabase Cron issues a fresh, short-lived, single-use token for
+each half-hour wake-up; the token is claimed server-side before any work runs.
+The daily Vercel cron remains responsible for the formal frontier evaluation.
+Database planning, token, and audit functions are service-role-only with RLS
+enabled. Actor and network keys never appear in the founder dashboard.
 
 ## Founder monitoring
 

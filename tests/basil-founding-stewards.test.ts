@@ -17,6 +17,10 @@ const paceMigration = readFileSync(
   "supabase/migrations/20260727162855_run_full_pace_founding_stewards.sql",
   "utf8",
 );
+const schedulerMigration = readFileSync(
+  "supabase/migrations/20260727190000_schedule_founding_steward_sessions.sql",
+  "utf8",
+);
 const worker = readFileSync("lib/communityGarden/foundingStewards.ts", "utf8");
 const cron = readFileSync("app/api/cron/basil-frontier/route.ts", "utf8");
 const health = readFileSync("lib/communityGarden/health.ts", "utf8");
@@ -85,10 +89,16 @@ test("daily action IDs are deterministic and distinct", () => {
   assert.match(first, /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);
 });
 
-test("the frontier cron runs half-hour steward sessions and daily frontier evaluation", () => {
+test("Supabase wakes half-hour steward sessions while Vercel evaluates the frontier daily", () => {
   assert.match(cron, /runCommunityGardenFoundingStewardSession\(now\)/);
   assert.match(cron, /shouldEvaluateFrontier/);
   assert.match(cron, /basil_founding_stewards_failed/);
+  assert.match(cron, /claim_community_garden_founding_steward_tick/);
+  assert.match(cron, /export async function POST/);
+  assert.match(schedulerMigration, /'basil-founding-stewards-half-hour'/);
+  assert.match(schedulerMigration, /'\*\/30 \* \* \* \*'/);
+  assert.match(schedulerMigration, /net\.http_post/);
+  assert.match(schedulerMigration, /claim_community_garden_founding_steward_tick/);
 });
 
 test("founder dashboard reports steward work without exposing keys", () => {
