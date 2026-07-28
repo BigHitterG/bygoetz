@@ -21,7 +21,6 @@ import {
   trackBasilFunnelEvent,
 } from "../lib/launchFunnel";
 import { GardenHealthPanel } from "./GardenHealthPanel";
-import { BasilPolicyLinks } from "./BasilPolicyLinks";
 import { GardenCatalogSprite } from "./GardenCatalogSprite";
 import type { HeritageSeedStatus } from "@/lib/communityGarden/heritageSeeds";
 
@@ -720,11 +719,16 @@ export function GardenSteward({ onVisitHeritage }: GardenStewardProps) {
 
   return (
     <section className="cg-steward" aria-labelledby="garden-steward-title">
-      <p className="cg-kicker">One time · {GARDEN_MEMBERSHIP_PRICE_LABEL}</p>
-      <h2 id="garden-steward-title">Community Garden Membership</h2>
+      <p className="cg-kicker">
+        {accountState.status === "active"
+          ? "Private account · anonymous public play"
+          : `One time · ${GARDEN_MEMBERSHIP_PRICE_LABEL}`}
+      </p>
+      <h2 id="garden-steward-title">Account &amp; Membership</h2>
       <p className="cg-steward-lead">
-        Keep playing the Community Garden for free and try three flowers in My
-        Garden. Membership keeps what you started and saves it across devices.
+        {accountState.status === "active"
+          ? "Manage membership, progress, your Heritage Flower, the Garden Almanac, newsletter, feedback, and private account settings."
+          : "Keep playing the Community Garden for free and try three flowers in My Garden. Membership keeps what you started and saves it across devices."}
       </p>
 
       {notice ? <p className="cg-steward-notice" aria-live="polite">{notice}</p> : null}
@@ -1337,7 +1341,6 @@ export function GardenSteward({ onVisitHeritage }: GardenStewardProps) {
           you sign out. Future verified store purchases can attach to this same account.
         </p>
       </div>
-      <BasilPolicyLinks compact />
     </section>
   );
 }

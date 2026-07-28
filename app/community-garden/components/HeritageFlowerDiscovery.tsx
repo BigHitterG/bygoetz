@@ -8,11 +8,13 @@ import { GardenCatalogSprite } from "./GardenCatalogSprite";
 type HeritageFlowerDiscoveryProps = {
   encounter: HeritageFlowerEncounter | null;
   onClose: () => void;
+  onOpenGuide: () => void;
 };
 
 export function HeritageFlowerDiscovery({
   encounter,
   onClose,
+  onOpenGuide,
 }: HeritageFlowerDiscoveryProps) {
   const closeButtonRef = useRef<HTMLButtonElement>(null);
 
@@ -67,7 +69,10 @@ export function HeritageFlowerDiscovery({
           Heritage Flowers remain as lasting landmarks in Basil&apos;s shared
           landscape.
         </small>
-        <div className="cg-unlock-actions is-single">
+        <div className="cg-unlock-actions">
+          <button type="button" onClick={onOpenGuide}>
+            Read Field Guide
+          </button>
           <button type="button" onClick={onClose}>
             Keep exploring
           </button>

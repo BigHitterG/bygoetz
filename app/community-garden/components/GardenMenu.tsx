@@ -1,19 +1,19 @@
 "use client";
 
-import { GardenElements } from "./GardenElements";
+import { useState } from "react";
 import { GardenFounder } from "./GardenFounder";
+import { GardenFieldGuide } from "./GardenFieldGuide";
 import { GardenGuide } from "./GardenGuide";
 import { GardenSteward } from "./GardenSteward";
-import { PlantGlossary } from "./PlantGlossary";
 import { BasilPolicyLinks } from "./BasilPolicyLinks";
 import type { GardenAudioControls } from "../lib/gardenAudio";
+import type { GardenWorldMode } from "../game/gardenRenderer";
 
-export type LibrarySection = "play" | "plants" | "elements" | "account" | "about";
+export type LibrarySection = "play" | "guide" | "account" | "about";
 
 const LIBRARY_TABS = [
   { id: "play", label: "Play", icon: "play" },
-  { id: "plants", label: "Plants", icon: "plants" },
-  { id: "elements", label: "Elements", icon: "elements" },
+  { id: "guide", label: "Field Guide", icon: "plants" },
   { id: "account", label: "Account", icon: "home" },
   { id: "about", label: "About", icon: "about" },
 ] as const;
@@ -22,6 +22,8 @@ type GardenMenuProps = {
   open: boolean;
   section: LibrarySection;
   audio: GardenAudioControls;
+  mode: GardenWorldMode;
+  lifetimeCare: number;
   onClose: () => void;
   onSectionChange: (section: LibrarySection) => void;
   onVisitHeritage?: (gridX: number, gridY: number) => void;
@@ -31,14 +33,23 @@ export function GardenMenu({
   open,
   section,
   audio,
+  mode,
+  lifetimeCare,
   onClose,
   onSectionChange,
   onVisitHeritage,
 }: GardenMenuProps) {
+  const [settingsOpen, setSettingsOpen] = useState(false);
+
+  function closeMenu() {
+    setSettingsOpen(false);
+    onClose();
+  }
+
   if (!open) return null;
 
   return (
-    <div className="cg-menu-scrim" role="presentation" onPointerDown={onClose}>
+    <div className="cg-menu-scrim" role="presentation" onPointerDown={closeMenu}>
       <aside
         className="cg-menu"
         role="dialog"
@@ -49,29 +60,42 @@ export function GardenMenu({
         <div className="cg-menu-heading">
           <div>
             <p className="cg-kicker">Basil Community Garden</p>
-            <h2 id="garden-menu-title">Garden Library</h2>
+            <h2 id="garden-menu-title">{settingsOpen ? "Settings" : "Garden Library"}</h2>
           </div>
-          <button className="cg-icon-button" type="button" onClick={onClose} aria-label="Close menu">
-            <span aria-hidden="true">X</span>
-          </button>
+          <div className="cg-menu-heading-actions">
+            <button
+              className="cg-menu-settings-button"
+              type="button"
+              aria-pressed={settingsOpen}
+              onClick={() => setSettingsOpen((current) => !current)}
+            >
+              {settingsOpen ? "Back to library" : "Sound settings"}
+            </button>
+            <button className="cg-icon-button" type="button" onClick={closeMenu} aria-label="Close menu">
+              <span aria-hidden="true">X</span>
+            </button>
+          </div>
         </div>
 
-        <nav className="cg-library-tabs" role="tablist" aria-label="Garden library sections">
-          {LIBRARY_TABS.map((tab) => (
-            <button
-              key={tab.id}
-              type="button"
-              role="tab"
-              aria-selected={section === tab.id}
-              onClick={() => onSectionChange(tab.id)}
-            >
-              <span className={`cg-library-icon is-${tab.icon}`} aria-hidden="true" />
-              <span>{tab.label}</span>
-            </button>
-          ))}
-        </nav>
+        {!settingsOpen ? (
+          <nav className="cg-library-tabs" role="tablist" aria-label="Garden library sections">
+            {LIBRARY_TABS.map((tab) => (
+              <button
+                key={tab.id}
+                type="button"
+                role="tab"
+                aria-selected={section === tab.id}
+                onClick={() => onSectionChange(tab.id)}
+              >
+                <span className={`cg-library-icon is-${tab.icon}`} aria-hidden="true" />
+                <span>{tab.label}</span>
+              </button>
+            ))}
+          </nav>
+        ) : null}
 
-        <section className="cg-audio-settings" aria-labelledby="garden-sound-title">
+        {settingsOpen ? (
+        <section className="cg-audio-settings is-standalone" aria-labelledby="garden-sound-title">
           <div className="cg-audio-heading">
             <div>
               <p className="cg-kicker">Soundscape</p>
@@ -130,17 +154,21 @@ export function GardenMenu({
             />
           </label>
         </section>
+        ) : null}
 
-        <div id={`garden-${section}-panel`} role="tabpanel" className="cg-library-panel">
-          {section === "play" ? <GardenGuide /> : null}
-          {section === "plants" ? <PlantGlossary /> : null}
-          {section === "elements" ? <GardenElements /> : null}
-          {section === "account" ? (
-            <GardenSteward onVisitHeritage={onVisitHeritage} />
-          ) : null}
-          {section === "about" ? <GardenFounder /> : null}
-        </div>
-        <BasilPolicyLinks compact />
+        {!settingsOpen ? (
+          <>
+            <div id={`garden-${section}-panel`} role="tabpanel" className="cg-library-panel">
+              {section === "play" ? (
+                <GardenGuide mode={mode} onOpenFieldGuide={() => onSectionChange("guide")} />
+              ) : null}
+              {section === "guide" ? <GardenFieldGuide mode={mode} lifetimeCare={lifetimeCare} /> : null}
+              {section === "account" ? <GardenSteward onVisitHeritage={onVisitHeritage} /> : null}
+              {section === "about" ? <GardenFounder /> : null}
+            </div>
+            <BasilPolicyLinks compact />
+          </>
+        ) : null}
       </aside>
     </div>
   );

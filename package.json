@@ -29,6 +29,7 @@
     "test:builder": "node --experimental-strip-types tests/basil-builder-mode.test.ts",
     "test:shares": "node --experimental-strip-types tests/basil-garden-sharing.test.ts",
     "test:audio": "node --experimental-strip-types tests/basil-garden-audio.test.ts",
+    "test:guide": "node --experimental-strip-types tests/basil-field-guide.test.ts",
     "test:garden-structure": "node --experimental-strip-types tests/basil-house-and-expansion.test.ts",
     "test:frontier": "node --experimental-strip-types tests/basil-frontier-policy.test.ts",
     "test:frontier-server": "node --experimental-strip-types tests/basil-frontier-server.test.ts",

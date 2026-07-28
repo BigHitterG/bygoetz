@@ -9,6 +9,7 @@ type HeritageFlowerCelebrationProps = {
   moment: HeritageMoment | null;
   onClose: () => void;
   onVisit: () => void;
+  onOpenGuide: () => void;
 };
 
 const CONFETTI_PIECES = [
@@ -26,6 +27,7 @@ export function HeritageFlowerCelebration({
   moment,
   onClose,
   onVisit,
+  onOpenGuide,
 }: HeritageFlowerCelebrationProps) {
   const closeButtonRef = useRef<HTMLButtonElement>(null);
 
@@ -99,6 +101,9 @@ export function HeritageFlowerCelebration({
         <div className="cg-unlock-actions">
           <button type="button" onClick={onVisit}>
             Visit flower
+          </button>
+          <button type="button" onClick={onOpenGuide}>
+            Read Field Guide
           </button>
           <button type="button" onClick={onClose}>
             Keep tending

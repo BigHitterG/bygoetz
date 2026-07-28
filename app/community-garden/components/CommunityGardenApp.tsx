@@ -1982,7 +1982,6 @@ export function CommunityGardenApp() {
             aria-label="Open garden menu"
             onClick={() => {
               playGardenSound("select");
-              setMenuSection("play");
               setMenuOpen(true);
             }}
           >
@@ -2360,6 +2359,8 @@ export function CommunityGardenApp() {
         open={menuOpen}
         section={menuSection}
         audio={gardenAudio}
+        mode={world}
+        lifetimeCare={myGarden.lifetimeCare}
         onClose={() => {
           playGardenSound("select");
           setMenuOpen(false);
@@ -2412,10 +2413,20 @@ export function CommunityGardenApp() {
         moment={visibleHeritageMoment}
         onClose={dismissHeritageMoment}
         onVisit={visitHeritageMoment}
+        onOpenGuide={() => {
+          dismissHeritageMoment();
+          setMenuSection("guide");
+          setMenuOpen(true);
+        }}
       />
       <HeritageFlowerDiscovery
         encounter={visibleHeritageEncounter}
         onClose={() => setHeritageEncounter(null)}
+        onOpenGuide={() => {
+          setHeritageEncounter(null);
+          setMenuSection("guide");
+          setMenuOpen(true);
+        }}
       />
       <GardenUnlockCelebration
         notice={

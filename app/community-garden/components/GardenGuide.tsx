@@ -1,225 +1,62 @@
 "use client";
 
-import { BASIL_COMMONS_POLICY } from "@/lib/communityGarden/commonsPolicy";
-import { SPECIAL_WATERING_FLOWER_NAME } from "../lib/roseLifecycle";
+import type { GardenWorldMode } from "../game/gardenRenderer";
 
-const LIFE_STAGES = [
-  { name: "Seed", className: "is-seed" },
-  { name: "Sprout", className: "is-sprout" },
-  { name: "Growing", className: "is-growing" },
-  { name: "Bloom", className: "is-blooming" },
-  { name: "Wilt", className: "is-wilting" },
-  { name: "Return", className: "is-returned" },
-] as const;
+type QuickAction = {
+  title: string;
+  copy: string;
+  icon: string;
+};
 
-export function GardenGuide() {
+const COMMUNITY_ACTIONS: QuickAction[] = [
+  { title: "Walk and look around", copy: "Tap open ground to walk. Pinch, scroll, or use − and + to change the view.", icon: "walk" },
+  { title: "Plant", copy: "Open Inventory, choose rose, sunflower, or lavender, select open ground, and plant.", icon: "plant" },
+  { title: "Water", copy: "Choose a flower with a white water drop, then use Water as the spray follows the highlighted chain.", icon: "water" },
+  { title: "Earn Care", copy: "Planting, completed watering sprays, and pulling weeds earn Care to spend in My Garden.", icon: "care" },
+  { title: "Read the map", copy: "Deep green is the Garden Heart, its pale Growth Ring is open, and gold padlocks mark future land.", icon: "map" },
+  { title: "Build your own place", copy: "Use the garden switch to enter My Garden. Membership saves it permanently across devices.", icon: "home" },
+];
+
+const PERSONAL_ACTIONS: QuickAction[] = [
+  { title: "Place something", copy: "Choose a plant or object in Inventory, select a clear square, and place it with Care.", icon: "plant" },
+  { title: "Move or remove", copy: "Select anything already placed to uproot it, pick it up, or remove its path.", icon: "remove" },
+  { title: "Unlock new collections", copy: "Lifetime Care earned in the Community Garden opens plants, objects, water features, and landmarks.", icon: "care" },
+  { title: "Use Builder Mode", copy: "Members can create connected strings of up to ten one-tile placements or removals.", icon: "builder" },
+  { title: "Expand the clearing", copy: "Unlock neighboring land when you are ready. Basil always asks before spending expansion Care.", icon: "expand" },
+  { title: "Share My Garden", copy: "Members can create a view-only image and link for the whole garden or the current corner.", icon: "share" },
+];
+
+export function GardenGuide({
+  mode,
+  onOpenFieldGuide,
+}: {
+  mode: GardenWorldMode;
+  onOpenFieldGuide: () => void;
+}) {
+  const personal = mode === "personal";
+  const actions = personal ? PERSONAL_ACTIONS : COMMUNITY_ACTIONS;
+
   return (
     <section className="cg-guide cg-library-section" aria-labelledby="garden-guide-title">
-      <p className="cg-kicker">A shared living artwork</p>
-      <h3 id="garden-guide-title">Garden Guide</h3>
-
-      <dl className="cg-guide-list">
-        <div>
-          <dt>Explore</dt>
-          <dd>Tap the ground to walk. Use - and + for a wider or closer view.</dd>
-        </div>
-        <div>
-          <dt>Travel</dt>
-          <dd>
-            The map shows the garden&apos;s shape and density without drawing every
-            flower. Deep green is the Garden Heart. Its pale outlined Growth Ring
-            is open land. Golden padlocks are future Growing Edge land.
-          </dd>
-        </div>
-        <div>
-          <dt>Care</dt>
-          <dd>
-            Open Inventory to choose a seed, select an open spot, and plant.
-            A white water drop means that flower can offer you Care. When another
-            gardener has recently cared for it, the drop rests for a while. Dark
-            soil shows shared hydration and slowly dries as the plant approaches
-            wilting. A rare white {SPECIAL_WATERING_FLOWER_NAME} with a red center
-            adds 2 bonus Care.
-          </dd>
-        </div>
-        <div>
-          <dt>Choose</dt>
-          <dd>Rose, sunflower, and lavender each grow and return at a different pace.</dd>
-        </div>
-        <div>
-          <dt>Switch gardens</dt>
-          <dd>
-            Use the garden switch to try My Garden. After three flowers, you can
-            save it or keep building a temporary preview up to ten flowers.
-            Membership keeps the garden and opens permanent placeable items.
-          </dd>
-        </div>
-      </dl>
-
-      <div className="cg-life-guide">
-        <h4>One shared life cycle</h4>
-        <ol>
-          {LIFE_STAGES.map((stage) => (
-            <li key={stage.name}>
-              <span className={`cg-stage-icon ${stage.className}`} aria-hidden="true" />
-              <span>{stage.name}</span>
-            </li>
-          ))}
-        </ol>
-        <p>
-          Water renews a plant&apos;s care clock. Without care it wilts, returns
-          to the soil, and leaves room for something new. Everyone sees the same
-          care and drying cycle. Water cannot extend a flower beyond its maximum
-          season listed in Plants.
-        </p>
-      </div>
-
-      <div className="cg-ecology-guide" aria-labelledby="garden-numbers-title">
-        <h4 id="garden-numbers-title">The garden numbers</h4>
-        <div className="cg-ecology-grid">
-          <article>
-            <p className="cg-ecology-number">Established together</p>
-            <h5>The Garden Heart</h5>
-            <p>
-              The Heart is the largest connected part of Basil that has grown
-              strong through shared planting, age, Heritage Flowers, and care.
-              It follows the community&apos;s real shape rather than a fixed circle,
-              so it can lean in any direction as the garden develops.
-            </p>
-          </article>
-          <article>
-            <p className="cg-ecology-number">Open connected land</p>
-            <h5>The Growth Ring</h5>
-            <p>
-              The pale ring is ordinary playable green land surrounding the Heart.
-              Planting and caring there helps form a connected next layer instead of
-              one isolated strip. It is guidance, not a requirement, and this first
-              release does not change Care rewards.
-            </p>
-          </article>
-          <article>
-            <p className="cg-ecology-number">Grow together</p>
-            <h5>The Growing Edge</h5>
-            <p>
-              Golden padlocked sections are future land beyond the open garden.
-              One person cannot open land by flooding a patch: growth must be
-              spread across the adjacent area and sustained by different gardeners
-              over time. The edge is an invitation, not a required objective.
-            </p>
-          </article>
-          <article>
-            <p className="cg-ecology-number">3 at once</p>
-            <h5>Watering</h5>
-            <p>
-              Tap a flower showing a water drop, then press Water once for each
-              highlighted flower as the spray travels through a loose chain of up
-              to three. Only water-drop flowers join the sequence, and the whole spray is one helpful
-              action. Planting is the quicker way to earn Care; watering saves
-              walking while maintaining several flowers.
-            </p>
-          </article>
-          <article>
-            <p className="cg-ecology-number">100 newest</p>
-            <h5>Your watering footprint</h5>
-            <p>
-              Your newest 100 Care-earning waterings show as cared for to everyone.
-              Keep watering beyond 100 and your oldest watering opportunity opens
-              for other gardeners. It does not reopen for you until your own
-              four-hour clock finishes.
-            </p>
-          </article>
-          <article>
-            <p className="cg-ecology-number">5 days + community care</p>
-            <h5>Heritage flowers</h5>
-            <p>
-              A flower that has grown for five days, received Care on three
-              different days from three gardeners, and lives in a healthy cluster
-              can become a Heritage Flower. Heritage Flowers leave your 100-flower
-              footprint, keep their place permanently, and mark the parts of the
-              shared garden the community sustained together. Nearby flowers grow
-              into richer protected forms: the closest ring receives 4x its normal
-              maximum season, and the next ring receives 2x.
-            </p>
-          </article>
-          <article>
-            <p className="cg-ecology-number">100 newest</p>
-            <h5>Your ecological footprint</h5>
-            <p>
-              In the long run, your footprint in the Community Garden is your newest
-              100 flowers. When you are signed in, that is one account-wide footprint
-              across your devices. You can always keep planting. Each new flower beyond
-              that lets one of your oldest flowers return to the earth during a
-              ten-minute garden update, opening space for someone else. Your new flower
-              stays.
-            </p>
-          </article>
-          <article>
-            <p className="cg-ecology-number">24 hours</p>
-            <h5>Guest flowers</h5>
-            <p>
-              Signed-out flowers share one temporary footprint in this browser and
-              return after a day. Create or sign in to your account before then and
-              Basil carries those flowers into your account footprint without moving
-              them or resetting their planted dates.
-            </p>
-          </article>
-          <article>
-            <p className="cg-ecology-number">140 / 180</p>
-            <h5>Patch pressure</h5>
-            <p>
-              A 16 by 16 patch becomes busy at 140 plants and rests from new planting
-              at 180. Busy patches can grow up to 12 weeds on open tiles. Flowers do
-              not turn into weeds.
-            </p>
-          </article>
-          <article>
-            <p className="cg-ecology-number">36 hours</p>
-            <h5>Weeds</h5>
-            <p>
-              A weed is a temporary sign that a patch is crowded. Pull it to earn
-              Care and reopen its tile. It lasts no more than 36 hours and may clear
-              sooner when the patch becomes healthy.
-            </p>
-          </article>
-        </div>
-      </div>
-
-      <div className="cg-care-rates">
-        <h4>Open-ended Care</h4>
-        <dl>
-          <div>
-            <dt>First helpful action each day</dt>
-            <dd>+{BASIL_COMMONS_POLICY.firstHelpfulActionCare} Care</dd>
-          </div>
-          <div><dt>Every helpful action after that</dt><dd>+1 Care</dd></div>
-          <div><dt>Care Blossom</dt><dd>+2 bonus Care</dd></div>
-          <div><dt>Daily Care limit</dt><dd>None</dd></div>
-        </dl>
-        <p>
-          Care no longer slows down or stops during a long play session. The
-          100-flower and 100-watering footprints protect the shared landscape,
-          while high technical safety rails only interrupt automation or traffic
-          far beyond ordinary play.
-        </p>
-      </div>
-
-      <p className="cg-guide-principle">
-        Public play needs no account and never labels plants with an owner.
-        Signed-out Community Garden flowers last for 24 hours. Signing in privately
-        joins this browser&apos;s flowers to one account-wide footprint; no name or email
-        appears on the shared map. Membership saves My Garden across devices.
+      <p className="cg-kicker">Quick reference</p>
+      <h3 id="garden-guide-title">Playing in {personal ? "My Garden" : "the Community Garden"}</h3>
+      <p className="cg-library-intro">
+        {personal
+          ? "Your permanent private garden is for arranging, collecting, building and sharing. Nothing here needs maintenance."
+          : "This is one anonymous shared landscape. Anyone can plant, water and help it grow without creating an account."}
       </p>
-      <div className="cg-play-notes">
-        <h4>Why did a flower leave?</h4>
-        <p>
-          It either reached its no-water return time, reached its maximum season,
-          or returned to the earth as one of your oldest flowers after your ecological
-          footprint passed 100. It did not become a weed, and another player&apos;s
-          footprint did not remove it. My Garden is private and is not affected by
-          this footprint rule.
-        </p>
+      <div className="cg-quick-guide-grid">
+        {actions.map((action) => (
+          <article key={action.title}>
+            <span className={`cg-quick-guide-icon is-${action.icon}`} aria-hidden="true" />
+            <div><h4>{action.title}</h4><p>{action.copy}</p></div>
+          </article>
+        ))}
       </div>
+      <button className="cg-open-field-guide" type="button" onClick={onOpenFieldGuide}>
+        Open the complete Field Guide
+        <span>Search every mechanic, plant, object and collection.</span>
+      </button>
     </section>
   );
 }
-
