@@ -61,8 +61,10 @@ import {
   type GardenShareScope,
 } from "./GardenShare";
 import {
+  getCommunityQuickStartPlantType,
   isGardenOnboardingFinished,
   isGardenOnboardingPlantType,
+  isCommunityQuickStart,
   loadCommunityOnboardingPlantings,
   loadGardenOnboardingStep,
   saveCommunityOnboardingPlantings,
@@ -325,9 +327,16 @@ export function CommunityGardenApp() {
   const [inventoryDesignAccess, setInventoryDesignAccess] = useState(false);
   const [onboardingStep, setOnboardingStep] =
     useState<GardenOnboardingStep | null>(null);
+  const [communityQuickStart] = useState(
+    () =>
+      typeof window !== "undefined" &&
+      isCommunityQuickStart(window.location.search),
+  );
   const [communityOnboardingPlantings, setCommunityOnboardingPlantings] =
     useState(0);
   const [showFreePlantingNotice, setShowFreePlantingNotice] = useState(false);
+  const [showCommunityQuickStartComplete, setShowCommunityQuickStartComplete] =
+    useState(false);
   const [restoreMessage, setRestoreMessage] = useState("");
   const [membershipReloadToken, setMembershipReloadToken] = useState(0);
   const [unlockNotices, setUnlockNotices] = useState<MyGardenUnlockNotice[]>([]);
@@ -342,6 +351,7 @@ export function CommunityGardenApp() {
   const [growingEdgeNotice, setGrowingEdgeNotice] = useState("");
   const restoredJourneyRef = useRef(false);
   const communityOnboardingPlantingsRef = useRef(0);
+  const quickStartPlantTrackedRef = useRef(false);
   const adLabel = process.env.NEXT_PUBLIC_COMMUNITY_GARDEN_AD_PLACEHOLDER;
   const captureMyGarden = useCallback((scope: GardenShareScope) => {
     return canvasRef.current?.captureGarden(scope) ?? Promise.resolve(null);
@@ -1045,6 +1055,31 @@ export function CommunityGardenApp() {
 
   useEffect(() => {
     if (
+      !communityQuickStart ||
+      !onboardingStep ||
+      isGardenOnboardingFinished(onboardingStep) ||
+      communityOnboardingPlantings >= 3
+    ) {
+      return;
+    }
+    const quickStartPlant = getCommunityQuickStartPlantType(
+      getBasilLaunchSessionId(),
+    );
+    if (!quickStartPlantTrackedRef.current) {
+      quickStartPlantTrackedRef.current = true;
+      void trackBasilFunnelEvent("plant_selected");
+    }
+    if (ui.selectedTool === quickStartPlant) return;
+    canvasRef.current?.selectPlant(quickStartPlant);
+  }, [
+    communityOnboardingPlantings,
+    communityQuickStart,
+    onboardingStep,
+    ui.selectedTool,
+  ]);
+
+  useEffect(() => {
+    if (
       !guestPreviewReady ||
       !accountChecked ||
       ui.connection === "connecting" ||
@@ -1057,11 +1092,20 @@ export function CommunityGardenApp() {
     const storedCommunityPlantings = loadCommunityOnboardingPlantings();
     communityOnboardingPlantingsRef.current = storedCommunityPlantings;
     let next = stored;
+    const previewPlantings =
+      guestPreviewRef.current.garden.preview?.plantingsUsed ?? 0;
+    const useCommunityQuickStart =
+      communityQuickStart &&
+      !memberGarden &&
+      !isGardenOnboardingFinished(stored) &&
+      previewPlantings === 0 &&
+      storedCommunityPlantings < 3;
     if (memberGarden) {
       next = "complete";
+    } else if (useCommunityQuickStart) {
+      next = "community-tile";
     } else if (!next) {
-      const plantings = guestPreviewRef.current.garden.preview?.plantingsUsed ?? 0;
-      if (plantings > 0) next = "complete";
+      if (previewPlantings > 0) next = "complete";
       else if (
         guestPreviewRef.current.journey?.world === "personal"
       ) {
@@ -1087,13 +1131,16 @@ export function CommunityGardenApp() {
       next = "community-tile";
     }
     queueMicrotask(() => {
-      if (next === "community-water") setWorld("community");
+      if (next === "community-water" || useCommunityQuickStart) {
+        setWorld("community");
+      }
       setCommunityOnboardingPlantings(storedCommunityPlantings);
       saveGardenOnboardingStep(next);
       setOnboardingStep(next);
     });
   }, [
     accountChecked,
+    communityQuickStart,
     guestPreviewReady,
     memberGarden,
     onboardingStep,
@@ -1107,6 +1154,14 @@ export function CommunityGardenApp() {
     }, 4_500);
     return () => window.clearTimeout(timeout);
   }, [showFreePlantingNotice]);
+
+  useEffect(() => {
+    if (!showCommunityQuickStartComplete) return;
+    const timeout = window.setTimeout(() => {
+      setShowCommunityQuickStartComplete(false);
+    }, 5_500);
+    return () => window.clearTimeout(timeout);
+  }, [showCommunityQuickStartComplete]);
 
   useEffect(() => {
     const shouldSuggestCommunity =
@@ -1830,14 +1885,32 @@ export function CommunityGardenApp() {
         } else if (nextPlantings === 3) {
           void trackBasilFunnelEvent("third_community_plant");
         }
-        transitionOnboarding(
-          nextPlantings >= 3 ? "community-water" : "community-tile",
-          ["plant", "select-seed", "community-tile", "community-repeat"],
-        );
+        const guidedPlantingSteps: GardenOnboardingStep[] = [
+          "plant",
+          "select-seed",
+          "community-tile",
+          "community-repeat",
+        ];
+        if (nextPlantings >= 3 && communityQuickStart) {
+          transitionOnboarding("complete", guidedPlantingSteps);
+          setShowCommunityQuickStartComplete(true);
+          setCareAnnouncement(
+            "You are part of the garden. Your three community flowers are growing.",
+          );
+          trackBasilMetaCustomMilestone(
+            "BasilCommunityTutorialCompleted",
+            "community_tutorial_completed",
+          );
+        } else {
+          transitionOnboarding(
+            nextPlantings >= 3 ? "community-water" : "community-tile",
+            guidedPlantingSteps,
+          );
+        }
         window.requestAnimationFrame(() => {
-          if (nextPlantings >= 3) {
+          if (nextPlantings >= 3 && !communityQuickStart) {
             canvasRef.current?.suggestWateringSpot();
-          } else {
+          } else if (nextPlantings < 3) {
             canvasRef.current?.suggestPlantingSpot();
           }
         });
@@ -1856,7 +1929,12 @@ export function CommunityGardenApp() {
         );
       }
     },
-    [onboardingStep, playGardenSound, transitionOnboarding],
+    [
+      communityQuickStart,
+      onboardingStep,
+      playGardenSound,
+      transitionOnboarding,
+    ],
   );
 
   const handleGardenActionFailed = useCallback(
@@ -2333,6 +2411,7 @@ export function CommunityGardenApp() {
 
         <GardenOnboarding
           step={onboardingStep}
+          communityQuickStart={communityQuickStart}
           communityPlantings={communityOnboardingPlantings}
           inventoryOpen={inventoryOpen}
           plantActionReady={onboardingPlantActionReady}
@@ -2344,6 +2423,13 @@ export function CommunityGardenApp() {
             setWorld("personal");
           }}
         />
+
+        {world === "community" && showCommunityQuickStartComplete ? (
+          <aside className="cg-free-planting-notice" role="status">
+            <strong>You are part of the garden.</strong>
+            <span>Your three flowers are growing. Explore, plant, or water anywhere you like.</span>
+          </aside>
+        ) : null}
 
         {world === "personal" && showFreePlantingNotice ? (
           <aside className="cg-free-planting-notice" role="status">

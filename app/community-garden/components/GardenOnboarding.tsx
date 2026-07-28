@@ -2,6 +2,7 @@ import type { GardenOnboardingStep } from "../lib/gardenOnboarding";
 
 type GardenOnboardingProps = {
   step: GardenOnboardingStep | null;
+  communityQuickStart?: boolean;
   communityPlantings: number;
   inventoryOpen: boolean;
   plantActionReady: boolean;
@@ -12,6 +13,7 @@ type GardenOnboardingProps = {
 
 export function GardenOnboarding({
   step,
+  communityQuickStart = false,
   communityPlantings,
   inventoryOpen,
   plantActionReady,
@@ -44,13 +46,17 @@ export function GardenOnboarding({
         }
       : step === "community-tile" || step === "community-repeat"
         ? {
-            kicker: `Community planting ${Math.min(3, communityPlantings + 1)} of 3`,
+            kicker: `${communityQuickStart ? "Quick planting" : "Community planting"} ${Math.min(3, communityPlantings + 1)} of 3`,
             title: actionReady ? "You are in place" : "Choose the glowing patch",
             copy: actionReady
               ? "Tap the Plant button below to add your flower."
               : communityPlantings > 0
-                ? "Keep your chosen plant. Tap the next glowing patch to walk over."
-                : "Tap the highlighted open ground. Your gardener will walk over to it.",
+                ? communityQuickStart
+                  ? "Keep planting with the flower Basil chose. Tap the next glowing patch to walk over."
+                  : "Keep your chosen plant. Tap the next glowing patch to walk over."
+                : communityQuickStart
+                  ? "A starter flower is already selected. Tap the highlighted open ground to walk over."
+                  : "Tap the highlighted open ground. Your gardener will walk over to it.",
             desktopHint: actionReady
               ? "Press E to plant."
               : "Click the glowing patch to walk there.",

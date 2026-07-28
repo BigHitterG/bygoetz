@@ -24,6 +24,23 @@ export const GARDEN_ONBOARDING_PLANT_TYPES = [
   "lavender",
 ] as const satisfies readonly PlantType[];
 
+export function isCommunityQuickStart(search: string) {
+  return new URLSearchParams(search).get("start") === "community";
+}
+
+export function getCommunityQuickStartPlantType(
+  seed: string,
+): (typeof GARDEN_ONBOARDING_PLANT_TYPES)[number] {
+  let hash = 2166136261;
+  for (let index = 0; index < seed.length; index += 1) {
+    hash ^= seed.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  return GARDEN_ONBOARDING_PLANT_TYPES[
+    (hash >>> 0) % GARDEN_ONBOARDING_PLANT_TYPES.length
+  ];
+}
+
 export function isGardenOnboardingPlantType(plantType: PlantType) {
   return (GARDEN_ONBOARDING_PLANT_TYPES as readonly PlantType[]).includes(
     plantType,
