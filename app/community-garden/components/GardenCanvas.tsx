@@ -41,7 +41,10 @@ import {
   getChunkKey,
   getLoadedBounds,
 } from "../lib/gardenConfig";
-import { getFrameStableCameraEase } from "../lib/cameraMotion";
+import {
+  getCameraFollowTarget,
+  getFrameStableCameraEase,
+} from "../lib/cameraMotion";
 import {
   canEarnWateringCare,
   getPlantDefinition,
@@ -3523,7 +3526,8 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
           runtime.builder?.cells[runtime.builder.cells.length - 1];
         const cameraTarget = builderHead
           ? gridToWorld(builderHead.gridX, builderHead.gridY)
-          : runtime.cameraAnchor ?? runtime.mary;
+          : runtime.cameraAnchor ??
+            getCameraFollowTarget(runtime.camera, runtime.mary, runtime.zoom);
         runtime.camera.x += (cameraTarget.x - runtime.camera.x) * cameraEase;
         runtime.camera.y += (cameraTarget.y - runtime.camera.y) * cameraEase;
         const wallClockNow = Date.now();
