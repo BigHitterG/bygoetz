@@ -9,6 +9,7 @@
   --cg-gold: #e5b44f;
   --cg-sand: #e8e1d3;
   --cg-aqua: #6f9995;
+  --cg-vibrancy: saturate(1.2) contrast(1.02);
   position: fixed;
   inset: 0;
   height: var(--basil-viewport-height, 100dvh);
@@ -17,6 +18,7 @@
   overflow: hidden;
   background: var(--cg-sand);
   color: var(--cg-ink);
+  filter: var(--cg-vibrancy);
   font-family: "Courier New", ui-monospace, monospace;
   touch-action: manipulation;
 }
