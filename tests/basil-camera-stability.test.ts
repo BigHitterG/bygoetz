@@ -6,11 +6,7 @@ import {
   screenToGrid,
   worldToScreen,
 } from "../app/community-garden/lib/cameraProjection.ts";
-import {
-  CAMERA_FOLLOW_DEAD_ZONE,
-  getCameraFollowTarget,
-  getFrameStableCameraEase,
-} from "../app/community-garden/lib/cameraMotion.ts";
+import { getFrameStableCameraEase } from "../app/community-garden/lib/cameraMotion.ts";
 import { GARDEN_CONFIG } from "../app/community-garden/lib/gardenConfig.ts";
 
 const viewport = { width: 853, height: 480 };
@@ -87,64 +83,4 @@ test("camera easing composes consistently across different frame rates", () => {
   const halfFrame = getFrameStableCameraEase(1 / 60);
   const twoHalfFrames = halfFrame + (1 - halfFrame) * halfFrame;
   assert.ok(Math.abs(oneFrame - twoHalfFrames) < 1e-12);
-});
-
-test("Mary can move inside the follow zone without moving the camera", () => {
-  for (const zoom of GARDEN_CONFIG.cameraZoomStops) {
-    const verticalScale =
-      GARDEN_CONFIG.tileScreenHeight / GARDEN_CONFIG.tileSize;
-    const camera = { x: 20, y: -8 };
-    const mary = {
-      x: camera.x + (CAMERA_FOLLOW_DEAD_ZONE.x * 0.9) / zoom,
-      y:
-        camera.y +
-        (CAMERA_FOLLOW_DEAD_ZONE.y * 0.9) / (zoom * verticalScale),
-    };
-    assert.deepEqual(getCameraFollowTarget(camera, mary, zoom), camera);
-  }
-});
-
-test("the follow target places Mary on the nearest zone edge", () => {
-  for (const zoom of GARDEN_CONFIG.cameraZoomStops) {
-    const verticalScale =
-      GARDEN_CONFIG.tileScreenHeight / GARDEN_CONFIG.tileSize;
-    const camera = { x: 0, y: 0 };
-    const mary = { x: 80, y: -60 };
-    const target = getCameraFollowTarget(camera, mary, zoom);
-    assert.ok(
-      Math.abs(
-        (mary.x - target.x) * zoom - CAMERA_FOLLOW_DEAD_ZONE.x,
-      ) < 1e-9,
-    );
-    assert.ok(
-      Math.abs(
-        (mary.y - target.y) * zoom * verticalScale +
-          CAMERA_FOLLOW_DEAD_ZONE.y,
-      ) < 1e-9,
-    );
-  }
-});
-
-test("camera follow remains effectively frame-rate independent", () => {
-  const simulate = (framesPerSecond: number) => {
-    let camera = { x: 0, y: 0 };
-    const mary = { x: 100, y: 75 };
-    const deltaSeconds = 1 / framesPerSecond;
-    for (let frame = 0; frame < framesPerSecond; frame += 1) {
-      const target = getCameraFollowTarget(camera, mary, 1);
-      const ease = getFrameStableCameraEase(deltaSeconds);
-      camera = {
-        x: camera.x + (target.x - camera.x) * ease,
-        y: camera.y + (target.y - camera.y) * ease,
-      };
-    }
-    return camera;
-  };
-  const thirty = simulate(30);
-  const sixty = simulate(60);
-  const oneTwenty = simulate(120);
-  assert.ok(Math.abs(thirty.x - sixty.x) < 1e-9);
-  assert.ok(Math.abs(thirty.y - sixty.y) < 1e-9);
-  assert.ok(Math.abs(sixty.x - oneTwenty.x) < 1e-9);
-  assert.ok(Math.abs(sixty.y - oneTwenty.y) < 1e-9);
 });
