@@ -92,6 +92,6 @@ test("Heritage news is explicit, private, and integrated without modal overlap",
   assert.match(route, /export async function POST/);
   assert.match(route, /hasAllowedBasilRequestOrigin/);
   assert.match(route, /\.slice\(0, 20\)/);
-  assert.match(server, /reconcile_community_garden_actor_v2/);
+  assert.match(server, /reconcile_community_garden_actor_v3/);
   assert.doesNotMatch(server, /registrationError/);
 });

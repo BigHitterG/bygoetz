@@ -11,6 +11,7 @@ import {
   placeMyGardenElement,
   plantInMyGarden,
   removeMyGardenElement,
+  returnMyGardenClearing,
   toggleMyGardenPath,
   uprootFromMyGarden,
   type MyGardenElementType,
@@ -279,7 +280,35 @@ export async function POST(request: NextRequest) {
     }
 
     if (payload.action === "expand") {
-      return NextResponse.json(await expandMyGarden(steward.id));
+      const hasCoordinates =
+        isGridCoordinate(payload.gridX, -100_000, 100_000) &&
+        isGridCoordinate(payload.gridY, -100_000, 100_000);
+      return NextResponse.json(
+        await expandMyGarden(
+          steward.id,
+          hasCoordinates ? Number(payload.gridX) : undefined,
+          hasCoordinates ? Number(payload.gridY) : undefined,
+        ),
+      );
+    }
+
+    if (payload.action === "return-clearing") {
+      if (
+        !isGridCoordinate(payload.gridX, -100_000, 100_000) ||
+        !isGridCoordinate(payload.gridY, -100_000, 100_000)
+      ) {
+        return NextResponse.json(
+          { error: "Choose a clearing in My Garden to return." },
+          { status: 400 },
+        );
+      }
+      return NextResponse.json(
+        await returnMyGardenClearing(
+          steward.id,
+          Number(payload.gridX),
+          Number(payload.gridY),
+        ),
+      );
     }
 
     if (payload.action === "place-element") {

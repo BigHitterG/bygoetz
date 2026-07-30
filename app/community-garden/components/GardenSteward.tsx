@@ -23,6 +23,8 @@ import {
 import { GardenHealthPanel } from "./GardenHealthPanel";
 import { GardenCatalogSprite } from "./GardenCatalogSprite";
 import type { HeritageSeedStatus } from "@/lib/communityGarden/heritageSeeds";
+import type { GardenStewardshipSummary } from "../lib/stewardshipTypes";
+import { CommunityStewardshipPanel } from "./CommunityStewardship";
 
 const PENDING_VERIFICATION_KEY = "basil-account-verification-pending-v1";
 
@@ -61,6 +63,7 @@ type ActiveAccount = {
   myGarden: MyGardenState;
   newsletterSubscribed: boolean;
   heritage: HeritageSeedStatus;
+  stewardship: GardenStewardshipSummary;
 };
 
 type FreeAccount = { active: false; email: string };
@@ -176,6 +179,7 @@ export function GardenSteward({ onVisitHeritage }: GardenStewardProps) {
   const [passwordConfirm, setPasswordConfirm] = useState("");
   const [category, setCategory] = useState("plants");
   const [idea, setIdea] = useState("");
+  const [replacingTaskId, setReplacingTaskId] = useState<string | null>(null);
   const confirmationStartedRef = useRef("");
   const handoffStartedRef = useRef(false);
 
@@ -208,6 +212,34 @@ export function GardenSteward({ onVisitHeritage }: GardenStewardProps) {
       return null;
     }
   }, []);
+
+  const replaceStewardshipTask = useCallback(async (assignmentId: string) => {
+    if (!session || accountState.status !== "active") return;
+    setReplacingTaskId(assignmentId);
+    try {
+      const response = await fetch("/api/community-garden/stewardship", {
+        method: "POST",
+        headers: {
+          authorization: `Bearer ${session.access_token}`,
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({ action: "replace", assignmentId }),
+      });
+      if (!response.ok) {
+        throw new Error(await getResponseError(response, "That task could not be replaced."));
+      }
+      const stewardship = (await response.json()) as GardenStewardshipSummary;
+      setAccountState((current) =>
+        current.status === "active"
+          ? { ...current, account: { ...current.account, stewardship } }
+          : current,
+      );
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "That task could not be replaced.");
+    } finally {
+      setReplacingTaskId(null);
+    }
+  }, [accountState.status, session]);
 
   const finalizePaidVerification = useCallback(async (activeSession: Session) => {
     try {
@@ -1253,6 +1285,12 @@ export function GardenSteward({ onVisitHeritage }: GardenStewardProps) {
               )}
             </section>
           ) : null}
+
+          <CommunityStewardshipPanel
+            summary={accountState.account.stewardship}
+            replacingId={replacingTaskId}
+            onReplace={(assignmentId) => void replaceStewardshipTask(assignmentId)}
+          />
 
           <div className="cg-almanac" aria-labelledby="garden-almanac-title">
             <div className="cg-steward-section-heading">

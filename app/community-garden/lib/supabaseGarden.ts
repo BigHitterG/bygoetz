@@ -9,6 +9,7 @@ import {
   parseHeritageMoments,
   type HeritageMoment,
 } from "./heritageNotifications";
+import type { GardenStewardshipSummary } from "./stewardshipTypes";
 
 export type GardenMapPlant = Pick<
   PlantRecord,
@@ -31,6 +32,7 @@ export type GardenContribution = {
   dailyCareLimit: number | null;
   tierProgress: number;
   actionsRequired: number;
+  stewardship?: GardenStewardshipSummary;
 };
 export type GardenSnapshot = {
   version: number;

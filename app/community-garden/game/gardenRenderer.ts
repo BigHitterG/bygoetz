@@ -99,6 +99,11 @@ export type RenderGardenState = {
     publicStage: "garden" | "edge" | "growing" | "ready" | "new" | "resting" | "wild";
     guidanceZone: "garden" | "heart" | "growth-ring" | null;
   }>;
+  personalCommunityFlowers?: Array<{
+    gridX: number;
+    gridY: number;
+    plantId?: string;
+  }>;
   shareOnly?: boolean;
   reducedMotion?: boolean;
   personalGarden?: {
@@ -119,6 +124,19 @@ export type RenderGardenState = {
     livingHabitats?: LivingGardenHabitat[];
     gardenJournalEnabled?: boolean;
     gardenJournalUnreadCount?: number;
+    unlockedParcels?: Array<{
+      minX: number;
+      minY: number;
+      width: number;
+      height: number;
+    }>;
+    expansionCandidates?: Array<{
+      minX: number;
+      minY: number;
+      width: number;
+      height: number;
+      careCost: number;
+    }>;
     nextExpansion: null | {
       minX: number;
       minY: number;
@@ -401,6 +419,41 @@ function drawSuggestedWateringHighlight(
   ctx.fillStyle = "#5aaac8";
   ctx.fillRect(-1, -17, 2, 5);
   ctx.restore();
+}
+
+function drawPersonalCommunityFlowerMarkers(
+  ctx: CanvasRenderingContext2D,
+  flowers: NonNullable<RenderGardenState["personalCommunityFlowers"]>,
+  camera: WorldPoint,
+  viewport: GardenViewport,
+  zoom: number,
+) {
+  const markerSize = Math.max(8, GARDEN_CONFIG.tileSize * zoom * 0.72);
+  for (const flower of flowers) {
+    const screen = worldToScreen(
+      gridToWorld(flower.gridX, flower.gridY),
+      camera,
+      viewport,
+      zoom,
+    );
+    if (!isVisible(screen, viewport, markerSize)) continue;
+    ctx.save();
+    ctx.translate(Math.round(screen.x), Math.round(screen.y));
+    ctx.globalAlpha = 0.82;
+    ctx.strokeStyle = "#c6f4e4";
+    ctx.lineWidth = Math.max(2, Math.round(2 * zoom));
+    ctx.setLineDash([Math.max(3, 4 * zoom), Math.max(2, 3 * zoom)]);
+    ctx.strokeRect(
+      -markerSize / 2,
+      -markerSize / 2,
+      markerSize,
+      markerSize,
+    );
+    ctx.setLineDash([]);
+    ctx.fillStyle = "#fff4df";
+    ctx.fillRect(-markerSize / 2, -markerSize / 2, 4, 4);
+    ctx.restore();
+  }
 }
 
 function drawTutorialDimmer(
@@ -781,6 +834,8 @@ function drawPersonalTerrain(
   width: number,
   height: number,
   nextExpansion: NonNullable<RenderGardenState["personalGarden"]>["nextExpansion"],
+  unlockedParcels: NonNullable<RenderGardenState["personalGarden"]>["unlockedParcels"],
+  expansionCandidates: NonNullable<RenderGardenState["personalGarden"]>["expansionCandidates"],
   shareOnly = false,
 ) {
   const { tileSize, tileScreenHeight } = GARDEN_CONFIG;
@@ -807,14 +862,26 @@ function drawPersonalTerrain(
       const y = Math.floor(topLeft.y);
       const maxX = minX + width - 1;
       const maxY = minY + height - 1;
-      const inProperty =
-        gridX >= minX && gridX <= maxX && gridY >= minY && gridY <= maxY;
-      const inExpansion =
-        nextExpansion &&
-        gridX >= nextExpansion.minX &&
-        gridX < nextExpansion.minX + nextExpansion.width &&
-        gridY >= nextExpansion.minY &&
-        gridY < nextExpansion.minY + nextExpansion.height;
+      const inProperty = unlockedParcels?.length
+        ? unlockedParcels.some(
+            (parcel) =>
+              gridX >= parcel.minX &&
+              gridX < parcel.minX + parcel.width &&
+              gridY >= parcel.minY &&
+              gridY < parcel.minY + parcel.height,
+          )
+        : gridX >= minX && gridX <= maxX && gridY >= minY && gridY <= maxY;
+      const expansionParcels = [
+        ...(nextExpansion ? [nextExpansion] : []),
+        ...(expansionCandidates ?? []),
+      ];
+      const inExpansion = expansionParcels.some(
+        (parcel) =>
+          gridX >= parcel.minX &&
+          gridX < parcel.minX + parcel.width &&
+          gridY >= parcel.minY &&
+          gridY < parcel.minY + parcel.height,
+      );
 
       if (shareOnly && !inProperty) continue;
 
@@ -1116,6 +1183,109 @@ function drawLockedParcel(
   ctx.restore();
 }
 
+function drawFreeformExpansionCandidates(
+  ctx: CanvasRenderingContext2D,
+  camera: WorldPoint,
+  viewport: GardenViewport,
+  zoom: number,
+  candidates: NonNullable<RenderGardenState["personalGarden"]>["expansionCandidates"],
+) {
+  const { tileSize, tileScreenHeight } = GARDEN_CONFIG;
+  for (const candidate of candidates ?? []) {
+    const topLeft = worldToScreen(
+      { x: candidate.minX * tileSize, y: candidate.minY * tileSize },
+      camera,
+      viewport,
+      zoom,
+    );
+    const width = candidate.width * tileSize * zoom;
+    const height = candidate.height * tileScreenHeight * zoom;
+    const center = { x: topLeft.x + width / 2, y: topLeft.y + height / 2 };
+    if (!isVisible(center, viewport, Math.max(width, height))) continue;
+
+    ctx.save();
+    ctx.fillStyle = "rgba(239, 211, 142, 0.12)";
+    ctx.fillRect(topLeft.x, topLeft.y, width, height);
+    ctx.strokeStyle = "#d49a38";
+    ctx.lineWidth = Math.max(2, 2 * zoom);
+    ctx.setLineDash([5 * zoom, 3 * zoom]);
+    ctx.strokeRect(topLeft.x, topLeft.y, width, height);
+    ctx.setLineDash([]);
+    ctx.translate(Math.round(center.x), Math.round(center.y));
+    ctx.scale(zoom, zoom);
+    ctx.fillStyle = "rgba(255, 244, 223, 0.9)";
+    ctx.fillRect(-28, -11, 56, 22);
+    ctx.strokeStyle = "#8a623f";
+    ctx.lineWidth = 1;
+    ctx.strokeRect(-28, -11, 56, 22);
+    ctx.fillStyle = "#8a623f";
+    ctx.fillRect(-22, -3, 8, 8);
+    ctx.strokeRect(-21, -7, 6, 6);
+    ctx.fillStyle = "#5f4437";
+    ctx.font = '700 7px "Courier New", monospace';
+    ctx.textAlign = "left";
+    ctx.textBaseline = "middle";
+    ctx.fillText(`${candidate.careCost} CARE`, -9, 1);
+    ctx.restore();
+  }
+}
+
+function drawFreeformFence(
+  ctx: CanvasRenderingContext2D,
+  camera: WorldPoint,
+  viewport: GardenViewport,
+  zoom: number,
+  parcels: NonNullable<RenderGardenState["personalGarden"]>["unlockedParcels"],
+) {
+  if (!parcels?.length) return;
+  const { tileSize, tileScreenHeight } = GARDEN_CONFIG;
+  const cells = new Set<string>();
+  for (const parcel of parcels) {
+    for (let y = parcel.minY; y < parcel.minY + parcel.height; y += 1) {
+      for (let x = parcel.minX; x < parcel.minX + parcel.width; x += 1) {
+        cells.add(`${x}:${y}`);
+      }
+    }
+  }
+
+  ctx.save();
+  ctx.strokeStyle = "#8b6043";
+  ctx.lineWidth = Math.max(2, 2 * zoom);
+  ctx.fillStyle = "#704b36";
+  const postSize = Math.max(2, 2.5 * zoom);
+  for (const key of cells) {
+    const [gridX, gridY] = key.split(":").map(Number);
+    const topLeft = worldToScreen(
+      { x: gridX * tileSize, y: gridY * tileSize },
+      camera,
+      viewport,
+      zoom,
+    );
+    const right = topLeft.x + tileSize * zoom;
+    const bottom = topLeft.y + tileScreenHeight * zoom;
+    const edges: Array<[number, number, number, number, string]> = [
+      [topLeft.x, topLeft.y, right, topLeft.y, `${gridX}:${gridY - 1}`],
+      [right, topLeft.y, right, bottom, `${gridX + 1}:${gridY}`],
+      [topLeft.x, bottom, right, bottom, `${gridX}:${gridY + 1}`],
+      [topLeft.x, topLeft.y, topLeft.x, bottom, `${gridX - 1}:${gridY}`],
+    ];
+    for (const [startX, startY, endX, endY, neighbor] of edges) {
+      if (cells.has(neighbor)) continue;
+      ctx.beginPath();
+      ctx.moveTo(startX, startY);
+      ctx.lineTo(endX, endY);
+      ctx.stroke();
+      ctx.fillRect(
+        startX - postSize / 2,
+        startY - postSize / 2,
+        postSize,
+        postSize,
+      );
+    }
+  }
+  ctx.restore();
+}
+
 function drawPersonalFence(
   ctx: CanvasRenderingContext2D,
   camera: WorldPoint,
@@ -1184,6 +1354,8 @@ function drawPersonalDecorations(
   width: number,
   height: number,
   nextExpansion: NonNullable<RenderGardenState["personalGarden"]>["nextExpansion"],
+  unlockedParcels: NonNullable<RenderGardenState["personalGarden"]>["unlockedParcels"],
+  expansionCandidates: NonNullable<RenderGardenState["personalGarden"]>["expansionCandidates"],
 ) {
   drawLockedParcel(
     ctx,
@@ -1196,17 +1368,28 @@ function drawPersonalDecorations(
     height,
     nextExpansion,
   );
-  drawPersonalFence(
+  drawFreeformExpansionCandidates(
     ctx,
     camera,
     viewport,
     zoom,
-    minX,
-    minY,
-    width,
-    height,
-    false,
+    expansionCandidates,
   );
+  if (unlockedParcels?.length) {
+    drawFreeformFence(ctx, camera, viewport, zoom, unlockedParcels);
+  } else {
+    drawPersonalFence(
+      ctx,
+      camera,
+      viewport,
+      zoom,
+      minX,
+      minY,
+      width,
+      height,
+      false,
+    );
+  }
 }
 
 type PersonalGardenElement = NonNullable<
@@ -2747,6 +2930,8 @@ export function renderGarden(ctx: CanvasRenderingContext2D, state: RenderGardenS
       state.personalGarden.width,
       state.personalGarden.height,
       state.personalGarden.nextExpansion,
+      state.personalGarden.unlockedParcels,
+      state.personalGarden.expansionCandidates,
       state.shareOnly,
     );
     drawPersonalPaths(
@@ -2766,6 +2951,8 @@ export function renderGarden(ctx: CanvasRenderingContext2D, state: RenderGardenS
       state.personalGarden.width,
       state.personalGarden.height,
       state.personalGarden.nextExpansion,
+      state.personalGarden.unlockedParcels,
+      state.personalGarden.expansionCandidates,
     );
     drawSuggestedPlantingHighlight(
       ctx,
@@ -3009,6 +3196,15 @@ export function renderGarden(ctx: CanvasRenderingContext2D, state: RenderGardenS
         : undefined,
     ),
   );
+  if (state.personalCommunityFlowers?.length) {
+    drawPersonalCommunityFlowerMarkers(
+      ctx,
+      state.personalCommunityFlowers,
+      state.camera,
+      state.viewport,
+      state.zoom,
+    );
+  }
   drawWateringTargets(
     ctx,
     state.wateringTargets,

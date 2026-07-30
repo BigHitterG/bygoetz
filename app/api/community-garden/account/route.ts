@@ -9,6 +9,7 @@ import {
 import { getNewsletterPreference } from "@/lib/communityGarden/newsletter";
 import { isGardenAdmin } from "@/lib/communityGarden/health";
 import { getHeritageSeedStatus } from "@/lib/communityGarden/heritageSeeds";
+import { getGardenStewardship } from "@/lib/communityGarden/stewardship";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -26,12 +27,13 @@ export async function GET(request: Request) {
     return NextResponse.json({ active: false, email: user.email, admin });
   }
 
-  const [almanac, feedback, myGarden, newsletterPreference, heritage] = await Promise.all([
+  const [almanac, feedback, myGarden, newsletterPreference, heritage, stewardship] = await Promise.all([
     getGardenAlmanac(),
     getGardenFeedback(steward.id),
     getMyGarden(steward.id),
     getNewsletterPreference(user.id),
     getHeritageSeedStatus(user.id),
+    getGardenStewardship(steward.id),
   ]);
 
   return NextResponse.json({
@@ -47,5 +49,6 @@ export async function GET(request: Request) {
     admin,
     newsletterSubscribed: newsletterPreference !== false,
     heritage,
+    stewardship,
   });
 }

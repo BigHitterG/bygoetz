@@ -58,6 +58,16 @@ import { GardenWormDiscovery } from "./GardenWormDiscovery";
 import { LivingGardenDiscoveryModal } from "./LivingGardenDiscovery";
 import { GardenBugReporter } from "./GardenBugReporter";
 import { GardenExpansionConfirmation } from "./GardenExpansionConfirmation";
+import { GardenClearingReturnConfirmation } from "./GardenClearingReturnConfirmation";
+import {
+  CommunityStewardshipPanel,
+  GardenTaskCelebration,
+} from "./CommunityStewardship";
+import type {
+  GardenStewardshipNotification,
+  GardenStewardshipPoint,
+  GardenStewardshipSummary,
+} from "../lib/stewardshipTypes";
 import {
   GardenShare,
   type GardenShareScope,
@@ -112,6 +122,8 @@ const INITIAL_UI: GardenUiState = {
   selectedPlantType: "rose",
   selectedElementType: null,
   selectedTool: "rose",
+  selectedGridX: null,
+  selectedGridY: null,
   pathMapPoints: [],
   plantMapPoints: [],
   regionMapCells: [],
@@ -149,7 +161,12 @@ const UNLOCK_CELEBRATION_HISTORY_PREFIX =
 
 type AccountResponse =
   | { active: false; admin?: boolean }
-  | { active: true; myGarden: MyGardenState; admin?: boolean };
+  | {
+      active: true;
+      myGarden: MyGardenState;
+      stewardship: GardenStewardshipSummary;
+      admin?: boolean;
+    };
 
 type MembershipOfferStage = "soft" | "hard" | "expired";
 
@@ -325,6 +342,11 @@ export function CommunityGardenApp() {
     createGuestGardenPreview(),
   );
   const [memberGarden, setMemberGarden] = useState<MyGardenState | null>(null);
+  const [stewardship, setStewardship] =
+    useState<GardenStewardshipSummary | null>(null);
+  const [gardenTasksOpen, setGardenTasksOpen] = useState(false);
+  const [showMyCommunityFlowers, setShowMyCommunityFlowers] = useState(false);
+  const [replacingTaskId, setReplacingTaskId] = useState<string | null>(null);
   const [inventoryOpen, setInventoryOpen] = useState(false);
   const [membershipOfferOpen, setMembershipOfferOpen] = useState(false);
   const [membershipOfferStage, setMembershipOfferStage] =
@@ -356,6 +378,9 @@ export function CommunityGardenApp() {
     useState<HeritageFlowerEncounter | null>(null);
   const [expansionConfirmationOpen, setExpansionConfirmationOpen] =
     useState(false);
+  const [returnClearingOpen, setReturnClearingOpen] = useState(false);
+  const [returnClearingBusy, setReturnClearingBusy] = useState(false);
+  const [returnClearingError, setReturnClearingError] = useState("");
   const [growingEdgeIntroOpen, setGrowingEdgeIntroOpen] = useState(false);
   const [growingEdgeNotice, setGrowingEdgeNotice] = useState("");
   const restoredJourneyRef = useRef(false);
@@ -366,6 +391,21 @@ export function CommunityGardenApp() {
     return canvasRef.current?.captureGarden(scope) ?? Promise.resolve(null);
   }, []);
   const myGarden = memberGarden ?? guestPreview.garden;
+  const selectedGardenParcel =
+    world === "personal" &&
+    memberGarden &&
+    ui.selectedGridX !== null &&
+    ui.selectedGridY !== null
+      ? (memberGarden.unlockedParcels ?? []).find(
+          (parcel) =>
+            Math.floor(ui.selectedGridX! / 4) === parcel.parcelX &&
+            Math.floor(ui.selectedGridY! / 4) === parcel.parcelY,
+        ) ?? null
+      : null;
+  const canReturnSelectedClearing =
+    Boolean(selectedGardenParcel) &&
+    selectedGardenParcel?.source !== "starter" &&
+    !ui.builder.active;
   const unreadUnlockCount = memberGarden
     ? getMyGardenUnreadUnlockCount(
         memberGarden.inventorySeenLifetimeCare,
@@ -428,6 +468,8 @@ export function CommunityGardenApp() {
     !inventoryOpen &&
     !membershipOfferOpen &&
     !expansionConfirmationOpen &&
+    !returnClearingOpen &&
+    !gardenTasksOpen &&
     !careBlossomFound &&
     !gardenWormFound &&
     unlockNotices.length === 0
@@ -439,6 +481,8 @@ export function CommunityGardenApp() {
     !inventoryOpen &&
     !membershipOfferOpen &&
     !expansionConfirmationOpen &&
+    !returnClearingOpen &&
+    !gardenTasksOpen &&
     !careBlossomFound &&
     !gardenWormFound &&
     unlockNotices.length === 0
@@ -451,12 +495,29 @@ export function CommunityGardenApp() {
     !inventoryOpen &&
     !membershipOfferOpen &&
     !expansionConfirmationOpen &&
+    !returnClearingOpen &&
+    !gardenTasksOpen &&
     !careBlossomFound &&
     !gardenWormFound &&
     unlockNotices.length === 0
       ? (memberGarden?.livingGardenDiscoveries ?? []).find(
           (discovery) => !discovery.acknowledgedAt,
         ) ?? null
+      : null;
+  const visibleStewardshipNotification =
+    heritageMoments.length === 0 &&
+    !heritageEncounter &&
+    !visibleLivingGardenDiscovery &&
+    !menuOpen &&
+    !inventoryOpen &&
+    !membershipOfferOpen &&
+    !expansionConfirmationOpen &&
+    !returnClearingOpen &&
+    !gardenTasksOpen &&
+    !careBlossomFound &&
+    !gardenWormFound &&
+    unlockNotices.length === 0
+      ? (stewardship?.notifications[0] ?? null)
       : null;
 
   useEffect(() => {
@@ -755,6 +816,7 @@ export function CommunityGardenApp() {
       }
       const account = (await response.json()) as AccountResponse;
       setInventoryDesignAccess(Boolean(account.admin));
+      setStewardship(account.active ? account.stewardship : null);
       let nextGarden = account.active ? account.myGarden : null;
       if (nextGarden) {
         const preview = guestPreviewRef.current;
@@ -1025,6 +1087,9 @@ export function CommunityGardenApp() {
         lifetimeCareRef.current = 0;
         memberGardenRef.current = null;
         setMemberGarden(null);
+        setStewardship(null);
+        setGardenTasksOpen(false);
+        setShowMyCommunityFlowers(false);
         setInventoryDesignAccess(false);
         heritageMomentIdsRef.current.clear();
         heritageAcknowledgementIdsRef.current.clear();
@@ -1380,6 +1445,9 @@ export function CommunityGardenApp() {
 
   const claimCommunityContribution = useCallback(
     (contribution: GardenContribution) => {
+      if (contribution.stewardship) {
+        setStewardship(contribution.stewardship);
+      }
       if (
         uiRef.current.currentRegionStage === "edge" ||
         uiRef.current.currentRegionStage === "growing" ||
@@ -1580,6 +1648,86 @@ export function CommunityGardenApp() {
     [commitGuestPreview, memberGarden, playGardenSound, session],
   );
 
+  const replaceStewardshipTask = useCallback(
+    async (assignmentId: string) => {
+      if (!session || !stewardship) return;
+      setReplacingTaskId(assignmentId);
+      try {
+        const response = await fetch("/api/community-garden/stewardship", {
+          method: "POST",
+          headers: {
+            authorization: `Bearer ${session.access_token}`,
+            "content-type": "application/json",
+          },
+          body: JSON.stringify({ action: "replace", assignmentId }),
+        });
+        if (!response.ok) {
+          throw new Error(
+            await getResponseError(response, "That task could not be replaced."),
+          );
+        }
+        setStewardship((await response.json()) as GardenStewardshipSummary);
+      } catch (error) {
+        setCareAnnouncement(
+          error instanceof Error
+            ? error.message
+            : "That task could not be replaced.",
+        );
+      } finally {
+        setReplacingTaskId(null);
+      }
+    },
+    [session, stewardship],
+  );
+
+  const acknowledgeStewardshipNotification = useCallback(
+    async (notification: GardenStewardshipNotification) => {
+      setStewardship((current) =>
+        current
+          ? {
+              ...current,
+              notifications: current.notifications.filter(
+                (item) => item.id !== notification.id,
+              ),
+            }
+          : current,
+      );
+      if (!session) return;
+      try {
+        const response = await fetch("/api/community-garden/stewardship", {
+          method: "POST",
+          headers: {
+            authorization: `Bearer ${session.access_token}`,
+            "content-type": "application/json",
+          },
+          body: JSON.stringify({
+            action: "acknowledge",
+            notificationId: notification.id,
+          }),
+        });
+        if (response.ok) {
+          setStewardship((await response.json()) as GardenStewardshipSummary);
+        }
+      } catch {
+        // The server will offer the celebration again if acknowledgement fails.
+      }
+    },
+    [session],
+  );
+
+  const navigateToStewardshipPoint = useCallback(
+    (_target: "recent" | "oldest" | "cluster", point: GardenStewardshipPoint) => {
+      setGardenTasksOpen(false);
+      setMenuOpen(false);
+      setWorld("community");
+      window.setTimeout(
+        () => canvasRef.current?.goToGridPosition(point.gridX, point.gridY),
+        80,
+      );
+    },
+    [],
+  );
+
   const discoverGardenWorm = useCallback(() => {
     let alreadyDiscovered = false;
     try {
@@ -1775,7 +1923,7 @@ export function CommunityGardenApp() {
       ui.action === "expand" &&
       ui.actionEnabled &&
       !myGarden.preview &&
-      myGarden.nextExpansion
+      (myGarden.nextExpansion || myGarden.expansionCandidates?.length)
     ) {
       playGardenSound("select");
       setExpansionConfirmationOpen(true);
@@ -1785,6 +1933,7 @@ export function CommunityGardenApp() {
     void canvasRef.current?.performAction();
   }, [
     myGarden.nextExpansion,
+    myGarden.expansionCandidates,
     myGarden.preview,
     playGardenSound,
     ui.action,
@@ -1795,6 +1944,54 @@ export function CommunityGardenApp() {
     setExpansionConfirmationOpen(false);
     void canvasRef.current?.performAction();
   }, []);
+
+  const confirmReturnClearing = useCallback(async () => {
+    if (
+      !session ||
+      !selectedGardenParcel ||
+      ui.selectedGridX === null ||
+      ui.selectedGridY === null
+    ) {
+      return;
+    }
+    setReturnClearingBusy(true);
+    setReturnClearingError("");
+    try {
+      const response = await fetch("/api/community-garden/my-garden", {
+        method: "POST",
+        headers: {
+          authorization: `Bearer ${session.access_token}`,
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          action: "return-clearing",
+          gridX: ui.selectedGridX,
+          gridY: ui.selectedGridY,
+        }),
+      });
+      if (!response.ok) {
+        throw new Error(
+          await getResponseError(response, "That clearing could not be returned."),
+        );
+      }
+      const updated = (await response.json()) as MyGardenState;
+      setMemberGarden(updated);
+      setReturnClearingOpen(false);
+      setCareAnnouncement(
+        selectedGardenParcel.careCost > 0
+          ? `${selectedGardenParcel.careCost.toLocaleString()} Care returned. The forest has reclaimed that clearing.`
+          : "The forest has reclaimed that clearing.",
+      );
+    } catch (error) {
+      setReturnClearingError(
+        error instanceof Error
+          ? error.message
+          : "That clearing could not be returned.",
+      );
+    } finally {
+      setReturnClearingBusy(false);
+    }
+  }, [selectedGardenParcel, session, ui.selectedGridX, ui.selectedGridY]);
 
   useEffect(() => {
     const handleKeyboardShortcut = (event: KeyboardEvent) => {
@@ -1808,9 +2005,15 @@ export function CommunityGardenApp() {
       ) {
         return;
       }
-      if (expansionConfirmationOpen) return;
+      if (expansionConfirmationOpen || returnClearingOpen) return;
 
       const code = event.code;
+      if (code === "Escape" && gardenTasksOpen) {
+        event.preventDefault();
+        setGardenTasksOpen(false);
+        return;
+      }
+      if (gardenTasksOpen) return;
       if (code === "Escape" && ui.builder.active) {
         event.preventDefault();
         canvasRef.current?.toggleBuilderMode();
@@ -1829,6 +2032,7 @@ export function CommunityGardenApp() {
           careBlossomFound ||
           gardenWormFound ||
           expansionConfirmationOpen ||
+          returnClearingOpen ||
           unlockNotices.length > 0 ||
           heritageMoments.length > 0 ||
           Boolean(heritageEncounter) ||
@@ -1892,9 +2096,11 @@ export function CommunityGardenApp() {
     acknowledgeInventoryUnlocks,
     careBlossomFound,
     gardenWormFound,
+    gardenTasksOpen,
     heritageEncounter,
     heritageMoments.length,
     expansionConfirmationOpen,
+    returnClearingOpen,
     inventoryOpen,
     ui.builder.active,
     membershipOfferOpen,
@@ -2087,6 +2293,8 @@ export function CommunityGardenApp() {
           mode={world}
           accountAccessToken={session?.access_token ?? null}
           personalGarden={myGarden}
+          personalCommunityFlowers={stewardship?.flowers.coordinates ?? []}
+          showPersonalCommunityFlowers={showMyCommunityFlowers}
           tutorialDimmed={tutorialMapDimmed}
           onStateChange={onStateChange}
           onCommunityContribution={claimCommunityContribution}
@@ -2249,6 +2457,25 @@ export function CommunityGardenApp() {
           </button>
         </div>
 
+        {world === "community" &&
+        memberGarden &&
+        stewardship &&
+        isGardenOnboardingFinished(onboardingStep) ? (
+          <button
+            className="cg-garden-tasks-button"
+            type="button"
+            disabled={ui.builder.active}
+            aria-label={`Open Garden Tasks. ${stewardship.tasksCompleted} completed; ${stewardship.flowers.living} of ${stewardship.capacity} flowers growing.`}
+            onClick={() => {
+              playGardenSound("select");
+              setGardenTasksOpen(true);
+            }}
+          >
+            <strong>Garden Tasks</strong>
+            <span>{stewardship.flowers.living} / {stewardship.capacity} flowers</span>
+          </button>
+        ) : null}
+
         {world === "personal" && myGarden.preview ? (
           <div className="cg-preview-progress" aria-live="polite">
             {guestPreview.access?.softPaywallDeclined
@@ -2399,6 +2626,21 @@ export function CommunityGardenApp() {
               <span className="cg-builder-icon" aria-hidden="true" />
               <span>{ui.builder.active ? "Done" : "Builder"}</span>
             </button>
+            {canReturnSelectedClearing ? (
+              <button
+                className="cg-return-clearing-button"
+                type="button"
+                title="Return this empty clearing to the forest"
+                onClick={() => {
+                  setReturnClearingError("");
+                  setReturnClearingOpen(true);
+                  playGardenSound("select");
+                }}
+              >
+                <span className="cg-return-clearing-icon" aria-hidden="true" />
+                <span>Return land</span>
+              </button>
+            ) : null}
             {ui.builder.active ? (
               <div
                 className="cg-builder-edit-controls"
@@ -2658,11 +2900,74 @@ export function CommunityGardenApp() {
           setMenuOpen(true);
         }}
       />
+      {gardenTasksOpen && stewardship ? (
+        <div
+          className="cg-stewardship-modal-shell"
+          role="presentation"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) setGardenTasksOpen(false);
+          }}
+        >
+          <div
+            className="cg-stewardship-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Community Stewardship and Garden Tasks"
+          >
+            <button
+              className="cg-stewardship-modal-close"
+              type="button"
+              aria-label="Close Garden Tasks"
+              onClick={() => setGardenTasksOpen(false)}
+            >
+              Close
+            </button>
+            <CommunityStewardshipPanel
+              summary={stewardship}
+              replacingId={replacingTaskId}
+              onReplace={(assignmentId) =>
+                void replaceStewardshipTask(assignmentId)
+              }
+              onNavigate={navigateToStewardshipPoint}
+              flowersVisible={showMyCommunityFlowers}
+              onToggleFlowers={() =>
+                setShowMyCommunityFlowers((current) => !current)
+              }
+            />
+          </div>
+        </div>
+      ) : null}
+      <GardenTaskCelebration
+        notification={visibleStewardshipNotification}
+        onClose={() => {
+          if (visibleStewardshipNotification) {
+            void acknowledgeStewardshipNotification(
+              visibleStewardshipNotification,
+            );
+          }
+        }}
+      />
       <GardenExpansionConfirmation
         open={expansionConfirmationOpen}
-        careCost={myGarden.nextExpansion?.careCost ?? 0}
+        careCost={
+          myGarden.nextExpansion?.careCost ??
+          myGarden.expansionCandidates?.[0]?.careCost ??
+          0
+        }
         onCancel={() => setExpansionConfirmationOpen(false)}
         onConfirm={confirmGardenExpansion}
+      />
+      <GardenClearingReturnConfirmation
+        open={returnClearingOpen}
+        careRefund={selectedGardenParcel?.careCost ?? 0}
+        error={returnClearingError}
+        busy={returnClearingBusy}
+        onCancel={() => {
+          if (returnClearingBusy) return;
+          setReturnClearingOpen(false);
+          setReturnClearingError("");
+        }}
+        onConfirm={() => void confirmReturnClearing()}
       />
     </main>
   );

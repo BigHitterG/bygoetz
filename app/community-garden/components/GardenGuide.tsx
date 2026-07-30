@@ -43,7 +43,7 @@ export function GardenGuide({
       <p className="cg-library-intro">
         {personal
           ? "Your permanent private garden is for arranging, collecting, building and sharing. Nothing here needs maintenance."
-          : "This is one anonymous shared landscape. Anyone can plant, water and help it grow without creating an account."}
+          : "This is one anonymous shared landscape. Anyone can plant, water and help it grow without creating an account. Zone guidance does not change Care rewards."}
       </p>
       <div className="cg-quick-guide-grid">
         {actions.map((action) => (

@@ -12,6 +12,8 @@ import {
 } from "@/lib/communityGarden/health";
 import { hasAllowedBasilRequestOrigin } from "@/lib/communityGarden/urls";
 import { MAX_WATERING_TARGETS } from "@/app/community-garden/lib/wateringSelection";
+import { recordGardenStewardshipAction } from "@/lib/communityGarden/stewardship";
+import { loadCommunityGardenRegionManifest } from "@/lib/communityGarden/regionDelivery";
 
 const ACTION_ID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -158,7 +160,69 @@ export async function POST(request: NextRequest) {
         typeof body.plantType === "string" ? body.plantType : undefined,
       plantIds,
     });
-    const response = NextResponse.json(data);
+    const responseData = { ...(data as Record<string, unknown>) };
+    if (actor.identityKind === "account") {
+      try {
+        const resultPlants = Array.isArray(responseData.plants)
+          ? responseData.plants.filter(
+              (plant): plant is Record<string, unknown> =>
+                Boolean(plant) && typeof plant === "object",
+            )
+          : [];
+        const anchorX =
+          typeof body.gridX === "number"
+            ? body.gridX
+            : typeof resultPlants[0]?.grid_x === "number"
+              ? resultPlants[0].grid_x
+              : undefined;
+        const anchorY =
+          typeof body.gridY === "number"
+            ? body.gridY
+            : typeof resultPlants[0]?.grid_y === "number"
+              ? resultPlants[0].grid_y
+              : undefined;
+        let guidanceZone: "garden" | "heart" | "growth-ring" | null = null;
+        if (anchorX !== undefined && anchorY !== undefined) {
+          const manifest = await loadCommunityGardenRegionManifest();
+          const region = manifest.regions.find(
+            (candidate) =>
+              anchorX >= candidate.bounds.minX &&
+              anchorX <= candidate.bounds.maxX &&
+              anchorY >= candidate.bounds.minY &&
+              anchorY <= candidate.bounds.maxY,
+          );
+          guidanceZone = region?.guidanceZone ?? null;
+        }
+        const stewardship = await recordGardenStewardshipAction({
+          actionId: body.actionId,
+          actorKey: actor.actorKey,
+          actionType: body.action,
+          gridX: anchorX,
+          gridY: anchorY,
+          plantType:
+            typeof body.plantType === "string" ? body.plantType : undefined,
+          plantIds,
+          result: responseData,
+          guidanceZone,
+        });
+        if (stewardship) {
+          responseData.contribution = {
+            ...(responseData.contribution &&
+            typeof responseData.contribution === "object"
+              ? (responseData.contribution as Record<string, unknown>)
+              : {}),
+            stewardship,
+          };
+        }
+      } catch (stewardshipError) {
+        logGardenServerEvent("error", "stewardship_record_failed", {
+          requestId,
+          action: actionType,
+          errorCode: getGardenErrorCode(stewardshipError),
+        });
+      }
+    }
+    const response = NextResponse.json(responseData);
     response.headers.set("Cache-Control", "no-store");
     attachGardenSession(response, actor.session);
     recordResult("action_ok");

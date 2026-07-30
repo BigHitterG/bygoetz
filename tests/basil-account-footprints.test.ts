@@ -21,7 +21,7 @@ const canvas = readFileSync(
 
 test("authenticated Community Garden identity is a one-way account key", () => {
   assert.match(gardenServer, /sign\(`account:\$\{userId\}`\)/);
-  assert.match(gardenServer, /reconcile_community_garden_actor_v2/);
+  assert.match(gardenServer, /reconcile_community_garden_actor_v3/);
   assert.doesNotMatch(gardenServer, /user\.email/);
 });
 

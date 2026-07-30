@@ -84,7 +84,7 @@ export async function getCanonicalGardenActor(
 
   const accountActorKey = sign(`account:${userId}`);
   const { error } = await getSupabaseAdmin().rpc(
-    "reconcile_community_garden_actor_v2",
+    "reconcile_community_garden_actor_v3",
     {
       p_user_id: userId,
       p_guest_actor_key: guestActor.actorKey,

@@ -879,6 +879,55 @@
   opacity: 0.42;
 }
 
+.cg-return-clearing-button {
+  display: grid;
+  min-width: 76px;
+  min-height: 44px;
+  margin-top: 7px;
+  place-items: center;
+  gap: 2px;
+  border: 2px solid rgba(52, 35, 31, 0.58);
+  background: rgba(217, 231, 199, 0.88);
+  color: var(--cg-ink);
+  cursor: pointer;
+  padding: 5px 8px;
+  font: inherit;
+  font-size: 0.54rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  box-shadow: 2px 2px 0 rgba(52, 35, 31, 0.14);
+}
+
+.cg-return-clearing-icon {
+  position: relative;
+  display: inline-block;
+  width: 24px;
+  height: 16px;
+  border-bottom: 5px solid #667d4f;
+}
+
+.cg-return-clearing-icon::before,
+.cg-return-clearing-icon::after {
+  position: absolute;
+  bottom: 3px;
+  width: 9px;
+  height: 9px;
+  border-radius: 70% 15% 70% 15%;
+  background: #789461;
+  content: "";
+}
+
+.cg-return-clearing-icon::before { left: 2px; transform: rotate(-35deg); }
+.cg-return-clearing-icon::after { right: 2px; transform: rotate(55deg); }
+
+.cg-return-clearing-error {
+  border-left: 5px solid var(--cg-red);
+  background: rgba(182, 47, 61, 0.09);
+  padding: 9px;
+  color: #8f2935;
+  font-weight: 800;
+}
+
 .cg-builder-tools.is-active .cg-builder-toggle {
   border-color: #2f8290;
   background: #d7fbff;
@@ -9342,4 +9391,118 @@
 @media (max-width: 520px) {
   .cg-living-guide-grid { grid-template-columns: 1fr; }
   .cg-living-guide-summary { flex-direction: column; }
+}
+/* Community Stewardship */
+.cg-stewardship-panel {
+  display: grid;
+  gap: 16px;
+  padding: 18px;
+  border: 3px solid var(--cg-ink, #3d2a25);
+  background: rgba(255, 244, 218, 0.96);
+  box-shadow: 8px 8px 0 rgba(77, 54, 45, 0.15);
+  color: var(--cg-ink, #3d2a25);
+}
+
+.cg-stewardship-heading,
+.cg-stewardship-rank-progress,
+.cg-community-project-progress {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.cg-stewardship-heading h3,
+.cg-stewardship-panel h4 { margin: 2px 0 0; }
+.cg-stewardship-footprint { text-align: right; }
+.cg-stewardship-footprint strong { display: block; font-size: 1.25rem; }
+.cg-stewardship-footprint span,
+.cg-stewardship-rank-progress,
+.cg-stewardship-next { font-size: 0.82rem; }
+
+.cg-garden-task-list { display: grid; gap: 10px; }
+.cg-garden-task {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px 14px;
+  padding: 12px;
+  border: 2px solid rgba(76, 54, 44, 0.42);
+  background: rgba(255, 250, 234, 0.82);
+}
+.cg-garden-task-copy small { display: block; text-transform: uppercase; letter-spacing: 0.08em; color: #9b3f47; }
+.cg-garden-task-copy strong { display: block; margin: 3px 0; }
+.cg-garden-task-copy p,
+.cg-community-project p { margin: 4px 0; }
+.cg-garden-task-progress { min-width: 92px; text-align: right; font-weight: 700; }
+.cg-garden-task-progress > div { height: 7px; margin-top: 6px; border: 1px solid #66483d; background: #ead9b9; }
+.cg-garden-task-progress i { display: block; height: 100%; background: #6e925d; }
+.cg-garden-task button { grid-column: 1 / -1; justify-self: start; }
+
+.cg-community-project {
+  padding: 12px;
+  border-left: 6px solid #d0a64a;
+  background: rgba(223, 216, 151, 0.25);
+}
+.cg-stewardship-map-tools { display: flex; flex-wrap: wrap; gap: 8px; }
+.cg-stewardship-map-tools button,
+.cg-garden-task button { padding: 8px 10px; border: 2px solid #5a4036; background: #f4dfaa; color: #3d2a25; font: inherit; }
+.cg-stewardship-accolades ul { display: flex; flex-wrap: wrap; gap: 8px; padding: 0; list-style: none; }
+.cg-stewardship-accolades li { padding: 6px 9px; border: 1px solid #ac8360; background: #fff4d7; }
+.cg-stewardship-accolades span { color: #c79b2d; margin-right: 5px; }
+
+.cg-garden-tasks-button {
+  position: absolute;
+  z-index: 18;
+  right: 18px;
+  top: 292px;
+  min-width: 116px;
+  padding: 9px 12px;
+  border: 3px solid #49332d;
+  background: rgba(246, 221, 160, 0.94);
+  box-shadow: 5px 5px 0 rgba(54, 37, 32, 0.16);
+  color: #3c2924;
+  font: inherit;
+}
+.cg-garden-tasks-button strong,
+.cg-garden-tasks-button span { display: block; }
+.cg-garden-tasks-button span { font-size: 0.72rem; }
+
+.cg-stewardship-modal-shell {
+  position: fixed;
+  z-index: 80;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  background: rgba(41, 34, 29, 0.48);
+}
+.cg-stewardship-modal {
+  width: min(720px, 100%);
+  max-height: min(780px, 90vh);
+  overflow: auto;
+  position: relative;
+}
+.cg-stewardship-modal-close { position: sticky; z-index: 2; top: 8px; float: right; margin: 8px; }
+
+.cg-stewardship-celebration {
+  position: fixed;
+  z-index: 110;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: min(430px, calc(100vw - 32px));
+  padding: 28px;
+  border: 4px solid #432e29;
+  background: #fff1ce;
+  box-shadow: 12px 12px 0 rgba(60, 40, 34, 0.2);
+  text-align: center;
+}
+.cg-stewardship-confetti { color: #c9972f; font-size: 1.5rem; letter-spacing: 0.24em; }
+.cg-stewardship-celebration button { padding: 10px 16px; border: 3px solid #49332d; background: #dfe6b4; font: inherit; }
+
+@media (max-width: 700px) {
+  .cg-garden-tasks-button { top: 272px; right: 12px; min-width: 104px; }
+  .cg-garden-task { grid-template-columns: 1fr; }
+  .cg-garden-task-progress { text-align: left; }
 }

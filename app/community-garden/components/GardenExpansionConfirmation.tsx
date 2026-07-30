@@ -44,7 +44,8 @@ export function GardenExpansionConfirmation({
         <h2 id="cg-expansion-confirmation-title">Unlock this parcel?</h2>
         <p id="cg-expansion-confirmation-description">
           This will use <strong>{careCost.toLocaleString()} Care</strong> and
-          permanently add this land to My Garden.
+          add this land to My Garden. Later, you may return an empty clearing to
+          the forest if the rest of your garden stays connected.
         </p>
         <div className="cg-unlock-actions">
           <button type="button" onClick={onCancel}>

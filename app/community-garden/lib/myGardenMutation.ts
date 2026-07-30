@@ -20,7 +20,7 @@ export type MyGardenMutation =
     }
   | { action: "toggle-path"; gridX: number; gridY: number }
   | { action: "uproot"; plantId: string }
-  | { action: "expand" }
+  | { action: "expand"; gridX?: number; gridY?: number }
   | {
       action: "place-element";
       gridX: number;

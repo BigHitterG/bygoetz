@@ -59,6 +59,17 @@ export type MyGardenPreviewImport = {
   paths: MyGardenPath[];
 };
 
+export type MyGardenParcel = {
+  parcelX: number;
+  parcelY: number;
+  minX: number;
+  minY: number;
+  width: 4;
+  height: 4;
+  careCost: number;
+  source: "starter" | "legacy" | "freeform";
+};
+
 export type MyGardenState = {
   careBalance: number;
   lifetimeCare: number;
@@ -81,6 +92,9 @@ export type MyGardenState = {
     height: number;
     careCost: number;
   };
+  freeformExpansion?: boolean;
+  unlockedParcels?: MyGardenParcel[];
+  expansionCandidates?: Array<MyGardenParcel & { careCost: number }>;
   plants: MyGardenPlant[];
   paths: MyGardenPath[];
   elements: MyGardenElement[];
@@ -121,12 +135,23 @@ type PersonalElementRow = {
   placed_at: string;
 };
 
+type ParcelRow = {
+  parcel_x: number;
+  parcel_y: number;
+  care_cost: number;
+  source: "starter" | "legacy" | "freeform";
+};
+
 type HabitatDiscoveryRow = {
   habitat_key: string;
   discovered_at: string;
   first_center_x: number;
   first_center_y: number;
   acknowledged_at: string | null;
+};
+
+type StewardshipProfileRow = {
+  ordinary_footprint_capacity: number;
 };
 
 async function getLivingGardenState(
@@ -211,6 +236,65 @@ function getNextExpansion(plotLevel: number) {
   };
 }
 
+function mapParcel(row: ParcelRow): MyGardenParcel {
+  return {
+    parcelX: row.parcel_x,
+    parcelY: row.parcel_y,
+    minX: row.parcel_x * 4,
+    minY: row.parcel_y * 4,
+    width: 4,
+    height: 4,
+    careCost: row.care_cost,
+    source: row.source,
+  };
+}
+
+function getParcelBounds(parcels: MyGardenParcel[], fallbackLevel: number) {
+  if (parcels.length === 0) return getPlotBounds(fallbackLevel);
+  const minX = Math.min(...parcels.map((parcel) => parcel.minX));
+  const minY = Math.min(...parcels.map((parcel) => parcel.minY));
+  const maxX = Math.max(...parcels.map((parcel) => parcel.minX + 3));
+  const maxY = Math.max(...parcels.map((parcel) => parcel.minY + 3));
+  return { minX, minY, width: maxX - minX + 1, height: maxY - minY + 1 };
+}
+
+function getExpansionCandidates(parcels: MyGardenParcel[], plotLevel: number) {
+  const owned = new Set(
+    parcels.map((parcel) => `${parcel.parcelX}:${parcel.parcelY}`),
+  );
+  const candidates = new Map<string, MyGardenParcel & { careCost: number }>();
+  for (const parcel of parcels) {
+    for (const [offsetX, offsetY] of [
+      [-1, 0],
+      [1, 0],
+      [0, -1],
+      [0, 1],
+    ] as const) {
+      const parcelX = parcel.parcelX + offsetX;
+      const parcelY = parcel.parcelY + offsetY;
+      const key = `${parcelX}:${parcelY}`;
+      if (owned.has(key) || candidates.has(key)) continue;
+      candidates.set(key, {
+        parcelX,
+        parcelY,
+        minX: parcelX * 4,
+        minY: parcelY * 4,
+        width: 4,
+        height: 4,
+        careCost: getExpansionCareCost(plotLevel),
+        source: "freeform",
+      });
+    }
+  }
+  return Array.from(candidates.values()).sort(
+    (left, right) =>
+      Math.abs(left.parcelX) + Math.abs(left.parcelY) -
+        (Math.abs(right.parcelX) + Math.abs(right.parcelY)) ||
+      left.parcelY - right.parcelY ||
+      left.parcelX - right.parcelX,
+  );
+}
+
 function getDatabaseMessage(error: unknown, fallback: string) {
   const message =
     error && typeof error === "object" && "message" in error
@@ -245,6 +329,15 @@ function getDatabaseMessage(error: unknown, fallback: string) {
     "Every Builder tile must contain a one-tile item to pick up.",
     "One of those Builder tiles is already occupied.",
     "One of those Builder tiles is occupied.",
+    "Reach Caretaker to shape freeform garden clearings.",
+    "Open the starter garden parcels first.",
+    "Choose a forest clearing touching your garden.",
+    "That clearing is already part of My Garden.",
+    "That clearing is not part of My Garden.",
+    "Your original garden clearing always stays.",
+    "Clear every plant, path, and item before returning this land.",
+    "My Garden must keep its original clearing.",
+    "That clearing connects two parts of My Garden and cannot be returned yet.",
   ];
   return allowedMessages.find((candidate) => message.includes(candidate)) ?? fallback;
 }
@@ -259,11 +352,22 @@ export async function getMyGarden(stewardId: string): Promise<MyGardenState> {
     });
   if (initializeError) throw initializeError;
 
+  const [parcelInitialization, stewardshipInitialization] = await Promise.all([
+    supabase.rpc("ensure_my_garden_parcels_v1", { p_steward_id: stewardId }),
+    supabase.rpc("ensure_garden_stewardship_profile_v1", {
+      p_steward_id: stewardId,
+    }),
+  ]);
+  if (parcelInitialization.error) throw parcelInitialization.error;
+  if (stewardshipInitialization.error) throw stewardshipInitialization.error;
+
   const [
     { data: progress, error: progressError },
     { data: plants, error: plantsError },
     { data: paths, error: pathsError },
     { data: elements, error: elementsError },
+    { data: parcels, error: parcelsError },
+    { data: stewardshipProfile, error: stewardshipProfileError },
   ] = await Promise.all([
     supabase
       .from("garden_member_progress")
@@ -292,12 +396,26 @@ export async function getMyGarden(stewardId: string): Promise<MyGardenState> {
       .eq("steward_id", stewardId)
       .order("placed_at")
       .returns<PersonalElementRow[]>(),
+    supabase
+      .from("garden_unlocked_parcels")
+      .select("parcel_x,parcel_y,care_cost,source")
+      .eq("steward_id", stewardId)
+      .order("parcel_y")
+      .order("parcel_x")
+      .returns<ParcelRow[]>(),
+    supabase
+      .from("garden_stewardship_profiles")
+      .select("ordinary_footprint_capacity")
+      .eq("steward_id", stewardId)
+      .single<StewardshipProfileRow>(),
   ]);
 
   if (progressError) throw progressError;
   if (plantsError) throw plantsError;
   if (pathsError) throw pathsError;
   if (elementsError) throw elementsError;
+  if (parcelsError) throw parcelsError;
+  if (stewardshipProfileError) throw stewardshipProfileError;
 
   const mappedPlants: MyGardenPlant[] = (plants ?? []).map((plant) => ({
     id: plant.id,
@@ -319,8 +437,18 @@ export async function getMyGarden(stewardId: string): Promise<MyGardenState> {
     mappedPlants,
     mappedElements,
   );
-  const dimensions = getPlotBounds(progress.plot_level);
-  const nextExpansion = getNextExpansion(progress.plot_level);
+  const unlockedParcels = (parcels ?? []).map(mapParcel);
+  const dimensions = getParcelBounds(unlockedParcels, progress.plot_level);
+  const stewardshipCapacity = Number(
+    stewardshipProfile.ordinary_footprint_capacity ?? 100,
+  );
+  const freeformExpansion =
+    progress.plot_level >= 5 && stewardshipCapacity >= 175;
+  const expansionCandidates = freeformExpansion
+    ? getExpansionCandidates(unlockedParcels, progress.plot_level)
+    : [];
+  const nextExpansion =
+    progress.plot_level < 5 ? getNextExpansion(progress.plot_level) : null;
   return {
     careBalance: progress.care_balance,
     lifetimeCare: progress.lifetime_care,
@@ -328,11 +456,14 @@ export async function getMyGarden(stewardId: string): Promise<MyGardenState> {
     dailyCareLimit: GARDEN_DAILY_CARE_LIMIT,
     plotLevel: progress.plot_level,
     ...dimensions,
-    maxWidth: nextExpansion.width,
-    maxHeight: nextExpansion.height,
+    maxWidth: nextExpansion?.width ?? dimensions.width + 8,
+    maxHeight: nextExpansion?.height ?? dimensions.height + 8,
     plantCost: MY_GARDEN_PLANT_COST,
     uprootReturn: MY_GARDEN_UPROOT_RETURN,
     nextExpansion,
+    freeformExpansion,
+    unlockedParcels,
+    expansionCandidates,
     plants: mappedPlants,
     paths: (paths ?? []).map((path) => ({
       gridX: path.grid_x,
@@ -471,12 +602,52 @@ export async function importMyGardenPreview(
   return getMyGarden(stewardId);
 }
 
-export async function expandMyGarden(stewardId: string) {
-  const { error } = await getSupabaseAdmin().rpc("expand_my_garden", {
-    p_steward_id: stewardId,
-  });
+export async function expandMyGarden(
+  stewardId: string,
+  gridX?: number,
+  gridY?: number,
+) {
+  const supabase = getSupabaseAdmin();
+  const freeform = Number.isInteger(gridX) && Number.isInteger(gridY);
+  const { error } = freeform
+    ? await supabase.rpc("expand_my_garden_freeform_v1", {
+        p_steward_id: stewardId,
+        p_parcel_x: Math.floor(Number(gridX) / 4),
+        p_parcel_y: Math.floor(Number(gridY) / 4),
+      })
+    : await supabase.rpc("expand_my_garden", {
+        p_steward_id: stewardId,
+      });
   if (error) {
     throw new Error(getDatabaseMessage(error, "My Garden could not be expanded."));
+  }
+  if (!freeform) {
+    const { error: parcelError } = await supabase.rpc(
+      "ensure_my_garden_parcels_v1",
+      { p_steward_id: stewardId },
+    );
+    if (parcelError) throw parcelError;
+  }
+  return getMyGarden(stewardId);
+}
+
+export async function returnMyGardenClearing(
+  stewardId: string,
+  gridX: number,
+  gridY: number,
+) {
+  const { error } = await getSupabaseAdmin().rpc(
+    "return_my_garden_clearing_v1",
+    {
+      p_steward_id: stewardId,
+      p_parcel_x: Math.floor(gridX / 4),
+      p_parcel_y: Math.floor(gridY / 4),
+    },
+  );
+  if (error) {
+    throw new Error(
+      getDatabaseMessage(error, "That clearing could not be returned."),
+    );
   }
   return getMyGarden(stewardId);
 }
