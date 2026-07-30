@@ -27,9 +27,11 @@ const map = readFileSync(
 test("the Community Atlas supports regional inspection without loading the world", () => {
   assert.match(atlas, /Community Atlas/);
   assert.match(atlas, /ATLAS_ZOOMS = \[1, 2, 4\]/);
-  assert.match(atlas, /useState<\(typeof ATLAS_ZOOMS\)\[number\]>\(2\)/);
-  assert.match(atlas, /fetchGardenRegionWindow\([\s\S]+ui\.snapshotVersion,[\s\S]+0,/);
-  assert.match(atlas, /Every zoom shows the same garden information at a different scale/);
+  assert.match(atlas, /useState<\(typeof ATLAS_ZOOMS\)\[number\]>\(1\)/);
+  assert.match(atlas, /ATLAS_WINDOW_RADIUS = 3/);
+  assert.match(atlas, /fetchGardenRegionWindow\([\s\S]+ui\.snapshotVersion,[\s\S]+ATLAS_WINDOW_RADIUS,/);
+  assert.match(atlas, /Flowers load automatically at every zoom/);
+  assert.match(atlas, /Promise\.allSettled\(/);
   assert.match(atlas, /const dot = zoom === 4 \? 7 : zoom === 2 \? 5 : 3/);
   assert.match(atlas, /Go here/);
 });

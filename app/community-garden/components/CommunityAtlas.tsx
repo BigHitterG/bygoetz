@@ -40,6 +40,8 @@ type AtlasPoint = {
 
 const ATLAS_SIZE = 720;
 const ATLAS_ZOOMS = [1, 2, 4] as const;
+const ATLAS_WINDOW_RADIUS = 3;
+const MAX_ATLAS_WINDOWS = 16;
 const PLANT_COLORS = {
   rose: "#c52f45",
   sunflower: "#e0a91f",
@@ -80,6 +82,68 @@ function gridToMap(
 
 function isLockedRegion(region: GardenUiState["regionMapCells"][number]) {
   return !region.isOpen && region.stage !== "wild";
+}
+
+function getAtlasWindowPlans(
+  regions: GardenUiState["regionMapCells"],
+  view: { minX: number; minY: number; size: number },
+  preferredRegion: GardenUiState["regionMapCells"][number] | null,
+) {
+  const visible = regions.filter(
+    (region) =>
+      region.isOpen &&
+      region.x + region.width >= view.minX &&
+      region.x <= view.minX + view.size &&
+      region.y + region.height >= view.minY &&
+      region.y <= view.minY + view.size,
+  );
+  if (visible.length === 0) return [];
+
+  const minRegionX = Math.min(...visible.map((region) => region.regionX));
+  const maxRegionX = Math.max(...visible.map((region) => region.regionX));
+  const minRegionY = Math.min(...visible.map((region) => region.regionY));
+  const maxRegionY = Math.max(...visible.map((region) => region.regionY));
+  const diameter = ATLAS_WINDOW_RADIUS * 2 + 1;
+  const plans: Array<{ centerX: number; centerY: number }> = [];
+  for (let startX = minRegionX; startX <= maxRegionX; startX += diameter) {
+    for (let startY = minRegionY; startY <= maxRegionY; startY += diameter) {
+      plans.push({
+        centerX: Math.min(startX + ATLAS_WINDOW_RADIUS, maxRegionX),
+        centerY: Math.min(startY + ATLAS_WINDOW_RADIUS, maxRegionY),
+      });
+    }
+  }
+
+  const viewCenterX = view.minX + view.size / 2;
+  const viewCenterY = view.minY + view.size / 2;
+  const regionAtViewCenter = visible.reduce((nearest, region) => {
+    const regionCenterX = region.x + region.width / 2;
+    const regionCenterY = region.y + region.height / 2;
+    const distance = Math.hypot(regionCenterX - viewCenterX, regionCenterY - viewCenterY);
+    return distance < nearest.distance ? { region, distance } : nearest;
+  }, { region: visible[0], distance: Number.POSITIVE_INFINITY }).region;
+  const limited = [...plans]
+    .sort(
+      (left, right) =>
+        Math.hypot(left.centerX - regionAtViewCenter.regionX, left.centerY - regionAtViewCenter.regionY) -
+        Math.hypot(right.centerX - regionAtViewCenter.regionX, right.centerY - regionAtViewCenter.regionY),
+    )
+    .slice(0, MAX_ATLAS_WINDOWS);
+
+  if (
+    preferredRegion?.isOpen &&
+    !limited.some(
+      (plan) =>
+        Math.abs(plan.centerX - preferredRegion.regionX) <= ATLAS_WINDOW_RADIUS &&
+        Math.abs(plan.centerY - preferredRegion.regionY) <= ATLAS_WINDOW_RADIUS,
+    )
+  ) {
+    limited.splice(Math.max(0, limited.length - 1), 1, {
+      centerX: preferredRegion.regionX,
+      centerY: preferredRegion.regionY,
+    });
+  }
+  return limited;
 }
 
 function regionTitle(region: GardenUiState["regionMapCells"][number] | null) {
@@ -143,7 +207,7 @@ export function CommunityAtlas({
     : null;
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const surfaceRef = useRef<HTMLButtonElement>(null);
-  const [zoom, setZoom] = useState<(typeof ATLAS_ZOOMS)[number]>(2);
+  const [zoom, setZoom] = useState<(typeof ATLAS_ZOOMS)[number]>(1);
   const [center, setCenter] = useState(
     initialPoint
       ? { x: initialPoint.mapX, y: initialPoint.mapY }
@@ -155,9 +219,10 @@ export function CommunityAtlas({
   const [selectedRegionKey, setSelectedRegionKey] = useState<string | null>(
     initialRegionKey,
   );
-  const [detail, setDetail] = useState<GardenRegionWindow | null>(null);
+  const [atlasWindows, setAtlasWindows] = useState<GardenRegionWindow[]>([]);
+  const windowCacheRef = useRef(new Map<string, GardenRegionWindow>());
   const [detailStatus, setDetailStatus] = useState<"idle" | "loading" | "error">(
-    focusTarget ? "loading" : "idle",
+    "loading",
   );
 
   const selectedRegion =
@@ -184,29 +249,61 @@ export function CommunityAtlas({
     return () => window.removeEventListener("keydown", closeOnEscape);
   }, [onClose, open]);
 
+  const atlasWindowPlans = getAtlasWindowPlans(
+    ui.regionMapCells,
+    view,
+    selectedRegion,
+  );
+  const atlasWindowPlanKey = atlasWindowPlans
+    .map((plan) => `${plan.centerX}:${plan.centerY}`)
+    .join("|");
+
   useEffect(() => {
-    if (!open || !selectedRegion || !selectedRegion.isOpen || ui.snapshotVersion <= 0) return;
+    if (!open || ui.snapshotVersion <= 0 || atlasWindowPlanKey.length === 0) {
+      return;
+    }
     let active = true;
-    void fetchGardenRegionWindow(
-      selectedRegion.regionX,
-      selectedRegion.regionY,
-      ui.snapshotVersion,
-      0,
+    const plans = atlasWindowPlanKey.split("|").map((entry) => {
+      const [centerX, centerY] = entry.split(":").map(Number);
+      return { centerX, centerY };
+    });
+    const cacheKeys = plans.map(
+      (plan) =>
+        `${ui.snapshotVersion}:${plan.centerX}:${plan.centerY}:${ATLAS_WINDOW_RADIUS}`,
+    );
+    const missing = plans.filter((_, index) => !windowCacheRef.current.has(cacheKeys[index]));
+
+    void Promise.allSettled(
+      missing.map((plan) =>
+        fetchGardenRegionWindow(
+          plan.centerX,
+          plan.centerY,
+          ui.snapshotVersion,
+          ATLAS_WINDOW_RADIUS,
+        ),
+      ),
     )
-      .then((window) => {
+      .then((results) => {
         if (!active) return;
-        setDetail(window);
-        setDetailStatus("idle");
-      })
-      .catch(() => {
-        if (!active) return;
-        setDetail(null);
-        setDetailStatus("error");
+        for (const result of results) {
+          if (result.status !== "fulfilled") continue;
+          const window = result.value;
+          const key = `${ui.snapshotVersion}:${window.centerRegionX}:${window.centerRegionY}:${ATLAS_WINDOW_RADIUS}`;
+          windowCacheRef.current.set(key, window);
+        }
+        setAtlasWindows(
+          cacheKeys
+            .map((key) => windowCacheRef.current.get(key))
+            .filter((window): window is GardenRegionWindow => Boolean(window)),
+        );
+        setDetailStatus(
+          results.some((result) => result.status === "rejected") ? "error" : "idle",
+        );
       });
     return () => {
       active = false;
     };
-  }, [open, selectedRegion, ui.snapshotVersion]);
+  }, [atlasWindowPlanKey, open, ui.snapshotVersion]);
 
   const visiblePlants = useMemo(() => {
     const plants = new Map<
@@ -221,16 +318,26 @@ export function CommunityAtlas({
         heritage: plant.heritage,
       });
     }
-    for (const plant of detail?.plants ?? []) {
-      plants.set(`${plant.grid_x}:${plant.grid_y}`, {
-        mapX: gridToMap(plant.grid_x, ui.mapBounds, "x"),
-        mapY: gridToMap(plant.grid_y, ui.mapBounds, "y"),
-        plantType: plant.plant_type,
-        heritage: Boolean(plant.heritage_at),
-      });
+    for (const window of atlasWindows) {
+      for (const plant of window.plants) {
+        plants.set(`${plant.grid_x}:${plant.grid_y}`, {
+          mapX: gridToMap(plant.grid_x, ui.mapBounds, "x"),
+          mapY: gridToMap(plant.grid_y, ui.mapBounds, "y"),
+          plantType: plant.plant_type,
+          heritage: Boolean(plant.heritage_at),
+        });
+      }
     }
     return Array.from(plants.values());
-  }, [detail?.plants, ui.mapBounds, ui.plantMapPoints]);
+  }, [atlasWindows, ui.mapBounds, ui.plantMapPoints]);
+
+  const visibleWeeds = useMemo(() => {
+    const weeds = new Map<string, GardenRegionWindow["weeds"][number]>();
+    for (const window of atlasWindows) {
+      for (const weed of window.weeds) weeds.set(weed.id, weed);
+    }
+    return Array.from(weeds.values());
+  }, [atlasWindows]);
 
   useEffect(() => {
     if (!open) return;
@@ -306,7 +413,7 @@ export function CommunityAtlas({
       }
     }
     const weedSize = zoom === 4 ? 4 : zoom === 2 ? 3 : 2;
-    for (const weed of detail?.weeds ?? []) {
+    for (const weed of visibleWeeds) {
       const x = projectX(gridToMap(weed.grid_x, ui.mapBounds, "x"));
       const y = projectY(gridToMap(weed.grid_y, ui.mapBounds, "y"));
       ctx.fillStyle = "#52633f";
@@ -355,7 +462,7 @@ export function CommunityAtlas({
     ctx.fillStyle = "#1f6e8c";
     ctx.fillRect(playerX - 4, playerY - 4, 8, 8);
     ctx.globalAlpha = 1;
-  }, [detail?.weeds, focusTarget?.gridX, focusTarget?.gridY, focusTarget?.kind, open, selectedPoint, selectedRegionKey, ui.mapBounds, ui.mapX, ui.mapY, ui.regionMapCells, view, visiblePlants, zoom]);
+  }, [focusTarget?.gridX, focusTarget?.gridY, focusTarget?.kind, open, selectedPoint, selectedRegionKey, ui.mapBounds, ui.mapX, ui.mapY, ui.regionMapCells, view, visiblePlants, visibleWeeds, zoom]);
 
   function selectPoint(event: MouseEvent<HTMLButtonElement>) {
     if (event.detail === 0) return;
@@ -379,8 +486,6 @@ export function CommunityAtlas({
     );
     setSelectedPoint({ mapX, mapY });
     setSelectedRegionKey(region?.key ?? null);
-    setDetail(null);
-    setDetailStatus(region?.isOpen ? "loading" : "idle");
     if (zoom > 1) setCenter({ x: mapX, y: mapY });
   }
 
@@ -430,8 +535,8 @@ export function CommunityAtlas({
           </button>
         </header>
         <p className="cg-expanded-map-help">
-          Every zoom shows the same garden information at a different scale.
-          Select a region to load its flowers, then choose Go here to travel.
+          Flowers load automatically at every zoom. Select a region to inspect
+          it, then choose Go here to travel.
         </p>
         <div className="cg-atlas-toolbar" role="group" aria-label="Atlas zoom controls">
           <button
