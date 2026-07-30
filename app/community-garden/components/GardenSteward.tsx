@@ -1204,45 +1204,52 @@ export function GardenSteward({ onVisitHeritage }: GardenStewardProps) {
                   <h3 id="heritage-seed-title">
                     {accountState.account.heritage.badgeEarned
                       ? "Heritage Gardener"
-                      : "Your Heritage Flower"}
+                      : "Growing your Heritage Flower"}
                   </h3>
                 </div>
                 <span className="cg-heritage-badge" aria-hidden="true">✦</span>
               </div>
 
               {accountState.account.heritage.heritageFlower ? (
-                <div className="cg-heritage-earned">
-                  <GardenCatalogSprite
-                    kind="plant"
-                    type={accountState.account.heritage.heritageFlower.plantType}
-                    heritage
-                  />
-                  <div>
-                    <strong>
-                      {flowerName(accountState.account.heritage.heritageFlower.plantType)} · Heritage Flower
-                    </strong>
-                    <p>
-                      You and the community established this permanent landmark. Your
-                      account has earned its Heritage Gardener badge.
-                    </p>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const flower = accountState.account.heritage.heritageFlower;
-                        if (flower) onVisitHeritage?.(flower.gridX, flower.gridY);
-                      }}
-                    >
-                      Visit your Heritage Flower
-                    </button>
+                <>
+                  <button
+                    className="cg-heritage-visit-button"
+                    type="button"
+                    onClick={() => {
+                      const flower = accountState.account.heritage.heritageFlower;
+                      if (flower) onVisitHeritage?.(flower.gridX, flower.gridY);
+                    }}
+                  >
+                    <strong>Visit your Heritage Flower</strong>
+                    <span>Open the Community Atlas with your landmark centered.</span>
+                  </button>
+                  <div className="cg-heritage-earned">
+                    <GardenCatalogSprite
+                      kind="plant"
+                      type={accountState.account.heritage.heritageFlower.plantType}
+                      heritage
+                    />
+                    <div>
+                      <strong>
+                        {flowerName(accountState.account.heritage.heritageFlower.plantType)} · Heritage Flower
+                      </strong>
+                      <p>
+                        You and the community established this permanent landmark. Your
+                        account has earned its Heritage Gardener badge.
+                      </p>
+                    </div>
                   </div>
-                </div>
+                </>
               ) : (
-                <p className="cg-heritage-empty">
-                  Keep planting and caring for the Community Garden. One of your
-                  flowers may naturally become Heritage after it grows with enough
-                  time, community care, and neighboring flowers. When that happens,
-                  Basil will let you know here and in the garden.
-                </p>
+                <div className="cg-heritage-empty">
+                  <strong>You do not have a Heritage Flower to visit yet.</strong>
+                  <p>
+                    Keep planting and caring for the Community Garden. One of your
+                    flowers may naturally become Heritage after it grows with enough
+                    time, community care, and neighboring flowers. When that happens,
+                    Basil will add the visit button here and let you know in the garden.
+                  </p>
+                </div>
               )}
             </section>
           ) : null}

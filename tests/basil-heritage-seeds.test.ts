@@ -37,6 +37,8 @@ test("members naturally grow and can visit their one Heritage Flower", () => {
   assert.doesNotMatch(account, /\/api\/community-garden\/heritage-seed/);
   assert.match(account, /may naturally become Heritage/);
   assert.match(account, /Visit your Heritage Flower/);
+  assert.match(account, /cg-heritage-visit-button/);
+  assert.match(account, /You do not have a Heritage Flower to visit yet/);
   assert.match(account, /Heritage Gardener/);
 });
 

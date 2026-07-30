@@ -4897,6 +4897,33 @@
   padding: 10px;
 }
 
+.cg-steward .cg-heritage-visit-button {
+  display: grid;
+  width: 100%;
+  margin-top: 12px;
+  gap: 3px;
+  border-color: #7b342f;
+  background: #f1cf77;
+  text-align: left;
+  box-shadow: 4px 4px 0 rgba(123, 52, 47, 0.2);
+}
+
+.cg-heritage-visit-button strong,
+.cg-heritage-visit-button span {
+  display: block;
+}
+
+.cg-heritage-visit-button strong {
+  font-family: inherit;
+  font-size: 0.82rem;
+}
+
+.cg-heritage-visit-button span {
+  color: #68463a;
+  font-size: 0.64rem;
+  font-weight: 650;
+}
+
 .cg-heritage-earned .cg-catalog-sprite {
   width: 92px;
   height: 84px;
@@ -4911,7 +4938,16 @@
 
 .cg-heritage-empty {
   border-left: 3px solid #d4ad48;
+  margin-top: 10px;
   padding-left: 9px;
+}
+
+.cg-heritage-empty > strong {
+  font-size: 0.76rem;
+}
+
+.cg-heritage-empty > p {
+  margin: 5px 0 0;
 }
 
 .cg-pass-preview {

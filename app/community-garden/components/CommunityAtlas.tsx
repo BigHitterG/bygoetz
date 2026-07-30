@@ -18,6 +18,7 @@ export type CommunityAtlasTarget = {
   gridY: number;
   label: string;
   requestId: number;
+  kind?: "heritage";
 };
 
 type CommunityAtlasProps = {
@@ -142,13 +143,11 @@ export function CommunityAtlas({
     : null;
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const surfaceRef = useRef<HTMLButtonElement>(null);
-  const [zoom, setZoom] = useState<(typeof ATLAS_ZOOMS)[number]>(
-    focusTarget ? 4 : 1,
-  );
+  const [zoom, setZoom] = useState<(typeof ATLAS_ZOOMS)[number]>(2);
   const [center, setCenter] = useState(
     initialPoint
       ? { x: initialPoint.mapX, y: initialPoint.mapY }
-      : { x: 50, y: 50 },
+      : { x: ui.mapX, y: ui.mapY },
   );
   const [selectedPoint, setSelectedPoint] = useState<AtlasPoint | null>(
     initialPoint,
@@ -275,7 +274,7 @@ export function CommunityAtlas({
             : "rgba(76, 74, 55, 0.3)";
       ctx.lineWidth = region.key === selectedRegionKey ? 4 : region.stage === "ready" ? 3 : 1;
       ctx.strokeRect(x + 0.5, y + 0.5, Math.max(1, width - 1), Math.max(1, height - 1));
-      if (region.heritagePlantCount > 0 && zoom <= 2) {
+      if (region.heritagePlantCount > 0) {
         const markerX = x + width / 2;
         const markerY = y + height / 2;
         ctx.fillStyle = "#fff4df";
@@ -287,35 +286,32 @@ export function CommunityAtlas({
       if (isLockedRegion(region)) drawRegionLock(ctx, x, y, width, height);
     }
 
-    if (zoom >= 2) {
-      const dot = zoom === 4 ? 7 : 4;
-      for (const plant of visiblePlants) {
-        const x = projectX(plant.mapX);
-        const y = projectY(plant.mapY);
-        if (x < -dot || y < -dot || x > ATLAS_SIZE + dot || y > ATLAS_SIZE + dot) continue;
-        ctx.fillStyle =
-          PLANT_COLORS[plant.plantType as keyof typeof PLANT_COLORS] ?? "#c52f45";
-        ctx.fillRect(Math.round(x - dot / 2), Math.round(y - dot / 2), dot, dot);
-        if (plant.heritage) {
-          ctx.strokeStyle = "#b67b1d";
-          ctx.lineWidth = 2;
-          ctx.strokeRect(
-            Math.round(x - dot / 2) - 2,
-            Math.round(y - dot / 2) - 2,
-            dot + 4,
-            dot + 4,
-          );
-        }
+    const dot = zoom === 4 ? 7 : zoom === 2 ? 5 : 3;
+    for (const plant of visiblePlants) {
+      const x = projectX(plant.mapX);
+      const y = projectY(plant.mapY);
+      if (x < -dot || y < -dot || x > ATLAS_SIZE + dot || y > ATLAS_SIZE + dot) continue;
+      ctx.fillStyle =
+        PLANT_COLORS[plant.plantType as keyof typeof PLANT_COLORS] ?? "#c52f45";
+      ctx.fillRect(Math.round(x - dot / 2), Math.round(y - dot / 2), dot, dot);
+      if (plant.heritage) {
+        ctx.strokeStyle = "#b67b1d";
+        ctx.lineWidth = 2;
+        ctx.strokeRect(
+          Math.round(x - dot / 2) - 2,
+          Math.round(y - dot / 2) - 2,
+          dot + 4,
+          dot + 4,
+        );
       }
-      if (zoom === 4) {
-        for (const weed of detail?.weeds ?? []) {
-          const x = projectX(gridToMap(weed.grid_x, ui.mapBounds, "x"));
-          const y = projectY(gridToMap(weed.grid_y, ui.mapBounds, "y"));
-          ctx.fillStyle = "#52633f";
-          ctx.fillRect(x - 4, y - 1, 8, 3);
-          ctx.fillRect(x - 1, y - 4, 3, 8);
-        }
-      }
+    }
+    const weedSize = zoom === 4 ? 4 : zoom === 2 ? 3 : 2;
+    for (const weed of detail?.weeds ?? []) {
+      const x = projectX(gridToMap(weed.grid_x, ui.mapBounds, "x"));
+      const y = projectY(gridToMap(weed.grid_y, ui.mapBounds, "y"));
+      ctx.fillStyle = "#52633f";
+      ctx.fillRect(x - weedSize, y - 1, weedSize * 2, 3);
+      ctx.fillRect(x - 1, y - weedSize, 3, weedSize * 2);
     }
 
     if (selectedPoint) {
@@ -328,6 +324,30 @@ export function CommunityAtlas({
       ctx.fillRect(x - 3, y - 3, 6, 6);
     }
 
+    if (focusTarget?.kind === "heritage") {
+      const x = projectX(gridToMap(focusTarget.gridX, ui.mapBounds, "x"));
+      const y = projectY(gridToMap(focusTarget.gridY, ui.mapBounds, "y"));
+      const beaconSize = zoom === 4 ? 22 : zoom === 2 ? 18 : 14;
+      ctx.fillStyle = "rgba(255, 244, 223, 0.94)";
+      ctx.fillRect(x - beaconSize, y - beaconSize, beaconSize * 2, beaconSize * 2);
+      ctx.strokeStyle = "#d6a321";
+      ctx.lineWidth = 4;
+      ctx.strokeRect(
+        x - beaconSize + 2,
+        y - beaconSize + 2,
+        beaconSize * 2 - 4,
+        beaconSize * 2 - 4,
+      );
+      ctx.strokeStyle = "#b62f3d";
+      ctx.lineWidth = 3;
+      ctx.strokeRect(x - 7, y - 7, 14, 14);
+      ctx.fillStyle = "#d6a321";
+      ctx.fillRect(x - 3, y - beaconSize - 7, 6, 7);
+      ctx.fillRect(x - 3, y + beaconSize, 6, 7);
+      ctx.fillRect(x - beaconSize - 7, y - 3, 7, 6);
+      ctx.fillRect(x + beaconSize, y - 3, 7, 6);
+    }
+
     const playerX = projectX(ui.mapX);
     const playerY = projectY(ui.mapY);
     ctx.fillStyle = "#fff4df";
@@ -335,7 +355,7 @@ export function CommunityAtlas({
     ctx.fillStyle = "#1f6e8c";
     ctx.fillRect(playerX - 4, playerY - 4, 8, 8);
     ctx.globalAlpha = 1;
-  }, [detail?.weeds, open, selectedPoint, selectedRegionKey, ui.mapBounds, ui.mapX, ui.mapY, ui.regionMapCells, view, visiblePlants, zoom]);
+  }, [detail?.weeds, focusTarget?.gridX, focusTarget?.gridY, focusTarget?.kind, open, selectedPoint, selectedRegionKey, ui.mapBounds, ui.mapX, ui.mapY, ui.regionMapCells, view, visiblePlants, zoom]);
 
   function selectPoint(event: MouseEvent<HTMLButtonElement>) {
     if (event.detail === 0) return;
@@ -410,8 +430,8 @@ export function CommunityAtlas({
           </button>
         </header>
         <p className="cg-expanded-map-help">
-          Select a region to inspect it. Zoom closer to see individual flowers,
-          then choose Go here when you are ready to travel.
+          Every zoom shows the same garden information at a different scale.
+          Select a region to load its flowers, then choose Go here to travel.
         </p>
         <div className="cg-atlas-toolbar" role="group" aria-label="Atlas zoom controls">
           <button

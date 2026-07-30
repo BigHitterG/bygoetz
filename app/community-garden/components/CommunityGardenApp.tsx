@@ -2480,6 +2480,7 @@ export function CommunityGardenApp() {
             gridY,
             label: "your Heritage Flower",
             requestId: Date.now(),
+            kind: "heritage",
           });
         }}
       />
