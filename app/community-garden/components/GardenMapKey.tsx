@@ -1,19 +1,19 @@
 "use client";
 
+import { useState, type CSSProperties, type MouseEvent } from "react";
 import {
-  useEffect,
-  useRef,
-  useState,
-  type CSSProperties,
-  type MouseEvent,
-} from "react";
+  CommunityAtlas,
+  type CommunityAtlasTarget,
+} from "./CommunityAtlas";
 import type { GardenUiState } from "./GardenCanvas";
 
 type GardenMapKeyProps = {
   ui: GardenUiState;
   canExpand: boolean;
   disabled?: boolean;
+  focusTarget?: CommunityAtlasTarget | null;
   onNavigate: (mapX: number, mapY: number) => void;
+  onNavigateGrid: (gridX: number, gridY: number) => void;
 };
 
 type MapStyle = CSSProperties & {
@@ -23,204 +23,32 @@ type MapStyle = CSSProperties & {
   "--cg-map-height": string;
 };
 
-const EXPANDED_MAP_SIZE = 600;
-const PLANT_COLORS = {
-  rose: "#b62f3d",
-  sunflower: "#d7a52f",
-  lavender: "#7876a8",
-  daisy: "#f5ead2",
-  tulip: "#d95b6a",
-  wildflowers: "#8d79a9",
-  peony: "#e998aa",
-  bee_balm: "#c44e78",
-} as const;
-
-const REGION_COLORS = {
-  garden: "#c9d8ad",
-  edge: "#e5d9b2",
-  growing: "#d8bd68",
-  ready: "#e6b94e",
-  new: "#b8d38e",
-  resting: "#c9c0ac",
-  wild: "#e8e4da",
-} as const;
-
-const ZONE_COLORS = {
-  heart: "#789267",
-  "growth-ring": "#c7b661",
-} as const;
-
 function isLockedRegion(region: GardenUiState["regionMapCells"][number]) {
   return !region.isOpen && region.stage !== "wild";
-}
-
-function drawRegionLock(
-  ctx: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  width: number,
-  height: number,
-) {
-  const unit = Math.max(1, Math.min(3, Math.floor(Math.min(width, height) / 8)));
-  const centerX = Math.round(x + width / 2);
-  const centerY = Math.round(y + height / 2);
-  const bodyWidth = 6 * unit;
-  const bodyHeight = 5 * unit;
-  const bodyX = Math.round(centerX - bodyWidth / 2);
-  const bodyY = Math.round(centerY - unit);
-
-  ctx.fillStyle = "rgba(255, 244, 223, 0.9)";
-  ctx.fillRect(bodyX - unit, bodyY - 4 * unit, bodyWidth + 2 * unit, bodyHeight + 5 * unit);
-  ctx.fillStyle = "#5b3b2d";
-  ctx.fillRect(bodyX + unit, bodyY - 3 * unit, unit, 3 * unit);
-  ctx.fillRect(bodyX + 4 * unit, bodyY - 3 * unit, unit, 3 * unit);
-  ctx.fillRect(bodyX + 2 * unit, bodyY - 4 * unit, 2 * unit, unit);
-  ctx.fillRect(bodyX, bodyY, bodyWidth, bodyHeight);
-  ctx.fillStyle = "#f3d88d";
-  ctx.fillRect(centerX - Math.ceil(unit / 2), bodyY + 2 * unit, unit, 2 * unit);
 }
 
 export function GardenMapKey({
   ui,
   canExpand,
   disabled = false,
+  focusTarget,
   onNavigate,
+  onNavigateGrid,
 }: GardenMapKeyProps) {
   const [expanded, setExpanded] = useState(false);
-  const expandedCanvasRef = useRef<HTMLCanvasElement>(null);
-  const expandedMapRef = useRef<HTMLButtonElement>(null);
-  const mapExpanded = expanded && !disabled;
+  const [dismissedFocusRequest, setDismissedFocusRequest] = useState<
+    number | null
+  >(null);
+  const focusedAtlasRequested = Boolean(
+    focusTarget && focusTarget.requestId !== dismissedFocusRequest,
+  );
+  const mapExpanded = (expanded || focusedAtlasRequested) && !disabled;
   const mapStyle: MapStyle = {
     "--cg-map-x": `${ui.mapX}%`,
     "--cg-map-y": `${ui.mapY}%`,
     "--cg-map-width": `${ui.mapWidthPercentage}%`,
     "--cg-map-height": `${ui.mapHeightPercentage}%`,
   };
-
-  useEffect(() => {
-    if (!mapExpanded) return;
-    expandedMapRef.current?.focus({ preventScroll: true });
-
-    const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setExpanded(false);
-    };
-    window.addEventListener("keydown", closeOnEscape);
-    return () => window.removeEventListener("keydown", closeOnEscape);
-  }, [mapExpanded]);
-
-  useEffect(() => {
-    if (!mapExpanded) return;
-    const canvas = expandedCanvasRef.current;
-    const ctx = canvas?.getContext("2d");
-    if (!canvas || !ctx) return;
-
-    ctx.imageSmoothingEnabled = false;
-    ctx.clearRect(0, 0, EXPANDED_MAP_SIZE, EXPANDED_MAP_SIZE);
-    ctx.fillStyle = "#eef1e4";
-    ctx.fillRect(0, 0, EXPANDED_MAP_SIZE, EXPANDED_MAP_SIZE);
-
-    if (ui.regionMapCells.length > 0) {
-      for (const region of ui.regionMapCells) {
-        const x = Math.round((region.x / 100) * EXPANDED_MAP_SIZE);
-        const y = Math.round((region.y / 100) * EXPANDED_MAP_SIZE);
-        const width = Math.max(
-          2,
-          Math.ceil((region.width / 100) * EXPANDED_MAP_SIZE),
-        );
-        const height = Math.max(
-          2,
-          Math.ceil((region.height / 100) * EXPANDED_MAP_SIZE),
-        );
-        ctx.globalAlpha = region.isOpen ? 1 : region.stage === "wild" ? 0.22 : 0.7;
-        ctx.fillStyle = REGION_COLORS[region.stage];
-        ctx.fillRect(x, y, width, height);
-        if (region.isOpen && region.plantCount > 0) {
-          ctx.globalAlpha = 0.12 + (region.occupancyPercent / 100) * 0.46;
-          ctx.fillStyle = "#657c52";
-          ctx.fillRect(x + 1, y + 1, Math.max(1, width - 2), Math.max(1, height - 2));
-        }
-        if (
-          region.isOpen &&
-          (region.guidanceZone === "heart" ||
-            region.guidanceZone === "growth-ring")
-        ) {
-          ctx.globalAlpha = region.guidanceZone === "heart" ? 0.34 : 0.28;
-          ctx.fillStyle = ZONE_COLORS[region.guidanceZone];
-          ctx.fillRect(x + 1, y + 1, Math.max(1, width - 2), Math.max(1, height - 2));
-          ctx.globalAlpha = 0.92;
-          ctx.strokeStyle = ZONE_COLORS[region.guidanceZone];
-          ctx.lineWidth = region.guidanceZone === "growth-ring" ? 2 : 1.5;
-          ctx.strokeRect(
-            x + 1.5,
-            y + 1.5,
-            Math.max(1, width - 3),
-            Math.max(1, height - 3),
-          );
-        }
-        ctx.globalAlpha = 1;
-        ctx.strokeStyle =
-          region.stage === "growing" || region.stage === "ready"
-            ? "#c18c22"
-            : "rgba(76, 74, 55, 0.24)";
-        ctx.lineWidth = region.stage === "ready" ? 3 : 1;
-        ctx.strokeRect(x + 0.5, y + 0.5, Math.max(1, width - 1), Math.max(1, height - 1));
-        if (region.heritagePlantCount > 0) {
-          const centerX = x + width / 2;
-          const centerY = y + height / 2;
-          ctx.fillStyle = "#fff4df";
-          ctx.fillRect(centerX - 4, centerY - 1, 8, 2);
-          ctx.fillRect(centerX - 1, centerY - 4, 2, 8);
-          ctx.fillStyle = "#b67b1d";
-          ctx.fillRect(centerX - 2, centerY - 2, 4, 4);
-        }
-        if (isLockedRegion(region)) {
-          drawRegionLock(ctx, x, y, width, height);
-        }
-      }
-    } else {
-      ctx.strokeStyle = "rgba(101, 112, 74, 0.16)";
-      ctx.lineWidth = 1;
-      for (let index = 1; index < 20; index += 1) {
-        const coordinate = Math.round((index / 20) * EXPANDED_MAP_SIZE) + 0.5;
-        ctx.beginPath();
-        ctx.moveTo(coordinate, 0);
-        ctx.lineTo(coordinate, EXPANDED_MAP_SIZE);
-        ctx.stroke();
-        ctx.beginPath();
-        ctx.moveTo(0, coordinate);
-        ctx.lineTo(EXPANDED_MAP_SIZE, coordinate);
-        ctx.stroke();
-      }
-
-      for (const path of ui.pathMapPoints) {
-        const x = Math.round((path.x / 100) * EXPANDED_MAP_SIZE);
-        const y = Math.round((path.y / 100) * EXPANDED_MAP_SIZE);
-        ctx.fillStyle = "#c7aa7c";
-        ctx.fillRect(x - 3, y - 3, 6, 6);
-      }
-
-      for (const plant of ui.plantMapPoints) {
-        const x = Math.round((plant.x / 100) * EXPANDED_MAP_SIZE);
-        const y = Math.round((plant.y / 100) * EXPANDED_MAP_SIZE);
-        ctx.fillStyle = PLANT_COLORS[plant.plantType] ?? "#c75f78";
-        ctx.fillRect(x - 2, y - 2, 4, 4);
-      }
-    }
-
-    const playerX = Math.round((ui.mapX / 100) * EXPANDED_MAP_SIZE);
-    const playerY = Math.round((ui.mapY / 100) * EXPANDED_MAP_SIZE);
-    ctx.fillStyle = "#fff4df";
-    ctx.fillRect(playerX - 6, playerY - 6, 12, 12);
-    ctx.fillStyle = "#1f6e8c";
-    ctx.fillRect(playerX - 4, playerY - 4, 8, 8);
-  }, [
-    mapExpanded,
-    ui.mapX,
-    ui.mapY,
-    ui.pathMapPoints,
-    ui.plantMapPoints,
-    ui.regionMapCells,
-  ]);
 
   function getMapPosition(event: MouseEvent<HTMLButtonElement>) {
     const bounds = event.currentTarget.getBoundingClientRect();
@@ -236,13 +64,6 @@ export function GardenMapKey({
     onNavigate(mapX, mapY);
   }
 
-  function navigateFromExpandedMap(event: MouseEvent<HTMLButtonElement>) {
-    if (event.detail === 0) return;
-    const { mapX, mapY } = getMapPosition(event);
-    onNavigate(mapX, mapY);
-    setExpanded(false);
-  }
-
   return (
     <aside
       className={`cg-map-key is-${ui.mode}${mapExpanded ? " is-expanded" : ""}${disabled ? " is-disabled" : ""}`}
@@ -256,19 +77,11 @@ export function GardenMapKey({
         aria-label={
           disabled
             ? "Garden overview. Finish this tutorial step before using map travel."
-            : ui.mode === "personal"
-            ? "My Garden overview. Select a point to walk there. Colored marks show your flowers."
-            : "Community Garden overview. Deep green marks the Garden Heart, its pale ring marks connected growth land, and gold padlocks mark future Growing Edge land."
+            : "Community Garden overview. Locked growing edge land is marked with padlocks. Select a point to travel, or expand the Community Atlas for detail."
         }
       >
         <span className="cg-map-north" aria-hidden="true">N</span>
-        {ui.mode === "personal" ? (
-          <>
-            <span className="cg-map-property-boundary" aria-hidden="true" />
-            <span className="cg-map-home" aria-hidden="true" />
-          </>
-        ) : null}
-        {ui.mode === "community" && ui.regionMapCells.length > 0
+        {ui.regionMapCells.length > 0
           ? ui.regionMapCells.map((region) => (
               <span
                 className={`cg-map-region is-${region.stage}${region.isOpen ? " is-open" : ""}${region.guidanceZone ? ` is-zone-${region.guidanceZone}` : ""}${isLockedRegion(region) ? " is-locked" : ""}`}
@@ -284,15 +97,13 @@ export function GardenMapKey({
                 } as CSSProperties}
                 aria-hidden="true"
               >
-                {isLockedRegion(region) ? (
-                  <span className="cg-map-region-lock" />
-                ) : null}
+                {isLockedRegion(region) ? <span className="cg-map-region-lock" /> : null}
               </span>
             ))
           : ui.plantMapPoints.map((plant) => (
               <span
                 className={`cg-map-plant is-${plant.plantType}`}
-                key={`${plant.x}-${plant.y}`}
+                key={`${plant.gridX}-${plant.gridY}`}
                 style={{ left: `${plant.x}%`, top: `${plant.y}%` }}
                 aria-hidden="true"
               />
@@ -305,81 +116,27 @@ export function GardenMapKey({
           className="cg-map-expand"
           type="button"
           disabled={disabled}
-          aria-label="Expand the full Community Garden map"
+          aria-label="Open the Community Atlas"
           aria-expanded={mapExpanded}
           onClick={() => setExpanded(true)}
         >
-          Expand
+          Atlas
         </button>
       ) : null}
 
       {canExpand && mapExpanded ? (
-        <div className="cg-expanded-map-backdrop" role="presentation">
-          <section
-            className="cg-expanded-map-dialog"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="cg-expanded-map-title"
-          >
-            <header>
-              <div>
-                <p>Garden Membership map</p>
-                <h2 id="cg-expanded-map-title">
-                  {ui.mode === "personal" ? "My Garden" : "Community Garden"}
-                </h2>
-              </div>
-              <button
-                className="cg-expanded-map-close"
-                type="button"
-                aria-label="Close full garden map"
-                onClick={() => setExpanded(false)}
-              >
-                ×
-              </button>
-            </header>
-            <p className="cg-expanded-map-help">
-              Deep green is the established Garden Heart. Its pale outlined Growth
-              Ring is open land where the next connected layer can form. Golden
-              padlocks mark future Growing Edge land.
-            </p>
-            <button
-              ref={expandedMapRef}
-              className="cg-expanded-map-surface"
-              type="button"
-              onClick={navigateFromExpandedMap}
-              aria-label="Full Community Garden map. Tap a location to travel there."
-            >
-              <canvas
-                ref={expandedCanvasRef}
-                width={EXPANDED_MAP_SIZE}
-                height={EXPANDED_MAP_SIZE}
-                aria-hidden="true"
-              />
-              <span className="cg-expanded-map-north" aria-hidden="true">N</span>
-            </button>
-            <footer className="cg-expanded-map-legend" aria-label="Map legend">
-              <span className="is-player">You</span>
-              {ui.regionMapCells.length > 0 ? (
-                <>
-                  <span className="is-garden-heart">Garden Heart</span>
-                  <span className="is-growth-ring">Growth Ring</span>
-                  <span className="is-growing-edge">Locked growing edge</span>
-                  <span className="is-heritage">Heritage</span>
-                  <span className="is-resting">Resting</span>
-                </>
-              ) : ui.pathMapPoints.length > 0 ? (
-                <span className="is-path">Path</span>
-              ) : null}
-              {ui.regionMapCells.length === 0 ? (
-                <>
-                  <span className="is-rose">Rose</span>
-                  <span className="is-sunflower">Sunflower</span>
-                  <span className="is-lavender">Lavender</span>
-                </>
-              ) : null}
-            </footer>
-          </section>
-        </div>
+        <CommunityAtlas
+          key={focusTarget?.requestId ?? "community-atlas"}
+          open={mapExpanded}
+          ui={ui}
+          focusTarget={focusTarget}
+          onClose={() => {
+            setExpanded(false);
+            setDismissedFocusRequest(focusTarget?.requestId ?? null);
+          }}
+          onNavigateMap={onNavigate}
+          onNavigateGrid={onNavigateGrid}
+        />
       ) : null}
     </aside>
   );

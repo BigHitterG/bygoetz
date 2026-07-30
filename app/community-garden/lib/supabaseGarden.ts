@@ -12,7 +12,7 @@ import {
 
 export type GardenMapPlant = Pick<
   PlantRecord,
-  "grid_x" | "grid_y" | "plant_type"
+  "grid_x" | "grid_y" | "plant_type" | "heritage_at"
 >;
 export type GardenWeed = {
   id: string;

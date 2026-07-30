@@ -22,6 +22,7 @@ import {
   type GardenContribution,
 } from "../lib/supabaseGarden";
 import { GardenMapKey } from "./GardenMapKey";
+import type { CommunityAtlasTarget } from "./CommunityAtlas";
 import { GardenMenu, type LibrarySection } from "./GardenMenu";
 import type { MyGardenMutation } from "../lib/myGardenMutation";
 import {
@@ -112,6 +113,9 @@ const INITIAL_UI: GardenUiState = {
   pathMapPoints: [],
   plantMapPoints: [],
   regionMapCells: [],
+  mapBounds: { minX: -96, maxX: 63, minY: -96, maxY: 63 },
+  regionSize: 16,
+  snapshotVersion: 0,
   currentRegionStage: null,
   currentGuidanceZone: null,
   recentlyOpenedRegionKey: null,
@@ -307,6 +311,8 @@ export function CommunityGardenApp() {
   const heritageEncounterClaimedRef = useRef(false);
   const lastGuidanceZoneRef = useRef(INITIAL_UI.currentGuidanceZone);
   const [ui, setUi] = useState(INITIAL_UI);
+  const [atlasTarget, setAtlasTarget] =
+    useState<CommunityAtlasTarget | null>(null);
   const [world, setWorld] = useState<GardenWorldMode>("community");
   const [menuOpen, setMenuOpen] = useState(false);
   const [menuSection, setMenuSection] = useState<LibrarySection>("play");
@@ -2072,9 +2078,15 @@ export function CommunityGardenApp() {
             ui={ui}
             canExpand={Boolean(memberGarden)}
             disabled={tutorialMapDimmed}
-            onNavigate={(mapX, mapY) =>
-              canvasRef.current?.goToMapPosition(mapX, mapY)
-            }
+            focusTarget={atlasTarget}
+            onNavigate={(mapX, mapY) => {
+              setAtlasTarget(null);
+              canvasRef.current?.goToMapPosition(mapX, mapY);
+            }}
+            onNavigateGrid={(gridX, gridY) => {
+              setAtlasTarget(null);
+              canvasRef.current?.goToGridPosition(gridX, gridY);
+            }}
           />
         ) : null}
 
@@ -2276,6 +2288,8 @@ export function CommunityGardenApp() {
             className={
               ui.action === "water"
                 ? "cg-water-icon"
+                : ui.action === "weed"
+                  ? "cg-plant-glyph is-weed"
                 : ui.action === "uproot" || ui.action === "builder-remove"
                   ? "cg-uproot-icon"
                   : ui.action === "place-element" ||
@@ -2461,10 +2475,11 @@ export function CommunityGardenApp() {
           setMenuOpen(false);
           setInventoryOpen(false);
           setWorld("community");
-          window.requestAnimationFrame(() => {
-            window.requestAnimationFrame(() => {
-              canvasRef.current?.goToGridPosition(gridX, gridY);
-            });
+          setAtlasTarget({
+            gridX,
+            gridY,
+            label: "your Heritage Flower",
+            requestId: Date.now(),
           });
         }}
       />

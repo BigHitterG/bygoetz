@@ -307,6 +307,10 @@
   box-shadow: 7px 7px 0 rgba(52, 35, 31, 0.3);
 }
 
+.cg-expanded-map-dialog.is-atlas {
+  width: min(760px, calc(100vw - 24px));
+}
+
 .cg-expanded-map-dialog > header {
   display: flex;
   align-items: flex-start;
@@ -355,6 +359,98 @@
   color: #6f4c3e;
   font-size: 0.62rem;
   line-height: 1.35;
+}
+
+.cg-atlas-toolbar {
+  display: grid;
+  grid-template-columns: 42px 58px 42px minmax(92px, 1fr);
+  gap: 7px;
+}
+
+.cg-atlas-toolbar button,
+.cg-atlas-toolbar output,
+.cg-atlas-selection > button {
+  display: grid;
+  min-height: 38px;
+  place-items: center;
+  border: 2px solid var(--cg-ink);
+  border-radius: 0;
+  background: #f7d8aa;
+  color: var(--cg-ink);
+  font: inherit;
+  font-size: 0.62rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.cg-atlas-toolbar button,
+.cg-atlas-selection > button {
+  cursor: pointer;
+}
+
+.cg-atlas-toolbar button:disabled,
+.cg-atlas-selection > button:disabled {
+  cursor: default;
+  opacity: 0.42;
+}
+
+.cg-atlas-selection {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(112px, auto);
+  align-items: stretch;
+  gap: 9px;
+  border: 2px solid rgba(52, 35, 31, 0.42);
+  background: rgba(255, 248, 226, 0.72);
+  padding: 9px;
+}
+
+.cg-atlas-selection > div {
+  display: grid;
+  align-content: center;
+  gap: 3px;
+  min-width: 0;
+}
+
+.cg-atlas-selection small,
+.cg-atlas-selection strong,
+.cg-atlas-selection span {
+  display: block;
+}
+
+.cg-atlas-selection small {
+  color: #8b5c48;
+  font-size: 0.5rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.cg-atlas-selection strong {
+  font-size: 0.82rem;
+}
+
+.cg-atlas-selection span {
+  color: #6f4c3e;
+  font-size: 0.56rem;
+  line-height: 1.35;
+}
+
+.cg-expanded-map-dialog.is-atlas .cg-expanded-map-surface {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1;
+}
+
+@media (max-width: 520px) {
+  .cg-expanded-map-dialog.is-atlas {
+    width: calc(100vw - 16px);
+    max-width: calc(100vw - 16px);
+    max-height: calc(var(--basil-viewport-height, 100dvh) - 16px);
+    padding: 9px;
+  }
+
+  .cg-atlas-selection {
+    grid-template-columns: 1fr;
+  }
 }
 
 .cg-expanded-map-surface {

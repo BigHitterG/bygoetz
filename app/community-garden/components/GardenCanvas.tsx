@@ -120,9 +120,22 @@ export type GardenUiState = {
   selectedElementType: MyGardenElementType | null;
   selectedTool: GardenTool;
   pathMapPoints: Array<{ x: number; y: number }>;
-  plantMapPoints: Array<{ x: number; y: number; plantType: PlantType }>;
+  plantMapPoints: Array<{
+    x: number;
+    y: number;
+    gridX: number;
+    gridY: number;
+    plantType: PlantType;
+    heritage: boolean;
+  }>;
   regionMapCells: Array<{
     key: string;
+    regionX: number;
+    regionY: number;
+    minX: number;
+    maxX: number;
+    minY: number;
+    maxY: number;
     x: number;
     y: number;
     width: number;
@@ -131,10 +144,14 @@ export type GardenUiState = {
     supportLevel: 0 | 1 | 2 | 3;
     isOpen: boolean;
     plantCount: number;
+    weedCount: number;
     occupancyPercent: number;
     heritagePlantCount: number;
     guidanceZone: GardenGuidanceZone | null;
   }>;
+  mapBounds: { minX: number; maxX: number; minY: number; maxY: number };
+  regionSize: number;
+  snapshotVersion: number;
   currentRegionStage: GardenRegionStage | null;
   currentGuidanceZone: GardenGuidanceZone | null;
   recentlyOpenedRegionKey: string | null;
@@ -216,7 +233,10 @@ type Runtime = {
   cachedPlantMapPoints: Array<{
     x: number;
     y: number;
+    gridX: number;
+    gridY: number;
     plantType: PlantType;
+    heritage: boolean;
   }>;
   lastUiPublishAt: number;
   hasMoved: boolean;
@@ -1998,7 +2018,10 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
           (plant) => ({
             x: getRuntimeMapPercentage(runtime, plant.grid_x, "x"),
             y: getRuntimeMapPercentage(runtime, plant.grid_y, "y"),
+            gridX: plant.grid_x,
+            gridY: plant.grid_y,
             plantType: plant.plant_type,
+            heritage: Boolean(plant.heritage_at),
           }),
         );
         runtime.cachedMapRevision = runtime.mapRevision;
@@ -2015,6 +2038,12 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
         runtime.mode === "community"
           ? (runtime.regionManifest?.regions ?? []).map((region) => ({
               key: region.regionKey,
+              regionX: region.regionX,
+              regionY: region.regionY,
+              minX: region.bounds.minX,
+              maxX: region.bounds.maxX,
+              minY: region.bounds.minY,
+              maxY: region.bounds.maxY,
               x: ((region.bounds.minX - mapBounds.minX) / mapWidth) * 100,
               y: ((region.bounds.minY - mapBounds.minY) / mapHeight) * 100,
               width:
@@ -2025,6 +2054,7 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
               supportLevel: region.supportLevel,
               isOpen: region.isOpen,
               plantCount: region.plantCount,
+              weedCount: region.weedCount,
               occupancyPercent: region.occupancyPercent,
               heritagePlantCount: region.heritagePlantCount,
               guidanceZone: region.guidanceZone,
@@ -2097,6 +2127,9 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
         pathMapPoints,
         plantMapPoints,
         regionMapCells,
+        mapBounds,
+        regionSize: runtime.regionManifest?.regionSize ?? GARDEN_CONFIG.chunkSize,
+        snapshotVersion: runtime.regionManifest?.snapshotVersion ?? 0,
         currentRegionStage: currentRegion?.publicStage ?? null,
         currentGuidanceZone: currentRegion?.guidanceZone ?? null,
         recentlyOpenedRegionKey: recentlyOpenedRegion?.regionKey ?? null,
@@ -2833,7 +2866,7 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
             clampedY,
           );
           const destination = gridToWorld(gridX, gridY);
-          runtime.selected = null;
+          runtime.selected = { gridX: clampedX, gridY: clampedY };
           runtime.target = null;
           runtime.mary = { ...destination };
           runtime.camera = { ...destination };
