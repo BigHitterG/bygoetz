@@ -18,6 +18,7 @@ import {
   type LivingGardenHabitat,
   type LivingGardenHabitatKey,
 } from "../lib/livingGarden";
+import { LivingGardenCreature } from "./LivingGardenCreature";
 
 type FieldGuideShelf =
   | "home"
@@ -397,9 +398,10 @@ function LivingGardenReference({
               key={definition.key}
               className={`cg-living-guide-card${discovery ? " is-discovered" : " is-unknown"}${active ? " is-active" : ""}`}
             >
-              <div className={`cg-living-glyph is-${definition.visitorKind}`} aria-hidden="true">
-                {discovery ? definition.glyph : "?"}
-              </div>
+              <LivingGardenCreature
+                habitatKey={definition.key}
+                hidden={!discovery}
+              />
               <p className="cg-kicker">{definition.chapter}</p>
               <h4>{discovery ? definition.name : "Unknown visitor"}</h4>
               {discovery ? (

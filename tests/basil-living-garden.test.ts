@@ -29,7 +29,22 @@ test("all Living Garden discoveries have distinct collectible definitions", () =
     assert.ok(definition.clue.length > 20);
     assert.equal(definition.hints.length, 3);
     assert.ok(definition.recipe.length > 15);
+    assert.equal(definition.sprite.pixels.length, 9);
+    assert.ok(definition.sprite.pixels.every((row) => row.length === 11));
+    assert.ok(
+      definition.sprite.pixels.some((row) =>
+        Array.from(row).some((colorKey) => Boolean(definition.sprite.palette[colorKey])),
+      ),
+    );
   }
+  assert.equal(
+    new Set(
+      LIVING_GARDEN_DEFINITIONS.map((definition) =>
+        JSON.stringify([definition.sprite.pixels, definition.sprite.palette]),
+      ),
+    ).size,
+    LIVING_GARDEN_DEFINITIONS.length,
+  );
 });
 
 test("starter birdhouse habitat activates and becomes dormant when flowers move away", () => {
@@ -105,9 +120,16 @@ test("the house opens a separate Garden Journal while Inventory remains placeabl
     new URL("../app/community-garden/components/GardenFieldGuide.tsx", import.meta.url),
     "utf8",
   );
+  const creature = readFileSync(
+    new URL("../app/community-garden/components/LivingGardenCreature.tsx", import.meta.url),
+    "utf8",
+  );
   assert.match(canvas, /onOpenGardenJournal/);
   assert.match(canvas, /Opening your Garden Journal/);
   assert.match(guide, /Habitats & Visitors/);
   assert.match(guide, /Habitat currently dormant/);
   assert.match(guide, /Currently visiting/);
+  assert.match(guide, /LivingGardenCreature/);
+  assert.match(creature, /definition\.sprite\.pixels/);
+  assert.match(creature, /shapeRendering="crispEdges"/);
 });

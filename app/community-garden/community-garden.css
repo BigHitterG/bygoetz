@@ -9215,6 +9215,19 @@
 .cg-living-glyph.is-dragonfly,
 .cg-living-glyph.is-frog { background: #bfe3db; }
 
+.cg-living-creature {
+  display: block;
+  width: 76%;
+  height: 76%;
+  overflow: visible;
+  image-rendering: pixelated;
+  filter: drop-shadow(1px 2px 0 rgba(52, 35, 31, 0.18));
+}
+
+.cg-living-glyph.is-hidden {
+  color: rgba(49, 82, 57, 0.72);
+}
+
 .cg-living-discovery-card h2,
 .cg-living-discovery-card h3,
 .cg-living-discovery-card p { position: relative; z-index: 1; }

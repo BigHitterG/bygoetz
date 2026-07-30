@@ -5,6 +5,7 @@ import {
   getLivingGardenDefinition,
   type LivingGardenDiscovery,
 } from "../lib/livingGarden";
+import { LivingGardenCreature } from "./LivingGardenCreature";
 
 type LivingGardenDiscoveryProps = {
   discovery: LivingGardenDiscovery | null;
@@ -52,9 +53,7 @@ export function LivingGardenDiscoveryModal({
           X
         </button>
         <p className="cg-kicker">Living Garden discovery</p>
-        <div className={`cg-living-glyph is-${definition.visitorKind}`} aria-hidden="true">
-          {definition.glyph}
-        </div>
+        <LivingGardenCreature habitatKey={definition.key} />
         <h2 id="living-garden-discovery-title">{definition.discoveryTitle}</h2>
         <h3>{definition.name}</h3>
         <p>{definition.discoveryCopy}</p>

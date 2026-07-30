@@ -30,8 +30,8 @@ import {
 import { getTerrainTile, terrainNoise } from "./terrainGenerator";
 import {
   getLivingGardenDefinition,
+  type LivingGardenDefinition,
   type LivingGardenHabitat,
-  type LivingGardenVisitorKind,
 } from "../lib/livingGarden";
 
 export {
@@ -145,84 +145,28 @@ function livingGardenHash(value: string) {
 
 function drawLivingGardenVisitorGlyph(
   ctx: CanvasRenderingContext2D,
-  kind: LivingGardenVisitorKind,
+  definition: LivingGardenDefinition,
 ) {
-  if (kind === "bird" || kind === "owl") {
-    ctx.fillStyle = kind === "owl" ? "#7b6447" : "#687d52";
-    ctx.fillRect(-4, -4, 8, 7);
-    ctx.fillStyle = kind === "owl" ? "#ead7a0" : "#d9ba61";
-    ctx.fillRect(3, -3, 4, 3);
-    ctx.fillStyle = "#392f28";
-    ctx.fillRect(kind === "owl" ? -2 : 4, -3, 1, 1);
-    if (kind === "owl") ctx.fillRect(2, -3, 1, 1);
-    ctx.fillStyle = "#a36b3d";
-    ctx.fillRect(-3, 3, 1, 3);
-    ctx.fillRect(2, 3, 1, 3);
-    return;
-  }
-  if (kind === "bee") {
-    ctx.fillStyle = "rgba(232,247,244,0.88)";
-    ctx.fillRect(-4, -3, 3, 3);
-    ctx.fillRect(2, -3, 3, 3);
-    ctx.fillStyle = "#e8bb3d";
-    ctx.fillRect(-3, -1, 7, 4);
-    ctx.fillStyle = "#49372a";
-    ctx.fillRect(-1, -1, 1, 4);
-    ctx.fillRect(2, -1, 1, 4);
-    return;
-  }
-  if (kind === "butterfly") {
-    ctx.fillStyle = "#df7a3b";
-    ctx.fillRect(-6, -4, 5, 5);
-    ctx.fillRect(2, -4, 5, 5);
-    ctx.fillRect(-5, 2, 4, 3);
-    ctx.fillRect(2, 2, 4, 3);
-    ctx.fillStyle = "#3e332c";
-    ctx.fillRect(0, -3, 1, 8);
-    return;
-  }
-  if (kind === "dragonfly") {
-    ctx.fillStyle = "rgba(218,247,249,0.92)";
-    ctx.fillRect(-8, -2, 7, 2);
-    ctx.fillRect(2, -2, 7, 2);
-    ctx.fillRect(-7, 1, 6, 2);
-    ctx.fillRect(2, 1, 6, 2);
-    ctx.fillStyle = "#308f91";
-    ctx.fillRect(0, -4, 2, 10);
-    return;
-  }
-  if (kind === "frog") {
-    ctx.fillStyle = "#5e8c45";
-    ctx.fillRect(-5, -3, 10, 7);
-    ctx.fillRect(-7, 2, 4, 3);
-    ctx.fillRect(4, 2, 4, 3);
-    ctx.fillStyle = "#f3e3a1";
-    ctx.fillRect(-3, -4, 2, 2);
-    ctx.fillRect(2, -4, 2, 2);
-    return;
-  }
-  if (kind === "worm") {
-    ctx.strokeStyle = "#a25f60";
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(-7, 2);
-    ctx.quadraticCurveTo(-3, -4, 1, 1);
-    ctx.quadraticCurveTo(5, 5, 8, -1);
-    ctx.stroke();
-    return;
-  }
-  if (kind === "seedlings") {
-    ctx.fillStyle = "#477947";
-    for (let x = -6; x <= 6; x += 6) {
-      ctx.fillRect(x, 0, 1, 6);
-      ctx.fillRect(x - 2, 0, 3, 2);
-    }
-    return;
-  }
-  ctx.fillStyle = "rgba(229,196,75,0.82)";
-  ctx.fillRect(-1, -6, 2, 12);
-  ctx.fillRect(-6, -1, 12, 2);
-  ctx.fillRect(-4, -4, 8, 8);
+  const { pixels, palette } = definition.sprite;
+  const pixelSize = 1.45;
+  const width = (pixels[0]?.length ?? 1) * pixelSize;
+  const height = pixels.length * pixelSize;
+  const startX = -width / 2;
+  const startY = -height / 2;
+
+  pixels.forEach((row, y) => {
+    Array.from(row).forEach((colorKey, x) => {
+      const color = palette[colorKey];
+      if (!color) return;
+      ctx.fillStyle = color;
+      ctx.fillRect(
+        startX + x * pixelSize,
+        startY + y * pixelSize,
+        pixelSize + 0.08,
+        pixelSize + 0.08,
+      );
+    });
+  });
 }
 
 function drawLivingGardenHabitats(
@@ -266,7 +210,7 @@ function drawLivingGardenHabitats(
     ctx.translate(Math.round(screen.x), Math.round(screen.y));
     ctx.scale(Math.max(0.7, zoom), Math.max(0.7, zoom));
     ctx.globalAlpha = 0.9;
-    drawLivingGardenVisitorGlyph(ctx, definition.visitorKind);
+    drawLivingGardenVisitorGlyph(ctx, definition);
     ctx.restore();
   }
 }
