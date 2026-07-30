@@ -331,7 +331,7 @@ export function SocialStudio() {
           <section className={styles.deliveryGuide}>
             <div>
               <p className={styles.eyebrow}>What is ready today</p>
-              <strong>{digest.stories.filter((story) => story.assetKind === "image").length} downloadable images</strong>
+              <strong>{new Set(digest.stories.filter((story) => story.assetKind === "image").map((story) => story.assetUrl)).size} unique downloadable image files</strong>
               <span>{digest.stories.filter((story) => story.assetKind === "video").length} finished videos</span>
             </div>
             <p><b>Copy text</b> copies the caption. <b>Download image</b> gives you the file to upload. A Reel production brief is a shot list for a future video—it is not a finished video unless the asset is explicitly labeled “Ready video.”</p>
