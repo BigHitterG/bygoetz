@@ -14,6 +14,13 @@ Opening the email link never publishes content. The final review token is carrie
 6. Resend sends one idempotent review email.
 7. The reviewer edits, copies, approves, skips, and marks manually published variants in `/community-garden/social-studio`.
 
+Each story separates the two deliverables clearly:
+
+- **Ready image/video:** the actual file available through **Download image** or **Download video**.
+- **Reel production brief:** a shot list for creating a future short. A brief is not presented as a finished video.
+
+**Copy text** puts the headline, caption, and hashtags on the clipboard. It does not copy the media file; the adjacent download action supplies that upload-ready file.
+
 The same cron also prepares the existing monthly Garden Letter when it is due. This keeps the project within the two-job Vercel Hobby limit.
 
 ## Vertical visual policy
@@ -44,6 +51,8 @@ OpenAI refinement is optional. Without it, the workflow remains fully usable wit
 ## Social API connection boundary
 
 The current release intentionally stops at manual approval and copy-ready content. Connector environment variables are reserved in `.env.example`, and the Studio reports whether each platform is manual or ready for an OAuth hookup.
+
+API credentials are not required for assisted posting. When the creator is signed into a platform in the Codex browser, Codex can use the approved Studio copy and downloaded asset to prepare the post through the platform's normal interface. Final publication should remain an explicit creator-approved action. APIs remain the better option for unattended schedules, metric collection, and high-volume publishing.
 
 When a platform adapter is added, keep these invariants:
 

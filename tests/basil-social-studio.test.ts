@@ -49,7 +49,9 @@ test("Social Studio migration keeps drafts private and approvals explicit", () =
   assert.match(migration, /approval_token_hash/);
   assert.match(studio, /Opening the Studio never publishes/i);
   assert.match(studio, /window\.confirm/);
-  assert.match(studio, /9:16 gameplay reference/);
+  assert.match(studio, /Download \{story\.assetKind\}/);
+  assert.match(studio, /production plan, not a finished video/i);
+  assert.match(studio, /loading="eager"/);
   assert.match(cron, /Bearer \$\{secret\}/);
 });
 

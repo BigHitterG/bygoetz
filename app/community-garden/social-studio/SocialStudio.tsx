@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import styles from "./social-studio.module.css";
 
@@ -128,11 +127,15 @@ function prettyDate(value: string) {
 
 function VariantEditor({
   variant,
+  assetUrl,
+  assetKind,
   disabled,
   onRefresh,
   request,
 }: {
   variant: Variant;
+  assetUrl: string;
+  assetKind: "image" | "video";
   disabled: boolean;
   onRefresh: () => Promise<void>;
   request: (action: string, payload: Record<string, unknown>) => Promise<unknown>;
@@ -207,7 +210,12 @@ function VariantEditor({
           <span className={styles.channel}>{CHANNEL_LABELS[variant.channel]}</span>
           <span className={styles.status}>{variant.status.replaceAll("_", " ")}</span>
         </div>
-        <button className={styles.copyButton} type="button" onClick={() => void copyPost()}>Copy post</button>
+        <div className={styles.variantTopActions}>
+          <button className={styles.copyButton} type="button" onClick={() => void copyPost()}>Copy text</button>
+          <a className={styles.mediaButton} href={assetUrl} download>
+            Download {assetKind}
+          </a>
+        </div>
       </div>
       <label>
         Headline
@@ -320,6 +328,15 @@ export function SocialStudio() {
             <div><span>Sent to</span><strong>{digest.reviewers.join(", ")}</strong></div>
           </section>
 
+          <section className={styles.deliveryGuide}>
+            <div>
+              <p className={styles.eyebrow}>What is ready today</p>
+              <strong>{digest.stories.filter((story) => story.assetKind === "image").length} downloadable images</strong>
+              <span>{digest.stories.filter((story) => story.assetKind === "video").length} finished videos</span>
+            </div>
+            <p><b>Copy text</b> copies the caption. <b>Download image</b> gives you the file to upload. A Reel production brief is a shot list for a future video—it is not a finished video unless the asset is explicitly labeled “Ready video.”</p>
+          </section>
+
           <section className={styles.connections}>
             <div>
               <p className={styles.eyebrow}>Publishing desk</p>
@@ -350,13 +367,25 @@ export function SocialStudio() {
                       {story.sourceRef ? <a className={styles.sourceLink} href={story.sourceRef} target="_blank" rel="noreferrer">View supporting repository change</a> : null}
                     </div>
                     <div className={styles.visualColumn}>
+                      <div className={styles.assetStatus}>
+                        <span>{story.assetKind === "video" ? "Ready video" : "Ready image"}</span>
+                        <p>{story.assetKind === "video"
+                          ? "This is a finished video file you can download and upload."
+                          : "This is the actual downloadable post image. The Reel section below is a production plan, not a finished video."}</p>
+                      </div>
                       <div className={styles.verticalPreview}>
                         {story.assetKind === "video" ? (
                           <video src={story.assetUrl} controls playsInline />
                         ) : (
-                          <Image src={story.assetUrl} alt={`Actual Basil gameplay reference for ${story.title}`} width={591} height={1280} sizes="(max-width: 800px) 90vw, 330px" />
+                          // The original static file avoids an image-optimizer rendering failure seen in the private Studio.
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={story.assetUrl} alt={`Actual Basil gameplay for ${story.title}`} width={591} height={1280} loading="eager" />
                         )}
-                        <span>9:16 gameplay reference</span>
+                        <span>{story.assetKind === "video" ? "Ready video" : "Ready image · actual gameplay"}</span>
+                      </div>
+                      <div className={styles.assetActions}>
+                        <a className={styles.primaryMediaAction} href={story.assetUrl} download>Download {story.assetKind}</a>
+                        <a href={story.assetUrl} target="_blank" rel="noreferrer">Open full size</a>
                       </div>
                     </div>
                   </div>
@@ -381,6 +410,8 @@ export function SocialStudio() {
                       <VariantEditor
                         key={variant.id}
                         variant={variant}
+                        assetUrl={story.assetUrl}
+                        assetKind={story.assetKind}
                         disabled={digest.expired}
                         request={request}
                         onRefresh={load}

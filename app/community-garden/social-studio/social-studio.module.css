@@ -59,6 +59,22 @@
 .runBar span { text-transform: uppercase; letter-spacing: .11em; font: 700 10px Arial, sans-serif; color: #7d6960; }
 .runBar strong { margin-top: 4px; font: 700 14px/1.3 Arial, sans-serif; text-transform: capitalize; overflow-wrap: anywhere; }
 
+.deliveryGuide {
+  max-width: 1280px;
+  margin: -8px auto 22px;
+  padding: 18px 22px;
+  border: 2px solid var(--ink);
+  background: #fff8e8;
+  display: grid;
+  grid-template-columns: minmax(210px, .55fr) 1.45fr;
+  gap: 24px;
+  align-items: center;
+}
+.deliveryGuide strong,
+.deliveryGuide span { display: block; font: 800 15px/1.45 Arial, sans-serif; }
+.deliveryGuide span { color: #765f55; font-size: 12px; }
+.deliveryGuide > p { margin: 0; font: 14px/1.55 Arial, sans-serif; color: #5b4b44; }
+
 .connections {
   margin-bottom: 30px;
   padding: 26px;
@@ -85,11 +101,18 @@
 .whyToday { margin-top: 24px; padding: 18px; border-left: 5px solid var(--red); background: #fff8e8; font: 14px/1.55 Arial, sans-serif; }
 .whyToday span { display: block; margin-bottom: 5px; color: var(--red); text-transform: uppercase; letter-spacing: .12em; font-size: 10px; font-weight: 800; }
 .sourceLink { display: inline-block; margin-top: 18px; color: #6d3737; font: 700 13px Arial, sans-serif; }
-.visualColumn { display: flex; justify-content: center; align-items: start; }
+.visualColumn { display: flex; flex-direction: column; justify-content: flex-start; align-items: center; gap: 10px; }
+.assetStatus { width: min(100%, 330px); font-family: Arial, sans-serif; }
+.assetStatus > span { display: inline-block; padding: 5px 8px; border: 1px solid var(--ink); background: #758c68; color: white; text-transform: uppercase; letter-spacing: .1em; font-size: 9px; font-weight: 800; }
+.assetStatus p { margin: 7px 0 0; color: #66554d; font: 12px/1.45 Arial, sans-serif; }
 .verticalPreview { position: relative; width: min(100%, 330px); aspect-ratio: 9 / 16; border: 3px solid var(--ink); background: #1f1a18; overflow: hidden; box-shadow: 7px 7px 0 rgba(48, 37, 34, .2); }
 .verticalPreview img,
 .verticalPreview video { width: 100%; height: 100%; object-fit: cover; object-position: center; display: block; }
 .verticalPreview span { position: absolute; left: 10px; bottom: 10px; padding: 6px 8px; background: rgba(25, 20, 18, .86); color: white; text-transform: uppercase; letter-spacing: .1em; font: 700 9px Arial, sans-serif; }
+.assetActions { width: min(100%, 330px); display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-family: Arial, sans-serif; }
+.assetActions a,
+.mediaButton { border: 1.5px solid var(--ink); padding: 7px 10px; color: var(--ink); background: #eee2c9; text-decoration: none; font: 700 11px Arial, sans-serif; }
+.assetActions .primaryMediaAction { background: var(--green); color: white; }
 
 .reelBrief { border-top: 3px solid var(--ink); border-bottom: 3px solid var(--ink); background: #36463a; color: #fff8e8; padding: 26px clamp(24px, 4vw, 42px); }
 .reelHeading { display: flex; align-items: center; justify-content: space-between; gap: 18px; margin-bottom: 15px; }
@@ -109,6 +132,7 @@
 .status_published { box-shadow: inset 6px 0 var(--green); }
 .status_rejected { opacity: .68; }
 .variantHeader { display: flex; justify-content: space-between; align-items: start; gap: 12px; }
+.variantTopActions { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
 .channel { display: block; font: 800 14px Arial, sans-serif; }
 .status { display: inline-block; margin-top: 5px; padding: 3px 6px; background: #ded2bd; text-transform: uppercase; letter-spacing: .09em; font: 800 9px Arial, sans-serif; }
 .variant label { display: grid; gap: 5px; color: #79675e; text-transform: uppercase; letter-spacing: .1em; font: 800 9px Arial, sans-serif; }
@@ -131,7 +155,8 @@
 @media (max-width: 900px) {
   .runBar { grid-template-columns: repeat(2, 1fr); }
   .connections,
-  .storyLead { grid-template-columns: 1fr; }
+  .storyLead,
+  .deliveryGuide { grid-template-columns: 1fr; }
   .reelGrid { grid-template-columns: repeat(2, 1fr); }
   .visualColumn { justify-content: start; }
 }
