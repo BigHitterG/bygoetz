@@ -3737,6 +3737,7 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
                 unlockedParcels: runtime.personalGarden.unlockedParcels,
                 expansionCandidates:
                   runtime.personalGarden.expansionCandidates,
+                selectedParcel: runtime.personalGarden.selectedParcel,
                 nextExpansion: runtime.personalGarden.nextExpansion
                   ? {
                       minX: runtime.personalGarden.nextExpansion.minX,

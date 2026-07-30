@@ -1,7 +1,7 @@
 "use client";
 
 import type { Session } from "@supabase/supabase-js";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   trackBasilMetaCheckout,
   trackBasilMetaCustomMilestone,
@@ -381,6 +381,8 @@ export function CommunityGardenApp() {
   const [returnClearingOpen, setReturnClearingOpen] = useState(false);
   const [returnClearingBusy, setReturnClearingBusy] = useState(false);
   const [returnClearingError, setReturnClearingError] = useState("");
+  const [personalExpansionMode, setPersonalExpansionMode] =
+    useState<"classic" | "freeform">("classic");
   const [growingEdgeIntroOpen, setGrowingEdgeIntroOpen] = useState(false);
   const [growingEdgeNotice, setGrowingEdgeNotice] = useState("");
   const restoredJourneyRef = useRef(false);
@@ -406,6 +408,49 @@ export function CommunityGardenApp() {
     Boolean(selectedGardenParcel) &&
     selectedGardenParcel?.source !== "starter" &&
     !ui.builder.active;
+  const selectedGardenParcelContents = useMemo(() => {
+    if (!selectedGardenParcel || !memberGarden) return null;
+    const contains = (gridX: number, gridY: number) =>
+      gridX >= selectedGardenParcel.minX &&
+      gridX < selectedGardenParcel.minX + selectedGardenParcel.width &&
+      gridY >= selectedGardenParcel.minY &&
+      gridY < selectedGardenParcel.minY + selectedGardenParcel.height;
+    const plants = memberGarden.plants.filter((plant) =>
+      contains(plant.gridX, plant.gridY),
+    ).length;
+    const paths = memberGarden.paths.filter((path) =>
+      contains(path.gridX, path.gridY),
+    ).length;
+    const items = memberGarden.elements.filter((element) =>
+      contains(element.gridX, element.gridY),
+    ).length;
+    return { plants, paths, items, total: plants + paths + items };
+  }, [memberGarden, selectedGardenParcel]);
+  const freeformExpansionAvailable = Boolean(
+    memberGarden?.freeformExpansion && memberGarden.expansionCandidates?.length,
+  );
+  const canvasGarden = useMemo<MyGardenState>(() => {
+    const useFreeform =
+      Boolean(memberGarden) &&
+      personalExpansionMode === "freeform" &&
+      freeformExpansionAvailable;
+    return {
+      ...myGarden,
+      freeformExpansion: useFreeform,
+      nextExpansion: useFreeform ? null : myGarden.nextExpansion,
+      expansionCandidates: useFreeform ? myGarden.expansionCandidates : [],
+      selectedParcel:
+        selectedGardenParcel?.source !== "starter"
+          ? selectedGardenParcel ?? undefined
+          : undefined,
+    };
+  }, [
+    freeformExpansionAvailable,
+    memberGarden,
+    myGarden,
+    personalExpansionMode,
+    selectedGardenParcel,
+  ]);
   const unreadUnlockCount = memberGarden
     ? getMyGardenUnreadUnlockCount(
         memberGarden.inventorySeenLifetimeCare,
@@ -1715,6 +1760,20 @@ export function CommunityGardenApp() {
     [session],
   );
 
+  useEffect(() => {
+    if (
+      !visibleStewardshipNotification ||
+      visibleStewardshipNotification.type === "rank_up"
+    ) {
+      return;
+    }
+    const notification = visibleStewardshipNotification;
+    const timeout = window.setTimeout(() => {
+      void acknowledgeStewardshipNotification(notification);
+    }, 3200);
+    return () => window.clearTimeout(timeout);
+  }, [acknowledgeStewardshipNotification, visibleStewardshipNotification]);
+
   const navigateToStewardshipPoint = useCallback(
     (_target: "recent" | "oldest" | "cluster", point: GardenStewardshipPoint) => {
       setGardenTasksOpen(false);
@@ -1923,7 +1982,7 @@ export function CommunityGardenApp() {
       ui.action === "expand" &&
       ui.actionEnabled &&
       !myGarden.preview &&
-      (myGarden.nextExpansion || myGarden.expansionCandidates?.length)
+      (canvasGarden.nextExpansion || canvasGarden.expansionCandidates?.length)
     ) {
       playGardenSound("select");
       setExpansionConfirmationOpen(true);
@@ -1932,8 +1991,8 @@ export function CommunityGardenApp() {
     if (ui.action === "water" && ui.actionEnabled) playGardenSound("water");
     void canvasRef.current?.performAction();
   }, [
-    myGarden.nextExpansion,
-    myGarden.expansionCandidates,
+    canvasGarden.nextExpansion,
+    canvasGarden.expansionCandidates,
     myGarden.preview,
     playGardenSound,
     ui.action,
@@ -1949,6 +2008,7 @@ export function CommunityGardenApp() {
     if (
       !session ||
       !selectedGardenParcel ||
+      (selectedGardenParcelContents?.total ?? 0) > 0 ||
       ui.selectedGridX === null ||
       ui.selectedGridY === null
     ) {
@@ -1991,7 +2051,13 @@ export function CommunityGardenApp() {
     } finally {
       setReturnClearingBusy(false);
     }
-  }, [selectedGardenParcel, session, ui.selectedGridX, ui.selectedGridY]);
+  }, [
+    selectedGardenParcel,
+    selectedGardenParcelContents,
+    session,
+    ui.selectedGridX,
+    ui.selectedGridY,
+  ]);
 
   useEffect(() => {
     const handleKeyboardShortcut = (event: KeyboardEvent) => {
@@ -2292,7 +2358,7 @@ export function CommunityGardenApp() {
           ref={canvasRef}
           mode={world}
           accountAccessToken={session?.access_token ?? null}
-          personalGarden={myGarden}
+          personalGarden={canvasGarden}
           personalCommunityFlowers={stewardship?.flowers.coordinates ?? []}
           showPersonalCommunityFlowers={showMyCommunityFlowers}
           tutorialDimmed={tutorialMapDimmed}
@@ -2471,8 +2537,11 @@ export function CommunityGardenApp() {
               setGardenTasksOpen(true);
             }}
           >
-            <strong>Garden Tasks</strong>
-            <span>{stewardship.flowers.living} / {stewardship.capacity} flowers</span>
+            <span className="cg-garden-tasks-icon" aria-hidden="true">✓</span>
+            <strong>Tasks</strong>
+            {stewardship.tasks.some((task) => task.status === "completed") ? (
+              <i aria-label="A Garden Task is complete" />
+            ) : null}
           </button>
         ) : null}
 
@@ -2626,6 +2695,36 @@ export function CommunityGardenApp() {
               <span className="cg-builder-icon" aria-hidden="true" />
               <span>{ui.builder.active ? "Done" : "Builder"}</span>
             </button>
+            {!ui.builder.active ? (
+              <div
+                className="cg-expansion-mode"
+                role="group"
+                aria-label="My Garden expansion style"
+              >
+                <button
+                  type="button"
+                  className={personalExpansionMode === "classic" ? "is-active" : ""}
+                  aria-pressed={personalExpansionMode === "classic"}
+                  onClick={() => setPersonalExpansionMode("classic")}
+                >
+                  Classic land
+                </button>
+                <button
+                  type="button"
+                  className={personalExpansionMode === "freeform" ? "is-active" : ""}
+                  aria-pressed={personalExpansionMode === "freeform"}
+                  disabled={!freeformExpansionAvailable}
+                  title={
+                    freeformExpansionAvailable
+                      ? "Choose an adjacent 4 by 4 clearing"
+                      : "Reach Caretaker to shape individual clearings"
+                  }
+                  onClick={() => setPersonalExpansionMode("freeform")}
+                >
+                  {freeformExpansionAvailable ? "Shape land" : "Shape at Caretaker"}
+                </button>
+              </div>
+            ) : null}
             {canReturnSelectedClearing ? (
               <button
                 className="cg-return-clearing-button"
@@ -2638,7 +2737,7 @@ export function CommunityGardenApp() {
                 }}
               >
                 <span className="cg-return-clearing-icon" aria-hidden="true" />
-                <span>Return land</span>
+                <span>Return selected land</span>
               </button>
             ) : null}
             {ui.builder.active ? (
@@ -2950,8 +3049,8 @@ export function CommunityGardenApp() {
       <GardenExpansionConfirmation
         open={expansionConfirmationOpen}
         careCost={
-          myGarden.nextExpansion?.careCost ??
-          myGarden.expansionCandidates?.[0]?.careCost ??
+          canvasGarden.nextExpansion?.careCost ??
+          canvasGarden.expansionCandidates?.[0]?.careCost ??
           0
         }
         onCancel={() => setExpansionConfirmationOpen(false)}
@@ -2960,6 +3059,8 @@ export function CommunityGardenApp() {
       <GardenClearingReturnConfirmation
         open={returnClearingOpen}
         careRefund={selectedGardenParcel?.careCost ?? 0}
+        parcel={selectedGardenParcel}
+        contents={selectedGardenParcelContents}
         error={returnClearingError}
         busy={returnClearingBusy}
         onCancel={() => {

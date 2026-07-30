@@ -928,6 +928,47 @@
   font-weight: 800;
 }
 
+.cg-return-clearing-contents {
+  display: grid;
+  gap: 4px;
+  margin: 12px 0;
+  border: 2px solid #668052;
+  background: rgba(214, 230, 190, 0.52);
+  padding: 10px;
+}
+
+.cg-return-clearing-contents.is-occupied {
+  border-color: #ad5960;
+  background: rgba(182, 47, 61, 0.08);
+}
+
+.cg-return-clearing-contents span { font-size: 0.78rem; }
+
+.cg-expansion-mode {
+  display: grid;
+  width: 132px;
+  margin-top: 7px;
+  border: 2px solid rgba(52, 35, 31, 0.58);
+  background: rgba(255, 244, 223, 0.9);
+  box-shadow: 2px 2px 0 rgba(52, 35, 31, 0.14);
+}
+
+.cg-expansion-mode button {
+  min-height: 30px;
+  border: 0;
+  border-bottom: 1px solid rgba(52, 35, 31, 0.25);
+  background: transparent;
+  color: var(--cg-ink);
+  font: inherit;
+  font-size: 0.5rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.cg-expansion-mode button:last-child { border-bottom: 0; }
+.cg-expansion-mode button.is-active { background: #f2d594; }
+.cg-expansion-mode button:disabled { opacity: 0.48; }
+
 .cg-builder-tools.is-active .cg-builder-toggle {
   border-color: #2f8290;
   background: #d7fbff;
@@ -9421,6 +9462,56 @@
 .cg-stewardship-rank-progress,
 .cg-stewardship-next { font-size: 0.82rem; }
 
+.cg-stewardship-explainer,
+.cg-stewardship-footprint-note {
+  margin: 0;
+  border-left: 5px solid #68815a;
+  background: rgba(214, 227, 188, 0.45);
+  padding: 10px 12px;
+  font-size: 0.78rem;
+  line-height: 1.55;
+}
+
+.cg-stewardship-footprint-note p { margin: 4px 0 0; }
+
+.cg-stewardship-rank-ladder {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(74px, 1fr));
+  gap: 5px;
+  overflow-x: auto;
+  padding: 3px 0 7px;
+}
+
+.cg-stewardship-rank-ladder > div {
+  display: grid;
+  gap: 3px;
+  min-width: 74px;
+  color: rgba(61, 42, 37, 0.5);
+  font-size: 0.58rem;
+  text-align: center;
+}
+
+.cg-stewardship-rank-ladder i {
+  height: 7px;
+  border: 1px solid #7f675c;
+  background: #dfd4bd;
+}
+
+.cg-stewardship-rank-ladder .is-earned,
+.cg-stewardship-rank-ladder .is-current { color: var(--cg-ink); }
+.cg-stewardship-rank-ladder .is-earned i { background: #86a66d; }
+.cg-stewardship-rank-ladder .is-current i { background: #c89b3d; box-shadow: 0 0 0 2px #f4dfaa; }
+
+.cg-garden-task-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+.cg-garden-task-heading h4 { margin: 0; }
+.cg-garden-task-heading span { font-size: 0.68rem; }
+
 .cg-garden-task-list { display: grid; gap: 10px; }
 .cg-garden-task {
   display: grid;
@@ -9438,6 +9529,9 @@
 .cg-garden-task-progress > div { height: 7px; margin-top: 6px; border: 1px solid #66483d; background: #ead9b9; }
 .cg-garden-task-progress i { display: block; height: 100%; background: #6e925d; }
 .cg-garden-task button { grid-column: 1 / -1; justify-self: start; }
+.cg-garden-task.is-complete { border-color: #6e925d; background: rgba(222, 236, 195, 0.72); }
+.cg-garden-task.is-complete .cg-garden-task-progress > div { background: #cfe1ae; }
+.cg-task-swap-status { margin: 8px 0 0; font-size: 0.65rem; color: #77645a; }
 
 .cg-community-project {
   padding: 12px;
@@ -9456,17 +9550,30 @@
   z-index: 18;
   right: 18px;
   top: 292px;
-  min-width: 116px;
-  padding: 9px 12px;
+  display: grid;
+  width: 64px;
+  min-height: 58px;
+  place-items: center;
+  gap: 0;
+  padding: 5px 7px;
   border: 3px solid #49332d;
   background: rgba(246, 221, 160, 0.94);
   box-shadow: 5px 5px 0 rgba(54, 37, 32, 0.16);
   color: #3c2924;
   font: inherit;
 }
-.cg-garden-tasks-button strong,
-.cg-garden-tasks-button span { display: block; }
-.cg-garden-tasks-button span { font-size: 0.72rem; }
+.cg-garden-tasks-button strong { font-size: 0.58rem; text-transform: uppercase; }
+.cg-garden-tasks-icon { font-size: 1.15rem; line-height: 1; color: #5d7d50; }
+.cg-garden-tasks-button i {
+  position: absolute;
+  right: -5px;
+  top: -5px;
+  width: 13px;
+  height: 13px;
+  border: 2px solid #fff0cb;
+  border-radius: 50%;
+  background: #b93343;
+}
 
 .cg-stewardship-modal-shell {
   position: fixed;
@@ -9501,8 +9608,34 @@
 .cg-stewardship-confetti { color: #c9972f; font-size: 1.5rem; letter-spacing: 0.24em; }
 .cg-stewardship-celebration button { padding: 10px 16px; border: 3px solid #49332d; background: #dfe6b4; font: inherit; }
 
+.cg-stewardship-toast {
+  position: fixed;
+  z-index: 110;
+  left: 50%;
+  bottom: max(96px, calc(env(safe-area-inset-bottom) + 88px));
+  transform: translateX(-50%);
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 9px;
+  width: min(390px, calc(100vw - 28px));
+  border: 3px solid #49332d;
+  background: rgba(255, 241, 206, 0.97);
+  box-shadow: 6px 6px 0 rgba(60, 40, 34, 0.18);
+  padding: 9px 10px;
+  pointer-events: auto;
+}
+.cg-stewardship-toast > span { color: #5f8652; font-size: 1.25rem; }
+.cg-stewardship-toast small,
+.cg-stewardship-toast strong { display: block; }
+.cg-stewardship-toast small { font-size: 0.55rem; text-transform: uppercase; }
+.cg-stewardship-toast strong { font-size: 0.74rem; }
+.cg-stewardship-toast button { border: 0; background: transparent; font: inherit; font-size: 1.1rem; }
+
 @media (max-width: 700px) {
-  .cg-garden-tasks-button { top: 272px; right: 12px; min-width: 104px; }
+  .cg-garden-tasks-button { top: 272px; right: 12px; width: 58px; min-height: 54px; }
   .cg-garden-task { grid-template-columns: 1fr; }
   .cg-garden-task-progress { text-align: left; }
+  .cg-stewardship-panel { gap: 12px; padding: 14px; }
+  .cg-stewardship-heading { align-items: flex-start; }
 }

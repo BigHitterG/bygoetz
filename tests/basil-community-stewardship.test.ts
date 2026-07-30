@@ -6,6 +6,10 @@ const migration = readFileSync(
   "supabase/migrations/20260730181729_community_stewardship_and_flexible_clearings.sql",
   "utf8",
 );
+const dailyTaskMigration = readFileSync(
+  "supabase/migrations/20260730191059_daily_stewardship_tasks_and_project_fix.sql",
+  "utf8",
+);
 const app = readFileSync(
   "app/community-garden/components/CommunityGardenApp.tsx",
   "utf8",
@@ -39,9 +43,14 @@ test("Community Stewardship has the intended six permanent footprint ranks", () 
   assert.doesNotMatch(migration, /ordinary_footprint_capacity\s*=\s*greatest\([^)]*-\s*1/);
 });
 
-test("members receive three achievable, automatically replaced Garden Tasks without Care inflation", () => {
-  assert.match(migration, /for slot_number in 1\.\.3 loop/);
-  assert.match(migration, /perform public\.assign_garden_task_v1\(resolved_steward_id,assignment\.slot\)/);
+test("members receive three achievable daily Garden Tasks without Care inflation or task churn", () => {
+  assert.match(dailyTaskMigration, /for slot_number in 1\.\.3 loop/);
+  assert.match(dailyTaskMigration, /assignment\.completed_at >= current_date::timestamptz/);
+  assert.match(dailyTaskMigration, /completed_at > now\(\) - interval '48 hours'/);
+  assert.doesNotMatch(
+    dailyTaskMigration,
+    /assign_garden_task_v1\(resolved_steward_id,\s*assignment\.slot\)/,
+  );
   assert.match(migration, /conditional_key is distinct from 'weeds'/);
   assert.match(migration, /conditional_key is distinct from 'other_flowers'/);
   assert.doesNotMatch(
@@ -70,6 +79,8 @@ test("freeform expansion is cardinal, Care-funded, and gated at Caretaker", () =
   assert.match(migration, /parcel_x=p_parcel_x and parcel_y=p_parcel_y\+1/);
   assert.match(migration, /care_balance<expansion_cost/);
   assert.ok(serverGarden.includes("getExpansionCandidates"));
+  assert.match(serverGarden, /const nextExpansion = getNextExpansion\(progress\.plot_level\)/);
+  assert.doesNotMatch(serverGarden, /progress\.plot_level < 5 \? getNextExpansion/);
   assert.ok(canvas.includes("expansionCandidates"));
   assert.ok(renderer.includes("drawFreeformFence"));
 });
@@ -80,7 +91,7 @@ test("returning land preserves the original clearing, contents, and connectivity
   assert.match(migration, /with recursive connected\(parcel_x,parcel_y\)/);
   assert.match(migration, /connected_count<>remaining_count/);
   assert.match(migration, /if parcel\.source='freeform' then refund:=parcel\.care_cost/);
-  assert.ok(app.includes("Return land"));
+  assert.ok(app.includes("Return selected land"));
   assert.ok(app.includes("return-clearing"));
 });
 
@@ -90,4 +101,11 @@ test("private footprint tools and task celebrations are visible only through mem
   assert.ok(renderer.includes("drawPersonalCommunityFlowerMarkers"));
   assert.match(migration, /revoke all on table public\.%I from public, anon, authenticated/);
   assert.match(migration, /grant select, insert, update, delete on table public\.%I to service_role/);
+});
+
+test("project progress uses an unambiguous project id and daily tasks report completion state", () => {
+  assert.match(dailyTaskMigration, /current_project_id uuid/);
+  assert.match(dailyTaskMigration, /project_progress\.project_id = current_project\.id/);
+  assert.match(dailyTaskMigration, /'status', task\.status/);
+  assert.match(dailyTaskMigration, /'completedAt', task\.completed_at/);
 });

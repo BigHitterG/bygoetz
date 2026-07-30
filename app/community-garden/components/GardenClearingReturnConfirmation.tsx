@@ -1,9 +1,12 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import type { MyGardenParcel } from "@/lib/communityGarden/myGarden";
 
 type GardenClearingReturnConfirmationProps = {
   careRefund: number;
+  parcel: MyGardenParcel | null;
+  contents: { plants: number; paths: number; items: number; total: number } | null;
   error: string;
   busy: boolean;
   open: boolean;
@@ -13,6 +16,8 @@ type GardenClearingReturnConfirmationProps = {
 
 export function GardenClearingReturnConfirmation({
   careRefund,
+  parcel,
+  contents,
   error,
   busy,
   open,
@@ -32,6 +37,7 @@ export function GardenClearingReturnConfirmation({
   }, [busy, onCancel, open]);
 
   if (!open) return null;
+  const occupied = (contents?.total ?? 0) > 0;
 
   return (
     <div
@@ -53,9 +59,17 @@ export function GardenClearingReturnConfirmation({
         <span className="cg-return-clearing-icon" aria-hidden="true" />
         <h2 id="cg-return-clearing-title">Return this clearing to the forest?</h2>
         <p id="cg-return-clearing-description">
-          The land must be empty and your remaining garden must stay connected.
-          Your original clearing can never be returned.
+          Selected {parcel?.width ?? 4} × {parcel?.height ?? 4} clearing
+          {parcel ? ` at tiles ${parcel.minX}, ${parcel.minY}` : ""}. Your
+          original clearing can never be returned, and the remaining garden
+          must stay connected.
         </p>
+        {contents ? (
+          <div className={`cg-return-clearing-contents${occupied ? " is-occupied" : ""}`}>
+            <strong>{occupied ? `Clear ${contents.total} things first` : "This clearing is empty"}</strong>
+            <span>{contents.plants} flowers · {contents.paths} paths · {contents.items} items</span>
+          </div>
+        ) : null}
         <p>
           {careRefund > 0
             ? `${careRefund.toLocaleString()} Care will be returned to you.`
@@ -66,7 +80,7 @@ export function GardenClearingReturnConfirmation({
           <button ref={cancelButtonRef} type="button" disabled={busy} onClick={onCancel}>
             Keep it
           </button>
-          <button type="button" disabled={busy} onClick={onConfirm}>
+          <button type="button" disabled={busy || occupied} onClick={onConfirm}>
             {busy ? "Returning..." : "Yes, return it"}
           </button>
         </div>

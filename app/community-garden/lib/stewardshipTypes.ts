@@ -23,6 +23,8 @@ export type GardenStewardshipTask = {
   description: string;
   progress: number;
   target: number;
+  status: "active" | "completed";
+  completedAt: string | null;
 };
 
 export type GardenStewardshipNotification = {
@@ -107,4 +109,3 @@ export function getNextGardenStewardshipRank(rank: GardenStewardshipRankKey) {
   const index = GARDEN_STEWARDSHIP_RANKS.findIndex((item) => item.key === rank);
   return index >= 0 ? GARDEN_STEWARDSHIP_RANKS[index + 1] ?? null : GARDEN_STEWARDSHIP_RANKS[1];
 }
-

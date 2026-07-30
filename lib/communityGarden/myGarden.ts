@@ -95,6 +95,7 @@ export type MyGardenState = {
   freeformExpansion?: boolean;
   unlockedParcels?: MyGardenParcel[];
   expansionCandidates?: Array<MyGardenParcel & { careCost: number }>;
+  selectedParcel?: MyGardenParcel;
   plants: MyGardenPlant[];
   paths: MyGardenPath[];
   elements: MyGardenElement[];
@@ -447,8 +448,9 @@ export async function getMyGarden(stewardId: string): Promise<MyGardenState> {
   const expansionCandidates = freeformExpansion
     ? getExpansionCandidates(unlockedParcels, progress.plot_level)
     : [];
-  const nextExpansion =
-    progress.plot_level < 5 ? getNextExpansion(progress.plot_level) : null;
+  // Classic Care-funded expansion never disappears. Caretaker adds the
+  // freeform option; it does not replace the familiar next parcel.
+  const nextExpansion = getNextExpansion(progress.plot_level);
   return {
     careBalance: progress.care_balance,
     lifetimeCare: progress.lifetime_care,

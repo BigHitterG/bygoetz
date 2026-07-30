@@ -137,6 +137,12 @@ export type RenderGardenState = {
       height: number;
       careCost: number;
     }>;
+    selectedParcel?: {
+      minX: number;
+      minY: number;
+      width: number;
+      height: number;
+    };
     nextExpansion: null | {
       minX: number;
       minY: number;
@@ -2611,6 +2617,38 @@ function drawSelection(
   ctx.restore();
 }
 
+function drawSelectedPersonalParcel(
+  ctx: CanvasRenderingContext2D,
+  parcel: NonNullable<RenderGardenState["personalGarden"]>["selectedParcel"],
+  camera: WorldPoint,
+  viewport: GardenViewport,
+  zoom: number,
+) {
+  if (!parcel) return;
+  const { tileSize, tileScreenHeight } = GARDEN_CONFIG;
+  const topLeft = worldToScreen(
+    { x: parcel.minX * tileSize, y: parcel.minY * tileSize },
+    camera,
+    viewport,
+    zoom,
+  );
+  const width = parcel.width * tileSize * zoom;
+  const height = parcel.height * tileScreenHeight * zoom;
+  ctx.save();
+  ctx.fillStyle = "rgba(245, 219, 144, 0.12)";
+  ctx.strokeStyle = "rgba(151, 66, 65, 0.92)";
+  ctx.lineWidth = Math.max(2, Math.round(2 * zoom));
+  ctx.setLineDash([Math.max(4, Math.round(7 * zoom)), Math.max(3, Math.round(4 * zoom))]);
+  ctx.fillRect(topLeft.x, topLeft.y, width, height);
+  ctx.strokeRect(
+    Math.round(topLeft.x) + 0.5,
+    Math.round(topLeft.y) + 0.5,
+    Math.max(1, Math.round(width) - 1),
+    Math.max(1, Math.round(height) - 1),
+  );
+  ctx.restore();
+}
+
 function drawWateringTargets(
   ctx: CanvasRenderingContext2D,
   targets: Array<NonNullable<SelectedCell>>,
@@ -2953,6 +2991,13 @@ export function renderGarden(ctx: CanvasRenderingContext2D, state: RenderGardenS
       state.personalGarden.nextExpansion,
       state.personalGarden.unlockedParcels,
       state.personalGarden.expansionCandidates,
+    );
+    drawSelectedPersonalParcel(
+      ctx,
+      state.personalGarden.selectedParcel,
+      state.camera,
+      state.viewport,
+      state.zoom,
     );
     drawSuggestedPlantingHighlight(
       ctx,
