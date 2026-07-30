@@ -4,6 +4,13 @@ import {
   type MyGardenElementType,
   type MyGardenPlantType,
 } from "@/app/community-garden/lib/myGardenCatalog";
+import {
+  evaluateLivingGardenHabitats,
+  isLivingGardenHabitatKey,
+  type LivingGardenDiscovery,
+  type LivingGardenHabitat,
+  type LivingGardenHabitatKey,
+} from "@/app/community-garden/lib/livingGarden";
 
 export {
   MY_GARDEN_ELEMENTS,
@@ -77,6 +84,8 @@ export type MyGardenState = {
   plants: MyGardenPlant[];
   paths: MyGardenPath[];
   elements: MyGardenElement[];
+  livingGardenDiscoveries?: LivingGardenDiscovery[];
+  livingGardenHabitats?: LivingGardenHabitat[];
   preview?: {
     plantingLimit: number;
     plantingsUsed: number;
@@ -111,6 +120,63 @@ type PersonalElementRow = {
   care_cost: number;
   placed_at: string;
 };
+
+type HabitatDiscoveryRow = {
+  habitat_key: string;
+  discovered_at: string;
+  first_center_x: number;
+  first_center_y: number;
+  acknowledged_at: string | null;
+};
+
+async function getLivingGardenState(
+  stewardId: string,
+  plants: MyGardenPlant[],
+  elements: MyGardenElement[],
+) {
+  const supabase = getSupabaseAdmin();
+  const habitats = evaluateLivingGardenHabitats(plants, elements);
+  if (habitats.length > 0) {
+    const { error: insertError } = await supabase
+      .from("my_garden_habitat_discoveries")
+      .upsert(
+        habitats.map((habitat) => ({
+          steward_id: stewardId,
+          habitat_key: habitat.key,
+          first_center_x: habitat.gridX,
+          first_center_y: habitat.gridY,
+          trigger_signature: habitat.signature,
+        })),
+        { onConflict: "steward_id,habitat_key", ignoreDuplicates: true },
+      );
+    if (insertError) throw insertError;
+  }
+
+  const { data, error } = await supabase
+    .from("my_garden_habitat_discoveries")
+    .select(
+      "habitat_key,discovered_at,first_center_x,first_center_y,acknowledged_at",
+    )
+    .eq("steward_id", stewardId)
+    .order("discovered_at")
+    .returns<HabitatDiscoveryRow[]>();
+  if (error) throw error;
+
+  const discoveries = (data ?? []).flatMap((row) =>
+    isLivingGardenHabitatKey(row.habitat_key)
+      ? [
+          {
+            habitatKey: row.habitat_key,
+            discoveredAt: row.discovered_at,
+            firstCenterX: row.first_center_x,
+            firstCenterY: row.first_center_y,
+            acknowledgedAt: row.acknowledged_at,
+          } satisfies LivingGardenDiscovery,
+        ]
+      : [],
+  );
+  return { discoveries, habitats };
+}
 
 export function getPlotBounds(plotLevel: number) {
   const expansions = Math.max(0, Math.floor(plotLevel) - 1);
@@ -233,6 +299,26 @@ export async function getMyGarden(stewardId: string): Promise<MyGardenState> {
   if (pathsError) throw pathsError;
   if (elementsError) throw elementsError;
 
+  const mappedPlants: MyGardenPlant[] = (plants ?? []).map((plant) => ({
+    id: plant.id,
+    gridX: plant.grid_x,
+    gridY: plant.grid_y,
+    plantType: plant.plant_type,
+    plantedAt: plant.planted_at,
+  }));
+  const mappedElements: MyGardenElement[] = (elements ?? []).map((element) => ({
+    id: element.id,
+    gridX: element.grid_x,
+    gridY: element.grid_y,
+    elementType: element.element_type,
+    careCost: element.care_cost,
+    placedAt: element.placed_at,
+  }));
+  const livingGarden = await getLivingGardenState(
+    stewardId,
+    mappedPlants,
+    mappedElements,
+  );
   const dimensions = getPlotBounds(progress.plot_level);
   const nextExpansion = getNextExpansion(progress.plot_level);
   return {
@@ -247,26 +333,29 @@ export async function getMyGarden(stewardId: string): Promise<MyGardenState> {
     plantCost: MY_GARDEN_PLANT_COST,
     uprootReturn: MY_GARDEN_UPROOT_RETURN,
     nextExpansion,
-    plants: (plants ?? []).map((plant) => ({
-      id: plant.id,
-      gridX: plant.grid_x,
-      gridY: plant.grid_y,
-      plantType: plant.plant_type,
-      plantedAt: plant.planted_at,
-    })),
+    plants: mappedPlants,
     paths: (paths ?? []).map((path) => ({
       gridX: path.grid_x,
       gridY: path.grid_y,
     })),
-    elements: (elements ?? []).map((element) => ({
-      id: element.id,
-      gridX: element.grid_x,
-      gridY: element.grid_y,
-      elementType: element.element_type,
-      careCost: element.care_cost,
-      placedAt: element.placed_at,
-    })),
+    elements: mappedElements,
+    livingGardenDiscoveries: livingGarden.discoveries,
+    livingGardenHabitats: livingGarden.habitats,
   };
+}
+
+export async function acknowledgeLivingGardenDiscovery(
+  stewardId: string,
+  habitatKey: LivingGardenHabitatKey,
+) {
+  const { error } = await getSupabaseAdmin()
+    .from("my_garden_habitat_discoveries")
+    .update({ acknowledged_at: new Date().toISOString() })
+    .eq("steward_id", stewardId)
+    .eq("habitat_key", habitatKey)
+    .is("acknowledged_at", null);
+  if (error) throw error;
+  return getMyGarden(stewardId);
 }
 
 export async function acknowledgeMyGardenInventory(stewardId: string) {

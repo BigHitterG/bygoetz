@@ -12,6 +12,12 @@ import {
 } from "../lib/myGardenCatalog";
 import { GardenCatalogSprite } from "./GardenCatalogSprite";
 import { PlantGlossary } from "./PlantGlossary";
+import {
+  LIVING_GARDEN_DEFINITIONS,
+  type LivingGardenDiscovery,
+  type LivingGardenHabitat,
+  type LivingGardenHabitatKey,
+} from "../lib/livingGarden";
 
 type FieldGuideShelf =
   | "home"
@@ -20,6 +26,7 @@ type FieldGuideShelf =
   | "personal"
   | "plants"
   | "catalog"
+  | "habitats"
   | "progress";
 
 type GuideTopic = {
@@ -41,6 +48,7 @@ const SHELVES: Array<{
   { id: "personal", label: "My Garden", description: "Permanent building, Builder Mode, expansion and sharing." },
   { id: "plants", label: "Plant Encyclopedia", description: "Every flower, its real-world reference and game behavior." },
   { id: "catalog", label: "Garden Catalog", description: "Paths, decor, nature and water items." },
+  { id: "habitats", label: "Habitats & Visitors", description: "Living Garden clues, discoveries, and active visitors." },
   { id: "progress", label: "Progress & Collections", description: "Lifetime Care, collection milestones and Basil I." },
 ];
 
@@ -317,6 +325,138 @@ function CatalogReference({ lifetimeCare, query }: { lifetimeCare: number; query
   );
 }
 
+function LivingGardenReference({
+  lifetimeCare,
+  query,
+  discoveries,
+  habitats,
+  onVisitHabitat,
+}: {
+  lifetimeCare: number;
+  query: string;
+  discoveries: LivingGardenDiscovery[];
+  habitats: LivingGardenHabitat[];
+  onVisitHabitat?: (gridX: number, gridY: number) => void;
+}) {
+  const [hintLevels, setHintLevels] = useState<
+    Partial<Record<LivingGardenHabitatKey, number>>
+  >({});
+  const discoveredByKey = new Map(
+    discoveries.map((discovery) => [discovery.habitatKey, discovery]),
+  );
+  const activeByKey = new Map(
+    habitats.map((habitat) => [habitat.key, habitat]),
+  );
+  const visible = LIVING_GARDEN_DEFINITIONS.filter((definition) =>
+    matchesQuery(
+      query,
+      definition.name,
+      definition.chapter,
+      definition.clue,
+      definition.recipe,
+      definition.hints.join(" "),
+    ),
+  );
+  const chapters = Array.from(
+    new Set(LIVING_GARDEN_DEFINITIONS.map((definition) => definition.chapter)),
+  );
+
+  return (
+    <section className="cg-living-guide" aria-labelledby="living-garden-guide-title">
+      <p className="cg-kicker">A quiet collection inside My Garden</p>
+      <h3 id="living-garden-guide-title">Habitats & Visitors</h3>
+      <p className="cg-library-intro">
+        Arrange compatible plants and garden objects near one another. When a
+        habitat comes alive, its visitor joins this guide forever. Habitats are
+        visual discoveries: they require no maintenance and never award or cost
+        extra Care.
+      </p>
+      <div className="cg-living-guide-summary">
+        <strong>{discoveries.length} of {LIVING_GARDEN_DEFINITIONS.length} discovered</strong>
+        <span>{habitats.length} currently visiting</span>
+      </div>
+      <div className="cg-living-guide-chapters" aria-label="Habitat chapter progress">
+        {chapters.map((chapter) => {
+          const definitions = LIVING_GARDEN_DEFINITIONS.filter(
+            (definition) => definition.chapter === chapter,
+          );
+          const count = definitions.filter((definition) =>
+            discoveredByKey.has(definition.key),
+          ).length;
+          return <span key={chapter}>{chapter} {count}/{definitions.length}</span>;
+        })}
+      </div>
+      <div className="cg-living-guide-grid">
+        {visible.map((definition) => {
+          const discovery = discoveredByKey.get(definition.key);
+          const active = activeByKey.get(definition.key);
+          const hintLevel = hintLevels[definition.key] ?? 0;
+          const inventoryReady = lifetimeCare >= definition.lifetimeCareRequired;
+          return (
+            <article
+              key={definition.key}
+              className={`cg-living-guide-card${discovery ? " is-discovered" : " is-unknown"}${active ? " is-active" : ""}`}
+            >
+              <div className={`cg-living-glyph is-${definition.visitorKind}`} aria-hidden="true">
+                {discovery ? definition.glyph : "?"}
+              </div>
+              <p className="cg-kicker">{definition.chapter}</p>
+              <h4>{discovery ? definition.name : "Unknown visitor"}</h4>
+              {discovery ? (
+                <>
+                  <p>{definition.discoveryCopy}</p>
+                  <small>{definition.recipe}</small>
+                  <div className={`cg-living-status${active ? " is-active" : ""}`}>
+                    {active ? "Currently visiting" : "Habitat currently dormant"}
+                  </div>
+                  <small>
+                    Discovered {new Date(discovery.discoveredAt).toLocaleDateString()}
+                  </small>
+                  <button
+                    type="button"
+                    disabled={!onVisitHabitat}
+                    onClick={() => {
+                      const target = active ?? {
+                        gridX: discovery.firstCenterX,
+                        gridY: discovery.firstCenterY,
+                      };
+                      onVisitHabitat?.(target.gridX, target.gridY);
+                    }}
+                  >
+                    Visit habitat
+                  </button>
+                </>
+              ) : (
+                <>
+                  <p>{definition.clue}</p>
+                  <small>
+                    {inventoryReady
+                      ? "You have reached the collection containing everything this visitor needs."
+                      : `A future collection contains something this visitor needs (${definition.lifetimeCareRequired.toLocaleString()} lifetime Care).`}
+                  </small>
+                  <p className="cg-living-hint">Hint: {definition.hints[hintLevel]}</p>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setHintLevels((current) => ({
+                        ...current,
+                        [definition.key]: (hintLevel + 1) % definition.hints.length,
+                      }))
+                    }
+                  >
+                    Show another hint
+                  </button>
+                </>
+              )}
+            </article>
+          );
+        })}
+      </div>
+      {!visible.length ? <p className="cg-field-guide-empty">No habitats match that search.</p> : null}
+    </section>
+  );
+}
+
 function ProgressReference({ lifetimeCare, query }: { lifetimeCare: number; query: string }) {
   const current = [...MY_GARDEN_COLLECTIONS].reverse().find((entry) => entry.lifetimeCareRequired <= lifetimeCare) ?? MY_GARDEN_COLLECTIONS[0];
   const next = MY_GARDEN_COLLECTIONS.find((entry) => entry.lifetimeCareRequired > lifetimeCare) ?? null;
@@ -357,8 +497,22 @@ function ProgressReference({ lifetimeCare, query }: { lifetimeCare: number; quer
   );
 }
 
-export function GardenFieldGuide({ mode, lifetimeCare }: { mode: GardenWorldMode; lifetimeCare: number }) {
-  const [shelf, setShelf] = useState<FieldGuideShelf>("home");
+export function GardenFieldGuide({
+  mode,
+  lifetimeCare,
+  livingGardenDiscoveries,
+  livingGardenHabitats,
+  onVisitHabitat,
+  initialShelf = "home",
+}: {
+  mode: GardenWorldMode;
+  lifetimeCare: number;
+  livingGardenDiscoveries: LivingGardenDiscovery[];
+  livingGardenHabitats: LivingGardenHabitat[];
+  onVisitHabitat?: (gridX: number, gridY: number) => void;
+  initialShelf?: "home" | "habitats";
+}) {
+  const [shelf, setShelf] = useState<FieldGuideShelf>(initialShelf);
   const [query, setQuery] = useState("");
   const deferredQuery = useDeferredValue(query.trim().toLowerCase());
 
@@ -373,6 +527,18 @@ export function GardenFieldGuide({ mode, lifetimeCare }: { mode: GardenWorldMode
       }
       if (entry.id === "progress") {
         return MY_GARDEN_COLLECTIONS.some((item) => matchesQuery(deferredQuery, item.name, item.description));
+      }
+      if (entry.id === "habitats") {
+        return LIVING_GARDEN_DEFINITIONS.some((item) =>
+          matchesQuery(
+            deferredQuery,
+            item.name,
+            item.chapter,
+            item.clue,
+            item.recipe,
+            item.hints.join(" "),
+          ),
+        );
       }
       return GUIDE_TOPICS.some((topic) => topic.shelf === entry.id && matchesQuery(deferredQuery, topic.title, topic.summary, topic.details.join(" "), topic.keywords));
     });
@@ -416,6 +582,15 @@ export function GardenFieldGuide({ mode, lifetimeCare }: { mode: GardenWorldMode
       {shelf === "personal" ? <><p className="cg-field-guide-shelf-intro">How your permanent private clearing works.</p><TopicList shelf="personal" query={deferredQuery} /></> : null}
       {shelf === "plants" ? <PlantGlossary query={deferredQuery} /> : null}
       {shelf === "catalog" ? <CatalogReference lifetimeCare={lifetimeCare} query={deferredQuery} /> : null}
+      {shelf === "habitats" ? (
+        <LivingGardenReference
+          lifetimeCare={lifetimeCare}
+          query={deferredQuery}
+          discoveries={livingGardenDiscoveries}
+          habitats={livingGardenHabitats}
+          onVisitHabitat={onVisitHabitat}
+        />
+      ) : null}
       {shelf === "progress" ? <ProgressReference lifetimeCare={lifetimeCare} query={deferredQuery} /> : null}
     </section>
   );

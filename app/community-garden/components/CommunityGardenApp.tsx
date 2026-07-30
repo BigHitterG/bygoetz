@@ -55,6 +55,7 @@ import { HeritageFlowerCelebration } from "./HeritageFlowerCelebration";
 import { HeritageFlowerDiscovery } from "./HeritageFlowerDiscovery";
 import { CareBlossomDiscovery } from "./CareBlossomDiscovery";
 import { GardenWormDiscovery } from "./GardenWormDiscovery";
+import { LivingGardenDiscoveryModal } from "./LivingGardenDiscovery";
 import { GardenBugReporter } from "./GardenBugReporter";
 import { GardenExpansionConfirmation } from "./GardenExpansionConfirmation";
 import {
@@ -93,6 +94,7 @@ import {
   HERITAGE_DISCOVERY_STORAGE_KEY,
   type HeritageFlowerEncounter,
 } from "../lib/heritageDiscovery";
+import type { LivingGardenHabitatKey } from "../lib/livingGarden";
 
 const INITIAL_UI: GardenUiState = {
   action: null,
@@ -316,6 +318,7 @@ export function CommunityGardenApp() {
   const [world, setWorld] = useState<GardenWorldMode>("community");
   const [menuOpen, setMenuOpen] = useState(false);
   const [menuSection, setMenuSection] = useState<LibrarySection>("play");
+  const [guideInitialShelf, setGuideInitialShelf] = useState<"home" | "habitats">("home");
   const [careAnnouncement, setCareAnnouncement] = useState("");
   const [session, setSession] = useState<Session | null>(null);
   const [guestPreview, setGuestPreview] = useState<GuestGardenPreview>(
@@ -440,6 +443,20 @@ export function CommunityGardenApp() {
     !gardenWormFound &&
     unlockNotices.length === 0
       ? heritageEncounter
+      : null;
+  const visibleLivingGardenDiscovery =
+    heritageMoments.length === 0 &&
+    !heritageEncounter &&
+    !menuOpen &&
+    !inventoryOpen &&
+    !membershipOfferOpen &&
+    !expansionConfirmationOpen &&
+    !careBlossomFound &&
+    !gardenWormFound &&
+    unlockNotices.length === 0
+      ? (memberGarden?.livingGardenDiscoveries ?? []).find(
+          (discovery) => !discovery.acknowledgedAt,
+        ) ?? null
       : null;
 
   useEffect(() => {
@@ -1656,6 +1673,43 @@ export function CommunityGardenApp() {
     [commitGuestPreview, memberGarden, session, transitionOnboarding],
   );
 
+  const acknowledgeLivingGarden = useCallback(
+    (habitatKey: LivingGardenHabitatKey) => {
+      setMemberGarden((current) =>
+        current
+          ? {
+              ...current,
+              livingGardenDiscoveries: (
+                current.livingGardenDiscoveries ?? []
+              ).map((discovery) =>
+                discovery.habitatKey === habitatKey
+                  ? { ...discovery, acknowledgedAt: new Date().toISOString() }
+                  : discovery,
+              ),
+            }
+          : current,
+      );
+      if (!session) return;
+      void fetch("/api/community-garden/my-garden", {
+        method: "POST",
+        headers: {
+          authorization: `Bearer ${session.access_token}`,
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({ action: "acknowledge-habitat", habitatKey }),
+      })
+        .then(async (response) => {
+          if (!response.ok) return;
+          const updated = (await response.json()) as MyGardenState;
+          setMemberGarden(updated);
+        })
+        .catch(() => {
+          // The server will offer the discovery again next time if acknowledgement fails.
+        });
+    },
+    [session],
+  );
+
   const acknowledgeInventoryUnlocks = useCallback(async () => {
     if (
       !session ||
@@ -2043,6 +2097,16 @@ export function CommunityGardenApp() {
             accountChecked && isGardenOnboardingFinished(onboardingStep)
           }
           onPersonalGardenMutation={mutateMyGarden}
+          onOpenGardenJournal={
+            memberGarden
+              ? () => {
+                  playGardenSound("select");
+                  setGuideInitialShelf("habitats");
+                  setMenuSection("guide");
+                  setMenuOpen(true);
+                }
+              : undefined
+          }
           onActionCompleted={handleGardenActionCompleted}
           onActionFailed={handleGardenActionFailed}
         />
@@ -2461,6 +2525,9 @@ export function CommunityGardenApp() {
         audio={gardenAudio}
         mode={world}
         lifetimeCare={myGarden.lifetimeCare}
+        livingGardenDiscoveries={memberGarden?.livingGardenDiscoveries ?? []}
+        livingGardenHabitats={memberGarden?.livingGardenHabitats ?? []}
+        guideInitialShelf={guideInitialShelf}
         onClose={() => {
           playGardenSound("select");
           setMenuOpen(false);
@@ -2468,6 +2535,7 @@ export function CommunityGardenApp() {
         }}
         onSectionChange={(section) => {
           playGardenSound("select");
+          if (section === "guide") setGuideInitialShelf("home");
           setMenuSection(section);
         }}
         onVisitHeritage={(gridX, gridY) => {
@@ -2482,6 +2550,16 @@ export function CommunityGardenApp() {
             requestId: Date.now(),
             kind: "heritage",
           });
+        }}
+        onVisitHabitat={(gridX, gridY) => {
+          playGardenSound("select");
+          setMenuOpen(false);
+          setInventoryOpen(false);
+          setWorld("personal");
+          window.setTimeout(
+            () => canvasRef.current?.goToGridPosition(gridX, gridY),
+            80,
+          );
         }}
       />
 
@@ -2550,6 +2628,35 @@ export function CommunityGardenApp() {
       <GardenWormDiscovery
         open={gardenWormFound}
         onClose={() => setGardenWormFound(false)}
+      />
+      <LivingGardenDiscoveryModal
+        discovery={visibleLivingGardenDiscovery}
+        onClose={() => {
+          if (visibleLivingGardenDiscovery) {
+            acknowledgeLivingGarden(visibleLivingGardenDiscovery.habitatKey);
+          }
+        }}
+        onWatch={() => {
+          if (!visibleLivingGardenDiscovery) return;
+          acknowledgeLivingGarden(visibleLivingGardenDiscovery.habitatKey);
+          setWorld("personal");
+          window.setTimeout(
+            () =>
+              canvasRef.current?.goToGridPosition(
+                visibleLivingGardenDiscovery.firstCenterX,
+                visibleLivingGardenDiscovery.firstCenterY,
+              ),
+            80,
+          );
+        }}
+        onOpenGuide={() => {
+          if (visibleLivingGardenDiscovery) {
+            acknowledgeLivingGarden(visibleLivingGardenDiscovery.habitatKey);
+          }
+          setMenuSection("guide");
+          setGuideInitialShelf("habitats");
+          setMenuOpen(true);
+        }}
       />
       <GardenExpansionConfirmation
         open={expansionConfirmationOpen}

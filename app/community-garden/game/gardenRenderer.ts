@@ -28,6 +28,11 @@ import {
   type HeritageGrowthPhase,
 } from "../lib/heritageAura";
 import { getTerrainTile, terrainNoise } from "./terrainGenerator";
+import {
+  getLivingGardenDefinition,
+  type LivingGardenHabitat,
+  type LivingGardenVisitorKind,
+} from "../lib/livingGarden";
 
 export {
   getWorldScreenOrigin,
@@ -95,6 +100,7 @@ export type RenderGardenState = {
     guidanceZone: "garden" | "heart" | "growth-ring" | null;
   }>;
   shareOnly?: boolean;
+  reducedMotion?: boolean;
   personalGarden?: {
     minX: number;
     minY: number;
@@ -110,6 +116,9 @@ export type RenderGardenState = {
       careCost: number;
     }>;
     paths: Array<{ gridX: number; gridY: number }>;
+    livingHabitats?: LivingGardenHabitat[];
+    gardenJournalEnabled?: boolean;
+    gardenJournalUnreadCount?: number;
     nextExpansion: null | {
       minX: number;
       minY: number;
@@ -124,6 +133,143 @@ export type RenderGardenState = {
     invalidCell: { gridX: number; gridY: number } | null;
   };
 };
+
+function livingGardenHash(value: string) {
+  let hash = 2166136261;
+  for (let index = 0; index < value.length; index += 1) {
+    hash ^= value.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  return Math.abs(hash >>> 0);
+}
+
+function drawLivingGardenVisitorGlyph(
+  ctx: CanvasRenderingContext2D,
+  kind: LivingGardenVisitorKind,
+) {
+  if (kind === "bird" || kind === "owl") {
+    ctx.fillStyle = kind === "owl" ? "#7b6447" : "#687d52";
+    ctx.fillRect(-4, -4, 8, 7);
+    ctx.fillStyle = kind === "owl" ? "#ead7a0" : "#d9ba61";
+    ctx.fillRect(3, -3, 4, 3);
+    ctx.fillStyle = "#392f28";
+    ctx.fillRect(kind === "owl" ? -2 : 4, -3, 1, 1);
+    if (kind === "owl") ctx.fillRect(2, -3, 1, 1);
+    ctx.fillStyle = "#a36b3d";
+    ctx.fillRect(-3, 3, 1, 3);
+    ctx.fillRect(2, 3, 1, 3);
+    return;
+  }
+  if (kind === "bee") {
+    ctx.fillStyle = "rgba(232,247,244,0.88)";
+    ctx.fillRect(-4, -3, 3, 3);
+    ctx.fillRect(2, -3, 3, 3);
+    ctx.fillStyle = "#e8bb3d";
+    ctx.fillRect(-3, -1, 7, 4);
+    ctx.fillStyle = "#49372a";
+    ctx.fillRect(-1, -1, 1, 4);
+    ctx.fillRect(2, -1, 1, 4);
+    return;
+  }
+  if (kind === "butterfly") {
+    ctx.fillStyle = "#df7a3b";
+    ctx.fillRect(-6, -4, 5, 5);
+    ctx.fillRect(2, -4, 5, 5);
+    ctx.fillRect(-5, 2, 4, 3);
+    ctx.fillRect(2, 2, 4, 3);
+    ctx.fillStyle = "#3e332c";
+    ctx.fillRect(0, -3, 1, 8);
+    return;
+  }
+  if (kind === "dragonfly") {
+    ctx.fillStyle = "rgba(218,247,249,0.92)";
+    ctx.fillRect(-8, -2, 7, 2);
+    ctx.fillRect(2, -2, 7, 2);
+    ctx.fillRect(-7, 1, 6, 2);
+    ctx.fillRect(2, 1, 6, 2);
+    ctx.fillStyle = "#308f91";
+    ctx.fillRect(0, -4, 2, 10);
+    return;
+  }
+  if (kind === "frog") {
+    ctx.fillStyle = "#5e8c45";
+    ctx.fillRect(-5, -3, 10, 7);
+    ctx.fillRect(-7, 2, 4, 3);
+    ctx.fillRect(4, 2, 4, 3);
+    ctx.fillStyle = "#f3e3a1";
+    ctx.fillRect(-3, -4, 2, 2);
+    ctx.fillRect(2, -4, 2, 2);
+    return;
+  }
+  if (kind === "worm") {
+    ctx.strokeStyle = "#a25f60";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(-7, 2);
+    ctx.quadraticCurveTo(-3, -4, 1, 1);
+    ctx.quadraticCurveTo(5, 5, 8, -1);
+    ctx.stroke();
+    return;
+  }
+  if (kind === "seedlings") {
+    ctx.fillStyle = "#477947";
+    for (let x = -6; x <= 6; x += 6) {
+      ctx.fillRect(x, 0, 1, 6);
+      ctx.fillRect(x - 2, 0, 3, 2);
+    }
+    return;
+  }
+  ctx.fillStyle = "rgba(229,196,75,0.82)";
+  ctx.fillRect(-1, -6, 2, 12);
+  ctx.fillRect(-6, -1, 12, 2);
+  ctx.fillRect(-4, -4, 8, 8);
+}
+
+function drawLivingGardenHabitats(
+  ctx: CanvasRenderingContext2D,
+  habitats: readonly LivingGardenHabitat[],
+  camera: WorldPoint,
+  viewport: GardenViewport,
+  zoom: number,
+  now: number,
+  reducedMotion: boolean,
+) {
+  const visible = [...habitats]
+    .sort((left, right) => {
+      const leftWorld = gridToWorld(left.gridX, left.gridY);
+      const rightWorld = gridToWorld(right.gridX, right.gridY);
+      return (
+        Math.hypot(leftWorld.x - camera.x, leftWorld.y - camera.y) -
+        Math.hypot(rightWorld.x - camera.x, rightWorld.y - camera.y)
+      );
+    })
+    .slice(0, 5);
+
+  for (const habitat of visible) {
+    const definition = getLivingGardenDefinition(habitat.key);
+    const hash = livingGardenHash(habitat.signature);
+    const phase = reducedMotion ? 0 : now / (1_700 + (hash % 1_100)) + hash;
+    const orbit = definition.visitorKind === "seedlings" || definition.visitorKind === "canopy" ? 3 : 10;
+    const world = gridToWorld(habitat.gridX, habitat.gridY);
+    const screen = worldToScreen(
+      {
+        x: world.x + Math.cos(phase) * orbit,
+        y: world.y + Math.sin(phase * 1.3) * (orbit * 0.55),
+      },
+      camera,
+      viewport,
+      zoom,
+    );
+    screen.y -= (16 + (hash % 7)) * zoom;
+    if (!isVisible(screen, viewport, 30)) continue;
+    ctx.save();
+    ctx.translate(Math.round(screen.x), Math.round(screen.y));
+    ctx.scale(Math.max(0.7, zoom), Math.max(0.7, zoom));
+    ctx.globalAlpha = 0.9;
+    drawLivingGardenVisitorGlyph(ctx, definition.visitorKind);
+    ctx.restore();
+  }
+}
 
 type TerrainLayer = "base" | "soil" | "green";
 
@@ -885,6 +1031,8 @@ function drawPixelShed(
   camera: WorldPoint,
   viewport: GardenViewport,
   zoom: number,
+  journalEnabled = false,
+  journalUnreadCount = 0,
 ) {
   const point = worldToScreen(
     {
@@ -912,6 +1060,21 @@ function drawPixelShed(
   ctx.fillRect(4, -26, 12, 25);
   ctx.fillStyle = "#e7b84e";
   ctx.fillRect(12, -14, 2, 2);
+  if (journalEnabled) {
+    ctx.fillStyle = "#f1dfad";
+    ctx.fillRect(5, -22, 9, 7);
+    ctx.fillStyle = "#9f3d43";
+    ctx.fillRect(9, -22, 1, 7);
+    ctx.fillStyle = "#49362e";
+    ctx.fillRect(5, -23, 9, 1);
+    ctx.fillRect(5, -15, 9, 1);
+    if (journalUnreadCount > 0) {
+      ctx.fillStyle = "#c82f3f";
+      ctx.fillRect(15, -25, 5, 5);
+      ctx.fillStyle = "#fff5d9";
+      ctx.fillRect(17, -24, 1, 3);
+    }
+  }
   ctx.fillStyle = "#5f4639";
   ctx.fillRect(20, -50, 7, 13);
   ctx.restore();
@@ -2685,10 +2848,26 @@ export function renderGarden(ctx: CanvasRenderingContext2D, state: RenderGardenS
       state.now,
       state.zoom,
     );
+    drawLivingGardenHabitats(
+      ctx,
+      state.personalGarden.livingHabitats ?? [],
+      state.camera,
+      state.viewport,
+      state.zoom,
+      state.now,
+      Boolean(state.reducedMotion),
+    );
     // The house is a fixed foreground structure. Garden items may still be
     // placed beneath it, but they should read as being behind the building
     // instead of painting over its roof and walls.
-    drawPixelShed(ctx, state.camera, state.viewport, state.zoom);
+    drawPixelShed(
+      ctx,
+      state.camera,
+      state.viewport,
+      state.zoom,
+      Boolean(state.personalGarden.gardenJournalEnabled),
+      state.personalGarden.gardenJournalUnreadCount ?? 0,
+    );
     drawDuck(ctx, state.duck, state.camera, state.viewport, state.moving, state.now, state.zoom);
     if (state.tutorialDimmed) {
       drawTutorialDimmer(

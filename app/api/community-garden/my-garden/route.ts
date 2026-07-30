@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getGardenUser } from "@/lib/communityGarden/auth";
 import {
+  acknowledgeLivingGardenDiscovery,
   acknowledgeMyGardenInventory,
   applyMyGardenBuilderAction,
   expandMyGarden,
@@ -15,6 +16,7 @@ import {
   type MyGardenElementType,
   type MyGardenPlantType,
 } from "@/lib/communityGarden/myGarden";
+import { isLivingGardenHabitatKey } from "@/app/community-garden/lib/livingGarden";
 import { getGardenStewardByUserId } from "@/lib/communityGarden/stewards";
 import { hasAllowedBasilRequestOrigin } from "@/lib/communityGarden/urls";
 
@@ -69,6 +71,7 @@ export async function POST(request: NextRequest) {
     careBalance?: unknown;
     plants?: unknown;
     paths?: unknown;
+    habitatKey?: unknown;
   };
   try {
     payload = (await request.json()) as typeof payload;
@@ -77,6 +80,21 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    if (payload.action === "acknowledge-habitat") {
+      if (
+        typeof payload.habitatKey !== "string" ||
+        !isLivingGardenHabitatKey(payload.habitatKey)
+      ) {
+        return NextResponse.json(
+          { error: "Choose a valid Living Garden discovery." },
+          { status: 400 },
+        );
+      }
+      return NextResponse.json(
+        await acknowledgeLivingGardenDiscovery(steward.id, payload.habitatKey),
+      );
+    }
+
     if (payload.action === "builder") {
       const cells = Array.isArray(payload.cells) ? payload.cells : [];
       const validCells =

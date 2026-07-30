@@ -342,6 +342,7 @@ type GardenCanvasProps = {
     error: unknown,
   ) => void;
   onGardenWormDiscovered?: () => void;
+  onOpenGardenJournal?: () => void;
   onHeritageMoments?: (moments: HeritageMoment[]) => void;
   onHeritageEncounter?: (encounter: HeritageFlowerEncounter) => void;
   heritageEncountersEnabled?: boolean;
@@ -1769,6 +1770,9 @@ function renderPersonalGardenShare(
       maxHeight: garden.height,
       elements: garden.elements,
       paths: garden.paths,
+      livingHabitats: garden.livingGardenHabitats ?? [],
+      gardenJournalEnabled: false,
+      gardenJournalUnreadCount: 0,
       nextExpansion: null,
     },
   });
@@ -1837,6 +1841,7 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
       onActionCompleted,
       onActionFailed,
       onGardenWormDiscovered,
+      onOpenGardenJournal,
       onHeritageMoments,
       onHeritageEncounter,
       heritageEncountersEnabled = false,
@@ -1850,6 +1855,7 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
     const onActionCompletedRef = useRef(onActionCompleted);
     const onActionFailedRef = useRef(onActionFailed);
     const onGardenWormDiscoveredRef = useRef(onGardenWormDiscovered);
+    const onOpenGardenJournalRef = useRef(onOpenGardenJournal);
     const onHeritageMomentsRef = useRef(onHeritageMoments);
     const onHeritageEncounterRef = useRef(onHeritageEncounter);
     const heritageEncountersEnabledRef = useRef(heritageEncountersEnabled);
@@ -1967,6 +1973,10 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
     useEffect(() => {
       onGardenWormDiscoveredRef.current = onGardenWormDiscovered;
     }, [onGardenWormDiscovered]);
+
+    useEffect(() => {
+      onOpenGardenJournalRef.current = onOpenGardenJournal;
+    }, [onOpenGardenJournal]);
 
     useEffect(() => {
       onHeritageMomentsRef.current = onHeritageMoments;
@@ -3625,6 +3635,7 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
           tutorialDimmed: tutorialDimmedRef.current,
           effects: runtime.reducedMotion ? [] : runtime.effects,
           moving: runtime.reducedMotion ? false : runtime.moving,
+          reducedMotion: runtime.reducedMotion,
           now: Date.now(),
           mode: runtime.mode,
           communityRegions:
@@ -3647,6 +3658,12 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
                 maxHeight: runtime.personalGarden.maxHeight,
                 elements: runtime.personalGarden.elements,
                 paths: runtime.personalGarden.paths,
+                livingHabitats:
+                  runtime.personalGarden.livingGardenHabitats ?? [],
+                gardenJournalEnabled: !runtime.personalGarden.preview,
+                gardenJournalUnreadCount: (
+                  runtime.personalGarden.livingGardenDiscoveries ?? []
+                ).filter((discovery) => !discovery.acknowledgedAt).length,
                 nextExpansion: runtime.personalGarden.nextExpansion
                   ? {
                       minX: runtime.personalGarden.nextExpansion.minX,
@@ -3695,6 +3712,21 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
     function selectCell(gridX: number, gridY: number) {
       const runtime = runtimeRef.current;
       queuedPlantingRef.current = null;
+      if (
+        runtime.mode === "personal" &&
+        onOpenGardenJournalRef.current &&
+        gridX >= 5 &&
+        gridX <= 7 &&
+        gridY >= -1 &&
+        gridY <= 0
+      ) {
+        runtime.target = null;
+        runtime.path = [];
+        runtime.statusMessage = "Opening your Garden Journal...";
+        publishUi();
+        onOpenGardenJournalRef.current();
+        return;
+      }
       if (runtime.builder) {
         const next = { gridX, gridY };
         const result = getBuilderAppendResult(runtime.builder.cells, next);

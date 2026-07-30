@@ -8,6 +8,10 @@ import { GardenSteward } from "./GardenSteward";
 import { BasilPolicyLinks } from "./BasilPolicyLinks";
 import type { GardenAudioControls } from "../lib/gardenAudio";
 import type { GardenWorldMode } from "../game/gardenRenderer";
+import type {
+  LivingGardenDiscovery,
+  LivingGardenHabitat,
+} from "../lib/livingGarden";
 
 export type LibrarySection = "play" | "guide" | "account" | "about";
 
@@ -24,9 +28,13 @@ type GardenMenuProps = {
   audio: GardenAudioControls;
   mode: GardenWorldMode;
   lifetimeCare: number;
+  livingGardenDiscoveries: LivingGardenDiscovery[];
+  livingGardenHabitats: LivingGardenHabitat[];
   onClose: () => void;
   onSectionChange: (section: LibrarySection) => void;
   onVisitHeritage?: (gridX: number, gridY: number) => void;
+  onVisitHabitat?: (gridX: number, gridY: number) => void;
+  guideInitialShelf?: "home" | "habitats";
 };
 
 export function GardenMenu({
@@ -35,9 +43,13 @@ export function GardenMenu({
   audio,
   mode,
   lifetimeCare,
+  livingGardenDiscoveries,
+  livingGardenHabitats,
   onClose,
   onSectionChange,
   onVisitHeritage,
+  onVisitHabitat,
+  guideInitialShelf = "home",
 }: GardenMenuProps) {
   const [settingsOpen, setSettingsOpen] = useState(false);
 
@@ -162,7 +174,16 @@ export function GardenMenu({
               {section === "play" ? (
                 <GardenGuide mode={mode} onOpenFieldGuide={() => onSectionChange("guide")} />
               ) : null}
-              {section === "guide" ? <GardenFieldGuide mode={mode} lifetimeCare={lifetimeCare} /> : null}
+              {section === "guide" ? (
+                <GardenFieldGuide
+                  mode={mode}
+                  lifetimeCare={lifetimeCare}
+                  livingGardenDiscoveries={livingGardenDiscoveries}
+                  livingGardenHabitats={livingGardenHabitats}
+                  onVisitHabitat={onVisitHabitat}
+                  initialShelf={guideInitialShelf}
+                />
+              ) : null}
               {section === "account" ? <GardenSteward onVisitHeritage={onVisitHeritage} /> : null}
               {section === "about" ? <GardenFounder /> : null}
             </div>
