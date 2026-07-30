@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 
 const migration = readFileSync(
-  "supabase/migrations/20260730140000_community_stewardship.sql",
+  "supabase/migrations/20260730181729_community_stewardship_and_flexible_clearings.sql",
   "utf8",
 );
 const app = readFileSync(
