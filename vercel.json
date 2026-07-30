@@ -5,8 +5,8 @@
       "schedule": "17 6 * * *"
     },
     {
-      "path": "/api/cron/basil-newsletter?mode=monthly",
-      "schedule": "30 17 * * *"
+      "path": "/api/cron/basil-social",
+      "schedule": "15 13 * * *"
     }
   ]
 }

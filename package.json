@@ -45,6 +45,7 @@
     "test:regions": "node --experimental-strip-types tests/basil-region-delivery.test.ts",
     "test:atlas": "node --experimental-strip-types tests/basil-community-atlas.test.ts",
     "test:living-garden": "node --experimental-strip-types tests/basil-living-garden.test.ts",
+    "test:social-studio": "node --experimental-strip-types tests/basil-social-studio.test.ts",
     "test:stewardship": "node --experimental-strip-types tests/basil-community-stewardship.test.ts",
     "test:zones": "node --experimental-strip-types tests/basil-garden-zones.test.ts",
     "test:guest-refund": "node --experimental-strip-types tests/basil-guest-garden-refund.test.ts",
