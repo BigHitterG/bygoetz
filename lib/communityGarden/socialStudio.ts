@@ -259,6 +259,70 @@ export async function createDailySocialDigest(date = new Date()) {
   }
 }
 
+export async function resendLatestSocialDigest(requestKey: string) {
+  if (requestKey.length < 16 || requestKey.length > 200) throw new Error("Invalid Social Studio resend key.");
+  const supabase = getSupabaseAdmin();
+  const { data: digest, error: digestError } = await supabase
+    .from("basil_social_digests")
+    .select("id,approval_token_hash,approval_expires_at")
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .single();
+  if (digestError) throw digestError;
+
+  const { data: stories, error: storiesError } = await supabase
+    .from("basil_social_stories")
+    .select("title,why_today,asset_url")
+    .eq("digest_id", digest.id)
+    .order("rank", { ascending: true });
+  if (storiesError) throw storiesError;
+  if (!stories?.length) throw new Error("The latest Social Studio digest has no stories.");
+
+  const token = randomBytes(32).toString("base64url");
+  const now = new Date().toISOString();
+  const expiresAt = new Date(Date.now() + TOKEN_TTL_MS).toISOString();
+  const previousToken = {
+    approval_token_hash: digest.approval_token_hash as string,
+    approval_expires_at: digest.approval_expires_at as string,
+  };
+  const { error: tokenError } = await supabase.from("basil_social_digests").update({
+    approval_token_hash: tokenHash(token),
+    approval_expires_at: expiresAt,
+    status: "review_ready",
+    updated_at: now,
+  }).eq("id", digest.id);
+  if (tokenError) throw tokenError;
+
+  const emailStories = stories.map((story) => ({
+    title: story.title as string,
+    whyToday: story.why_today as string,
+    assetUrl: story.asset_url as string,
+  }));
+  const rendered = renderDigestEmail(digest.id as string, token, emailStories);
+  try {
+    const { data: email, error: emailError } = await getResend().emails.send({
+      from: FROM,
+      to: REVIEWERS,
+      replyTo: REPLY_TO,
+      subject: `Basil Social Studio: ${stories.length} stories ready (resent)`,
+      html: rendered.html,
+      text: rendered.text,
+      headers: { "X-Entity-Ref-ID": `basil-social-resend-${digest.id}` },
+    }, { idempotencyKey: `basil-social-resend-${digest.id}-${tokenHash(requestKey).slice(0, 24)}` });
+    if (emailError) throw new Error(emailError.message);
+    const { error: updateError } = await supabase.from("basil_social_digests").update({
+      review_email_id: email?.id ?? null,
+      review_email_sent_at: now,
+      updated_at: now,
+    }).eq("id", digest.id);
+    if (updateError) throw updateError;
+    return { id: digest.id as string, emailId: email?.id ?? null, emailSent: true, reviewEmail: REVIEWERS };
+  } catch (error) {
+    await supabase.from("basil_social_digests").update({ ...previousToken, updated_at: new Date().toISOString() }).eq("id", digest.id);
+    throw error;
+  }
+}
+
 export async function reviewSocialDigest(digestId: string, token: string) {
   const digest = await findAuthorizedDigest(digestId, token);
   if (!digest) return null;

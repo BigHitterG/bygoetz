@@ -43,6 +43,7 @@ test("every story is a complete vertical-first cross-channel packet", () => {
 test("Social Studio migration keeps drafts private and approvals explicit", () => {
   const migration = readFileSync(new URL("../supabase/migrations/20260730184500_basil_social_studio.sql", import.meta.url), "utf8");
   const studio = readFileSync(new URL("../app/community-garden/social-studio/SocialStudio.tsx", import.meta.url), "utf8");
+  const server = readFileSync(new URL("../lib/communityGarden/socialStudio.ts", import.meta.url), "utf8");
   const cron = readFileSync(new URL("../app/api/cron/basil-social/route.ts", import.meta.url), "utf8");
   assert.match(migration, /enable row level security/gi);
   assert.match(migration, /revoke all on table public\.basil_social_variants from public, anon, authenticated/i);
@@ -52,6 +53,9 @@ test("Social Studio migration keeps drafts private and approvals explicit", () =
   assert.match(studio, /Download \{story\.assetKind\}/);
   assert.match(studio, /production plan, not a finished video/i);
   assert.match(studio, /loading="eager"/);
+  assert.match(server, /resendLatestSocialDigest/);
+  assert.match(server, /basil-social-resend-/);
+  assert.match(server, /previousToken/);
   assert.match(cron, /Bearer \$\{secret\}/);
 });
 
