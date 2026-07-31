@@ -14,6 +14,10 @@ const parcelEconomyMigration = readFileSync(
   "supabase/migrations/20260730225145_fix_basil_parcel_economy_and_returns.sql",
   "utf8",
 );
+const landProgressionMigration = readFileSync(
+  "supabase/migrations/20260730232000_stage_basil_land_shaping_unlocks.sql",
+  "utf8",
+);
 const app = readFileSync(
   "app/community-garden/components/CommunityGardenApp.tsx",
   "utf8",
@@ -85,11 +89,17 @@ test("ordinary account footprint is dynamic while Heritage Flowers remain outsid
   assert.match(migration, /coalesce\([\s\S]*ordinary_footprint_capacity[\s\S]*, 100\)/);
 });
 
-test("freeform expansion is cardinal, Care-funded, and gated at Caretaker", () => {
-  assert.match(migration, /ordinary_footprint_capacity<175/);
-  assert.match(migration, /parcel_x=p_parcel_x-1 and parcel_y=p_parcel_y/);
-  assert.match(migration, /parcel_x=p_parcel_x and parcel_y=p_parcel_y\+1/);
-  assert.match(migration, /care_balance<expansion_cost/);
+test("freeform expansion is cardinal, Care-funded, and unlocked at Helper", () => {
+  assert.match(landProgressionMigration, /ordinary_footprint_capacity < 125/);
+  assert.match(
+    landProgressionMigration,
+    /parcel_x = p_parcel_x - 1 and parcel_y = p_parcel_y/,
+  );
+  assert.match(
+    landProgressionMigration,
+    /parcel_x = p_parcel_x and parcel_y = p_parcel_y \+ 1/,
+  );
+  assert.match(landProgressionMigration, /care_balance < expansion_cost/);
   assert.ok(serverGarden.includes("getExpansionCandidates"));
   assert.match(serverGarden, /const nextExpansion = getNextExpansion\(progress\.plot_level\)/);
   assert.doesNotMatch(serverGarden, /progress\.plot_level < 5 \? getNextExpansion/);
@@ -111,7 +121,7 @@ test("returning land preserves the original clearing, contents, and connectivity
   assert.match(parcelEconomyMigration, /refund := parcel\.care_cost/);
   assert.match(parcelEconomyMigration, /garden_returned_parcels/);
   assert.match(parcelEconomyMigration, /care_balance = care_balance \+ refund/);
-  assert.ok(app.includes("Return selected land"));
+  assert.ok(app.includes("Return parcel"));
   assert.ok(app.includes("return-clearing"));
 });
 
@@ -119,6 +129,14 @@ test("classic strips sync their parcel rows and movement respects returned land"
   assert.match(serverGarden, /expand_my_garden_with_parcels_v1/);
   assert.match(parcelEconomyMigration, /sync_my_garden_classic_expansion_v1/);
   assert.match(parcelEconomyMigration, /classic_parcel_cost_v1/);
+  assert.match(
+    canvas,
+    /function getLockedParcelApproach[\s\S]{0,300}getNearestPersonalGardenPosition/,
+  );
+  assert.match(
+    canvas,
+    /const reachableTarget =[\s\S]{0,180}getNearestPersonalGardenPosition/,
+  );
   assert.match(parcelEconomyMigration, /source[\s\S]{0,80}'classic'/);
   assert.ok(canvas.includes("constrainRuntimeMovement"));
   assert.match(canvas, /The fence marks the edge of your land/);
@@ -129,6 +147,29 @@ test("returned clearings can be reclaimed for their recorded parcel price", () =
   assert.match(parcelEconomyMigration, /expansion_cost := returned\.care_cost/);
   assert.match(parcelEconomyMigration, /delete from public\.garden_returned_parcels/);
   assert.match(parcelEconomyMigration, /profile\.ordinary_footprint_capacity < 175/);
+  assert.match(
+    canvas,
+    /personalGarden\.expansionCandidates[\s\S]{0,180}personalGarden\.nextExpansion/,
+  );
+  assert.ok(app.includes("selectedExpansionCost"));
+  assert.match(app, /careCost=\{selectedExpansionCost\}/);
+  assert.match(
+    app,
+    /classicExpansionBlocked = reclaimCandidates\.length > 0/,
+  );
+  assert.match(renderer, /RECLAIM[\s\S]*candidate\.careCost/);
+});
+
+test("land shaping unlocks before land return and preserves the spiral core", () => {
+  assert.match(serverGarden, /stewardshipCapacity >= 125/);
+  assert.match(serverGarden, /stewardshipCapacity >= 175/);
+  assert.match(app, /landReturnUnlocked &&[\s\S]{0,120}Boolean\(selectedGardenParcel\)/);
+  assert.match(app, /purchaseOrdinal[\s\S]{0,40}> 5/);
+  assert.ok(app.includes("Shape land at Helper"));
+  assert.match(landProgressionMigration, /ordinary_footprint_capacity < 125/);
+  assert.match(landProgressionMigration, /ordinary_footprint_capacity < 175/);
+  assert.match(landProgressionMigration, /purchase_ordinal, 1\) <= 5/);
+  assert.match(landProgressionMigration, /care_balance = care_balance \+ refund/);
 });
 
 test("private footprint tools and task celebrations are visible only through member state", () => {

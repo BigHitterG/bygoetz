@@ -67,6 +67,7 @@ export type MyGardenParcel = {
   width: 4;
   height: 4;
   careCost: number;
+  purchaseOrdinal: number;
   source: "starter" | "legacy" | "classic" | "freeform";
 };
 
@@ -93,6 +94,7 @@ export type MyGardenState = {
     careCost: number;
   };
   freeformExpansion?: boolean;
+  landReturnUnlocked?: boolean;
   unlockedParcels?: MyGardenParcel[];
   expansionCandidates?: Array<MyGardenParcel & { careCost: number }>;
   reclaimCandidates?: Array<MyGardenParcel & { careCost: number }>;
@@ -140,6 +142,7 @@ type PersonalElementRow = {
 type ParcelRow = {
   parcel_x: number;
   parcel_y: number;
+  purchase_ordinal: number | null;
   care_cost: number;
   source: "starter" | "legacy" | "classic" | "freeform";
 };
@@ -147,6 +150,7 @@ type ParcelRow = {
 type ReturnedParcelRow = {
   parcel_x: number;
   parcel_y: number;
+  purchase_ordinal: number | null;
   care_cost: number;
   source: "legacy" | "classic" | "freeform";
 };
@@ -273,6 +277,7 @@ function mapParcel(row: ParcelRow): MyGardenParcel {
     width: 4,
     height: 4,
     careCost: row.care_cost,
+    purchaseOrdinal: row.purchase_ordinal ?? 0,
     source: row.source,
   };
 }
@@ -310,6 +315,7 @@ function getExpansionCandidates(parcels: MyGardenParcel[], plotLevel: number) {
         width: 4,
         height: 4,
         careCost: getFreeformParcelCareCost(plotLevel),
+        purchaseOrdinal: plotLevel,
         source: "freeform",
       });
     }
@@ -427,14 +433,14 @@ export async function getMyGarden(stewardId: string): Promise<MyGardenState> {
       .returns<PersonalElementRow[]>(),
     supabase
       .from("garden_unlocked_parcels")
-      .select("parcel_x,parcel_y,care_cost,source")
+      .select("parcel_x,parcel_y,purchase_ordinal,care_cost,source")
       .eq("steward_id", stewardId)
       .order("parcel_y")
       .order("parcel_x")
       .returns<ParcelRow[]>(),
     supabase
       .from("garden_returned_parcels")
-      .select("parcel_x,parcel_y,care_cost,source")
+      .select("parcel_x,parcel_y,purchase_ordinal,care_cost,source")
       .eq("steward_id", stewardId)
       .order("returned_at", { ascending: false })
       .returns<ReturnedParcelRow[]>(),
@@ -480,6 +486,8 @@ export async function getMyGarden(stewardId: string): Promise<MyGardenState> {
     stewardshipProfile.ordinary_footprint_capacity ?? 100,
   );
   const freeformExpansion =
+    progress.plot_level >= 5 && stewardshipCapacity >= 125;
+  const landReturnUnlocked =
     progress.plot_level >= 5 && stewardshipCapacity >= 175;
   const expansionCandidates = freeformExpansion
     ? getExpansionCandidates(unlockedParcels, progress.plot_level)
@@ -500,6 +508,7 @@ export async function getMyGarden(stewardId: string): Promise<MyGardenState> {
     uprootReturn: MY_GARDEN_UPROOT_RETURN,
     nextExpansion,
     freeformExpansion,
+    landReturnUnlocked,
     unlockedParcels,
     expansionCandidates,
     reclaimCandidates,

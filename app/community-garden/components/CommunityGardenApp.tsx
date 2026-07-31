@@ -404,9 +404,13 @@ export function CommunityGardenApp() {
             Math.floor(ui.selectedGridY! / 4) === parcel.parcelY,
         ) ?? null
       : null;
+  const landShapingUnlocked = Boolean(memberGarden?.freeformExpansion);
+  const landReturnUnlocked = Boolean(memberGarden?.landReturnUnlocked);
   const canReturnSelectedClearing =
+    landReturnUnlocked &&
     Boolean(selectedGardenParcel) &&
     selectedGardenParcel?.source !== "starter" &&
+    (selectedGardenParcel?.purchaseOrdinal ?? 0) > 5 &&
     !ui.builder.active;
   const selectedGardenParcelContents = useMemo(() => {
     if (!selectedGardenParcel || !memberGarden) return null;
@@ -427,6 +431,7 @@ export function CommunityGardenApp() {
     return { plants, paths, items, total: plants + paths + items };
   }, [memberGarden, selectedGardenParcel]);
   const freeformExpansionAvailable = Boolean(
+    landShapingUnlocked &&
     memberGarden?.freeformExpansion && memberGarden.expansionCandidates?.length,
   );
   const canvasGarden = useMemo<MyGardenState>(() => {
@@ -434,12 +439,18 @@ export function CommunityGardenApp() {
       Boolean(memberGarden) &&
       personalExpansionMode === "freeform" &&
       freeformExpansionAvailable;
+    const reclaimCandidates = memberGarden?.reclaimCandidates ?? [];
+    // A missing parcel in the established footprint must be reclaimed before
+    // the classic spiral can grow again. This keeps the two systems in sync
+    // and prevents a parcel price from appearing on top of a strip price.
+    const classicExpansionBlocked = reclaimCandidates.length > 0;
     return {
       ...myGarden,
       freeformExpansion: useFreeform,
-      nextExpansion: useFreeform ? null : myGarden.nextExpansion,
+      nextExpansion:
+        useFreeform || classicExpansionBlocked ? null : myGarden.nextExpansion,
       expansionCandidates: [
-        ...(memberGarden?.reclaimCandidates ?? []),
+        ...reclaimCandidates,
         ...(useFreeform ? (myGarden.expansionCandidates ?? []) : []),
       ],
       selectedParcel:
@@ -453,6 +464,30 @@ export function CommunityGardenApp() {
     myGarden,
     personalExpansionMode,
     selectedGardenParcel,
+  ]);
+  const selectedExpansionCost = useMemo(() => {
+    if (ui.selectedGridX === null || ui.selectedGridY === null) return 0;
+    const containsSelection = (parcel: {
+      minX: number;
+      minY: number;
+      width: number;
+      height: number;
+    }) =>
+      ui.selectedGridX! >= parcel.minX &&
+      ui.selectedGridX! < parcel.minX + parcel.width &&
+      ui.selectedGridY! >= parcel.minY &&
+      ui.selectedGridY! < parcel.minY + parcel.height;
+    const exactParcel = canvasGarden.expansionCandidates?.find(containsSelection);
+    if (exactParcel) return exactParcel.careCost;
+    return canvasGarden.nextExpansion &&
+      containsSelection(canvasGarden.nextExpansion)
+      ? canvasGarden.nextExpansion.careCost
+      : 0;
+  }, [
+    canvasGarden.expansionCandidates,
+    canvasGarden.nextExpansion,
+    ui.selectedGridX,
+    ui.selectedGridY,
   ]);
   const unreadUnlockCount = memberGarden
     ? getMyGardenUnreadUnlockCount(
@@ -2699,34 +2734,37 @@ export function CommunityGardenApp() {
               <span>{ui.builder.active ? "Done" : "Builder"}</span>
             </button>
             {!ui.builder.active ? (
-              <div
-                className="cg-expansion-mode"
-                role="group"
-                aria-label="My Garden expansion style"
-              >
-                <button
-                  type="button"
-                  className={personalExpansionMode === "classic" ? "is-active" : ""}
-                  aria-pressed={personalExpansionMode === "classic"}
-                  onClick={() => setPersonalExpansionMode("classic")}
+              landShapingUnlocked ? (
+                <div
+                  className="cg-expansion-mode"
+                  role="group"
+                  aria-label="My Garden expansion style"
                 >
-                  Classic land
-                </button>
-                <button
-                  type="button"
-                  className={personalExpansionMode === "freeform" ? "is-active" : ""}
-                  aria-pressed={personalExpansionMode === "freeform"}
-                  disabled={!freeformExpansionAvailable}
-                  title={
-                    freeformExpansionAvailable
-                      ? "Choose an adjacent 4 by 4 clearing"
-                      : "Reach Caretaker to shape individual clearings"
-                  }
-                  onClick={() => setPersonalExpansionMode("freeform")}
-                >
-                  {freeformExpansionAvailable ? "Shape land" : "Shape at Caretaker"}
-                </button>
-              </div>
+                  <button
+                    type="button"
+                    className={personalExpansionMode === "classic" ? "is-active" : ""}
+                    aria-pressed={personalExpansionMode === "classic"}
+                    title="Continue the automatic classic land spiral"
+                    onClick={() => setPersonalExpansionMode("classic")}
+                  >
+                    Spiral
+                  </button>
+                  <button
+                    type="button"
+                    className={personalExpansionMode === "freeform" ? "is-active" : ""}
+                    aria-pressed={personalExpansionMode === "freeform"}
+                    disabled={!freeformExpansionAvailable}
+                    title="Choose one adjacent 4 by 4 clearing"
+                    onClick={() => setPersonalExpansionMode("freeform")}
+                  >
+                    Shape
+                  </button>
+                </div>
+              ) : (
+                <small className="cg-land-shaping-hint">
+                  Shape land at Helper
+                </small>
+              )
             ) : null}
             {canReturnSelectedClearing ? (
               <button
@@ -2739,8 +2777,7 @@ export function CommunityGardenApp() {
                   playGardenSound("select");
                 }}
               >
-                <span className="cg-return-clearing-icon" aria-hidden="true" />
-                <span>Return selected land</span>
+                <span>Return parcel</span>
               </button>
             ) : null}
             {ui.builder.active ? (
@@ -3051,11 +3088,7 @@ export function CommunityGardenApp() {
       />
       <GardenExpansionConfirmation
         open={expansionConfirmationOpen}
-        careCost={
-          canvasGarden.nextExpansion?.careCost ??
-          canvasGarden.expansionCandidates?.[0]?.careCost ??
-          0
-        }
+        careCost={selectedExpansionCost}
         onCancel={() => setExpansionConfirmationOpen(false)}
         onConfirm={confirmGardenExpansion}
       />

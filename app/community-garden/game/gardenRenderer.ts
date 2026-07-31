@@ -136,6 +136,7 @@ export type RenderGardenState = {
       width: number;
       height: number;
       careCost: number;
+      source?: "starter" | "legacy" | "classic" | "freeform";
     }>;
     selectedParcel?: {
       minX: number;
@@ -1156,11 +1157,11 @@ function drawLockedParcel(
   const parcelHeight = parcelRows * tileScreenHeight * zoom;
 
   ctx.save();
-  ctx.fillStyle = "rgba(239, 211, 142, 0.14)";
+  ctx.fillStyle = "rgba(23, 68, 46, 0.16)";
   ctx.fillRect(parcelX, parcelY, parcelWidth, parcelHeight);
-  ctx.strokeStyle = "#d49a38";
-  ctx.lineWidth = Math.max(2, 2 * zoom);
-  ctx.setLineDash([5 * zoom, 3 * zoom]);
+  ctx.strokeStyle = "rgba(127, 157, 104, 0.52)";
+  ctx.lineWidth = Math.max(1, zoom);
+  ctx.setLineDash([4 * zoom, 4 * zoom]);
   ctx.strokeRect(parcelX, parcelY, parcelWidth, parcelHeight);
   ctx.restore();
 
@@ -1173,15 +1174,15 @@ function drawLockedParcel(
   ctx.save();
   ctx.translate(Math.round(labelPoint.x), Math.round(labelPoint.y));
   ctx.scale(zoom, zoom);
-  ctx.fillStyle = "rgba(255, 244, 223, 0.9)";
+  ctx.fillStyle = "rgba(22, 65, 44, 0.86)";
   ctx.fillRect(-28, -11, 56, 22);
-  ctx.strokeStyle = "#8a623f";
+  ctx.strokeStyle = "rgba(149, 176, 122, 0.52)";
   ctx.lineWidth = 1;
   ctx.strokeRect(-28, -11, 56, 22);
-  ctx.fillStyle = "#8a623f";
+  ctx.fillStyle = "rgba(180, 202, 151, 0.72)";
   ctx.fillRect(-22, -3, 8, 8);
   ctx.strokeRect(-21, -7, 6, 6);
-  ctx.fillStyle = "#5f4437";
+  ctx.fillStyle = "rgba(232, 240, 216, 0.86)";
   ctx.font = '700 7px "Courier New", monospace';
   ctx.textAlign = "left";
   ctx.textBaseline = "middle";
@@ -1210,28 +1211,32 @@ function drawFreeformExpansionCandidates(
     if (!isVisible(center, viewport, Math.max(width, height))) continue;
 
     ctx.save();
-    ctx.fillStyle = "rgba(239, 211, 142, 0.12)";
+    ctx.fillStyle = "rgba(23, 68, 46, 0.18)";
     ctx.fillRect(topLeft.x, topLeft.y, width, height);
-    ctx.strokeStyle = "#d49a38";
-    ctx.lineWidth = Math.max(2, 2 * zoom);
-    ctx.setLineDash([5 * zoom, 3 * zoom]);
+    ctx.strokeStyle = "rgba(139, 169, 112, 0.56)";
+    ctx.lineWidth = Math.max(1, zoom);
+    ctx.setLineDash([4 * zoom, 4 * zoom]);
     ctx.strokeRect(topLeft.x, topLeft.y, width, height);
     ctx.setLineDash([]);
     ctx.translate(Math.round(center.x), Math.round(center.y));
     ctx.scale(zoom, zoom);
-    ctx.fillStyle = "rgba(255, 244, 223, 0.9)";
-    ctx.fillRect(-28, -11, 56, 22);
-    ctx.strokeStyle = "#8a623f";
+    ctx.fillStyle = "rgba(22, 65, 44, 0.86)";
+    ctx.fillRect(-36, -11, 72, 22);
+    ctx.strokeStyle = "rgba(149, 176, 122, 0.52)";
     ctx.lineWidth = 1;
-    ctx.strokeRect(-28, -11, 56, 22);
-    ctx.fillStyle = "#8a623f";
-    ctx.fillRect(-22, -3, 8, 8);
-    ctx.strokeRect(-21, -7, 6, 6);
-    ctx.fillStyle = "#5f4437";
+    ctx.strokeRect(-36, -11, 72, 22);
+    ctx.fillStyle = "rgba(180, 202, 151, 0.72)";
+    ctx.fillRect(-30, -3, 8, 8);
+    ctx.strokeRect(-29, -7, 6, 6);
+    ctx.fillStyle = "rgba(232, 240, 216, 0.86)";
     ctx.font = '700 7px "Courier New", monospace';
     ctx.textAlign = "left";
     ctx.textBaseline = "middle";
-    ctx.fillText(`${candidate.careCost} CARE`, -9, 1);
+    ctx.fillText(
+      `${candidate.source === "freeform" ? "PARCEL" : "RECLAIM"} ${candidate.careCost}`,
+      -17,
+      1,
+    );
     ctx.restore();
   }
 }
@@ -2635,10 +2640,10 @@ function drawSelectedPersonalParcel(
   const width = parcel.width * tileSize * zoom;
   const height = parcel.height * tileScreenHeight * zoom;
   ctx.save();
-  ctx.fillStyle = "rgba(245, 219, 144, 0.07)";
-  ctx.strokeStyle = "rgba(151, 66, 65, 0.58)";
-  ctx.lineWidth = Math.max(1, Math.round(zoom));
-  ctx.setLineDash([Math.max(3, Math.round(5 * zoom)), Math.max(3, Math.round(4 * zoom))]);
+  ctx.fillStyle = "rgba(203, 220, 180, 0.035)";
+  ctx.strokeStyle = "rgba(204, 221, 181, 0.38)";
+  ctx.lineWidth = 1;
+  ctx.setLineDash([Math.max(3, Math.round(5 * zoom)), Math.max(4, Math.round(6 * zoom))]);
   ctx.fillRect(topLeft.x, topLeft.y, width, height);
   ctx.strokeRect(
     Math.round(topLeft.x) + 0.5,

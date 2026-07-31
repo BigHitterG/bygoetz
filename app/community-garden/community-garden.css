@@ -880,22 +880,18 @@
 }
 
 .cg-return-clearing-button {
-  display: grid;
-  min-width: 76px;
-  min-height: 44px;
-  margin-top: 7px;
-  place-items: center;
-  gap: 2px;
-  border: 2px solid rgba(52, 35, 31, 0.58);
-  background: rgba(217, 231, 199, 0.88);
-  color: var(--cg-ink);
+  min-height: 26px;
+  margin-top: 4px;
+  border: 1px solid rgba(129, 155, 102, 0.5);
+  background: rgba(29, 79, 55, 0.72);
+  color: rgba(232, 240, 216, 0.88);
   cursor: pointer;
-  padding: 5px 8px;
+  padding: 4px 7px;
   font: inherit;
-  font-size: 0.54rem;
+  font-size: 0.46rem;
   font-weight: 900;
   text-transform: uppercase;
-  box-shadow: 2px 2px 0 rgba(52, 35, 31, 0.14);
+  box-shadow: 1px 1px 0 rgba(5, 37, 24, 0.18);
 }
 
 .cg-return-clearing-icon {
@@ -945,29 +941,44 @@
 .cg-return-clearing-contents span { font-size: 0.78rem; }
 
 .cg-expansion-mode {
-  display: grid;
-  width: 132px;
-  margin-top: 7px;
-  border: 2px solid rgba(52, 35, 31, 0.58);
-  background: rgba(255, 244, 223, 0.9);
-  box-shadow: 2px 2px 0 rgba(52, 35, 31, 0.14);
+  display: flex;
+  margin-top: 4px;
+  border: 1px solid rgba(129, 155, 102, 0.46);
+  background: rgba(21, 70, 47, 0.68);
+  box-shadow: 1px 1px 0 rgba(5, 37, 24, 0.16);
 }
 
 .cg-expansion-mode button {
-  min-height: 30px;
+  min-height: 24px;
   border: 0;
-  border-bottom: 1px solid rgba(52, 35, 31, 0.25);
+  border-right: 1px solid rgba(182, 205, 155, 0.22);
   background: transparent;
-  color: var(--cg-ink);
+  color: rgba(232, 240, 216, 0.82);
   font: inherit;
-  font-size: 0.5rem;
+  font-size: 0.44rem;
   font-weight: 900;
+  padding: 3px 7px;
   text-transform: uppercase;
 }
 
-.cg-expansion-mode button:last-child { border-bottom: 0; }
-.cg-expansion-mode button.is-active { background: #f2d594; }
+.cg-expansion-mode button:last-child { border-right: 0; }
+.cg-expansion-mode button.is-active {
+  background: rgba(112, 143, 84, 0.72);
+  color: #f2f0cf;
+}
 .cg-expansion-mode button:disabled { opacity: 0.48; }
+
+.cg-land-shaping-hint {
+  margin-top: 4px;
+  max-width: 86px;
+  color: rgba(207, 220, 180, 0.62);
+  font-size: 0.43rem;
+  font-weight: 800;
+  line-height: 1.25;
+  text-align: right;
+  text-shadow: 1px 1px 0 rgba(5, 37, 24, 0.2);
+  text-transform: uppercase;
+}
 
 .cg-builder-tools.is-active .cg-builder-toggle {
   border-color: #2f8290;

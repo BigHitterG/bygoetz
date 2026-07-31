@@ -679,9 +679,18 @@ function getNearestPersonalGardenPosition(
         (parcel.minY + parcel.height - 0.5) * GARDEN_CONFIG.tileSize,
         Math.max((parcel.minY + 0.5) * GARDEN_CONFIG.tileSize, point.y),
       );
-      return { x, y, distance: Math.hypot(x - point.x, y - point.y) };
+      return {
+        x,
+        y,
+        distance: Math.hypot(x - point.x, y - point.y),
+        maryDistance: Math.hypot(x - runtime.mary.x, y - runtime.mary.y),
+      };
     })
-    .sort((left, right) => left.distance - right.distance)[0];
+    .sort(
+      (left, right) =>
+        left.distance - right.distance ||
+        left.maryDistance - right.maryDistance,
+    )[0];
 }
 
 function constrainRuntimeMovement(
@@ -763,10 +772,10 @@ function getExpansionCandidateAt(
 ) {
   if (runtime.mode !== "personal" || !runtime.personalGarden) return null;
   const expansions = [
+    ...(runtime.personalGarden.expansionCandidates ?? []),
     ...(runtime.personalGarden.nextExpansion
       ? [runtime.personalGarden.nextExpansion]
       : []),
-    ...(runtime.personalGarden.expansionCandidates ?? []),
   ];
   return (
     expansions.find(
@@ -1717,11 +1726,10 @@ function getWateringApproachTarget(
 }
 
 function getLockedParcelApproach(runtime: Runtime, gridX: number, gridY: number) {
-  const bounds = getRuntimeBounds(runtime);
-  return gridToWorld(
-    Math.min(bounds.maxX, Math.max(bounds.minX, gridX)),
-    Math.min(bounds.maxY, Math.max(bounds.minY, gridY)),
-  );
+  const requested = gridToWorld(gridX, gridY);
+  if (runtime.mode !== "personal") return requested;
+  const nearest = getNearestPersonalGardenPosition(runtime, requested);
+  return { x: nearest.x, y: nearest.y };
 }
 
 function makeLocalPlant(
@@ -3182,7 +3190,7 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
                 : 0;
               const selectedExpansionCandidate =
                 actionState.action === "expand" &&
-                runtime.personalGarden.expansionCandidates?.some(
+                runtime.personalGarden.expansionCandidates?.find(
                   (candidate) =>
                     selected.gridX >= candidate.minX &&
                     selected.gridX < candidate.minX + candidate.width &&
@@ -3293,7 +3301,9 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
                   : { gridX: selected.gridX, gridY: selected.gridY };
               if (!isBuilderAction) runtime.statusMessage =
                 actionState.action === "expand"
-                  ? `Parcel opened. Another clearing will cost ${updatedGarden.nextExpansion?.careCost ?? updatedGarden.expansionCandidates?.[0]?.careCost ?? "more"} Care.`
+                  ? selectedExpansionCandidate
+                    ? `Parcel reclaimed for ${selectedExpansionCandidate.careCost} Care. ${updatedGarden.careBalance} Care remains.`
+                    : `Classic land opened. The next strip will cost ${updatedGarden.nextExpansion?.careCost ?? "more"} Care.`
                   : actionState.action === "place-element"
                     ? `${getMyGardenElement(runtime.selectedElementType).name} placed. ${updatedGarden.careBalance} Care remains.`
                     : actionState.action === "remove-element"
@@ -4216,10 +4226,15 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
       const worldDy = -(event.clientY - gesture.startY) / runtime.zoom;
       runtime.selected = null;
       runtime.cameraAnchor = null;
-      runtime.target = {
+      const requestedTarget = {
         x: clampRuntimeCoordinate(runtime, runtime.mary.x + worldDx, "x"),
         y: clampRuntimeCoordinate(runtime, runtime.mary.y + worldDy, "y"),
       };
+      const reachableTarget =
+        runtime.mode === "personal"
+          ? getNearestPersonalGardenPosition(runtime, requestedTarget)
+          : requestedTarget;
+      runtime.target = { x: reachableTarget.x, y: reachableTarget.y };
       runtime.statusMessage =
         runtime.mode === "personal"
           ? "Exploring My Garden..."
