@@ -6,7 +6,7 @@ Opening the email link never publishes content. The final review token is carrie
 
 ## Daily workflow
 
-1. Vercel calls `/api/cron/basil-social` at 11:00 UTC, which is 6:00 a.m. Chicago daylight time, to create the private daily digest and email link. The local Codex production task also begins at 6:00 a.m.; rendering takes long enough for the digest to exist before upload, and the task must retry the digest lookup briefly if the two jobs race.
+1. Vercel calls `/api/cron/basil-social` at 10:55 UTC, which is 5:55 a.m. Chicago daylight time, to create the private daily digest without emailing. The local Codex production task begins at 6:00 a.m., renders and uploads the validated package, and then consumes a one-time `notify` capability to send the private review email.
 2. The route reads the last fourteen days of GitHub commits and calls `get_basil_social_stats()` for aggregate, non-identifying garden totals.
 3. `socialContent.ts` scores factual Basil story cards against recent work and selects one primary packet by default. The publishing queue takes at most three approved adaptations from its validated core video: YouTube Short, Instagram Reel, and a selective Reddit companion.
 4. If `OPENAI_API_KEY` is configured, the selected drafts are refined through the Responses API using strict structured output. Failure falls back to the curated drafts rather than failing the daily run.
@@ -119,7 +119,7 @@ Create a second daily 8:00 a.m. Chicago-time task with this prompt:
 
 The desktop must be signed in to Codex, awake, and running with access to this checkout for both local tasks. The phone workflow is email -> private deployed Studio -> Watch / Edit / Approve All / Request revision. Approval is stored in Supabase, so the 8:00 a.m. computer task can see it without the phone connecting to the local machine. Scheduled run notifications are available in the desktop/web **Scheduled** inbox; phone delivery should rely on the email and Studio link rather than assuming a Codex mobile task inbox.
 
-The protected route still supports `prepare`, `notify`, and normal scheduled modes for server-side use. The no-extra-API Codex workflow uses connected Supabase capabilities instead, so no production secret needs to be copied onto the computer. If the email is opened during the few minutes while rendering is still finishing, refreshing the same Studio link reveals the uploaded video.
+The protected route still supports `prepare`, `notify`, and normal scheduled modes for server-side use. The no-extra-API Codex workflow uses connected Supabase capabilities instead, so no production secret needs to be copied onto the computer. Upload and email notification use separate one-time capabilities; the email is sent only after the finished private video is verified.
 
 ## Social API connection boundary
 
