@@ -50,11 +50,11 @@ Copy this entire prompt:
 >
 > Through the connected Supabase tool, find today's newest `basil_social_digests` row and its rank-1 story. The Vercel digest may be starting at the same time, so retry the lookup briefly instead of creating a duplicate. Call `public.issue_basil_social_transfer_token(story_id, 'upload')`. Immediately run `pnpm social:upload-package -- --story-id=<story-id> --transfer-token=<returned-token>`. Never print or store the one-time token.
 >
-> Verify in Supabase that the rank-1 story is `ready`, has one valid private video and poster, and has current copy for Instagram, YouTube, and Reddit. Confirm that all variants remain drafts. Only after the new package uploads successfully, mark feedback actually addressed by this cut as `resolved`; leave other feedback queued. Do not email credentials and do not publish.
+> Verify in Supabase that the rank-1 story is `ready`, has one valid private video and poster, and has current copy for Instagram, YouTube, and Reddit. Confirm that all variants remain drafts. Call `public.issue_basil_social_transfer_token(story_id, 'notify')`, then POST to `https://basilcommunitygarden.com/api/cron/basil-social?mode=notify` with the story ID in `x-basil-story-id` and the returned one-time value in `x-basil-transfer-token`. Never print or store that token. Require an `ok: true` response. Only after the new package uploads and the private review email sends successfully, mark feedback actually addressed by this cut as `resolved`; leave other feedback queued. Do not email credentials and do not publish.
 >
 > Finish with a compact report: concept, hook, duration, three platform adaptations, feedback applied, truth checks, validation result, private Studio readiness, and any stop condition. If any required step fails, keep the posts unapproved and report the exact failure.
 
-The Vercel cron creates the daily digest and review email. If the email arrives while rendering is still finishing, the same private Studio link shows the finished video after refresh.
+The 5:55 a.m. Vercel cron creates the private digest without emailing. The 6:00 a.m. Codex task sends the review email only after the MP4 and poster pass validation and upload successfully.
 
 ## Task 2: Check approval and prepare posting
 
