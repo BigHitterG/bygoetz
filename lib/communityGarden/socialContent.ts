@@ -261,7 +261,20 @@ const STORY_LIBRARY: StoryCard[] = [
       fallbackVisual: "A vertical map-and-awards diagram showing task, accolade, and footprint increase as three clear steps.",
     },
     keywords: ["footprint", "award", "accolade", "weed", "task", "adventure", "unlock", "parcel"],
-    fact: "Basil's footprint progression is intended to reward short map activities such as watering, planting, „}≠¢Gß≤⁄Óù∆≠y›,
+    fact: "Basil's footprint progression is intended to reward short map activities such as watering, planting, and weed clearing with additional community planting space.",
+    variants: [
+      {
+        channel: "reddit",
+        headline: "A planting footprint that grows through small garden adventures",
+        body: "One direction for Basil's community map is a separate, accolade-focused progression track built around things you can finish in roughly twenty minutes. Clear a pocket of weeds, complete a watering route, plant a particular arrangement, or discover something off the usual path.\n\nCompleting these small adventures would earn awards and gradually increase the space where a member can plant in the community garden. The point is not one endless grind. It is a collection of compact reasons to move around the map, try another mechanic, and leave with a visible accomplishment.\n\nWhat is the first twenty-minute garden task you would want to take on?",
+        hashtags: [],
+      },
+      {
+        channel: "youtube",
+        headline: "Small garden adventures, a larger planting footprint",
+        body: "Water a route. Clear a weed pocket. Finish a planting challenge. Basil's map accolades are designed as short adventures that can grow a member's community planting footprint.",
+        hashtags: ["BasilCommunityGarden", "CozyGames", "GameProgression"],
+      },
       {
         channel: "instagram",
         headline: "Twenty minutes. One garden accolade.",
