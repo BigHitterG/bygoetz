@@ -4,7 +4,7 @@ import {
   isMonthlyDraftDue,
   monthlyPeriodKey,
 } from "@/lib/communityGarden/newsletter";
-import { createDailySocialDigest } from "@/lib/communityGarden/socialStudio";
+import { createDailySocialDigest, resendLatestSocialDigest } from "@/lib/communityGarden/socialStudio";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -21,12 +21,18 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Not authorized." }, { status: 401 });
   }
   const now = new Date();
+  const mode = new URL(request.url).searchParams.get("mode") ?? "scheduled";
+  if (!["scheduled", "prepare", "notify"].includes(mode)) {
+    return NextResponse.json({ error: "Invalid social cron mode." }, { status: 400 });
+  }
   const newsletterDue = isMonthlyDraftDue(now);
   const [socialResult, newsletterResult] = await Promise.allSettled([
-    createDailySocialDigest(now),
-    newsletterDue
+    mode === "notify"
+      ? resendLatestSocialDigest(`scheduled-notify-${now.toISOString().slice(0, 10)}`)
+      : createDailySocialDigest(now, { sendEmail: mode !== "prepare" }),
+    mode === "scheduled" && newsletterDue
       ? createMonthlyNewsletterIssue(monthlyPeriodKey(now), now)
-      : Promise.resolve({ skipped: "not-monthly-draft-day" }),
+      : Promise.resolve({ skipped: mode === "scheduled" ? "not-monthly-draft-day" : "social-workflow-only" }),
   ]);
   if (socialResult.status === "rejected") {
     console.error(JSON.stringify({
@@ -43,6 +49,7 @@ export async function GET(request: Request) {
   const failed = socialResult.status === "rejected" || newsletterResult.status === "rejected";
   return NextResponse.json({
     ok: !failed,
+    mode,
     social: socialResult.status === "fulfilled" ? socialResult.value : { error: "Social digest failed." },
     newsletter: newsletterResult.status === "fulfilled" ? newsletterResult.value : { error: "Newsletter draft failed." },
   }, { status: failed ? 503 : 200 });

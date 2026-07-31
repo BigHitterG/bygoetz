@@ -1,0 +1,136 @@
+.capture {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  color: #fff8e8;
+  background: #26342b;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.capture canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+  image-rendering: pixelated;
+}
+
+.vignette {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(180deg, rgba(22, 29, 24, .64) 0, transparent 22%, transparent 63%, rgba(22, 29, 24, .68) 100%),
+    radial-gradient(circle at 50% 42%, transparent 42%, rgba(21, 27, 23, .32) 100%);
+  pointer-events: none;
+}
+
+.header {
+  position: absolute;
+  top: 4.5%;
+  left: 7%;
+  right: 7%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  text-shadow: 0 2px 8px rgba(20, 25, 21, .7);
+}
+
+.header span {
+  text-transform: uppercase;
+  letter-spacing: .2em;
+  font-size: clamp(11px, 2.3vw, 24px);
+  font-weight: 800;
+}
+
+.header strong {
+  letter-spacing: .18em;
+  font: 800 clamp(18px, 4.2vw, 44px) Georgia, serif;
+}
+
+.gameplayStatus {
+  position: absolute;
+  top: 10%;
+  left: 7%;
+  display: flex;
+  flex-direction: column;
+  gap: .12em;
+  padding: .55em .7em;
+  border: 2px solid rgba(255, 248, 232, .72);
+  border-radius: .3em;
+  background: rgba(31, 39, 33, .78);
+  box-shadow: .14em .14em 0 rgba(25, 31, 27, .42);
+  text-shadow: 0 2px 8px rgba(20, 25, 21, .7);
+}
+
+.gameplayStatus span {
+  color: #f1d08b;
+  font-size: clamp(11px, 2.2vw, 23px);
+  font-weight: 800;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+}
+
+.gameplayStatus strong {
+  font-size: clamp(14px, 3.1vw, 34px);
+}
+
+.caption {
+  position: absolute;
+  left: 6.5%;
+  right: 6.5%;
+  bottom: 16%;
+  display: flex;
+  justify-content: center;
+  transition: bottom .25s ease;
+}
+
+.caption p {
+  max-width: 92%;
+  margin: 0;
+  padding: .46em .58em .5em;
+  border: .08em solid rgba(255, 248, 232, .92);
+  background: rgba(31, 39, 33, .88);
+  box-shadow: .18em .18em 0 rgba(25, 31, 27, .55);
+  text-align: center;
+  text-wrap: balance;
+  font-size: clamp(25px, 6.2vw, 66px);
+  font-weight: 850;
+  line-height: 1.08;
+  letter-spacing: -.025em;
+}
+
+.caption p span {
+  color: rgba(255, 248, 232, .76);
+  transition: color .08s linear, text-shadow .08s linear;
+}
+
+.caption p .spokenWord {
+  color: #fff8e8;
+}
+
+.caption p .activeWord {
+  color: #f1d08b;
+  text-shadow: 0 0 .2em rgba(241, 208, 139, .5);
+}
+
+.captionClosing { bottom: 22%; }
+
+.footer {
+  position: absolute;
+  left: 7%;
+  right: 7%;
+  bottom: 6%;
+  display: flex;
+  flex-direction: column;
+  gap: .25em;
+  opacity: 0;
+  transform: translateY(14px);
+  transition: opacity .25s ease, transform .25s ease;
+  text-align: center;
+  text-shadow: 0 2px 9px rgba(20, 25, 21, .8);
+}
+
+.footerVisible { opacity: 1; transform: translateY(0); }
+.footer span { font-size: clamp(12px, 2.8vw, 30px); font-weight: 700; }
+.footer strong { color: #f1d08b; font-size: clamp(12px, 2.6vw, 28px); letter-spacing: .04em; }

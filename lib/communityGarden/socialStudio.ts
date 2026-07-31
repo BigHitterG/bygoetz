@@ -58,6 +58,29 @@ type VariantRow = {
   last_error: string | null;
 };
 
+type AssetRow = {
+  id: string;
+  story_id: string;
+  kind: "video" | "poster" | "image" | "audio";
+  bucket_id: string;
+  object_path: string;
+  mime_type: string;
+  byte_size: number;
+  width: number | null;
+  height: number | null;
+  duration_ms: number | null;
+  validation_status: "pending" | "valid" | "invalid";
+  metadata: Record<string, unknown>;
+};
+
+type FeedbackRow = {
+  id: string;
+  story_id: string;
+  feedback: string;
+  status: "queued" | "resolved" | "dismissed";
+  created_at: string;
+};
+
 function tokenHash(token: string) {
   return createHash("sha256").update(token).digest("hex");
 }
@@ -85,8 +108,8 @@ function chicagoRunKey(date: Date) {
 }
 
 function configuredStoryCount() {
-  const value = Number(process.env.BASIL_SOCIAL_DAILY_STORY_COUNT ?? 3);
-  return Number.isInteger(value) ? Math.max(3, Math.min(5, value)) : 3;
+  const value = Number(process.env.BASIL_SOCIAL_DAILY_STORY_COUNT ?? 1);
+  return Number.isInteger(value) ? Math.max(1, Math.min(3, value)) : 1;
 }
 
 async function collectRepositoryChanges(date: Date): Promise<RepositoryChange[]> {
@@ -149,21 +172,28 @@ function connectorStatus() {
   };
 }
 
-function renderDigestEmail(digestId: string, token: string, stories: Array<{ title: string; whyToday: string; assetUrl: string }>) {
+function renderDigestEmail(digestId: string, token: string, stories: Array<{ title: string; whyToday: string; assetUrl: string; assetKind: "image" | "video" }>) {
   const reviewUrl = `${getBasilUrl(`/community-garden/social-studio?digest=${digestId}`)}#token=${token}`;
-  const cards = stories.map((story, index) => `
+  const cards = stories.map((story, index) => {
+    const visual = story.assetKind === "image"
+      ? `<img src="${escapeHtml(getBasilUrl(story.assetUrl))}" alt="Actual Basil gameplay for ${escapeHtml(story.title)}" width="580" style="display:block;width:100%;height:auto;max-height:340px;object-fit:cover">`
+      : `<div style="padding:44px 20px;background:#314239;color:#fff8e8;text-align:center"><div style="font:800 12px Arial,sans-serif;letter-spacing:1.6px;color:#e7c879">FINISHED VERTICAL VIDEO</div><div style="font:700 24px Georgia,serif;margin-top:9px">Poster + MP4 ready in Studio</div></div>`;
+    return `
     <tr><td style="padding:0 0 18px">
       <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border:2px solid #352823;background:#fff8e8">
-        <tr><td><img src="${escapeHtml(getBasilUrl(story.assetUrl))}" alt="Actual Basil gameplay for ${escapeHtml(story.title)}" width="580" style="display:block;width:100%;height:auto;max-height:340px;object-fit:cover"></td></tr>
-        <tr><td style="padding:18px 20px"><div style="font:700 12px Arial,sans-serif;letter-spacing:1.4px;color:#a43d3d">STORY ${index + 1}</div><h2 style="font:700 22px Georgia,serif;margin:6px 0 8px;color:#302321">${escapeHtml(story.title)}</h2><p style="font:15px/1.55 Arial,sans-serif;color:#5b4a42;margin:0">${escapeHtml(story.whyToday)}</p></td></tr>
+        <tr><td>${visual}</td></tr>
+        <tr><td style="padding:18px 20px"><div style="font:700 12px Arial,sans-serif;letter-spacing:1.4px;color:#a43d3d">${story.assetKind === "video" ? "VIDEO PACKAGE" : "STORY"} ${index + 1}</div><h2 style="font:700 22px Georgia,serif;margin:6px 0 8px;color:#302321">${escapeHtml(story.title)}</h2><p style="font:15px/1.55 Arial,sans-serif;color:#5b4a42;margin:0">${escapeHtml(story.whyToday)}</p></td></tr>
       </table>
-    </td></tr>`).join("");
-  const html = `<!doctype html><html><body style="margin:0;background:#e7dfcf;color:#302321"><table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr><td align="center" style="padding:28px 12px"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:620px"><tr><td style="border:3px solid #302321;background:#f5e8ca;padding:28px 26px;text-align:center"><div style="font:700 30px Georgia,serif;letter-spacing:2px">BASIL</div><div style="font:700 12px Arial,sans-serif;letter-spacing:2px;margin-top:5px">SOCIAL STUDIO</div><h1 style="font:700 27px Georgia,serif;margin:22px 0 10px">${stories.length} stories are ready</h1><p style="font:16px/1.5 Arial,sans-serif;margin:0;color:#5b4a42">Review the copy, edit anything you like, and approve only the channels you want to post.</p><p style="margin:22px 0 4px"><a href="${reviewUrl}" style="display:inline-block;background:#a94343;color:#fff8e8;border:2px solid #302321;padding:13px 22px;text-decoration:none;font:700 15px Arial,sans-serif">Open Basil Social Studio</a></p><p style="font:12px/1.5 Arial,sans-serif;color:#6b5a51;margin:10px 0 0">Opening the Studio never publishes anything. Final approval happens on the review page.</p></td></tr><tr><td style="height:18px"></td></tr>${cards}<tr><td style="font:12px/1.5 Arial,sans-serif;color:#6b5a51;text-align:center;padding:8px 20px">Sent privately to ${escapeHtml(REVIEWERS.join(", "))}. This review link expires in seven days.</td></tr></table></td></tr></table></body></html>`;
+    </td></tr>`;
+  }).join("");
+  const videoCount = stories.filter((story) => story.assetKind === "video").length;
+  const html = `<!doctype html><html><body style="margin:0;background:#e7dfcf;color:#302321"><table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr><td align="center" style="padding:28px 12px"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:620px"><tr><td style="border:3px solid #302321;background:#f5e8ca;padding:28px 26px;text-align:center"><div style="font:700 30px Georgia,serif;letter-spacing:2px">BASIL</div><div style="font:700 12px Arial,sans-serif;letter-spacing:2px;margin-top:5px">SOCIAL STUDIO</div><h1 style="font:700 27px Georgia,serif;margin:22px 0 10px">Todayâ€™s package is ready</h1><p style="font:16px/1.5 Arial,sans-serif;margin:0;color:#5b4a42">${videoCount} finished video${videoCount === 1 ? "" : "s"}, ${stories.length} stories, poster thumbnails, and channel copy are waiting for review.</p><p style="margin:22px 0 4px"><a href="${reviewUrl}" style="display:inline-block;background:#a94343;color:#fff8e8;border:2px solid #302321;padding:13px 22px;text-decoration:none;font:700 15px Arial,sans-serif">Watch and review the package</a></p><p style="font:12px/1.5 Arial,sans-serif;color:#6b5a51;margin:10px 0 0">Opening the Studio never publishes anything. Approve All and revision controls are inside.</p></td></tr><tr><td style="height:18px"></td></tr>${cards}<tr><td style="font:12px/1.5 Arial,sans-serif;color:#6b5a51;text-align:center;padding:8px 20px">Sent privately to ${escapeHtml(REVIEWERS.join(", "))}. This review link expires in seven days.</td></tr></table></td></tr></table></body></html>`;
   const text = `Basil Social Studio\n\n${stories.length} stories are ready for review. Opening the Studio never publishes anything.\n\n${stories.map((story, index) => `${index + 1}. ${story.title}\n${story.whyToday}`).join("\n\n")}\n\nReview: ${reviewUrl}`;
   return { reviewUrl, html, text };
 }
 
-export async function createDailySocialDigest(date = new Date()) {
+export async function createDailySocialDigest(date = new Date(), options: { sendEmail?: boolean } = {}) {
+  const sendEmail = options.sendEmail !== false;
   const supabase = getSupabaseAdmin();
   const runKey = chicagoRunKey(date);
   const { data: existing, error: existingError } = await supabase
@@ -173,6 +203,10 @@ export async function createDailySocialDigest(date = new Date()) {
     .maybeSingle();
   if (existingError) throw existingError;
   if (existing) {
+    if (sendEmail && !existing.review_email_sent_at) {
+      const sent = await resendLatestSocialDigest(`daily-fallback-${runKey}`);
+      return { id: sent.id, created: false, status: "review_ready", emailSent: true };
+    }
     return { id: existing.id as string, created: false, status: existing.status as string, emailSent: Boolean(existing.review_email_sent_at) };
   }
 
@@ -208,7 +242,7 @@ export async function createDailySocialDigest(date = new Date()) {
   }
 
   try {
-    const emailStories: Array<{ title: string; whyToday: string; assetUrl: string }> = [];
+    const emailStories: Array<{ title: string; whyToday: string; assetUrl: string; assetKind: "image" | "video" }> = [];
     for (const [index, draft] of drafts.entries()) {
       const { data: story, error: storyError } = await supabase.from("basil_social_stories").insert({
         digest_id: digest.id,
@@ -233,14 +267,15 @@ export async function createDailySocialDigest(date = new Date()) {
         hashtags: variant.hashtags,
       })));
       if (variantError) throw variantError;
-      emailStories.push({ title: draft.title, whyToday: draft.whyToday, assetUrl: draft.assetUrl });
+      emailStories.push({ title: draft.title, whyToday: draft.whyToday, assetUrl: draft.assetUrl, assetKind: draft.assetKind });
     }
+    if (!sendEmail) return { id: digest.id as string, created: true, status: "review_ready", emailSent: false };
     const rendered = renderDigestEmail(digest.id as string, token, emailStories);
     const { data: email, error: emailError } = await getResend().emails.send({
       from: FROM,
       to: REVIEWERS,
       replyTo: REPLY_TO,
-      subject: `Basil Social Studio: ${drafts.length} stories ready`,
+      subject: `Basil Social Studio: todayâ€™s video package is ready`,
       html: rendered.html,
       text: rendered.text,
       headers: { "X-Entity-Ref-ID": `basil-social-${runKey}` },
@@ -260,208 +295,4 @@ export async function createDailySocialDigest(date = new Date()) {
 }
 
 export async function resendLatestSocialDigest(requestKey: string) {
-  if (requestKey.length < 16 || requestKey.length > 200) throw new Error("Invalid Social Studio resend key.");
-  const supabase = getSupabaseAdmin();
-  const { data: digest, error: digestError } = await supabase
-    .from("basil_social_digests")
-    .select("id,approval_token_hash,approval_expires_at")
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .single();
-  if (digestError) throw digestError;
-
-  const { data: stories, error: storiesError } = await supabase
-    .from("basil_social_stories")
-    .select("title,why_today,asset_url")
-    .eq("digest_id", digest.id)
-    .order("rank", { ascending: true });
-  if (storiesError) throw storiesError;
-  if (!stories?.length) throw new Error("The latest Social Studio digest has no stories.");
-
-  const token = randomBytes(32).toString("base64url");
-  const now = new Date().toISOString();
-  const expiresAt = new Date(Date.now() + TOKEN_TTL_MS).toISOString();
-  const previousToken = {
-    approval_token_hash: digest.approval_token_hash as string,
-    approval_expires_at: digest.approval_expires_at as string,
-  };
-  const { error: tokenError } = await supabase.from("basil_social_digests").update({
-    approval_token_hash: tokenHash(token),
-    approval_expires_at: expiresAt,
-    status: "review_ready",
-    updated_at: now,
-  }).eq("id", digest.id);
-  if (tokenError) throw tokenError;
-
-  const emailStories = stories.map((story) => ({
-    title: story.title as string,
-    whyToday: story.why_today as string,
-    assetUrl: story.asset_url as string,
-  }));
-  const rendered = renderDigestEmail(digest.id as string, token, emailStories);
-  try {
-    const { data: email, error: emailError } = await getResend().emails.send({
-      from: FROM,
-      to: REVIEWERS,
-      replyTo: REPLY_TO,
-      subject: `Basil Social Studio: ${stories.length} stories ready (resent)`,
-      html: rendered.html,
-      text: rendered.text,
-      headers: { "X-Entity-Ref-ID": `basil-social-resend-${digest.id}` },
-    }, { idempotencyKey: `basil-social-resend-${digest.id}-${tokenHash(requestKey).slice(0, 24)}` });
-    if (emailError) throw new Error(emailError.message);
-    const { error: updateError } = await supabase.from("basil_social_digests").update({
-      review_email_id: email?.id ?? null,
-      review_email_sent_at: now,
-      updated_at: now,
-    }).eq("id", digest.id);
-    if (updateError) throw updateError;
-    return { id: digest.id as string, emailId: email?.id ?? null, emailSent: true, reviewEmail: REVIEWERS };
-  } catch (error) {
-    await supabase.from("basil_social_digests").update({ ...previousToken, updated_at: new Date().toISOString() }).eq("id", digest.id);
-    throw error;
-  }
-}
-
-export async function reviewSocialDigest(digestId: string, token: string) {
-  const digest = await findAuthorizedDigest(digestId, token);
-  if (!digest) return null;
-  const supabase = getSupabaseAdmin();
-  const { data: stories, error: storiesError } = await supabase
-    .from("basil_social_stories")
-    .select("*")
-    .eq("digest_id", digestId)
-    .order("rank", { ascending: true });
-  if (storiesError) throw storiesError;
-  const storyRows = (stories ?? []) as StoryRow[];
-  const storyIds = storyRows.map((story) => story.id);
-  const { data: variants, error: variantsError } = storyIds.length
-    ? await supabase.from("basil_social_variants").select("*").in("story_id", storyIds).order("channel", { ascending: true })
-    : { data: [], error: null };
-  if (variantsError) throw variantsError;
-  const variantRows = (variants ?? []) as VariantRow[];
-  return {
-    id: digest.id,
-    runKey: digest.run_key,
-    status: digest.status,
-    expiresAt: digest.approval_expires_at,
-    expired: new Date(digest.approval_expires_at).getTime() <= Date.now(),
-    emailSentAt: digest.review_email_sent_at,
-    createdAt: digest.created_at,
-    reviewers: REVIEWERS,
-    connectors: connectorStatus(),
-    stories: storyRows.map((story) => ({
-      id: story.id,
-      key: story.story_key,
-      sourceType: story.source_type,
-      sourceRef: story.source_ref,
-      title: story.title,
-      summary: story.summary,
-      whyToday: story.why_today,
-      assetUrl: story.asset_url,
-      assetKind: story.asset_kind,
-      evidence: story.evidence,
-      rank: story.rank,
-      status: story.status,
-      variants: variantRows.filter((variant) => variant.story_id === story.id).map((variant) => ({
-        id: variant.id,
-        channel: variant.channel,
-        headline: variant.headline,
-        body: variant.body,
-        hashtags: Array.isArray(variant.hashtags) ? variant.hashtags : [],
-        status: variant.status,
-        approvedAt: variant.approved_at,
-        publishedAt: variant.published_at,
-        publishedUrl: variant.published_url,
-        lastError: variant.last_error,
-      })),
-    })),
-  };
-}
-
-async function findVariantForDigest(digestId: string, variantId: string) {
-  if (!/^[0-9a-f-]{36}$/i.test(variantId)) return null;
-  const supabase = getSupabaseAdmin();
-  const { data: stories, error: storiesError } = await supabase.from("basil_social_stories").select("id").eq("digest_id", digestId);
-  if (storiesError) throw storiesError;
-  const storyIds = (stories ?? []).map((story) => story.id as string);
-  if (!storyIds.length) return null;
-  const { data, error } = await supabase.from("basil_social_variants").select("*").eq("id", variantId).in("story_id", storyIds).maybeSingle();
-  if (error) throw error;
-  return data as VariantRow | null;
-}
-
-async function refreshDigestStatus(digestId: string) {
-  const supabase = getSupabaseAdmin();
-  const { data: stories } = await supabase.from("basil_social_stories").select("id").eq("digest_id", digestId);
-  const storyIds = (stories ?? []).map((story) => story.id as string);
-  if (!storyIds.length) return;
-  const { data: variants } = await supabase.from("basil_social_variants").select("status").in("story_id", storyIds);
-  const statuses = (variants ?? []).map((variant) => variant.status as string);
-  const status = statuses.some((value) => value === "draft") ? "in_review" : "completed";
-  await supabase.from("basil_social_digests").update({ status, updated_at: new Date().toISOString() }).eq("id", digestId);
-}
-
-export async function saveSocialVariant(
-  digestId: string,
-  token: string,
-  variantId: string,
-  fields: { headline?: string; body?: string; hashtags?: string[] },
-) {
-  const digest = await findAuthorizedDigest(digestId, token);
-  if (!digest) throw new Error("This Social Studio link is invalid.");
-  if (new Date(digest.approval_expires_at).getTime() <= Date.now()) throw new Error("This Social Studio link has expired.");
-  const variant = await findVariantForDigest(digestId, variantId);
-  if (!variant) throw new Error("This social draft does not belong to the review.");
-  if (variant.status === "published") throw new Error("Published copy is preserved as an immutable record.");
-  const headline = fields.headline?.trim().slice(0, 300);
-  const body = fields.body?.trim().slice(0, 10_000);
-  const hashtags = fields.hashtags?.map((tag) => tag.trim().replace(/^#/, "")).filter(Boolean).slice(0, 12);
-  if (headline !== undefined && !headline) throw new Error("A headline is required.");
-  if (body !== undefined && !body) throw new Error("Post copy is required.");
-  const update: Record<string, unknown> = { updated_at: new Date().toISOString() };
-  if (headline !== undefined) update.headline = headline;
-  if (body !== undefined) update.body = body;
-  if (hashtags !== undefined) update.hashtags = hashtags;
-  if (variant.status !== "rejected") update.status = "draft";
-  const { data, error } = await getSupabaseAdmin().from("basil_social_variants").update(update).eq("id", variantId).select("*").single();
-  if (error) throw error;
-  await refreshDigestStatus(digestId);
-  return data as VariantRow;
-}
-
-export async function decideSocialVariant(
-  digestId: string,
-  token: string,
-  variantId: string,
-  decision: "approve" | "reject" | "draft" | "published",
-  publishedUrl?: string,
-) {
-  const digest = await findAuthorizedDigest(digestId, token);
-  if (!digest) throw new Error("This Social Studio link is invalid.");
-  if (new Date(digest.approval_expires_at).getTime() <= Date.now()) throw new Error("This Social Studio link has expired.");
-  const variant = await findVariantForDigest(digestId, variantId);
-  if (!variant) throw new Error("This social draft does not belong to the review.");
-  if (variant.status === "published" && decision !== "published") throw new Error("A published draft cannot be moved back into review.");
-  const now = new Date().toISOString();
-  const status = decision === "approve" ? "manual_ready" : decision === "reject" ? "rejected" : decision;
-  const cleanPublishedUrl = publishedUrl?.trim().slice(0, 2000) || null;
-  if (decision === "published" && cleanPublishedUrl && !/^https?:\/\//i.test(cleanPublishedUrl)) {
-    throw new Error("Published links must begin with http:// or https://.");
-  }
-  const { data, error } = await getSupabaseAdmin().from("basil_social_variants").update({
-    status,
-    approved_at: status === "manual_ready" || status === "published" ? (variant.approved_at ?? now) : null,
-    published_at: status === "published" ? (variant.published_at ?? now) : null,
-    published_url: status === "published" ? cleanPublishedUrl : null,
-    last_error: null,
-    updated_at: now,
-  }).eq("id", variantId).select("*").single();
-  if (error) throw error;
-  await refreshDigestStatus(digestId);
-  return data as VariantRow;
-}
-
-export function isSocialChannel(value: unknown): value is SocialChannel {
-  return typeof value === "string" && SOCIAL_CHANNELS.includes(value as SocialChannel);
-}
+  if (requestKey.lenæÚ$z{-®éÜj×WVW7D¶W’æÆVæwF‚â#’F‡&÷ræWrW'&÷"‚$–çfÆ–B6ö6–Â7GVF–ò&W6VæB¶W’â"“°Ð¢6öç7B7W&6RÒvWE7W&6TFÖ–â‚“°Ð¢6öç7B²FF¢F–vW7BÂW'&÷#¢F–vW7DW'&÷"ÒÒv—B7W&6PÐ¢æg&öÒ‚&&6–Å÷6ö6–ÅöF–vW7G2"Ð¢ç6VÆV7B‚&–BÆ&÷fÅ÷Fö¶Våö†6‚Æ&÷fÅöW‡—&W5öB"Ð¢æ÷&FW"‚&7&VFVEöB"Â²66VæF–æs¢fÇ6RÒÐ¢æÆ–Ö—BƒÐ¢ç6–ævÆR‚“°Ð¢–b†F–vW7DW'&÷"’F‡&÷rF–vW7DW'&÷#°Ð Ð¢6öç7B²FF¢7F÷&–W2ÂW'&÷#¢7F÷&–W4W'&÷"ÒÒv—B7W&6PÐ¢æg&öÒ‚&&6–Å÷6ö6–Å÷7F÷&–W2"Ð¢ç6VÆV7B‚'F—FÆRÇv‡•÷FöF’Æ76WE÷W&ÂÆ76WEö¶–æB"Ð¢æW‚&F–vW7Eö–B"ÂF–vW7Bæ–BÐ¢æ÷&FW"‚'&æ²"Â²66VæF–æs¢G'VRÒ“°Ð¢–b‡7F÷&–W4W'&÷"’F‡&÷r7F÷&–W4W'&÷#°Ð¢–b‚7F÷&–W3òæÆVæwF‚’F‡&÷ræWrW'&÷"‚%F†RÆFW7B6ö6–Â7GVF–òF–vW7B†2æò7F÷&–W2â"“°Ð Ð¢6öç7BFö¶VâÒ&æFöÔ'—FW2ƒ3"’çFõ7G&–ær‚&&6ScGW&Â"“°Ð¢6öç7Bæ÷rÒæWrFFR‚’çFô•4õ7G&–ær‚“°Ð¢6öç7BW‡—&W4BÒæWrFFR„FFRææ÷r‚’²Dô´TåõEDÅôÕ2’çFô•4õ7G&–ær‚“°Ð¢6öç7B&Wf–÷W5Fö¶VâÒ°Ð¢&÷fÅ÷Fö¶Våö†6ƒ¢F–vW7Bæ&÷fÅ÷Fö¶Våö†6‚27G&–ærÀÐ¢&÷fÅöW‡—&W5öC¢F–vW7Bæ&÷fÅöW‡—&W5öB27G&–ærÀÐ¢Ó°Ð¢6öç7B²W'&÷#¢Fö¶VäW'&÷"ÒÒv—B7W&6Ræg&öÒ‚&&6–Å÷6ö6–ÅöF–vW7G2"’çWFFR‡°Ð¢&÷fÅ÷Fö¶Våö†6ƒ¢Fö¶Vä†6‚‡Fö¶Vâ’ÀÐ¢&÷fÅöW‡—&W5öC¢W‡—&W4BÀÐ¢7FGW3¢'&Wf–Wu÷&VG’"ÀÐ¢WFFVEöC¢æ÷rÀÐ¢Ò’æW‚&–B"ÂF–vW7Bæ–B“°Ð¢–b‡Fö¶VäW'&÷"’F‡&÷rFö¶VäW'&÷#°Ð Ð¢6öç7BVÖ–Å7F÷&–W2Ò7F÷&–W2æÖ‚‡7F÷'’’Óâ‡°Ð¢F—FÆS¢7F÷'’çF—FÆR27G&–ærÀÐ¢v‡•FöF“¢7F÷'’çv‡•÷FöF’27G&–ærÀÐ¢76WEW&Ã¢7F÷'’æ76WE÷W&Â27G&–ærÀÐ¢76WD¶–æC¢7F÷'’æ76WEö¶–æB2&–ÖvR"Â'f–FVò"ÀÐ¢Ò’“°Ð¢6öç7B&VæFW&VBÒ&VæFW$F–vW7DVÖ–Â†F–vW7Bæ–B27G&–ærÂFö¶VâÂVÖ–Å7F÷&–W2“°Ð¢G'’°Ð¢6öç7B²FF¢VÖ–ÂÂW'&÷#¢VÖ–ÄW'&÷"ÒÒv—BvWE&W6VæB‚’æVÖ–Ç2ç6VæB‡°Ð¢g&öÓ¢e$ôÒÀÐ¢Fó¢$Ud”UtU%2ÀÐ¢&WÇ•Fó¢$UÅ•õDòÀÐ¢7V&¦V7C¢&6–Â6ö6–Â7GVF–ó¢G·7F÷&–W2æÆVæwF‡Ò7F÷&–W2&VG’‡&W6VçB–ÀÐ¢‡FÖÃ¢&VæFW&VBæ‡FÖÂÀÐ¢FW‡C¢&VæFW&VBçFW‡BÀÐ¢†VFW'3¢²%‚ÔVçF—G’Õ&VbÔ”B#¢&6–Â×6ö6–Â×&W6VæBÒG¶F–vW7Bæ–GÖÒÀÐ¢ÒÂ²–FV×÷FVæ7”¶W“¢&6–Â×6ö6–Â×&W6VæBÒG¶F–vW7Bæ–GÒÒG·Fö¶Vä†6‚‡&WVW7D¶W’’ç6Æ–6RƒÂ#B—ÖÒ“°Ð¢–b†VÖ–ÄW'&÷"’F‡&÷ræWrW'&÷"†VÖ–ÄW'&÷"æÖW76vR“°Ð¢6öç7B²W'&÷#¢WFFTW'&÷"ÒÒv—B7W&6Ræg&öÒ‚&&6–Å÷6ö6–ÅöF–vW7G2"’çWFFR‡°Ð¢&Wf–WuöVÖ–Åö–C¢VÖ–Ãòæ–BóòçVÆÂÀÐ¢&Wf–WuöVÖ–Å÷6VçEöC¢æ÷rÀÐ¢WFFVEöC¢æ÷rÀÐ¢Ò’æW‚&–B"ÂF–vW7Bæ–B“°Ð¢–b‡WFFTW'&÷"’F‡&÷rWFFTW'&÷#°Ð¢&WGW&â²–C¢F–vW7Bæ–B27G&–ærÂVÖ–Ä–C¢VÖ–Ãòæ–BóòçVÆÂÂVÖ–Å6VçC¢G'VRÂ&Wf–WtVÖ–Ã¢$Ud”UtU%2Ó°Ð¢Ò6F6‚†W'&÷"’°Ð¢v—B7W&6Ræg&öÒ‚&&6–Å÷6ö6–ÅöF–vW7G2"’çWFFR‡²ââç&Wf–÷W5Fö¶VâÂWFFVEöC¢æWrFFR‚’çFô•4õ7G&–ær‚’Ò’æW‚&–B"ÂF–vW7Bæ–B“°Ð¢F‡&÷rW'&÷#°Ð¢ÐÐ§ÐÐ Ð¦W‡÷'B7–æ2gVæ7F–öâ&Wf–Wu6ö6–ÄF–vW7B†F–vW7D–C¢7G&–ærÂFö¶Vã¢7G&–ær’°Ð¢6öç7BF–vW7BÒv—Bf–æDWF†÷&—¦VDF–vW7B†F–vW7D–BÂFö¶Vâ“°Ð¢–b‚F–vW7B’&WGW&âçVÆÃ°Ð¢6öç7B7W&6RÒvWE7W&6TFÖ–â‚“°Ð¢6öç7B²FF¢7F÷&–W2ÂW'&÷#¢7F÷&–W4W'&÷"ÒÒv—B7W&6PÐ¢æg&öÒ‚&&6–Å÷6ö6–Å÷7F÷&–W2"Ð¢ç6VÆV7B‚"¢"Ð¢æW‚&F–vW7Eö–B"ÂF–vW7D–BÐ¢æ÷&FW"‚'&æ²"Â²66VæF–æs¢G'VRÒ“°Ð¢–b‡7F÷&–W4W'&÷"’F‡&÷r7F÷&–W4W'&÷#°Ð¢6öç7B7F÷'•&÷w2Ò‡7F÷&–W2óòµÒ’27F÷'•&÷uµÓ°Ð¢6öç7B7F÷'”–G2Ò7F÷'•&÷w2æÖ‚‡7F÷'’’Óâ7F÷'’æ–B“°Ð¢6öç7B·f&–çG5&W7VÇBÂ76WG5&W7VÇBÂfVVF&6µ&W7VÇEÒÒ7F÷'”–G2æÆVæwF€Ð¢òv—B&öÖ—6RæÆÂ…°Ð¢7W&6Ræg&öÒ‚&&6–Å÷6ö6–Å÷f&–çG2"’ç6VÆV7B‚"¢"’æ–â‚'7F÷'•ö–B"Â7F÷'”–G2’æ÷&FW"‚&6†ææVÂ"Â²66VæF–æs¢G'VRÒ’ÀÐ¢7W&6Ræg&öÒ‚&&6–Å÷6ö6–Åö76WG2"’ç6VÆV7B‚"¢"’æ–â‚'7F÷'•ö–B"Â7F÷'”–G2’æW‚'fÆ–FF–öå÷7FGW2"Â'fÆ–B"’æ÷&FW"‚&7&VFVEöB"Â²66VæF–æs¢fÇ6RÒ’ÀÐ¢7W&6Ræg&öÒ‚&&6–Å÷6ö6–ÅöfVVF&6²"’ç6VÆV7B‚&–BÇ7F÷'•ö–BÆfVVF&6²Ç7FGW2Æ7&VFVEöB"’æW‚&F–vW7Eö–B"ÂF–vW7D–B’æ÷&FW"‚&7&VFVEöB"Â²66VæF–æs¢fÇ6RÒ’ÀÐ¢ÒÐ¢¢°Ð¢²FF¢µÒÂW'&÷#¢çVÆÂÒÀÐ¢²FF¢µÒÂW'&÷#¢çVÆÂÒÀÐ¢²FF¢µÒÂW'&÷#¢çVÆÂÒÀÐ¢Ó°Ð¢–b‡f&–çG5&W7VÇBæW'&÷"’F‡&÷rf&–çG5&W7VÇBæW'&÷#°Ð¢–b†76WG5&W7VÇBæW'&÷"’F‡&÷r76WG5&W7VÇBæW'&÷#°Ð¢–b†fVVF&6µ&W7VÇBæW'&÷"’F‡&÷rfVVF&6µ&W7VÇBæW'&÷#°Ð¢6öç7Bf&–çG2Òf&–çG5&W7VÇBæFF°Ð¢6öç7Bf&–çE&÷w2Ò‡f&–çG2óòµÒ’2f&–çE&÷uµÓ°Ð¢6öç7B76WE&÷w2Ò†76WG5&W7VÇBæFFóòµÒ’276WE&÷uµÓ°Ð¢6öç7BfVVF&6µ&÷w2Ò†fVVF&6µ&W7VÇBæFFóòµÒ’2fVVF&6µ&÷uµÓ°Ð¢6öç7B6–væVD76WG2Òv—B&öÖ—6RæÆÂ†76WE&÷w2æÖ†7–æ2†76WB’Óâ°Ð¢6öç7B²FFÂW'&÷"ÒÒv—B7W&6Rç7F÷&vPÐ¢æg&öÒ†76WBæ'V6¶WEö–BÐ¢æ7&VFU6–væVEW&Â†76WBæö&¦V7E÷F‚Âc¢c“°Ð¢–b†W'&÷"’F‡&÷rW'&÷#°Ð¢&WGW&â°Ð¢–C¢76WBæ–BÀÐ¢7F÷'”–C¢76WBç7F÷'•ö–BÀÐ¢¶–æC¢76WBæ¶–æBÀÐ¢W&Ã¢FFç6–væVEW&ÂÀÐ¢Ö–ÖUG—S¢76WBæÖ–ÖU÷G—RÀÐ¢'—FU6—¦S¢76WBæ'—FU÷6—¦RÀÐ¢v–GFƒ¢76WBçv–GF‚ÀÐ¢†V–v‡C¢76WBæ†V–v‡BÀÐ¢GW&F–öä×3¢76WBæGW&F–öåö×2ÀÐ¢fÆ–FF–öå7FGW3¢76WBçfÆ–FF–öå÷7FGW2ÀÐ¢ÖWFFF¢76WBæÖWFFFÀÐ¢Ó°Ð¢Ò’“°Ð¢&WGW&â°Ð¢–C¢F–vW7Bæ–BÀÐ¢'Vä¶W“¢F–vW7Bç'Våö¶W’ÀÐ¢7FGW3¢F–vW7Bç7FGW2ÀÐ¢W‡—&W4C¢F–vW7Bæ&÷fÅöW‡—&W5öBÀÐ¢W‡—&VC¢æWrFFR†F–vW7Bæ&÷fÅöW‡—&W5öB’ævWEF–ÖR‚’ÃÒFFRææ÷r‚’ÀÐ¢VÖ–Å6VçDC¢F–vW7Bç&Wf–WuöVÖ–Å÷6VçEöBÀÐ¢7&VFVDC¢F–vW7Bæ7&VFVEöBÀÐ¢&Wf–WvW'3¢$Ud”UtU%2ÀÐ¢6öææV7F÷'3¢6öææV7F÷%7FGW2‚’ÀÐ¢7F÷&–W3¢7F÷'•&÷w2æÖ‚‡7F÷'’’Óâ°Ð¢6öç7B7F÷'”76WG2Ò6–væVD76WG2æf–ÇFW"‚†76WB’Óâ76WBç7F÷'”–BÓÓÒ7F÷'’æ–B“°Ð¢6öç7B&–Ö'•f–FVòÒ7F÷'”76WG2æf–æB‚†76WB’Óâ76WBæ¶–æBÓÓÒ'f–FVò"“°Ð¢6öç7B&–Ö'”–ÖvRÒ7F÷'”76WG2æf–æB‚†76WB’Óâ76WBæ¶–æBÓÓÒ&–ÖvR"“°Ð¢6öç7B÷7FW"Ò7F÷'”76WG2æf–æB‚†76WB’Óâ76WBæ¶–æBÓÓÒ'÷7FW""“°Ð¢&WGW&â°Ð¢–C¢7F÷'’æ–BÀÐ¢¶W“¢7F÷'’ç7F÷'•ö¶W’ÀÐ¢6÷W&6UG—S¢7F÷'’ç6÷W&6U÷G—RÀÐ¢6÷W&6U&Vc¢7F÷'’ç6÷W&6U÷&VbÀÐ¢F—FÆS¢7F÷'’çF—FÆRÀÐ¢7VÖÖ'“¢7F÷'’ç7VÖÖ'’ÀÐ¢v‡•FöF“¢7F÷'’çv‡•÷FöF’ÀÐ¢76WEW&Ã¢&–Ö'•f–FVóòçW&Âóò&–Ö'”–ÖvSòçW&Âóò7F÷'’æ76WE÷W&ÂÀÐ¢76WD¶–æC¢&–Ö'•f–FVòò'f–FVò"¢&–Ö'”–ÖvRò&–ÖvR"¢7F÷'’æ76WEö¶–æBÀÐ¢÷7FW%W&Ã¢÷7FW#òçW&ÂóòçVÆÂÀÐ¢76WG3¢7F÷'”76WG2ÀÐ¢fVVF&6³¢fVVF&6µ&÷w2æf–ÇFW"‚†—FVÒ’Óâ—FVÒç7F÷'•ö–BÓÓÒ7F÷'’æ–B’ÀÐ¢Wf–FVæ6S¢7F÷'’æWf–FVæ6RÀÐ¢&æ³¢7F÷'’ç&æ²ÀÐ¢7FGW3¢7F÷'’ç7FGW2ÀÐ¢f&–çG3¢f&–çE&÷w2æf–ÇFW"‚‡f&–çB’Óâf&–çBç7F÷'•ö–BÓÓÒ7F÷'’æ–B’æÖ‚‡f&–çB’Óâ‡°Ð¢–C¢f&–çBæ–BÀÐ¢6†ææVÃ¢f&–çBæ6†ææVÂÀÐ¢†VFÆ–æS¢f&–çBæ†VFÆ–æRÀÐ¢&öG“¢f&–çBæ&öG’ÀÐ¢†6‡Fw3¢'&’æ—4'&’‡f&–çBæ†6‡Fw2’òf&–çBæ†6‡Fw2¢µÒÀÐ¢7FGW3¢f&–çBç7FGW2ÀÐ¢&÷fVDC¢f&–çBæ&÷fVEöBÀÐ¢V&Æ—6†VDC¢f&–çBçV&Æ—6†VEöBÀÐ¢V&Æ—6†VEW&Ã¢f&–çBçV&Æ—6†VE÷W&ÂÀÐ¢Æ7DW'&÷#¢f&–çBæÆ7EöW'&÷"ÀÐ¢Ò’’ÀÐ¢Ó°Ð¢Ò’ÀÐ¢Ó°Ð§ÐÐ Ð¦7–æ2gVæ7F–öâf–æEf&–çDf÷$F–vW7B†F–vW7D–C¢7G&–ærÂf&–çD–C¢7G&–ær’°Ð¢–b‚õå³Ó–ÖbÕ×³3gÒBö’çFW7B‡f&–çD–B’’&WGW&âçVÆÃ°Ð¢6öç7B7W&6RÒvWE7W&6TFÖ–â‚“°Ð¢6öç7B²FF¢7F÷&–W2ÂW'&÷#¢7F÷&–W4W'&÷"ÒÒv—B7W&6Ræg&öÒ‚&&6–Å÷6ö6–Å÷7F÷&–W2"’ç6VÆV7B‚&–B"’æW‚&F–vW7Eö–B"ÂF–vW7D–B“°Ð¢–b‡7F÷&–W4W'&÷"’F‡&÷r7F÷&–W4W'&÷#°Ð¢6öç7B7F÷'”–G2Ò‡7F÷&–W2óòµÒ’æÖ‚‡7F÷'’’Óâ7F÷'’æ–B27G&–ær“°Ð¢–b‚7F÷'”–G2æÆVæwF‚’&WGW&âçVÆÃ°Ð¢6öç7B²FFÂW'&÷"ÒÒv—B7W&6Ræg&öÒ‚&&6–Å÷6ö6–Å÷f&–çG2"’ç6VÆV7B‚"¢"’æW‚&–B"Âf&–çD–B’æ–â‚'7F÷'•ö–B"Â7F÷'”–G2’æÖ–&U6–ævÆR‚“°Ð¢–b†W'&÷"’F‡&÷rW'&÷#°Ð¢&WGW&âFF2f&–çE&÷rÂçVÆÃ°Ð§ÐÐ Ð¦7–æ2gVæ7F–öâ&Vg&W6„F–vW7E7FGW2†F–vW7D–C¢7G&–ær’°Ð¢6öç7B7W&6RÒvWE7W&6TFÖ–â‚“°Ð¢6öç7B²FF¢7F÷&–W2ÒÒv—B7W&6Ræg&öÒ‚&&6–Å÷6ö6–Å÷7F÷&–W2"’ç6VÆV7B‚&–B"’æW‚&F–vW7Eö–B"ÂF–vW7D–B“°Ð¢6öç7B7F÷'”–G2Ò‡7F÷&–W2óòµÒ’æÖ‚‡7F÷'’’Óâ7F÷'’æ–B27G&–ær“°Ð¢–b‚7F÷'”–G2æÆVæwF‚’&WGW&ã°Ð¢6öç7B²FF¢f&–çG2ÒÒv—B7W&6Ræg&öÒ‚&&6–Å÷6ö6–Å÷f&–çG2"’ç6VÆV7B‚'7FGW2"’æ–â‚'7F÷'•ö–B"Â7F÷'”–G2“°Ð¢6öç7B7FGW6W2Ò‡f&–çG2óòµÒ’æÖ‚‡f&–çB’Óâf&–çBç7FGW227G&–ær“°Ð¢6öç7B7FGW2Ò7FGW6W2ç6öÖR‚‡fÇVR’ÓâfÇVRÓÓÒ&G&gB"’ò&–å÷&Wf–Wr"¢&6ö×ÆWFVB#°Ð¢v—B7W&6Ræg&öÒ‚&&6–Å÷6ö6–ÅöF–vW7G2"’çWFFR‡²7FGW2ÂWFFVEöC¢æWrFFR‚’çFô•4õ7G&–ær‚’Ò’æW‚&–B"ÂF–vW7D–B“°Ð§ÐÐ Ð¦W‡÷'B7–æ2gVæ7F–öâ6fU6ö6–Åf&–çB€Ð¢F–vW7D–C¢7G&–ærÀÐ¢Fö¶Vã¢7G&–ærÀÐ¢f&–çD–C¢7G&–ærÀÐ¢f–VÆG3¢²†VFÆ–æSó¢7G&–æs²&öG“ó¢7G&–æs²†6‡Fw3ó¢7G&–æuµÒÒÀÐ¢’°Ð¢6öç7BF–vW7BÒv—Bf–æDWF†÷&—¦VDF–vW7B†F–vW7D–BÂFö¶Vâ“°Ð¢–b‚F–vW7B’F‡&÷ræWrW'&÷"‚%F†—26ö6–Â7GVF–òÆ–æ²—2–çfÆ–Bâ"“°Ð¢–b†æWrFFR†F–vW7Bæ&÷fÅöW‡—&W5öB’ævWEF–ÖR‚’ÃÒFFRææ÷r‚’’F‡&÷ræWrW'&÷"‚%F†—26ö6–Â7GVF–òÆ–æ²†2W‡—&VBâ"“°Ð¢6öç7Bf&–çBÒv—Bf–æEf&–çDf÷$F–vW7B†F–vW7D–BÂf&–çD–B“°Ð¢–b‚f&–çB’F‡&÷ræWrW'&÷"‚%F†—26ö6–ÂG&gBFöW2æ÷B&VÆöærFòF†R&Wf–Wrâ"“°Ð¢–b‡f&–çBç7FGW2ÓÓÒ'V&Æ—6†VB"’F‡&÷ræWrW'&÷"‚%V&Æ—6†VB6÷’—2&W6W'fVB2â–Ö×WF&ÆR&V6÷&Bâ"“°Ð¢6öç7B†VFÆ–æRÒf–VÆG2æ†VFÆ–æSòçG&–Ò‚’ç6Æ–6RƒÂ3“°Ð¢6öç7B&öG’Òf–VÆG2æ&öG“òçG&–Ò‚’ç6Æ–6RƒÂó“°Ð¢6öç7B†6‡Fw2Òf–VÆG2æ†6‡Fw3òæÖ‚‡Fr’ÓâFrçG&–Ò‚’ç&WÆ6R‚õâ2òÂ""’’æf–ÇFW"„&ööÆVâ’ç6Æ–6RƒÂ"“°Ð¢–b††VFÆ–æRÓÒVæFVf–æVBbb†VFÆ–æR’F‡&÷ræWrW'&÷"‚$†VFÆ–æR—2&WV—&VBâ"“°Ð¢–b†&öG’ÓÒVæFVf–æVBbb&öG’’F‡&÷ræWrW'&÷"‚%÷7B6÷’—2&WV—&VBâ"“°Ð¢6öç7BWFFS¢&V6÷&CÇ7G&–ærÂVæ¶æ÷vãâÒ²WFFVEöC¢æWrFFR‚’çFô•4õ7G&–ær‚’Ó°Ð¢–b††VFÆ–æRÓÒVæFVf–æVB’WFFRæ†VFÆ–æRÒ†VFÆ–æS°Ð¢–b†&öG’ÓÒVæFVf–æVB’WFFRæ&öG’Ò&öG“°Ð¢–b††6‡Fw2ÓÒVæFVf–æVB’WFFRæ†6‡Fw2Ò†6‡Fw3°Ð¢–b‡f&–çBç7FGW2ÓÒ'&V¦V7FVB"’WFFRç7FGW2Ò&G&gB#°Ð¢6öç7B²FFÂW'&÷"ÒÒv—BvWE7W&6TFÖ–â‚’æg&öÒ‚&&6–Å÷6ö6–Å÷f&–çG2"’çWFFR‡WFFR’æW‚&–B"Âf&–çD–B’ç6VÆV7B‚"¢"’ç6–ævÆR‚“°Ð¢–b†W'&÷"’F‡&÷rW'&÷#°Ð¢v—B&Vg&W6„F–vW7E7FGW2†F–vW7D–B“°Ð¢&WGW&âFF2f&–çE&÷s°Ð§ÐÐ Ð¦W‡÷'B7–æ2gVæ7F–öâFV6–FU6ö6–Åf&–çB€Ð¢F–vW7D–C¢7G&–ærÀÐ¢Fö¶Vã¢7G&–ærÀÐ¢f&–çD–C¢7G&–ærÀÐ¢FV6—6–öã¢&&÷fR"Â'&V¦V7B"Â&G&gB"Â'V&Æ—6†VB"ÀÐ¢V&Æ—6†VEW&Ãó¢7G&–ærÀÐ¢’°Ð¢6öç7BF–vW7BÒv—Bf–æDWF†÷&—¦VDF–vW7B†F–vW7D–BÂFö¶Vâ“°Ð¢–b‚F–vW7B’F‡&÷ræWrW'&÷"‚%F†—26ö6–Â7GVF–òÆ–æ²—2–çfÆ–Bâ"“°Ð¢–b†æWrFFR†F–vW7Bæ&÷fÅöW‡—&W5öB’ævWEF–ÖR‚’ÃÒFFRææ÷r‚’’F‡&÷ræWrW'&÷"‚%F†—26ö6–Â7GVF–òÆ–æ²†2W‡—&VBâ"“°Ð¢6öç7Bf&–çBÒv—Bf–æEf&–çDf÷$F–vW7B†F–vW7D–BÂf&–çD–B“°Ð¢–b‚f&–çB’F‡&÷ræWrW'&÷"‚%F†—26ö6–ÂG&gBFöW2æ÷B&VÆöærFòF†R&Wf–Wrâ"“°Ð¢–b‡f&–çBç7FGW2ÓÓÒ'V&Æ—6†VB"bbFV6—6–öâÓÒ'V&Æ—6†VB"’F‡&÷ræWrW'&÷"‚$V&Æ—6†VBG&gB6ææ÷B&RÖ÷fVB&6²–çFò&Wf–Wrâ"“°Ð¢6öç7Bæ÷rÒæWrFFR‚’çFô•4õ7G&–ær‚“°Ð¢6öç7B7FGW2ÒFV6—6–öâÓÓÒ&&÷fR"ò&ÖçVÅ÷&VG’"¢FV6—6–öâÓÓÒ'&V¦V7B"ò'&V¦V7FVB"¢FV6—6–öã°Ð¢6öç7B6ÆVåV&Æ—6†VEW&ÂÒV&Æ—6†VEW&ÃòçG&–Ò‚’ç6Æ–6RƒÂ#’ÇÂçVÆÃ°Ð¢–b†FV6—6–öâÓÓÒ'V&Æ—6†VB"bb6ÆVåV&Æ—6†VEW&Âbbõæ‡GG3ó¥ÂõÂòö’çFW7B†6ÆVåV&Æ—6†VEW&Â’’°Ð¢F‡&÷ræWrW'&÷"‚%V&Æ—6†VBÆ–æ·2×W7B&Vv–âv—F‚‡GG¢òò÷"‡GG3¢òòâ"“°Ð¢ÐÐ¢6öç7B²FFÂW'&÷"ÒÒv—BvWE7W&6TFÖ–â‚’æg&öÒ‚&&6–Å÷6ö6–Å÷f&–çG2"’çWFFR‡°Ð¢7FGW2ÀÐ¢&÷fVEöC¢7FGW2ÓÓÒ&ÖçVÅ÷&VG’"ÇÂ7FGW2ÓÓÒ'V&Æ—6†VB"ò‡f&–çBæ&÷fVEöBóòæ÷r’¢çVÆÂÀÐ¢V&Æ—6†VEöC¢7FGW2ÓÓÒ'V&Æ—6†VB"ò‡f&–çBçV&Æ—6†VEöBóòæ÷r’¢çVÆÂÀÐ¢V&Æ—6†VE÷W&Ã¢7FGW2ÓÓÒ'V&Æ—6†VB"ò6ÆVåV&Æ—6†VEW&Â¢çVÆÂÀÐ¢Æ7EöW'&÷#¢çVÆÂÀÐ¢WFFVEöC¢æ÷rÀÐ¢Ò’æW‚&–B"Âf&–çD–B’ç6VÆV7B‚"¢"’ç6–ævÆR‚“°Ð¢–b†W'&÷"’F‡&÷rW'&÷#°Ð¢v—B&Vg&W6„F–vW7E7FGW2†F–vW7D–B“°Ð¢&WGW&âFF2f&–çE&÷s°Ð§ÐÐ Ð¦W‡÷'B7–æ2gVæ7F–öâ&÷fTÆÅ6ö6–Åf&–çG2†F–vW7D–C¢7G&–ærÂFö¶Vã¢7G&–ær’°Ð¢6öç7BF–vW7BÒv—Bf–æDWF†÷&—¦VDF–vW7B†F–vW7D–BÂFö¶Vâ“°Ð¢–b‚F–vW7B’F‡&÷ræWrW'&÷"‚%F†—26ö6–Â7GVF–òÆ–æ²—2–çfÆ–Bâ"“°Ð¢–b†æWrFFR†F–vW7Bæ&÷fÅöW‡—&W5öB’ævWEF–ÖR‚’ÃÒFFRææ÷r‚’’F‡&÷ræWrW'&÷"‚%F†—26ö6–Â7GVF–òÆ–æ²†2W‡—&VBâ"“°Ð¢6öç7B7W&6RÒvWE7W&6TFÖ–â‚“°Ð¢6öç7B²FF¢7F÷'’ÂW'&÷#¢7F÷&–W4W'&÷"ÒÒv—B7W&6PÐ¢æg&öÒ‚&&6–Å÷6ö6–Å÷7F÷&–W2"Ð¢ç6VÆV7B‚&–B"Ð¢æW‚&F–vW7Eö–B"ÂF–vW7D–BÐ¢æ÷&FW"‚'&æ²"Â²66VæF–æs¢G'VRÒÐ¢æÆ–Ö—BƒÐ¢æÖ–&U6–ævÆR‚“°Ð¢–b‡7F÷&–W4W'&÷"’F‡&÷r7F÷&–W4W'&÷#°Ð¢–b‚7F÷'’’&WGW&â²&÷fVC¢Â&V6öã¢&æõ÷&–Ö'•÷7F÷'’"Ó°Ð¢6öç7B²FF¢f–FVòÂW'&÷#¢f–FVôW'&÷"ÒÒv—B7W&6PÐ¢æg&öÒ‚&&6–Å÷6ö6–Åö76WG2"Ð¢ç6VÆV7B‚&–B"Ð¢æW‚'7F÷'•ö–B"Â7F÷'’æ–BÐ¢æW‚&¶–æB"Â'f–FVò"Ð¢æW‚'fÆ–FF–öå÷7FGW2"Â'fÆ–B"Ð¢æÆ–Ö—BƒÐ¢æÖ–&U6–ævÆR‚“°Ð¢–b‡f–FVôW'&÷"’F‡&÷rf–FVôW'&÷#°Ð¢–b‚f–FVò’&WGW&â²&÷fVC¢Â&V6öã¢'f–FVõöæ÷E÷&VG’"Ó°Ð¢6öç7Bæ÷rÒæWrFFR‚’çFô•4õ7G&–ær‚“°Ð¢6öç7B²FFÂW'&÷"ÒÒv—B7W&6PÐ¢æg&öÒ‚&&6–Å÷6ö6–Å÷f&–çG2"Ð¢çWFFR‡²7FGW3¢&ÖçVÅ÷&VG’"Â&÷fVEöC¢æ÷rÂÆ7EöW'&÷#¢çVÆÂÂWFFVEöC¢æ÷rÒÐ¢æW‚'7F÷'•ö–B"Â7F÷'’æ–BÐ¢æ–â‚&6†ææVÂ"Â²'–÷WGV&R"Â&–ç7Fw&Ò"Â'&VFF—B%ÒÐ¢æ–â‚'7FGW2"Â²&G&gB"Â&f–ÆVB%ÒÐ¢ç6VÆV7B‚&–B"“°Ð¢–b†W'&÷"’F‡&÷rW'&÷#°Ð¢v—B&Vg&W6„F–vW7E7FGW2†F–vW7D–B“°Ð¢&WGW&â²&÷fVC¢FFòæÆVæwF‚óòÓ°Ð§ÐÐ Ð¦W‡÷'B7–æ2gVæ7F–öâ&WVW7E6ö6–Å&Wf—6–öâ€Ð¢F–vW7D–C¢7G&–ærÀÐ¢Fö¶Vã¢7G&–ærÀÐ¢7F÷'”–C¢7G&–ærÀÐ¢fVVF&6³¢7G&–ærÀÐ¢’°Ð¢6öç7BF–vW7BÒv—Bf–æDWF†÷&—¦VDF–vW7B†F–vW7D–BÂFö¶Vâ“°Ð¢–b‚F–vW7B’F‡&÷ræWrW'&÷"‚%F†—26ö6–Â7GVF–òÆ–æ²—2–çfÆ–Bâ"“°Ð¢–b†æWrFFR†F–vW7Bæ&÷fÅöW‡—&W5öB’ævWEF–ÖR‚’ÃÒFFRææ÷r‚’’F‡&÷ræWrW'&÷"‚%F†—26ö6–Â7GVF–òÆ–æ²†2W‡—&VBâ"“°Ð¢6öç7B6ÆVäfVVF&6²ÒfVVF&6²çG&–Ò‚’ç6Æ–6RƒÂ#“°Ð¢–b†6ÆVäfVVF&6²æÆVæwF‚Â"’F‡&÷ræWrW'&÷"‚%FVÆÂ&6–Âv†B–÷RvçB6†ævVBâ"“°Ð¢6öç7B7W&6RÒvWE7W&6TFÖ–â‚“°Ð¢6öç7B²FF¢7F÷'’ÂW'&÷#¢7F÷'”W'&÷"ÒÒv—B7W&6PÐ¢æg&öÒ‚&&6–Å÷6ö6–Å÷7F÷&–W2"Ð¢ç6VÆV7B‚&–B"Ð¢æW‚&–B"Â7F÷'”–BÐ¢æW‚&F–vW7Eö–B"ÂF–vW7D–BÐ¢æÖ–&U6–ævÆR‚“°Ð¢–b‡7F÷'”W'&÷"’F‡&÷r7F÷'”W'&÷#°Ð¢–b‚7F÷'’’F‡&÷ræWrW'&÷"‚%F†—27F÷'’FöW2æ÷B&VÆöærFòF†R&Wf–Wrâ"“°Ð¢6öç7B²FFÂW'&÷"ÒÒv—B7W&6Ræg&öÒ‚&&6–Å÷6ö6–ÅöfVVF&6²"’æ–ç6W'B‡°Ð¢F–vW7Eö–C¢F–vW7D–BÀÐ¢7F÷'•ö–C¢7F÷'”–BÀÐ¢fVVF&6³¢6ÆVäfVVF&6²ÀÐ¢Ò’ç6VÆV7B‚&–BÇ7F÷'•ö–BÆfVVF&6²Ç7FGW2Æ7&VFVEöB"’ç6–ævÆR‚“°Ð¢–b†W'&÷"’F‡&÷rW'&÷#°Ð¢6öç7Bæ÷rÒæWrFFR‚’çFô•4õ7G&–ær‚“°Ð¢v—B&öÖ—6RæÆÂ…°Ð¢7W&6Ræg&öÒ‚&&6–Å÷6ö6–Å÷7F÷&–W2"’çWFFR‡²7FGW3¢&†VÆB"ÂWFFVEöC¢æ÷rÒ’æW‚&–B"Â7F÷'”–B’ÀÐ¢7W&6Ræg&öÒ‚&&6–Å÷6ö6–Å÷f&–çG2"’çWFFR‡²7FGW3¢&G&gB"Â&÷fVEöC¢çVÆÂÂWFFVEöC¢æ÷rÒ’æW‚'7F÷'•ö–B"Â7F÷'”–B’ææW‚'7FGW2"Â'V&Æ—6†VB"’ÀÐ¢Ò“°Ð¢v—B&Vg&W6„F–vW7E7FGW2†F–vW7D–B“°Ð¢&WGW&âFF2fVVF&6µ&÷s°Ð§ÐÐ Ð¦W‡÷'BgVæ7F–öâ—56ö6–Ä6†ææVÂ‡fÇVS¢Væ¶æ÷vâ“¢fÇVR—26ö6–Ä6†ææVÂ°Ð¢&WGW&âG—VöbfÇVRÓÓÒ'7G&–ær"bb4ô4”Åô4„ääTÅ2æ–æ6ÇVFW2‡fÇVR26ö6–Ä6†ææVÂ“°Ð§ÐÐ 

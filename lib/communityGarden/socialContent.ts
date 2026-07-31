@@ -45,11 +45,27 @@ export type DraftStory = {
     targetSeconds: number;
     fallbackVisual: string;
   };
+  creativeBrief: {
+    family: "transformation-timelapse" | "narrated-gameplay" | "companion-post";
+    captureRecipe: string;
+    objective: "first_plant" | "product_understanding" | "community_conversation";
+    videoFormat: "garden_transformation" | "narrated_gameplay" | "companion_post";
+    scene: string;
+    intendedAudience: string;
+    distribution: "organic" | "paid";
+    hypothesis: string;
+    alternateHooks: string[];
+    destinationUrl: string;
+    trackingCode: string;
+    truthClaims: Array<{ claim: string; supported: boolean; basis: string }>;
+    narrationDirection: string | null;
+    requiredChecks: string[];
+  };
   evidence: Record<string, unknown>;
   variants: DraftVariant[];
 };
 
-type StoryCard = Omit<DraftStory, "sourceType" | "sourceRef" | "evidence"> & {
+type StoryCard = Omit<DraftStory, "sourceType" | "sourceRef" | "evidence" | "creativeBrief"> & {
   keywords: string[];
   fact: string;
 };
@@ -245,20 +261,7 @@ const STORY_LIBRARY: StoryCard[] = [
       fallbackVisual: "A vertical map-and-awards diagram showing task, accolade, and footprint increase as three clear steps.",
     },
     keywords: ["footprint", "award", "accolade", "weed", "task", "adventure", "unlock", "parcel"],
-    fact: "Basil's footprint progression is intended to reward short map activities such as watering, planting, and weed clearing with additional community planting space.",
-    variants: [
-      {
-        channel: "reddit",
-        headline: "A planting footprint that grows through small garden adventures",
-        body: "One direction for Basil's community map is a separate, accolade-focused progression track built around things you can finish in roughly twenty minutes. Clear a pocket of weeds, complete a watering route, plant a particular arrangement, or discover something off the usual path.\n\nCompleting these small adventures would earn awards and gradually increase the space where a member can plant in the community garden. The point is not one endless grind. It is a collection of compact reasons to move around the map, try another mechanic, and leave with a visible accomplishment.\n\nWhat is the first twenty-minute garden task you would want to take on?",
-        hashtags: [],
-      },
-      {
-        channel: "youtube",
-        headline: "Small garden adventures, a larger planting footprint",
-        body: "Water a route. Clear a weed pocket. Finish a planting challenge. Basil's map accolades are designed as short adventures that can grow a member's community planting footprint.",
-        hashtags: ["BasilCommunityGarden", "CozyGames", "GameProgression"],
-      },
+    fact: "Basil's footprint progression is intended to reward short map activities such as watering, planting, ã}­¢G§²ÚîÆ­yÝ,
       {
         channel: "instagram",
         headline: "Twenty minutes. One garden accolade.",
@@ -365,6 +368,50 @@ export function buildDailyStoryDrafts(
   const selected = scored.slice(0, Math.max(3, Math.min(5, count)));
   return selected.map(({ card }, index): DraftStory => {
     const matchingChange = changes.find((change) => card.keywords.some((keyword) => change.title.toLowerCase().includes(keyword)));
+    const family = index === 0
+      ? (day % 4 === 0 ? "narrated-gameplay" : "transformation-timelapse")
+      : "companion-post";
+    const creativeBrief = {
+      family,
+      captureRecipe: family === "narrated-gameplay"
+        ? "garden-fable-v1"
+        : family === "transformation-timelapse"
+          ? "garden-transformation-v1"
+          : "poster-companion-v1",
+      objective: family === "transformation-timelapse"
+        ? "first_plant"
+        : family === "narrated-gameplay"
+          ? "product_understanding"
+          : "community_conversation",
+      videoFormat: family === "transformation-timelapse"
+        ? "garden_transformation"
+        : family === "narrated-gameplay"
+          ? "narrated_gameplay"
+          : "companion_post",
+      scene: family === "transformation-timelapse" ? "my-garden-transformation" : "water-chain",
+      intendedAudience: "Cozy-game players and curious gardeners who value calm, shared progress.",
+      distribution: "organic",
+      hypothesis: family === "companion-post"
+        ? "A specific, genuine question will produce more meaningful replies than a generic promotion."
+        : "Showing visible garden progress in the first second will improve chose-to-view and completion rate.",
+      alternateHooks: [
+        card.reelPlan.hook,
+        `I am building Basil, and this is ${card.title.toLowerCase()}.`,
+        card.reelPlan.payoff,
+      ],
+      destinationUrl: "https://basilcommunitygarden.com/",
+      trackingCode: `utm_source=social&utm_medium=organic&utm_campaign=basil_daily&utm_content=${card.key}`,
+      truthClaims: [{ claim: card.fact, supported: true, basis: matchingChange?.url ?? "Basil source code and curated product field guide" }],
+      narrationDirection: family === "narrated-gameplay"
+        ? "Write an original 45-70 word retelling of a fact-checked garden, farm, or nature story. Keep the tone warm and curious; never present uncertain lore as fact."
+        : null,
+      requiredChecks: [
+        "Actual Basil renderer footage only",
+        "1080x1920 H.264/AAC MP4 with poster",
+        "Readable opening frame in under one second",
+        "No unsupported game or botanical claim",
+      ],
+    } satisfies DraftStory["creativeBrief"];
     return {
       key: card.key,
       sourceType: matchingChange ? "repository" : "evergreen",
@@ -377,12 +424,14 @@ export function buildDailyStoryDrafts(
       assetUrl: card.assetUrl,
       assetKind: card.assetKind,
       reelPlan: card.reelPlan,
+      creativeBrief,
       evidence: {
         fact: card.fact,
         recentChange: matchingChange ?? null,
         aggregateStats: stats,
         editorialRank: index + 1,
         reelPlan: card.reelPlan,
+        creativeBrief,
       },
       variants: card.variants.map((variant) => ({ ...variant, hashtags: [...variant.hashtags] })),
     };

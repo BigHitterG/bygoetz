@@ -20,6 +20,35 @@ type ReelPlan = {
   targetSeconds: number;
   fallbackVisual: string;
 };
+type ProductionBrief = {
+  objective: string;
+  format: string;
+  scene: string;
+  intendedAudience: string;
+  distribution: string;
+  hypothesis: string;
+  alternateHooks: string[];
+  destinationUrl: string;
+  trackingCode: string;
+  truthClaims: Array<{ claim: string; supported: boolean; basis: string }>;
+};
+type SocialAsset = {
+  id: string;
+  kind: "video" | "poster" | "image" | "audio";
+  url: string;
+  mimeType: string;
+  byteSize: number;
+  width: number | null;
+  height: number | null;
+  durationMs: number | null;
+  validationStatus: "valid";
+};
+type Revision = {
+  id: string;
+  feedback: string;
+  status: "queued" | "resolved" | "dismissed";
+  created_at: string;
+};
 type Story = {
   id: string;
   key: string;
@@ -30,6 +59,9 @@ type Story = {
   sourceRef: string | null;
   assetUrl: string;
   assetKind: "image" | "video";
+  posterUrl: string | null;
+  assets: SocialAsset[];
+  feedback: Revision[];
   evidence: Record<string, unknown>;
   variants: Variant[];
 };
@@ -79,6 +111,9 @@ const DEVELOPMENT_PREVIEW: Digest = {
     sourceRef: null,
     assetUrl: "/community-garden/social-captures/rose-garden-gameplay.jpg",
     assetKind: "image",
+    posterUrl: null,
+    assets: [],
+    feedback: [],
     evidence: {
       reelPlan: {
         hook: "Water three flowers in two taps.",
@@ -123,6 +158,91 @@ function prettyDate(value: string) {
     day: "numeric",
     year: "numeric",
   }).format(new Date(value));
+}
+
+function parseProductionBrief(evidence: Record<string, unknown>): ProductionBrief | null {
+  const candidate = evidence.productionManifest ?? evidence.creativeBrief;
+  if (!candidate || typeof candidate !== "object") return null;
+  const value = candidate as Record<string, unknown>;
+  const truthClaims = Array.isArray(value.truthClaims)
+    ? value.truthClaims.flatMap((claim) => {
+        if (!claim || typeof claim !== "object") return [];
+        const item = claim as Record<string, unknown>;
+        if (typeof item.claim !== "string" || typeof item.basis !== "string") return [];
+        return [{ claim: item.claim, supported: item.supported === true, basis: item.basis }];
+      })
+    : [];
+  return {
+    objective: typeof value.objective === "string" ? value.objective : "Not assigned",
+    format: typeof value.format === "string" ? value.format : typeof value.videoFormat === "string" ? value.videoFormat : "Not assigned",
+    scene: typeof value.scene === "string" ? value.scene : typeof value.captureRecipe === "string" ? value.captureRecipe : "Not assigned",
+    intendedAudience: typeof value.intendedAudience === "string" ? value.intendedAudience : "Not assigned",
+    distribution: typeof value.distribution === "string" ? value.distribution : "organic",
+    hypothesis: typeof value.hypothesis === "string" ? value.hypothesis : "Not assigned",
+    alternateHooks: Array.isArray(value.alternateHooks) ? value.alternateHooks.filter((hook): hook is string => typeof hook === "string") : [],
+    destinationUrl: typeof value.destinationUrl === "string" ? value.destinationUrl : "",
+    trackingCode: typeof value.trackingCode === "string" ? value.trackingCode : "",
+    truthClaims,
+  };
+}
+
+function formatDuration(durationMs: number | null) {
+  return durationMs ? `${(durationMs / 1000).toFixed(1)}s` : null;
+}
+
+function RevisionControl({
+  story,
+  disabled,
+  request,
+  onRefresh,
+}: {
+  story: Story;
+  disabled: boolean;
+  request: (action: string, payload: Record<string, unknown>) => Promise<unknown>;
+  onRefresh: () => Promise<void>;
+}) {
+  const [feedback, setFeedback] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [notice, setNotice] = useState("");
+
+  async function submit() {
+    setBusy(true);
+    setNotice("");
+    try {
+      await request("revision", { storyId: story.id, feedback });
+      setFeedback("");
+      setNotice("Revision queued");
+      await onRefresh();
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Could not request a revision");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className={styles.revisionControl}>
+      <div>
+        <p className={styles.eyebrow}>Feedback loop</p>
+        <strong>Request a new cut or copy pass</strong>
+        {story.feedback[0] ? <small>Latest: {story.feedback[0].feedback}</small> : null}
+      </div>
+      <label>
+        Revision note
+        <textarea
+          value={feedback}
+          onChange={(event) => setFeedback(event.target.value)}
+          placeholder="Example: get to the transformation faster and make the voice warmer."
+          rows={3}
+          disabled={disabled || busy}
+        />
+      </label>
+      <button type="button" onClick={() => void submit()} disabled={disabled || busy || feedback.trim().length < 2}>
+        Request revision
+      </button>
+      {notice ? <span className={styles.notice} role="status">{notice}</span> : null}
+    </div>
+  );
 }
 
 function VariantEditor({
@@ -248,6 +368,8 @@ export function SocialStudio() {
   const [digest, setDigest] = useState<Digest | null>(null);
   const [state, setState] = useState<"loading" | "ready" | "error">("loading");
   const [message, setMessage] = useState("");
+  const [approvalBusy, setApprovalBusy] = useState(false);
+  const [approvalNotice, setApprovalNotice] = useState("");
 
   async function request(action: string, payload: Record<string, unknown> = {}) {
     const response = await fetch(`/api/community-garden/social-studio${action === "review" ? "" : `?action=${action}`}`, {
@@ -264,6 +386,23 @@ export function SocialStudio() {
     const result = await request("review") as Digest;
     setDigest(result);
     setState("ready");
+  }
+
+  async function approveAll() {
+    if (!window.confirm("Approve the primary video's saved YouTube, Instagram, and Reddit drafts for posting?")) return;
+    setApprovalBusy(true);
+    setApprovalNotice("");
+    try {
+      const result = await request("approve-all") as { approved: number; reason?: string };
+      setApprovalNotice(result.reason === "video_not_ready"
+        ? "The primary video must finish validation before approval"
+        : `${result.approved} of today's 3 platform posts are ready`);
+      await load();
+    } catch (error) {
+      setApprovalNotice(error instanceof Error ? error.message : "Could not approve the package");
+    } finally {
+      setApprovalBusy(false);
+    }
   }
 
   useEffect(() => {
@@ -333,8 +472,12 @@ export function SocialStudio() {
               <p className={styles.eyebrow}>What is ready today</p>
               <strong>{new Set(digest.stories.filter((story) => story.assetKind === "image").map((story) => story.assetUrl)).size} unique downloadable image files</strong>
               <span>{digest.stories.filter((story) => story.assetKind === "video").length} finished videos</span>
+              <div className={styles.packageActions}>
+                <button type="button" onClick={() => void approveAll()} disabled={digest.expired || approvalBusy}>Approve today&apos;s 3 posts</button>
+                {approvalNotice ? <span role="status">{approvalNotice}</span> : null}
+              </div>
             </div>
-            <p><b>Copy text</b> copies the caption. <b>Download image</b> gives you the file to upload. A Reel production brief is a shot list for a future video—it is not a finished video unless the asset is explicitly labeled “Ready video.”</p>
+            <p><b>Approve today&apos;s 3 posts</b> approves only the primary validated video for YouTube, Instagram, and Reddit. Other ideas and TikTok stay unapproved unless you review them individually. Opening or watching never publishes anything.</p>
           </section>
 
           <section className={styles.connections}>
@@ -356,6 +499,7 @@ export function SocialStudio() {
           <div className={styles.storyList}>
             {digest.stories.map((story, storyIndex) => {
               const reelPlan = parseReelPlan(story.evidence);
+              const productionBrief = parseProductionBrief(story.evidence);
               return (
                 <section className={styles.story} key={story.id}>
                   <div className={styles.storyLead}>
@@ -365,6 +509,39 @@ export function SocialStudio() {
                       <p className={styles.summary}>{story.summary}</p>
                       <div className={styles.whyToday}><span>Why today</span>{story.whyToday}</div>
                       {story.sourceRef ? <a className={styles.sourceLink} href={story.sourceRef} target="_blank" rel="noreferrer">View supporting repository change</a> : null}
+                      {productionBrief ? (
+                        <div className={styles.productionBrief}>
+                          <p className={styles.eyebrow}>Production manifest</p>
+                          <div className={styles.productionFacts}>
+                            <div><small>Objective</small><strong>{productionBrief.objective.replaceAll("_", " ")}</strong></div>
+                            <div><small>Format</small><strong>{productionBrief.format.replaceAll("_", " ")}</strong></div>
+                            <div><small>Scene</small><strong>{productionBrief.scene.replaceAll("-", " ")}</strong></div>
+                            <div><small>Delivery</small><strong>{productionBrief.distribution}</strong></div>
+                          </div>
+                          <div className={styles.productionNarrative}>
+                            <div><small>Audience</small><p>{productionBrief.intendedAudience}</p></div>
+                            <div><small>Creative hypothesis</small><p>{productionBrief.hypothesis}</p></div>
+                          </div>
+                          {productionBrief.alternateHooks.length ? (
+                            <div className={styles.hookList}><small>Alternative openings</small><ol>{productionBrief.alternateHooks.map((hook) => <li key={hook}>{hook}</li>)}</ol></div>
+                          ) : null}
+                          {productionBrief.truthClaims.length ? (
+                            <div className={styles.truthChecks}>
+                              <small>Truth checks</small>
+                              {productionBrief.truthClaims.map((claim) => (
+                                <div key={claim.claim} data-supported={claim.supported}>
+                                  <strong>{claim.supported ? "Supported" : "Hold"}</strong>
+                                  <span>{claim.claim}</span>
+                                  <em>{claim.basis}</em>
+                                </div>
+                              ))}
+                            </div>
+                          ) : null}
+                          {productionBrief.destinationUrl ? (
+                            <a className={styles.destination} href={`${productionBrief.destinationUrl}${productionBrief.trackingCode ? `?${productionBrief.trackingCode}` : ""}`} target="_blank" rel="noreferrer">Open tracked destination</a>
+                          ) : null}
+                        </div>
+                      ) : null}
                     </div>
                     <div className={styles.visualColumn}>
                       <div className={styles.assetStatus}>
@@ -375,14 +552,20 @@ export function SocialStudio() {
                       </div>
                       <div className={styles.verticalPreview}>
                         {story.assetKind === "video" ? (
-                          <video src={story.assetUrl} controls playsInline />
+                          <video src={story.assetUrl} poster={story.posterUrl ?? undefined} controls playsInline preload="metadata" />
                         ) : (
                           // The original static file avoids an image-optimizer rendering failure seen in the private Studio.
-                          // eslint-disable-next-line @next/next/no-img-element
                           <img src={story.assetUrl} alt={`Actual Basil gameplay for ${story.title}`} width={591} height={1280} loading="eager" />
                         )}
                         <span>{story.assetKind === "video" ? "Ready video" : "Ready image · actual gameplay"}</span>
                       </div>
+                      {story.assets.find((asset) => asset.kind === "video") ? (
+                        <div className={styles.assetMetadata}>
+                          <span>{story.assets.find((asset) => asset.kind === "video")?.width}×{story.assets.find((asset) => asset.kind === "video")?.height}</span>
+                          <span>{formatDuration(story.assets.find((asset) => asset.kind === "video")?.durationMs ?? null)}</span>
+                          <span>Validated</span>
+                        </div>
+                      ) : null}
                       <div className={styles.assetActions}>
                         <a className={styles.primaryMediaAction} href={story.assetUrl} download>Download {story.assetKind}</a>
                         <a href={story.assetUrl} target="_blank" rel="noreferrer">Open full size</a>
@@ -404,6 +587,13 @@ export function SocialStudio() {
                       </div>
                     </div>
                   ) : null}
+
+                  <RevisionControl
+                    story={story}
+                    disabled={digest.expired}
+                    request={request}
+                    onRefresh={load}
+                  />
 
                   <div className={styles.variants}>
                     {CHANNEL_ORDER.map((channel) => story.variants.find((variant) => variant.channel === channel)).filter((variant): variant is Variant => Boolean(variant)).map((variant) => (

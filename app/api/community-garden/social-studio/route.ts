@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import {
+  approveAllSocialVariants,
   decideSocialVariant,
+  requestSocialRevision,
   reviewSocialDigest,
   saveSocialVariant,
 } from "@/lib/communityGarden/socialStudio";
@@ -18,6 +20,8 @@ type SocialStudioBody = {
   hashtags?: string[];
   decision?: "approve" | "reject" | "draft" | "published";
   publishedUrl?: string;
+  storyId?: string;
+  feedback?: string;
 };
 
 function parseBody(value: unknown): SocialStudioBody | null {
@@ -35,6 +39,8 @@ function parseBody(value: unknown): SocialStudioBody | null {
       ? body.decision as SocialStudioBody["decision"]
       : undefined,
     publishedUrl: typeof body.publishedUrl === "string" ? body.publishedUrl : undefined,
+    storyId: typeof body.storyId === "string" ? body.storyId : undefined,
+    feedback: typeof body.feedback === "string" ? body.feedback : undefined,
   };
 }
 
@@ -67,6 +73,22 @@ export async function POST(request: Request) {
         payload.publishedUrl,
       );
       return NextResponse.json({ ok: true, variant });
+    }
+    if (action === "approve-all") {
+      const result = await approveAllSocialVariants(payload.digestId, payload.token);
+      return NextResponse.json({ ok: true, ...result });
+    }
+    if (action === "revision") {
+      if (!payload.storyId || !payload.feedback) {
+        return NextResponse.json({ error: "A story and revision note are required." }, { status: 400 });
+      }
+      const revision = await requestSocialRevision(
+        payload.digestId,
+        payload.token,
+        payload.storyId,
+        payload.feedback,
+      );
+      return NextResponse.json({ ok: true, revision });
     }
     const digest = await reviewSocialDigest(payload.digestId, payload.token);
     if (!digest) return NextResponse.json({ error: "This private Social Studio link is invalid." }, { status: 404 });

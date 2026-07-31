@@ -37,6 +37,7 @@ test("every story is a complete vertical-first cross-channel packet", () => {
     assert.match(draft.reelPlan.fallbackVisual, /diagram|explainer/i);
     assert.deepEqual(new Set(draft.variants.map((variant) => variant.channel)), new Set(SOCIAL_CHANNELS));
     assert.match(draft.assetUrl, /^\/community-garden\/social-captures\//);
+    assert.ok(["transformation-timelapse", "narrated-gameplay", "companion-post"].includes(draft.creativeBrief.family));
   }
 });
 
@@ -57,6 +58,14 @@ test("Social Studio migration keeps drafts private and approvals explicit", () =
   assert.match(server, /basil-social-resend-/);
   assert.match(server, /previousToken/);
   assert.match(cron, /Bearer \$\{secret\}/);
+  const videoMigration = readFileSync(new URL("../supabase/migrations/20260731143000_basil_social_video_packages.sql", import.meta.url), "utf8");
+  assert.match(videoMigration, /basil-social-assets/);
+  assert.match(videoMigration, /public\.basil_social_feedback/);
+  assert.match(studio, /Approve today&apos;s 3 posts/);
+  assert.match(server, /\.in\("channel", \["youtube", "instagram", "reddit"\]\)/);
+  assert.match(server, /\.in\("status", \["draft", "failed"\]\)/);
+  assert.doesNotMatch(server, /\.in\("status", \["draft", "failed", "rejected"\]\)/);
+  assert.match(studio, /Request revision/);
 });
 
 test("Vercel keeps two cron jobs while adding the daily social run", () => {
@@ -64,5 +73,64 @@ test("Vercel keeps two cron jobs while adding the daily social run", () => {
     crons: Array<{ path: string; schedule: string }>;
   };
   assert.equal(config.crons.length, 2);
-  assert.ok(config.crons.some((cron) => cron.path === "/api/cron/basil-social" && cron.schedule === "15 13 * * *"));
+  assert.ok(config.crons.some((cron) => cron.path === "/api/cron/basil-social" && cron.schedule === "0 11 * * *"));
+});
+
+test("video packages derive captions from narration and replay real watering effects", () => {
+  const renderer = readFileSync(new URL("../scripts/basil-render-social-video.mjs", import.meta.url), "utf8");
+  const narrator = readFileSync(new URL("../scripts/basil-edge-tts.py", import.meta.url), "utf8");
+  const piano = readFileSync(new URL("../scripts/basil-generate-piano.py", import.meta.url), "utf8");
+  const scene = readFileSync(new URL("../app/community-garden/social-capture/SocialCaptureScene.tsx", import.meta.url), "utf8");
+  const packageJson = readFileSync(new URL("../package.json", import.meta.url), "utf8");
+  assert.match(renderer, /basil-edge-tts\.py/);
+  assert.match(narrator, /boundary="WordBoundary"/);
+  assert.match(renderer, /basil-generate-piano\.py/);
+  assert.match(renderer, /amix=inputs=2/);
+  assert.match(renderer, /backgroundMusicProvider/);
+  assert.match(renderer, /implementedScenes/);
+  assert.match(renderer, /truth claim must be explicitly supported/i);
+  assert.match(piano, /Cmaj7, Am7, Fmaj7, G6/);
+  assert.match(renderer, /setCaptionCues/);
+  assert.match(renderer, /refusing to render an unsynchronized package/);
+  assert.match(renderer, /BASIL_CAPTION_TIMINGS/);
+  assert.doesNotMatch(renderer, /text2wav/);
+  assert.doesNotMatch(packageJson, /@echristian\/edge-tts/);
+  assert.doesNotMatch(packageJson, /text2wav/);
+  assert.match(scene, /kind: "spray"/);
+  assert.match(scene, /kind: "water"/);
+  assert.match(scene, /kind: "care"/);
+  assert.match(scene, /activeWord/);
+});
+
+test("approved publishing queue is explicit and cannot include unapproved drafts", () => {
+  const prepare = readFileSync(new URL("../scripts/basil-prepare-approved-posts.mjs", import.meta.url), "utf8");
+  const record = readFileSync(new URL("../scripts/basil-mark-social-published.mjs", import.meta.url), "utf8");
+  assert.match(prepare, /eq\("status", "manual_ready"\)/);
+  assert.match(prepare, /approved_not_published/);
+  assert.match(record, /Only an explicitly approved Social Studio variant/);
+  assert.match(record, /eq\("status", "manual_ready"\)/);
+});
+
+test("one-time transfer capabilities preserve private storage without local service keys", () => {
+  const migration = readFileSync(new URL("../supabase/migrations/20260731170000_basil_social_one_time_transfers.sql", import.meta.url), "utf8");
+  const edge = readFileSync(new URL("../supabase/functions/basil-social-transfer/index.ts", import.meta.url), "utf8");
+  const upload = readFileSync(new URL("../scripts/basil-upload-social-package.mjs", import.meta.url), "utf8");
+  const prepare = readFileSync(new URL("../scripts/basil-prepare-approved-posts.mjs", import.meta.url), "utf8");
+  assert.match(migration, /used_at is null/);
+  assert.match(migration, /now\(\) \+ interval '15 minutes'/);
+  assert.match(migration, /record_basil_social_publication/);
+  assert.match(migration, /status = 'manual_ready'/);
+  assert.match(edge, /claim_basil_social_transfer_token/);
+  assert.match(edge, /allowedChannels = \["youtube", "instagram", "reddit"\]/);
+  assert.match(edge, /validationStatus !== "valid"/);
+  assert.match(upload, /--transfer-token/);
+  assert.match(prepare, /--transfer-token/);
+});
+
+test("database approval guard limits bulk approval to the primary validated video", () => {
+  const guard = readFileSync(new URL("../supabase/migrations/20260731180000_basil_social_approval_guard.sql", import.meta.url), "utf8");
+  assert.match(guard, /old\.channel not in \('youtube', 'instagram', 'reddit'\)/);
+  assert.match(guard, /story\.rank = 1/);
+  assert.match(guard, /asset\.validation_status = 'valid'/);
+  assert.match(guard, /return null/);
 });
