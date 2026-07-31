@@ -475,7 +475,9 @@ export async function resendSocialDigestWithCapability(storyId: string, token: s
   });
   if (claimError) throw claimError;
   if (claimed !== true) throw new Error("This notification capability is invalid, expired, or already used.");
-  return resendLatestSocialDigest(`capability-notify-${story.digest_id}`);
+  return resendLatestSocialDigest(
+    `capability-notify-${story.digest_id}-${tokenHash(token).slice(0, 24)}`,
+  );
 }
 
 async function findVariantForDigest(digestId: string, variantId: string) {
