@@ -165,4 +165,5 @@ test("notification capability sends the review email only after the video upload
   assert.match(cron, /x-basil-transfer-token/);
   assert.match(studioServer, /p_purpose: "notify"/);
   assert.match(studioServer, /invalid, expired, or already used/i);
+  assert.match(studioServer, /capability-notify-\$\{story\.digest_id\}-\$\{tokenHash\(token\)\.slice\(0, 24\)\}/);
 });
