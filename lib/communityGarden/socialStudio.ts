@@ -456,6 +456,28 @@ export async function reviewSocialDigest(digestId: string, token: string) {
   };
 }
 
+export async function resendSocialDigestWithCapability(storyId: string, token: string) {
+  if (!/^[0-9a-f-]{36}$/i.test(storyId) || !/^[0-9a-f]{64}$/.test(token)) {
+    throw new Error("Invalid or missing Basil notification capability.");
+  }
+  const supabase = getSupabaseAdmin();
+  const { data: story, error: storyError } = await supabase
+    .from("basil_social_stories")
+    .select("id,digest_id")
+    .eq("id", storyId)
+    .maybeSingle();
+  if (storyError) throw storyError;
+  if (!story) throw new Error("The Social Studio story was not found.");
+  const { data: claimed, error: claimError } = await supabase.rpc("claim_basil_social_transfer_token", {
+    p_story_id: storyId,
+    p_purpose: "notify",
+    p_token: token,
+  });
+  if (claimError) throw claimError;
+  if (claimed !== true) throw new Error("This notification capability is invalid, expired, or already used.");
+  return resendLatestSocialDigest(`capability-notify-${story.digest_id}`);
+}
+
 async function findVariantForDigest(digestId: string, variantId: string) {
   if (!/^[0-9a-f-]{36}$/i.test(variantId)) return null;
   const supabase = getSupabaseAdmin();
