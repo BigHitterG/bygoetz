@@ -73,7 +73,7 @@ test("Vercel keeps two cron jobs while adding the daily social run", () => {
     crons: Array<{ path: string; schedule: string }>;
   };
   assert.equal(config.crons.length, 2);
-  assert.ok(config.crons.some((cron) => cron.path === "/api/cron/basil-social" && cron.schedule === "0 11 * * *"));
+  assert.ok(config.crons.some((cron) => cron.path === "/api/cron/basil-social" && cron.schedule === "55 10 * * *"));
 });
 
 test("video packages derive captions from narration and replay real watering effects", () => {
@@ -133,4 +133,15 @@ test("database approval guard limits bulk approval to the primary validated vide
   assert.match(guard, /story\.rank = 1/);
   assert.match(guard, /asset\.validation_status = 'valid'/);
   assert.match(guard, /return null/);
+});
+
+test("notification capability sends the review email only after the video upload", () => {
+  const notifyMigration = readFileSync(new URL("../supabase/migrations/20260731190000_basil_social_notify_capability.sql", import.meta.url), "utf8");
+  const cron = readFileSync(new URL("../app/api/cron/basil-social/route.ts", import.meta.url), "utf8");
+  const studioServer = readFileSync(new URL("../lib/communityGarden/socialStudio.ts", import.meta.url), "utf8");
+  assert.match(notifyMigration, /'upload', 'download', 'notify'/);
+  assert.match(cron, /createDailySocialDigest\(now, \{ sendEmail: false \}\)/);
+  assert.match(cron, /x-basil-transfer-token/);
+  assert.match(studioServer, /p_purpose: "notify"/);
+  assert.match(studioServer, /invalid, expired, or already used/i);
 });
