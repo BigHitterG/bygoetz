@@ -45,11 +45,27 @@ export type DraftStory = {
     targetSeconds: number;
     fallbackVisual: string;
   };
+  creativeBrief: {
+    family: "transformation-timelapse" | "narrated-gameplay" | "companion-post";
+    captureRecipe: string;
+    objective: "first_plant" | "product_understanding" | "community_conversation";
+    videoFormat: "garden_transformation" | "narrated_gameplay" | "companion_post";
+    scene: string;
+    intendedAudience: string;
+    distribution: "organic" | "paid";
+    hypothesis: string;
+    alternateHooks: string[];
+    destinationUrl: string;
+    trackingCode: string;
+    truthClaims: Array<{ claim: string; supported: boolean; basis: string }>;
+    narrationDirection: string | null;
+    requiredChecks: string[];
+  };
   evidence: Record<string, unknown>;
   variants: DraftVariant[];
 };
 
-type StoryCard = Omit<DraftStory, "sourceType" | "sourceRef" | "evidence"> & {
+type StoryCard = Omit<DraftStory, "sourceType" | "sourceRef" | "evidence" | "creativeBrief"> & {
   keywords: string[];
   fact: string;
 };
@@ -365,6 +381,50 @@ export function buildDailyStoryDrafts(
   const selected = scored.slice(0, Math.max(3, Math.min(5, count)));
   return selected.map(({ card }, index): DraftStory => {
     const matchingChange = changes.find((change) => card.keywords.some((keyword) => change.title.toLowerCase().includes(keyword)));
+    const family = index === 0
+      ? (day % 4 === 0 ? "narrated-gameplay" : "transformation-timelapse")
+      : "companion-post";
+    const creativeBrief = {
+      family,
+      captureRecipe: family === "narrated-gameplay"
+        ? "garden-fable-v1"
+        : family === "transformation-timelapse"
+          ? "garden-transformation-v1"
+          : "poster-companion-v1",
+      objective: family === "transformation-timelapse"
+        ? "first_plant"
+        : family === "narrated-gameplay"
+          ? "product_understanding"
+          : "community_conversation",
+      videoFormat: family === "transformation-timelapse"
+        ? "garden_transformation"
+        : family === "narrated-gameplay"
+          ? "narrated_gameplay"
+          : "companion_post",
+      scene: family === "transformation-timelapse" ? "my-garden-transformation" : "water-chain",
+      intendedAudience: "Cozy-game players and curious gardeners who value calm, shared progress.",
+      distribution: "organic",
+      hypothesis: family === "companion-post"
+        ? "A specific, genuine question will produce more meaningful replies than a generic promotion."
+        : "Showing visible garden progress in the first second will improve chose-to-view and completion rate.",
+      alternateHooks: [
+        card.reelPlan.hook,
+        `I am building Basil, and this is ${card.title.toLowerCase()}.`,
+        card.reelPlan.payoff,
+      ],
+      destinationUrl: "https://basilcommunitygarden.com/",
+      trackingCode: `utm_source=social&utm_medium=organic&utm_campaign=basil_daily&utm_content=${card.key}`,
+      truthClaims: [{ claim: card.fact, supported: true, basis: matchingChange?.url ?? "Basil source code and curated product field guide" }],
+      narrationDirection: family === "narrated-gameplay"
+        ? "Write an original 45-70 word retelling of a fact-checked garden, farm, or nature story. Keep the tone warm and curious; never present uncertain lore as fact."
+        : null,
+      requiredChecks: [
+        "Actual Basil renderer footage only",
+        "1080x1920 H.264/AAC MP4 with poster",
+        "Readable opening frame in under one second",
+        "No unsupported game or botanical claim",
+      ],
+    } satisfies DraftStory["creativeBrief"];
     return {
       key: card.key,
       sourceType: matchingChange ? "repository" : "evergreen",
@@ -377,12 +437,14 @@ export function buildDailyStoryDrafts(
       assetUrl: card.assetUrl,
       assetKind: card.assetKind,
       reelPlan: card.reelPlan,
+      creativeBrief,
       evidence: {
         fact: card.fact,
         recentChange: matchingChange ?? null,
         aggregateStats: stats,
         editorialRank: index + 1,
         reelPlan: card.reelPlan,
+        creativeBrief,
       },
       variants: card.variants.map((variant) => ({ ...variant, hashtags: [...variant.hashtags] })),
     };

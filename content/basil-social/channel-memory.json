@@ -1,0 +1,80 @@
+{
+  "measuredAt": "2026-07-31T19:00:00.000Z",
+  "measurementMode": "signed-in-browser-read-only",
+  "accounts": {
+    "instagram": {
+      "handle": "basilcommunitygarden",
+      "posts": 0,
+      "followers": 0,
+      "voiceStatus": "new-channel-experiment",
+      "notes": [
+        "No historical performance exists yet; do not pretend a house style is proven.",
+        "Begin with calm, concrete captions that name the visible garden action and one invitation.",
+        "The current bio destination contains reddit campaign parameters; correct tracking before treating Instagram attribution as reliable."
+      ]
+    },
+    "youtube": {
+      "channel": "Basil",
+      "subscribers": 0,
+      "viewsLast28Days": 0,
+      "watchHoursLast28Days": 0,
+      "voiceStatus": "new-channel-experiment",
+      "notes": [
+        "No videos or historical performance exist yet.",
+        "Test readable question-first and payoff-first Short titles without clickbait claims."
+      ]
+    },
+    "reddit": {
+      "handle": "bygoetz",
+      "primaryCommunity": "r/BasilCommunity",
+      "communityMembersObserved": 3,
+      "voiceStatus": "founder-reference",
+      "observedExamples": [
+        {
+          "title": "The Garden Catalog explains what each saved My Garden item costs, when it unlocks, how much room it needs, and whether Builder Mode supports it.",
+          "url": "https://www.reddit.com/r/BasilCommunity/comments/1v9hx0c/the_garden_catalog_explains_what_each_saved_my/",
+          "views": 50,
+          "upvotes": 1,
+          "comments": 0,
+          "shares": 0
+        },
+        {
+          "title": "A New Heart in the Community Garden",
+          "url": "https://www.reddit.com/r/BasilCommunity/comments/1vaeglt/a_new_heart_in_the_community_garden/",
+          "views": 30
+        },
+        {
+          "title": "Free 100 Plant Footprint!",
+          "url": "https://www.reddit.com/r/BasilCommunity/comments/1vaek4b/free_100_plant_footprint/",
+          "views": 29
+        },
+        {
+          "title": "Steady Farmin’",
+          "url": "https://www.reddit.com/r/BasilCommunity/comments/1v9gbwt/steady_farmin/",
+          "views": 25
+        },
+        {
+          "title": "I Am Loving Seeing Your Plantings in the Garden",
+          "bodyExcerpt": "I love to find freshly planted plants I didn’t lay. I am always curious who in the world is behind each flower planted.",
+          "url": "https://www.reddit.com/r/BasilCommunity/comments/1va3wez/i_am_loving_seeing_your_plantings_in_the_garden/",
+          "views": 17
+        }
+      ],
+      "languageGuidance": [
+        "Write as the founder, not as a corporate brand account.",
+        "Prefer a direct statement about the feature or visible action.",
+        "Use first-person curiosity or delight when it is genuine.",
+        "Keep the body compact and conversational; concrete garden nouns are stronger than marketing abstractions.",
+        "Occasional playful capitalization or exclamation is part of the source voice, but should not become the default hook.",
+        "Do not manufacture player reactions, popularity, urgency, or community scale."
+      ]
+    }
+  },
+  "learningRules": [
+    "Treat this as a small baseline, not proof of a winning format.",
+    "Compare each post at approximately 1 hour, 24 hours, and 7 days when the platform exposes those windows.",
+    "Record impressions or views, chose-to-view when available, average percentage watched, completion, shares, saves, meaningful comments, profile or link activity, Basil sessions, game starts, and first flowers planted.",
+    "Optimize toward first flowers planted per 1,000 impressions; for paid media, use cost per first flower planted.",
+    "Separate format, hook, narration, visual action, platform, posting time, and destination tracking so one observation does not create a false conclusion."
+  ]
+}

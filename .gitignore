@@ -1,5 +1,7 @@
 .next/
 node_modules/
+.venv/
+/artifacts/basil-social-studio/
 out/
 .env*.local
 .vercel/

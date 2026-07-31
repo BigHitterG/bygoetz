@@ -6,7 +6,7 @@
     },
     {
       "path": "/api/cron/basil-social",
-      "schedule": "15 13 * * *"
+      "schedule": "55 10 * * *"
     }
   ]
 }
