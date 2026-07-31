@@ -4,7 +4,11 @@ import {
   isMonthlyDraftDue,
   monthlyPeriodKey,
 } from "@/lib/communityGarden/newsletter";
-import { createDailySocialDigest, resendLatestSocialDigest } from "@/lib/communityGarden/socialStudio";
+import {
+  createDailySocialDigest,
+  resendLatestSocialDigest,
+  resendSocialDigestWithCapability,
+} from "@/lib/communityGarden/socialStudio";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -29,7 +33,7 @@ export async function GET(request: Request) {
   const [socialResult, newsletterResult] = await Promise.allSettled([
     mode === "notify"
       ? resendLatestSocialDigest(`scheduled-notify-${now.toISOString().slice(0, 10)}`)
-      : createDailySocialDigest(now, { sendEmail: mode !== "prepare" }),
+      : createDailySocialDigest(now, { sendEmail: false }),
     mode === "scheduled" && newsletterDue
       ? createMonthlyNewsletterIssue(monthlyPeriodKey(now), now)
       : Promise.resolve({ skipped: mode === "scheduled" ? "not-monthly-draft-day" : "social-workflow-only" }),
@@ -53,4 +57,23 @@ export async function GET(request: Request) {
     social: socialResult.status === "fulfilled" ? socialResult.value : { error: "Social digest failed." },
     newsletter: newsletterResult.status === "fulfilled" ? newsletterResult.value : { error: "Newsletter draft failed." },
   }, { status: failed ? 503 : 200 });
+}
+
+export async function POST(request: Request) {
+  const mode = new URL(request.url).searchParams.get("mode");
+  if (mode !== "notify") return NextResponse.json({ error: "Invalid social cron mode." }, { status: 400 });
+  const storyId = request.headers.get("x-basil-story-id") ?? "";
+  const token = request.headers.get("x-basil-transfer-token") ?? "";
+  try {
+    const result = await resendSocialDigestWithCapability(storyId, token);
+    return NextResponse.json({ ok: true, social: result });
+  } catch (error) {
+    console.error(JSON.stringify({
+      event: "basil_social_capability_notify_failed",
+      message: error instanceof Error ? error.message : "unknown",
+    }));
+    return NextResponse.json({
+      error: error instanceof Error ? error.message : "The Social Studio email could not be sent.",
+    }, { status: 401 });
+  }
 }
