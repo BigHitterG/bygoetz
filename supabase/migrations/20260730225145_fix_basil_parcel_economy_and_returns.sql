@@ -667,4 +667,3 @@ grant execute on function public.return_my_garden_clearing_v1(uuid, integer, int
   to service_role;
 grant execute on function public.expand_my_garden_freeform_v1(uuid, integer, integer)
   to service_role;
-

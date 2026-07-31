@@ -50,7 +50,7 @@ export function CommunityStewardshipPanel({
           <strong>{summary.capacity}</strong>
           {nextRank ? (
             <small>
-              Next footprint goal <b>{nextRank.capacity}</b> Â· {nextRank.name}
+              Next footprint goal <b>{nextRank.capacity}</b> · {nextRank.name}
             </small>
           ) : (
             <small>Largest lasting footprint</small>
@@ -97,7 +97,7 @@ export function CommunityStewardshipPanel({
       </div>
       {nextRank ? (
         <p className="cg-stewardship-next">
-          Next: <strong>{nextRank.name}</strong> Â· {Math.max(0, nextRank.tasks - summary.tasksCompleted)} tasks,
+          Next: <strong>{nextRank.name}</strong> · {Math.max(0, nextRank.tasks - summary.tasksCompleted)} tasks,
           {" "}{Math.max(0, nextRank.categories - summary.categoriesCompleted)} categories,
           {" "}{Math.max(0, nextRank.activeDays - summary.activeDays)} garden days remaining.
         </p>
@@ -141,7 +141,7 @@ export function CommunityStewardshipPanel({
                     disabled={replacingId === task.id}
                     onClick={() => onReplace(task.id)}
                   >
-                    {replacingId === task.id ? "Swappingâ€¦" : "Swap task"}
+                    {replacingId === task.id ? "Swapping…" : "Swap task"}
                   </button>
                 ) : null}
               </article>
@@ -149,7 +149,7 @@ export function CommunityStewardshipPanel({
           })}
         </div>
         {!replacementReady ? (
-          <p className="cg-task-swap-status">Task swap used Â· available tomorrow</p>
+          <p className="cg-task-swap-status">Task swap used · available tomorrow</p>
         ) : null}
       </div>
 
@@ -195,7 +195,7 @@ export function CommunityStewardshipPanel({
           <h4>Recent accolades</h4>
           <ul>
             {summary.recentAccolades.slice(0, 6).map((accolade) => (
-              <li key={accolade.id}><span aria-hidden="true">âœ¦</span>{accolade.title}</li>
+              <li key={accolade.id}><span aria-hidden="true">✦</span>{accolade.title}</li>
             ))}
           </ul>
         </div>
@@ -221,19 +221,19 @@ export function GardenTaskCelebration({
   if (!isRank) {
     return (
       <aside className="cg-stewardship-toast" role="status" aria-live="polite">
-        <span aria-hidden="true">âœ“</span>
+        <span aria-hidden="true">✓</span>
         <div>
           <small>{isProject ? "Community project" : "Garden Task complete"}</small>
           <strong>{title}</strong>
         </div>
-        <button type="button" aria-label="Dismiss notification" onClick={onClose}>Ã—</button>
+        <button type="button" aria-label="Dismiss notification" onClick={onClose}>×</button>
       </aside>
     );
   }
 
   return (
     <div className="cg-stewardship-celebration" role="dialog" aria-modal="true" aria-labelledby="cg-stewardship-celebration-title">
-      <div className="cg-stewardship-confetti" aria-hidden="true">âœ¦ Â· â€ Â· âœ¦</div>
+      <div className="cg-stewardship-confetti" aria-hidden="true">✦ · ❀ · ✦</div>
       <p className="cg-kicker">Stewardship rank</p>
       <h2 id="cg-stewardship-celebration-title">{title}</h2>
       <p>Your ordinary Community Garden footprint now holds {notification.payload.capacity ?? "more"} flowers.</p>
@@ -241,4 +241,3 @@ export function GardenTaskCelebration({
     </div>
   );
 }
-

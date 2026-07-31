@@ -153,4 +153,3 @@ test("project progress uses an unambiguous project id and daily tasks report com
   assert.match(dailyTaskMigration, /'status', task\.status/);
   assert.match(dailyTaskMigration, /'completedAt', task\.completed_at/);
 });
-
