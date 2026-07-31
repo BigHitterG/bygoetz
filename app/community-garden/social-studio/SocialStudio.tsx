@@ -74,10 +74,11 @@ type Digest = {
   createdAt: string;
   reviewers: string[];
   connectors: Record<string, Connector>;
+  feedback: Revision[];
   stories: Story[];
 };
 
-const CHANNEL_ORDER: Channel[] = ["instagram", "youtube", "tiktok", "reddit"];
+const CHANNEL_ORDER: Channel[] = ["instagram", "youtube", "reddit"];
 const CHANNEL_LABELS: Record<Channel, string> = {
   instagram: "Instagram Reel",
   youtube: "YouTube Short",
@@ -94,13 +95,11 @@ const DEVELOPMENT_PREVIEW: Digest = {
   reviewers: ["info@bygoetz.com"],
   connectors: {
     email: { mode: "connected", label: "Daily review email" },
-    github: { mode: "connected", label: "BigHitterG/bygoetz" },
-    openai: { mode: "optional", label: "Template drafts" },
-    instagram: { mode: "manual", label: "Post manually" },
-    youtube: { mode: "manual", label: "Upload manually" },
-    tiktok: { mode: "manual", label: "Post manually" },
-    reddit: { mode: "manual", label: "Copy and post manually" },
+    instagram: { mode: "connected_desktop", label: "Scheduled through signed-in Codex desktop" },
+    youtube: { mode: "connected_desktop", label: "Scheduled through signed-in Codex desktop" },
+    reddit: { mode: "connected_desktop", label: "Scheduled through signed-in Codex desktop" },
   },
+  feedback: [],
   stories: [{
     id: "10000000-0000-4000-8000-000000000000",
     key: "watering-spread",
@@ -224,7 +223,7 @@ function RevisionControl({
     <div className={styles.revisionControl}>
       <div>
         <p className={styles.eyebrow}>Feedback loop</p>
-        <strong>Request a new cut or copy pass</strong>
+        <strong>Feedback for this video</strong>
         {story.feedback[0] ? <small>Latest: {story.feedback[0].feedback}</small> : null}
       </div>
       <label>
@@ -232,30 +231,74 @@ function RevisionControl({
         <textarea
           value={feedback}
           onChange={(event) => setFeedback(event.target.value)}
-          placeholder="Example: get to the transformation faster and make the voice warmer."
+          placeholder="Example: show more roses in the background and shorten the opening."
           rows={3}
           disabled={disabled || busy}
         />
       </label>
       <button type="button" onClick={() => void submit()} disabled={disabled || busy || feedback.trim().length < 2}>
-        Request revision
+        Save feedback for the next run
       </button>
       {notice ? <span className={styles.notice} role="status">{notice}</span> : null}
     </div>
   );
 }
 
+function DailyFeedbackControl({
+  feedback,
+  disabled,
+  request,
+  onRefresh,
+}: {
+  feedback: Revision[];
+  disabled: boolean;
+  request: (action: string, payload: Record<string, unknown>) => Promise<unknown>;
+  onRefresh: () => Promise<void>;
+}) {
+  const [note, setNote] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [notice, setNotice] = useState("");
+
+  async function submit() {
+    setBusy(true);
+    setNotice("");
+    try {
+      await request("revision", { feedback: note });
+      setNote("");
+      setNotice("Daily feedback saved for the next scheduled creation run");
+      await onRefresh();
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Could not save daily feedback");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <section className={styles.dailyFeedback}>
+      <div>
+        <p className={styles.eyebrow}>Daily feedback</p>
+        <h2>Notes for all three videos</h2>
+        <p>The next 6 a.m. Codex task reads queued notes before choosing scenes, narration, and platform copy.</p>
+        {feedback[0] ? <small>Latest: {feedback[0].feedback}</small> : null}
+      </div>
+      <label>
+        General direction
+        <textarea value={note} onChange={(event) => setNote(event.target.value)} rows={4} placeholder="Example: keep the calm voice, use denser backgrounds, and make tomorrow's hooks more direct." disabled={disabled || busy} />
+      </label>
+      <button type="button" onClick={() => void submit()} disabled={disabled || busy || note.trim().length < 2}>Save daily feedback</button>
+      {notice ? <span className={styles.notice} role="status">{notice}</span> : null}
+    </section>
+  );
+}
+
 function VariantEditor({
   variant,
-  assetUrl,
-  assetKind,
   disabled,
   onRefresh,
   request,
 }: {
   variant: Variant;
-  assetUrl: string;
-  assetKind: "image" | "video";
   disabled: boolean;
   onRefresh: () => Promise<void>;
   request: (action: string, payload: Record<string, unknown>) => Promise<unknown>;
@@ -312,29 +355,12 @@ function VariantEditor({
     }
   }
 
-  async function copyPost() {
-    const tagLine = hashtags
-      .split(/[\s,]+/)
-      .map((tag) => tag.replace(/^#/, "").trim())
-      .filter(Boolean)
-      .map((tag) => `#${tag}`)
-      .join(" ");
-    await navigator.clipboard.writeText([headline, body, tagLine].filter(Boolean).join("\n\n"));
-    setNotice("Copied");
-  }
-
   return (
     <article className={`${styles.variant} ${styles[`status_${variant.status}`] ?? ""}`}>
       <div className={styles.variantHeader}>
         <div>
           <span className={styles.channel}>{CHANNEL_LABELS[variant.channel]}</span>
           <span className={styles.status}>{variant.status.replaceAll("_", " ")}</span>
-        </div>
-        <div className={styles.variantTopActions}>
-          <button className={styles.copyButton} type="button" onClick={() => void copyPost()}>Copy text</button>
-          <a className={styles.mediaButton} href={assetUrl} download>
-            Download {assetKind}
-          </a>
         </div>
       </div>
       <label>
@@ -389,14 +415,14 @@ export function SocialStudio() {
   }
 
   async function approveAll() {
-    if (!window.confirm("Approve the primary video's saved YouTube, Instagram, and Reddit drafts for posting?")) return;
+    if (!window.confirm("Approve all three validated videos and their saved Instagram, YouTube, and Reddit posts for the 8 a.m. publishing task?")) return;
     setApprovalBusy(true);
     setApprovalNotice("");
     try {
-      const result = await request("approve-all") as { approved: number; reason?: string };
-      setApprovalNotice(result.reason === "video_not_ready"
-        ? "The primary video must finish validation before approval"
-        : `${result.approved} of today's 3 platform posts are ready`);
+      const result = await request("approve-all") as { approved: number; readyVideos: number; reason?: string };
+      setApprovalNotice(result.reason === "videos_not_ready"
+        ? `${result.readyVideos} of 3 videos are validated; all three must be ready before approval`
+        : `${result.approved} posts across 3 videos are ready for the scheduled publishing task`);
       await load();
     } catch (error) {
       setApprovalNotice(error instanceof Error ? error.message : "Could not approve the package");
@@ -470,26 +496,26 @@ export function SocialStudio() {
           <section className={styles.deliveryGuide}>
             <div>
               <p className={styles.eyebrow}>What is ready today</p>
-              <strong>{new Set(digest.stories.filter((story) => story.assetKind === "image").map((story) => story.assetUrl)).size} unique downloadable image files</strong>
-              <span>{digest.stories.filter((story) => story.assetKind === "video").length} finished videos</span>
+              <strong>{digest.stories.filter((story) => story.assetKind === "video").length} of 3 finished videos</strong>
+              <span>Each video has Instagram, YouTube, and Reddit copy.</span>
               <div className={styles.packageActions}>
-                <button type="button" onClick={() => void approveAll()} disabled={digest.expired || approvalBusy}>Approve today&apos;s 3 posts</button>
+                <button type="button" onClick={() => void approveAll()} disabled={digest.expired || approvalBusy || digest.stories.filter((story) => story.assetKind === "video").length !== 3}>Approve 3 videos · 9 posts</button>
                 {approvalNotice ? <span role="status">{approvalNotice}</span> : null}
               </div>
             </div>
-            <p><b>Approve today&apos;s 3 posts</b> approves only the primary validated video for YouTube, Instagram, and Reddit. Other ideas and TikTok stay unapproved unless you review them individually. Opening or watching never publishes anything.</p>
+            <p><b>Approve 3 videos · 9 posts</b> queues the three validated videos for Instagram, YouTube, and Reddit. The 8 a.m. Codex task still checks this stored approval before preparing any post. Opening or watching never publishes anything.</p>
           </section>
 
           <section className={styles.connections}>
             <div>
               <p className={styles.eyebrow}>Publishing desk</p>
-              <h2>Connected where it matters now</h2>
-              <p>Manual channels stay copy-ready. Adding credentials later turns on OAuth setup without changing the content queue.</p>
+              <h2>Scheduled through the Codex desktop</h2>
+              <p>Instagram, YouTube, and Reddit use the signed-in desktop sessions after Studio approval. Email delivers the private review package.</p>
             </div>
             <div className={styles.connectorGrid}>
               {Object.entries(digest.connectors).map(([name, connector]) => (
                 <div className={styles.connector} key={name}>
-                  <span className={`${styles.dot} ${connector.mode === "connected" ? styles.connected : ""}`} />
+                  <span className={`${styles.dot} ${connector.mode.startsWith("connected") ? styles.connected : ""}`} />
                   <div><strong>{name}</strong><small>{connector.label}</small></div>
                 </div>
               ))}
@@ -537,9 +563,7 @@ export function SocialStudio() {
                               ))}
                             </div>
                           ) : null}
-                          {productionBrief.destinationUrl ? (
-                            <a className={styles.destination} href={`${productionBrief.destinationUrl}${productionBrief.trackingCode ? `?${productionBrief.trackingCode}` : ""}`} target="_blank" rel="noreferrer">Open tracked destination</a>
-                          ) : null}
+                          {productionBrief.trackingCode ? <small className={styles.trackingNote}>Platform tracking is included automatically.</small> : null}
                         </div>
                       ) : null}
                     </div>
@@ -573,7 +597,7 @@ export function SocialStudio() {
                     </div>
                   </div>
 
-                  {reelPlan ? (
+                  {reelPlan && story.assetKind !== "video" ? (
                     <div className={styles.reelBrief}>
                       <div className={styles.reelHeading}>
                         <span>Reel production brief</span>
@@ -600,8 +624,6 @@ export function SocialStudio() {
                       <VariantEditor
                         key={variant.id}
                         variant={variant}
-                        assetUrl={story.assetUrl}
-                        assetKind={story.assetKind}
                         disabled={digest.expired}
                         request={request}
                         onRefresh={load}
@@ -612,6 +634,7 @@ export function SocialStudio() {
               );
             })}
           </div>
+          <DailyFeedbackControl feedback={digest.feedback} disabled={digest.expired} request={request} onRefresh={load} />
         </>
       ) : null}
     </main>

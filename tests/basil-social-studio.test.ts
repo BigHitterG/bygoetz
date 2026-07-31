@@ -61,11 +61,11 @@ test("Social Studio migration keeps drafts private and approvals explicit", () =
   const videoMigration = readFileSync(new URL("../supabase/migrations/20260731143000_basil_social_video_packages.sql", import.meta.url), "utf8");
   assert.match(videoMigration, /basil-social-assets/);
   assert.match(videoMigration, /public\.basil_social_feedback/);
-  assert.match(studio, /Approve today&apos;s 3 posts/);
+  assert.match(studio, /Approve 3 videos/);
   assert.match(server, /\.in\("channel", \["youtube", "instagram", "reddit"\]\)/);
   assert.match(server, /\.in\("status", \["draft", "failed"\]\)/);
   assert.doesNotMatch(server, /\.in\("status", \["draft", "failed", "rejected"\]\)/);
-  assert.match(studio, /Request revision/);
+  assert.match(studio, /Save feedback for the next run/);
 });
 
 test("Vercel keeps two cron jobs while adding the daily social run", () => {
@@ -133,6 +133,27 @@ test("database approval guard limits bulk approval to the primary validated vide
   assert.match(guard, /story\.rank = 1/);
   assert.match(guard, /asset\.validation_status = 'valid'/);
   assert.match(guard, /return null/);
+});
+
+test("three-video review adds distinct scenes, daily feedback, and nine-post approval", () => {
+  const renderer = readFileSync(new URL("../scripts/basil-render-social-video.mjs", import.meta.url), "utf8");
+  const scene = readFileSync(new URL("../app/community-garden/social-capture/SocialCaptureScene.tsx", import.meta.url), "utf8");
+  const studio = readFileSync(new URL("../app/community-garden/social-studio/SocialStudio.tsx", import.meta.url), "utf8");
+  const server = readFileSync(new URL("../lib/communityGarden/socialStudio.ts", import.meta.url), "utf8");
+  const migration = readFileSync(new URL("../supabase/migrations/20260731213853_basil_social_three_video_review.sql", import.meta.url), "utf8");
+  assert.match(renderer, /--recipe/);
+  assert.match(renderer, /rose-planting/);
+  assert.match(renderer, /pollinator-transformation/);
+  assert.match(scene, /kind: "plant"/);
+  assert.match(scene, /kind: "water"/);
+  assert.match(scene, /Planting a rose bed/);
+  assert.match(scene, /Building a pollinator corner/);
+  assert.match(studio, /const CHANNEL_ORDER: Channel\[\] = \["instagram", "youtube", "reddit"\]/);
+  assert.match(studio, /Save daily feedback/);
+  assert.match(studio, /Approve 3 videos/);
+  assert.match(server, /validStoryIds\.length !== 3/);
+  assert.match(migration, /alter column story_id drop not null/);
+  assert.match(migration, /story\.rank between 1 and 3/);
 });
 
 test("notification capability sends the review email only after the video upload", () => {

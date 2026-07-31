@@ -40,7 +40,8 @@ function hashFile(path) {
 }
 
 let storyId = option("--story-id");
-const dailyRecipe = require(resolve(root, "content", "basil-social", "today.json"));
+const recipePath = resolve(option("--recipe") || resolve(root, "content", "basil-social", "today.json"));
+const dailyRecipe = require(recipePath);
 const manifestStem = String(dailyRecipe.id ?? "basil-social-sample").replace(/[^a-z0-9_-]+/gi, "-");
 const manifestPath = resolve(option("--manifest") || resolve(root, "artifacts", "basil-social-studio", `${manifestStem}.manifest.json`));
 const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
@@ -149,9 +150,26 @@ for (const asset of assets) {
 const previousEvidence = story.evidence && typeof story.evidence === "object" ? story.evidence : {};
 await supabase.from("basil_social_stories").update({
   title: manifest.title,
+  summary: manifest.summary,
+  why_today: manifest.whyToday,
   asset_kind: "video",
   evidence: { ...previousEvidence, productionManifest: manifest },
   status: "ready",
   updated_at: new Date().toISOString(),
 }).eq("id", storyId);
+for (const channel of ["youtube", "instagram", "reddit"]) {
+  const copy = manifest.platformCopy?.[channel];
+  if (!copy?.headline || !copy?.body || !Array.isArray(copy.hashtags)) {
+    throw new Error(`The ${channel} copy is missing from the production manifest.`);
+  }
+  const { error: copyError } = await supabase.from("basil_social_variants").update({
+    headline: String(copy.headline).slice(0, 300),
+    body: String(copy.body).slice(0, 10_000),
+    hashtags: copy.hashtags.filter((tag) => typeof tag === "string").slice(0, 12),
+    status: "draft",
+    approved_at: null,
+    updated_at: new Date().toISOString(),
+  }).eq("story_id", storyId).eq("channel", channel).neq("status", "published");
+  if (copyError) throw copyError;
+}
 console.log(JSON.stringify({ ok: true, storyId, assets: assets.map((asset) => asset.kind) }));

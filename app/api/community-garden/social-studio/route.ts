@@ -79,13 +79,13 @@ export async function POST(request: Request) {
       return NextResponse.json({ ok: true, ...result });
     }
     if (action === "revision") {
-      if (!payload.storyId || !payload.feedback) {
-        return NextResponse.json({ error: "A story and revision note are required." }, { status: 400 });
+      if (!payload.feedback) {
+        return NextResponse.json({ error: "A feedback note is required." }, { status: 400 });
       }
       const revision = await requestSocialRevision(
         payload.digestId,
         payload.token,
-        payload.storyId,
+        payload.storyId ?? null,
         payload.feedback,
       );
       return NextResponse.json({ ok: true, revision });
