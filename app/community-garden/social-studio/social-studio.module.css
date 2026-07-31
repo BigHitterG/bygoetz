@@ -125,7 +125,7 @@
 .truthChecks strong { color: #526b4b; text-transform: uppercase; letter-spacing: .08em; font: 800 9px Arial, sans-serif; }
 .truthChecks span { font: 700 12px/1.35 Arial, sans-serif; }
 .truthChecks em { grid-column: 2; color: #756159; font: normal 10px/1.4 Arial, sans-serif; }
-.destination { display: inline-block; margin-top: 13px; color: #6d3737; font: 800 11px Arial, sans-serif; }
+.trackingNote { display: block; margin-top: 13px; color: #6d574e; font: 700 10px Arial, sans-serif; }
 .visualColumn { display: flex; flex-direction: column; justify-content: flex-start; align-items: center; gap: 10px; }
 .assetStatus { width: min(100%, 330px); font-family: Arial, sans-serif; }
 .assetStatus > span { display: inline-block; padding: 5px 8px; border: 1px solid var(--ink); background: #758c68; color: white; text-transform: uppercase; letter-spacing: .1em; font-size: 9px; font-weight: 800; }
@@ -187,12 +187,34 @@
 .variantActions a { color: #603a36; font: 700 11px Arial, sans-serif; }
 .notice { width: 100%; color: #5b7453; font: 700 11px Arial, sans-serif; }
 
+.dailyFeedback {
+  max-width: 1280px;
+  margin: 34px auto 0;
+  padding: clamp(24px, 4vw, 42px);
+  border: 3px solid var(--ink);
+  background: #e7d2aa;
+  box-shadow: 9px 9px 0 rgba(48, 37, 34, .14);
+  display: grid;
+  grid-template-columns: minmax(220px, .8fr) minmax(280px, 1.4fr) auto;
+  gap: 18px;
+  align-items: end;
+  font-family: Arial, sans-serif;
+}
+.dailyFeedback h2 { margin: 6px 0 8px; font: 800 24px/1.2 Georgia, serif; }
+.dailyFeedback p { margin: 0; color: #66554d; font: 13px/1.5 Arial, sans-serif; }
+.dailyFeedback small { display: block; margin-top: 9px; color: #6d574e; font: 11px/1.4 Arial, sans-serif; }
+.dailyFeedback label { display: grid; gap: 5px; color: #79675e; text-transform: uppercase; letter-spacing: .1em; font: 800 9px Arial, sans-serif; }
+.dailyFeedback textarea { width: 100%; box-sizing: border-box; resize: vertical; border: 1.5px solid #75645d; border-radius: 0; padding: 10px; background: white; color: var(--ink); font: 13px/1.45 Arial, sans-serif; }
+.dailyFeedback button { border: 2px solid var(--ink); border-radius: 0; padding: 11px 14px; background: var(--red); color: white; cursor: pointer; font: 800 11px Arial, sans-serif; }
+.dailyFeedback button:disabled { cursor: not-allowed; opacity: .5; }
+
 @media (max-width: 900px) {
   .runBar { grid-template-columns: repeat(2, 1fr); }
   .connections,
   .storyLead,
   .deliveryGuide,
-  .revisionControl { grid-template-columns: 1fr; }
+  .revisionControl,
+  .dailyFeedback { grid-template-columns: 1fr; }
   .reelGrid { grid-template-columns: repeat(2, 1fr); }
   .productionFacts { grid-template-columns: repeat(2, 1fr); }
   .visualColumn { justify-content: start; }

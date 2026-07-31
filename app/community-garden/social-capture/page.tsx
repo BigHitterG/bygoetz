@@ -7,6 +7,11 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false, nocache: true },
 };
 
-export default function BasilSocialCapturePage() {
-  return <SocialCaptureScene />;
+export default async function BasilSocialCapturePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ scene?: string }>;
+}) {
+  const { scene = "water-chain" } = await searchParams;
+  return <SocialCaptureScene scene={scene} />;
 }

@@ -75,7 +75,7 @@ type AssetRow = {
 
 type FeedbackRow = {
   id: string;
-  story_id: string;
+  story_id: string | null;
   feedback: string;
   status: "queued" | "resolved" | "dismissed";
   created_at: string;
@@ -108,8 +108,8 @@ function chicagoRunKey(date: Date) {
 }
 
 function configuredStoryCount() {
-  const value = Number(process.env.BASIL_SOCIAL_DAILY_STORY_COUNT ?? 1);
-  return Number.isInteger(value) ? Math.max(1, Math.min(3, value)) : 1;
+  const value = Number(process.env.BASIL_SOCIAL_DAILY_STORY_COUNT ?? 3);
+  return Number.isInteger(value) ? Math.max(1, Math.min(3, value)) : 3;
 }
 
 async function collectRepositoryChanges(date: Date): Promise<RepositoryChange[]> {
@@ -163,12 +163,9 @@ async function findAuthorizedDigest(digestId: string, token: string) {
 function connectorStatus() {
   return {
     email: { mode: process.env.RESEND_API_KEY ? "connected" : "needs_configuration", label: "Daily review email" },
-    github: { mode: "connected", label: process.env.BASIL_SOCIAL_GITHUB_REPOSITORY ?? "BigHitterG/bygoetz" },
-    openai: { mode: process.env.OPENAI_API_KEY ? "connected" : "optional", label: process.env.OPENAI_SOCIAL_MODEL ?? "Template drafts" },
-    reddit: { mode: process.env.REDDIT_CLIENT_ID && process.env.REDDIT_CLIENT_SECRET ? "ready_for_oauth" : "manual", label: "Copy and post manually" },
-    youtube: { mode: process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET ? "ready_for_oauth" : "manual", label: "Upload manually" },
-    instagram: { mode: process.env.META_APP_ID && process.env.META_APP_SECRET ? "ready_for_oauth" : "manual", label: "Post manually" },
-    tiktok: { mode: process.env.TIKTOK_CLIENT_KEY && process.env.TIKTOK_CLIENT_SECRET ? "ready_for_oauth" : "manual", label: "Post manually" },
+    instagram: { mode: "connected_desktop", label: "Scheduled through signed-in Codex desktop" },
+    youtube: { mode: "connected_desktop", label: "Scheduled through signed-in Codex desktop" },
+    reddit: { mode: "connected_desktop", label: "Scheduled through signed-in Codex desktop" },
   };
 }
 
@@ -188,7 +185,7 @@ function renderDigestEmail(digestId: string, token: string, stories: Array<{ tit
   }).join("");
   const videoCount = stories.filter((story) => story.assetKind === "video").length;
   const html = `<!doctype html><html><body style="margin:0;background:#e7dfcf;color:#302321"><table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr><td align="center" style="padding:28px 12px"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:620px"><tr><td style="border:3px solid #302321;background:#f5e8ca;padding:28px 26px;text-align:center"><div style="font:700 30px Georgia,serif;letter-spacing:2px">BASIL</div><div style="font:700 12px Arial,sans-serif;letter-spacing:2px;margin-top:5px">SOCIAL STUDIO</div><h1 style="font:700 27px Georgia,serif;margin:22px 0 10px">Today’s package is ready</h1><p style="font:16px/1.5 Arial,sans-serif;margin:0;color:#5b4a42">${videoCount} finished video${videoCount === 1 ? "" : "s"}, ${stories.length} stories, poster thumbnails, and channel copy are waiting for review.</p><p style="margin:22px 0 4px"><a href="${reviewUrl}" style="display:inline-block;background:#a94343;color:#fff8e8;border:2px solid #302321;padding:13px 22px;text-decoration:none;font:700 15px Arial,sans-serif">Watch and review the package</a></p><p style="font:12px/1.5 Arial,sans-serif;color:#6b5a51;margin:10px 0 0">Opening the Studio never publishes anything. Approve All and revision controls are inside.</p></td></tr><tr><td style="height:18px"></td></tr>${cards}<tr><td style="font:12px/1.5 Arial,sans-serif;color:#6b5a51;text-align:center;padding:8px 20px">Sent privately to ${escapeHtml(REVIEWERS.join(", "))}. This review link expires in seven days.</td></tr></table></td></tr></table></body></html>`;
-  const text = `Basil Social Studio\n\n${stories.length} stories are ready for review. Opening the Studio never publishes anything.\n\n${stories.map((story, index) => `${index + 1}. ${story.title}\n${story.whyToday}`).join("\n\n")}\n\nReview: ${reviewUrl}`;
+  const text = `Basil Social Studio\n\n${videoCount} finished videos are ready for review. Opening the Studio never publishes anything.\n\n${stories.map((story, index) => `${index + 1}. ${story.title}\n${story.whyToday}`).join("\n\n")}\n\nReview: ${reviewUrl}`;
   return { reviewUrl, html, text };
 }
 
@@ -309,6 +306,7 @@ export async function resendLatestSocialDigest(requestKey: string) {
     .from("basil_social_stories")
     .select("title,why_today,asset_url,asset_kind")
     .eq("digest_id", digest.id)
+    .neq("status", "archived")
     .order("rank", { ascending: true });
   if (storiesError) throw storiesError;
   if (!stories?.length) throw new Error("The latest Social Studio digest has no stories.");
@@ -367,6 +365,7 @@ export async function reviewSocialDigest(digestId: string, token: string) {
     .from("basil_social_stories")
     .select("*")
     .eq("digest_id", digestId)
+    .neq("status", "archived")
     .order("rank", { ascending: true });
   if (storiesError) throw storiesError;
   const storyRows = (stories ?? []) as StoryRow[];
@@ -418,6 +417,7 @@ export async function reviewSocialDigest(digestId: string, token: string) {
     createdAt: digest.created_at,
     reviewers: REVIEWERS,
     connectors: connectorStatus(),
+    feedback: feedbackRows.filter((item) => item.story_id === null),
     stories: storyRows.map((story) => {
       const storyAssets = signedAssets.filter((asset) => asset.storyId === story.id);
       const primaryVideo = storyAssets.find((asset) => asset.kind === "video");
@@ -566,42 +566,44 @@ export async function approveAllSocialVariants(digestId: string, token: string) 
   if (!digest) throw new Error("This Social Studio link is invalid.");
   if (new Date(digest.approval_expires_at).getTime() <= Date.now()) throw new Error("This Social Studio link has expired.");
   const supabase = getSupabaseAdmin();
-  const { data: story, error: storiesError } = await supabase
+  const { data: stories, error: storiesError } = await supabase
     .from("basil_social_stories")
-    .select("id")
+    .select("id,rank")
     .eq("digest_id", digestId)
+    .eq("status", "ready")
+    .gte("rank", 1)
+    .lte("rank", 3)
     .order("rank", { ascending: true })
-    .limit(1)
-    .maybeSingle();
+    .limit(3);
   if (storiesError) throw storiesError;
-  if (!story) return { approved: 0, reason: "no_primary_story" };
-  const { data: video, error: videoError } = await supabase
+  if (!stories?.length) return { approved: 0, readyVideos: 0, reason: "no_video_stories" };
+  const storyIds = stories.map((story) => story.id as string);
+  const { data: videos, error: videoError } = await supabase
     .from("basil_social_assets")
-    .select("id")
-    .eq("story_id", story.id)
+    .select("story_id")
+    .in("story_id", storyIds)
     .eq("kind", "video")
-    .eq("validation_status", "valid")
-    .limit(1)
-    .maybeSingle();
+    .eq("validation_status", "valid");
   if (videoError) throw videoError;
-  if (!video) return { approved: 0, reason: "video_not_ready" };
+  const validStoryIds = [...new Set((videos ?? []).map((video) => video.story_id as string))];
+  if (validStoryIds.length !== 3) return { approved: 0, readyVideos: validStoryIds.length, reason: "videos_not_ready" };
   const now = new Date().toISOString();
   const { data, error } = await supabase
     .from("basil_social_variants")
     .update({ status: "manual_ready", approved_at: now, last_error: null, updated_at: now })
-    .eq("story_id", story.id)
+    .in("story_id", validStoryIds)
     .in("channel", ["youtube", "instagram", "reddit"])
     .in("status", ["draft", "failed"])
     .select("id");
   if (error) throw error;
   await refreshDigestStatus(digestId);
-  return { approved: data?.length ?? 0 };
+  return { approved: data?.length ?? 0, readyVideos: validStoryIds.length };
 }
 
 export async function requestSocialRevision(
   digestId: string,
   token: string,
-  storyId: string,
+  storyId: string | null,
   feedback: string,
 ) {
   const digest = await findAuthorizedDigest(digestId, token);
@@ -610,14 +612,16 @@ export async function requestSocialRevision(
   const cleanFeedback = feedback.trim().slice(0, 2000);
   if (cleanFeedback.length < 2) throw new Error("Tell Basil what you want changed.");
   const supabase = getSupabaseAdmin();
-  const { data: story, error: storyError } = await supabase
-    .from("basil_social_stories")
-    .select("id")
-    .eq("id", storyId)
-    .eq("digest_id", digestId)
-    .maybeSingle();
-  if (storyError) throw storyError;
-  if (!story) throw new Error("This story does not belong to the review.");
+  if (storyId) {
+    const { data: story, error: storyError } = await supabase
+      .from("basil_social_stories")
+      .select("id")
+      .eq("id", storyId)
+      .eq("digest_id", digestId)
+      .maybeSingle();
+    if (storyError) throw storyError;
+    if (!story) throw new Error("This story does not belong to the review.");
+  }
   const { data, error } = await supabase.from("basil_social_feedback").insert({
     digest_id: digestId,
     story_id: storyId,
@@ -625,9 +629,15 @@ export async function requestSocialRevision(
   }).select("id,story_id,feedback,status,created_at").single();
   if (error) throw error;
   const now = new Date().toISOString();
+  const storyQuery = supabase.from("basil_social_stories").update({ status: "held", updated_at: now }).eq("digest_id", digestId);
+  const variantStoryIds = storyId
+    ? [storyId]
+    : ((await supabase.from("basil_social_stories").select("id").eq("digest_id", digestId).neq("status", "archived")).data ?? []).map((story) => story.id as string);
   await Promise.all([
-    supabase.from("basil_social_stories").update({ status: "held", updated_at: now }).eq("id", storyId),
-    supabase.from("basil_social_variants").update({ status: "draft", approved_at: null, updated_at: now }).eq("story_id", storyId).neq("status", "published"),
+    storyId ? storyQuery.eq("id", storyId) : storyQuery.neq("status", "archived"),
+    variantStoryIds.length
+      ? supabase.from("basil_social_variants").update({ status: "draft", approved_at: null, updated_at: now }).in("story_id", variantStoryIds).neq("status", "published")
+      : Promise.resolve({ error: null }),
   ]);
   await refreshDigestStatus(digestId);
   return data as FeedbackRow;

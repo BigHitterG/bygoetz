@@ -1,6 +1,6 @@
 # Basil Social Studio
 
-Basil Social Studio is an approval-first, vertical-content-first daily editorial workflow. It watches recent repository activity, combines it with aggregate garden statistics and a curated factual story library, creates one core video with three platform adaptations, and emails a private review link to `info@bygoetz.com` by default.
+Basil Social Studio is an approval-first, vertical-content-first daily editorial workflow. It combines product truth, creator feedback, platform observations, and Basil's field guide into three distinct daily videos. Each video receives Instagram, YouTube, and Reddit adaptations before a private review link is emailed to `info@bygoetz.com`.
 
 Opening the email link never publishes content. The final review token is carried in the URL fragment, removed from browser history immediately, and submitted only through same-origin POST requests. Supabase stores only a SHA-256 hash of the token.
 
@@ -8,7 +8,7 @@ Opening the email link never publishes content. The final review token is carrie
 
 1. Vercel calls `/api/cron/basil-social` at 10:55 UTC, which is 5:55 a.m. Chicago daylight time, to create the private daily digest without emailing. The local Codex production task begins at 6:00 a.m., renders and uploads the validated package, and then consumes a one-time `notify` capability to send the private review email.
 2. The route reads the last fourteen days of GitHub commits and calls `get_basil_social_stats()` for aggregate, non-identifying garden totals.
-3. `socialContent.ts` scores factual Basil story cards against recent work and selects one primary packet by default. The publishing queue takes at most three approved adaptations from its validated core video: YouTube Short, Instagram Reel, and a selective Reddit companion.
+3. `socialContent.ts` creates three factual placeholder packets. The 6 a.m. Codex task replaces all three with validated packages using the `water-chain`, `rose-planting`, and `pollinator-transformation` scene library. The publishing queue accepts exactly three adaptations from each video: YouTube Short, Instagram Reel, and a selective Reddit companion.
 4. If `OPENAI_API_KEY` is configured, the selected drafts are refined through the Responses API using strict structured output. Failure falls back to the curated drafts rather than failing the daily run.
 5. The digest, story, channel variants, evidence, vertical production brief, and private approval state are stored in Supabase. TikTok remains an individually reviewed future channel and is excluded from the three-post daily approval.
 6. Resend sends one idempotent review email.
@@ -17,7 +17,7 @@ Opening the email link never publishes content. The final review token is carrie
 Each story separates the two deliverables clearly:
 
 - **Ready image/video:** the actual file available through **Download image** or **Download video**.
-- **Reel production brief:** a shot list for creating a future short. A brief is not presented as a finished video.
+- **Video manifest:** the objective, visible scene, audience, hypothesis, truth checks, and alternate hooks for the finished video shown directly beside it.
 
 **Copy text** puts the headline, caption, and hashtags on the clipboard. It does not copy the media file; the adjacent download action supplies that upload-ready file.
 
@@ -93,7 +93,7 @@ A preferred founder recording or licensed voice can replace the prototype by set
 
 ## Private storage and phone review
 
-Migration `20260731143000_basil_social_video_packages.sql` creates the private `basil-social-assets` bucket, `basil_social_assets`, and `basil_social_feedback`. Migration `20260731170000_basil_social_one_time_transfers.sql` adds 15-minute, single-use upload/download capabilities and a publication-recording function. Migration `20260731180000_basil_social_approval_guard.sql` enforces that only the rank-1 validated video's YouTube, Instagram, and Reddit variants can enter `manual_ready`, even if an older client attempts a broader bulk update. All three have been applied to the `bygoetz` Supabase project, and the `basil-social-transfer` Edge Function is deployed.
+Migration `20260731143000_basil_social_video_packages.sql` creates the private asset and feedback records. Migration `20260731170000_basil_social_one_time_transfers.sql` adds 15-minute, single-use transfer capabilities. Migration `20260731180000_basil_social_approval_guard.sql` creates the database approval guard. Migration `20260731213853_basil_social_three_video_review.sql` extends that guard to three validated videos and permits whole-package feedback with a null `story_id`. Unsupported channels and unvalidated videos remain blocked independently of the Studio client.
 
 The bucket is private and capped at 100 MB per object. Metadata and feedback tables have RLS enabled; `public`, `anon`, and `authenticated` have no grants. After the existing digest token is verified, the server creates one-hour signed URLs for the MP4 and poster. The phone receives only the deployed Studio link from the email, so video playback, Approve All, individual approvals, and revision requests work without remote-desktop access to the computer.
 
@@ -111,11 +111,11 @@ The repository side of both scheduled tasks is ready. The final schedules are cr
 
 Create a daily 6:00 a.m. Chicago-time task with this prompt:
 
-> Work in the Basil repository. Read `docs/basil-social-studio.md`, `content/basil-social/channel-memory.json`, queued revision feedback, the latest aggregate Social Studio metrics, recent Basil repository changes, and `content/basil-social/today.json`. Use the signed-in in-app Browser read-only to inspect recent Instagram, YouTube Studio, and Reddit results; never like, comment, edit, upload, or publish during this task. Update `channel-memory.json` with comparable 1-hour, 24-hour, or 7-day observations when available, clearly distinguishing missing data from zero. Read recent posts and comments by `u/bygoetz` to preserve the founder's direct, conversational language without copying a previous post. Make one original core video concept and three channel adaptations for YouTube Shorts, Instagram Reels, and a selective Reddit companion. Until another deterministic scene is implemented, use only `scene: "water-chain"`; never label unsupported footage as another action. Update every production-manifest field and support every truth claim with Basil source evidence or a reliable source. Do not use an OpenAI API key. Run `pnpm test:social-studio`, render with `pnpm social:render-sample`, and require the validated 1080x1920 H.264/AAC MP4 and poster. Through the connected Supabase tool, find today's newest digest and its rank-1 story; retry briefly if the 6:00 a.m. Vercel digest is still starting. Call `public.issue_basil_social_transfer_token(story_id, 'upload')`, then run `pnpm social:upload-package -- --story-id=<story-id> --transfer-token=<returned-token>`. Do not approve or publish. Confirm that the private Studio package is ready and report any failure plainly.
+> Use the complete 6 a.m. three-video creation prompt in `docs/basil-social-scheduled-tasks.md`. That runbook is the durable source of truth for repository paths, feedback consumption, scene selection, rendering, Supabase upload capabilities, validation, and review-email delivery.
 
 Create a second daily 8:00 a.m. Chicago-time task with this prompt:
 
-> Work in the Basil repository. Through the connected Supabase tool, find today's newest rank-1 story with a validated video and `manual_ready` variants among YouTube, Instagram, and Reddit. If none exist, do nothing externally and report "awaiting approval." Call `public.issue_basil_social_transfer_token(story_id, 'download')`, then run `pnpm social:prepare-approved -- --story-id=<story-id> --transfer-token=<returned-token> --run-key=<daily-run-key>`. Read its JSON and publish no more than the entries it contains, using the downloaded validated video and exact saved copy. Use the existing signed-in in-app Browser sessions for `basilcommunitygarden` on Instagram, the `Basil` YouTube channel, and `u/bygoetz` on Reddit. Never post outside `r/BasilCommunity` unless that day's approved Reddit copy explicitly names the subreddit. Immediately before each platform's final Publish/Post action, request the user's confirmation because it is an external communication. After each confirmed successful post, capture the public HTTPS URL and call `public.record_basil_social_publication(<variant-id>, <public-https-url>, null)` through the connected Supabase tool. If a platform asks for a login, challenge, account choice, permission, or materially different field, stop that channel without guessing. Never publish a draft, rejected, expired, or unapproved variant.
+> Use the complete 8 a.m. approval-gated publishing prompt in `docs/basil-social-scheduled-tasks.md`. It requires all three validated videos and all nine approvals, downloads each story separately, and preserves the final-action confirmation requirement for external publication.
 
 The desktop must be signed in to Codex, awake, and running with access to this checkout for both local tasks. The phone workflow is email -> private deployed Studio -> Watch / Edit / Approve All / Request revision. Approval is stored in Supabase, so the 8:00 a.m. computer task can see it without the phone connecting to the local machine. Scheduled run notifications are available in the desktop/web **Scheduled** inbox; phone delivery should rely on the email and Studio link rather than assuming a Codex mobile task inbox.
 

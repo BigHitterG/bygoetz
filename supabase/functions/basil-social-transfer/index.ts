@@ -158,6 +158,8 @@ Deno.serve(async (request) => {
         headline: String(copy.headline).slice(0, 300),
         body: String(copy.body).slice(0, 10_000),
         hashtags: (copy.hashtags as unknown[]).filter((tag): tag is string => typeof tag === "string").slice(0, 12),
+        status: "draft",
+        approved_at: null,
         updated_at: new Date().toISOString(),
       }).eq("story_id", storyId).eq("channel", channel).neq("status", "published");
       if (copyError) throw copyError;

@@ -6,7 +6,14 @@ import { join, resolve } from "node:path";
 
 const require = createRequire(import.meta.url);
 const root = resolve(import.meta.dirname, "..");
-const recipe = require(resolve(root, "content", "basil-social", "today.json"));
+
+function parseOption(name, fallback) {
+  const option = process.argv.find((argument) => argument.startsWith(`${name}=`));
+  return option ? option.slice(name.length + 1) : fallback;
+}
+
+const recipePath = resolve(root, parseOption("--recipe", "content/basil-social/today.json"));
+const recipe = require(recipePath);
 const outputDirectory = resolve(root, "artifacts", "basil-social-studio");
 const outputStem = String(recipe.id ?? "basil-social-sample").replace(/[^a-z0-9_-]+/gi, "-");
 const frameDirectory = resolve(outputDirectory, `.frames-${outputStem}`);
@@ -19,12 +26,7 @@ const pianoFile = resolve(outputDirectory, `${outputStem}-original-piano.wav`);
 const outputManifest = resolve(outputDirectory, `${outputStem}.manifest.json`);
 const captureFps = 12;
 const narration = recipe.narration;
-const implementedScenes = new Set(["water-chain"]);
-
-function parseOption(name, fallback) {
-  const option = process.argv.find((argument) => argument.startsWith(`${name}=`));
-  return option ? option.slice(name.length + 1) : fallback;
-}
+const implementedScenes = new Set(["water-chain", "rose-planting", "pollinator-transformation"]);
 
 function run(command, args, options = {}) {
   return new Promise((resolvePromise, reject) => {
@@ -119,7 +121,7 @@ async function createNarration() {
   try {
     await run(python, [
       resolve(root, "scripts", "basil-edge-tts.py"),
-      "--recipe", resolve(root, "content", "basil-social", "today.json"),
+      "--recipe", recipePath,
       "--audio", narrationFile,
       "--timings", narrationWordTimingFile,
     ]);
@@ -226,7 +228,9 @@ async function main() {
   const musicPackage = await createBackgroundMusic(durationSeconds);
 
   if (!encodeOnly) {
-    const baseUrl = parseOption("--url", "http://localhost:3010/community-garden/social-capture");
+    const captureUrl = new URL(parseOption("--url", "http://localhost:3010/community-garden/social-capture"));
+    captureUrl.searchParams.set("scene", recipe.scene);
+    const baseUrl = captureUrl.toString();
     const shouldStartServer = !process.argv.includes("--no-server");
     const server = shouldStartServer
       ? spawn(process.execPath, [resolve(root, "node_modules", "next", "dist", "bin", "next"), "dev", "-p", "3010"], { cwd: root, stdio: "inherit", windowsHide: true })
