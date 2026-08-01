@@ -169,3 +169,20 @@ test("notification capability sends the review email only after the video upload
   assert.match(studioServer, /invalid, expired, or already used/i);
   assert.match(studioServer, /capability-notify-\$\{story\.digest_id\}-\$\{tokenHash\(token\)\.slice\(0, 24\)\}/);
 });
+
+test("private trial asset cleanup is story-scoped and one-time", () => {
+  const transferFunction = readFileSync(
+    new URL("../supabase/functions/basil-social-transfer/index.ts", import.meta.url),
+    "utf8",
+  );
+  const cleanupMigration = readFileSync(
+    new URL("../supabase/migrations/20260801213000_basil_social_cleanup_capability.sql", import.meta.url),
+    "utf8",
+  );
+  assert.match(transferFunction, /request\.method === "DELETE"/);
+  assert.match(transferFunction, /\.eq\("story_id", storyId\)/);
+  assert.match(transferFunction, /supabase\.storage\.from\(bucket\)\.remove\(paths\)/);
+  assert.match(cleanupMigration, /'cleanup'/);
+  assert.match(cleanupMigration, /grant execute[\s\S]*to service_role/);
+});
+
