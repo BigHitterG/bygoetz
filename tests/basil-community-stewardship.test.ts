@@ -101,8 +101,10 @@ test("freeform expansion is cardinal, Care-funded, and unlocked at Helper", () =
   );
   assert.match(landProgressionMigration, /care_balance < expansion_cost/);
   assert.ok(serverGarden.includes("getExpansionCandidates"));
-  assert.match(serverGarden, /const nextExpansion = getNextExpansion\(progress\.plot_level\)/);
-  assert.doesNotMatch(serverGarden, /progress\.plot_level < 5 \? getNextExpansion/);
+  assert.match(
+    serverGarden,
+    /const nextExpansion = freeformExpansion[\s\S]{0,80}\? null[\s\S]{0,80}: getNextExpansion\(progress\.plot_level\)/,
+  );
   assert.ok(canvas.includes("expansionCandidates"));
   assert.ok(renderer.includes("drawFreeformFence"));
   assert.match(parcelEconomyMigration, /get_my_garden_freeform_parcel_cost_v1/);
@@ -153,11 +155,12 @@ test("returned clearings can be reclaimed for their recorded parcel price", () =
   );
   assert.ok(app.includes("selectedExpansionCost"));
   assert.match(app, /careCost=\{selectedExpansionCost\}/);
-  assert.match(
-    app,
-    /classicExpansionBlocked = reclaimCandidates\.length > 0/,
-  );
-  assert.match(renderer, /RECLAIM[\s\S]*candidate\.careCost/);
+  assert.match(app, /nextExpansion: useShapedLand \? null : myGarden\.nextExpansion/);
+  assert.doesNotMatch(app, /personalExpansionMode|setPersonalExpansionMode/);
+  assert.doesNotMatch(renderer, /PARCEL|RECLAIM|careCost\} CARE/);
+  assert.match(renderer, /fillText\(`\$\{candidate\.careCost\}`/);
+  assert.match(canvas, /`Unlock · \$\{cost\} Care`/);
+  assert.doesNotMatch(canvas, /Unlock parcel|Parcel selected/);
 });
 
 test("land shaping unlocks before land return and preserves the spiral core", () => {

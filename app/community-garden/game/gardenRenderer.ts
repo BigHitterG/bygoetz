@@ -1175,18 +1175,18 @@ function drawLockedParcel(
   ctx.translate(Math.round(labelPoint.x), Math.round(labelPoint.y));
   ctx.scale(zoom, zoom);
   ctx.fillStyle = "rgba(22, 65, 44, 0.86)";
-  ctx.fillRect(-28, -11, 56, 22);
+  ctx.fillRect(-21, -11, 42, 22);
   ctx.strokeStyle = "rgba(149, 176, 122, 0.52)";
   ctx.lineWidth = 1;
-  ctx.strokeRect(-28, -11, 56, 22);
+  ctx.strokeRect(-21, -11, 42, 22);
   ctx.fillStyle = "rgba(180, 202, 151, 0.72)";
-  ctx.fillRect(-22, -3, 8, 8);
-  ctx.strokeRect(-21, -7, 6, 6);
+  ctx.fillRect(-16, -3, 8, 8);
+  ctx.strokeRect(-15, -7, 6, 6);
   ctx.fillStyle = "rgba(232, 240, 216, 0.86)";
   ctx.font = '700 7px "Courier New", monospace';
   ctx.textAlign = "left";
   ctx.textBaseline = "middle";
-  ctx.fillText(`${nextExpansion.careCost} CARE`, -9, 1);
+  ctx.fillText(`${nextExpansion.careCost}`, -3, 1);
   ctx.restore();
 }
 
@@ -1221,22 +1221,18 @@ function drawFreeformExpansionCandidates(
     ctx.translate(Math.round(center.x), Math.round(center.y));
     ctx.scale(zoom, zoom);
     ctx.fillStyle = "rgba(22, 65, 44, 0.86)";
-    ctx.fillRect(-36, -11, 72, 22);
+    ctx.fillRect(-21, -11, 42, 22);
     ctx.strokeStyle = "rgba(149, 176, 122, 0.52)";
     ctx.lineWidth = 1;
-    ctx.strokeRect(-36, -11, 72, 22);
+    ctx.strokeRect(-21, -11, 42, 22);
     ctx.fillStyle = "rgba(180, 202, 151, 0.72)";
-    ctx.fillRect(-30, -3, 8, 8);
-    ctx.strokeRect(-29, -7, 6, 6);
+    ctx.fillRect(-16, -3, 8, 8);
+    ctx.strokeRect(-15, -7, 6, 6);
     ctx.fillStyle = "rgba(232, 240, 216, 0.86)";
     ctx.font = '700 7px "Courier New", monospace';
     ctx.textAlign = "left";
     ctx.textBaseline = "middle";
-    ctx.fillText(
-      `${candidate.source === "freeform" ? "PARCEL" : "RECLAIM"} ${candidate.careCost}`,
-      -17,
-      1,
-    );
+    ctx.fillText(`${candidate.careCost}`, -3, 1);
     ctx.restore();
   }
 }

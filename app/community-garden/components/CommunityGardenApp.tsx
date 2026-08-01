@@ -381,8 +381,6 @@ export function CommunityGardenApp() {
   const [returnClearingOpen, setReturnClearingOpen] = useState(false);
   const [returnClearingBusy, setReturnClearingBusy] = useState(false);
   const [returnClearingError, setReturnClearingError] = useState("");
-  const [personalExpansionMode, setPersonalExpansionMode] =
-    useState<"classic" | "freeform">("classic");
   const [growingEdgeIntroOpen, setGrowingEdgeIntroOpen] = useState(false);
   const [growingEdgeNotice, setGrowingEdgeNotice] = useState("");
   const restoredJourneyRef = useRef(false);
@@ -430,39 +428,24 @@ export function CommunityGardenApp() {
     ).length;
     return { plants, paths, items, total: plants + paths + items };
   }, [memberGarden, selectedGardenParcel]);
-  const freeformExpansionAvailable = Boolean(
-    landShapingUnlocked &&
-    memberGarden?.freeformExpansion && memberGarden.expansionCandidates?.length,
-  );
   const canvasGarden = useMemo<MyGardenState>(() => {
-    const useFreeform =
-      Boolean(memberGarden) &&
-      personalExpansionMode === "freeform" &&
-      freeformExpansionAvailable;
+    const useShapedLand = Boolean(memberGarden?.freeformExpansion);
     const reclaimCandidates = memberGarden?.reclaimCandidates ?? [];
-    // A missing parcel in the established footprint must be reclaimed before
-    // the classic spiral can grow again. This keeps the two systems in sync
-    // and prevents a parcel price from appearing on top of a strip price.
-    const classicExpansionBlocked = reclaimCandidates.length > 0;
     return {
       ...myGarden,
-      freeformExpansion: useFreeform,
-      nextExpansion:
-        useFreeform || classicExpansionBlocked ? null : myGarden.nextExpansion,
-      expansionCandidates: [
-        ...reclaimCandidates,
-        ...(useFreeform ? (myGarden.expansionCandidates ?? []) : []),
-      ],
+      freeformExpansion: useShapedLand,
+      nextExpansion: useShapedLand ? null : myGarden.nextExpansion,
+      expansionCandidates: useShapedLand
+        ? [...reclaimCandidates, ...(myGarden.expansionCandidates ?? [])]
+        : [],
       selectedParcel:
         selectedGardenParcel?.source !== "starter"
           ? selectedGardenParcel ?? undefined
           : undefined,
     };
   }, [
-    freeformExpansionAvailable,
     memberGarden,
     myGarden,
-    personalExpansionMode,
     selectedGardenParcel,
   ]);
   const selectedExpansionCost = useMemo(() => {
@@ -2733,38 +2716,10 @@ export function CommunityGardenApp() {
               <span className="cg-builder-icon" aria-hidden="true" />
               <span>{ui.builder.active ? "Done" : "Builder"}</span>
             </button>
-            {!ui.builder.active ? (
-              landShapingUnlocked ? (
-                <div
-                  className="cg-expansion-mode"
-                  role="group"
-                  aria-label="My Garden expansion style"
-                >
-                  <button
-                    type="button"
-                    className={personalExpansionMode === "classic" ? "is-active" : ""}
-                    aria-pressed={personalExpansionMode === "classic"}
-                    title="Continue the automatic classic land spiral"
-                    onClick={() => setPersonalExpansionMode("classic")}
-                  >
-                    Spiral
-                  </button>
-                  <button
-                    type="button"
-                    className={personalExpansionMode === "freeform" ? "is-active" : ""}
-                    aria-pressed={personalExpansionMode === "freeform"}
-                    disabled={!freeformExpansionAvailable}
-                    title="Choose one adjacent 4 by 4 clearing"
-                    onClick={() => setPersonalExpansionMode("freeform")}
-                  >
-                    Shape
-                  </button>
-                </div>
-              ) : (
-                <small className="cg-land-shaping-hint">
-                  Shape land at Helper
-                </small>
-              )
+            {!ui.builder.active && !landShapingUnlocked ? (
+              <small className="cg-land-shaping-hint">
+                Shape land at Helper
+              </small>
             ) : null}
             {canReturnSelectedClearing ? (
               <button

@@ -1542,7 +1542,7 @@ function getActionState(runtime: Runtime) {
         label: preview
           ? "Unlock land · Upgrade"
           : care >= cost
-            ? `Unlock parcel · ${cost} Care`
+            ? `Unlock · ${cost} Care`
             : `${cost - care} more Care to unlock`,
         enabled: !runtime.actionBusy && (preview || care >= cost),
       };
@@ -3302,7 +3302,7 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
               if (!isBuilderAction) runtime.statusMessage =
                 actionState.action === "expand"
                   ? selectedExpansionCandidate
-                    ? `Parcel reclaimed for ${selectedExpansionCandidate.careCost} Care. ${updatedGarden.careBalance} Care remains.`
+                    ? `Land unlocked for ${selectedExpansionCandidate.careCost} Care. ${updatedGarden.careBalance} Care remains.`
                     : `Classic land opened. The next strip will cost ${updatedGarden.nextExpansion?.careCost ?? "more"} Care.`
                   : actionState.action === "place-element"
                     ? `${getMyGardenElement(runtime.selectedElementType).name} placed. ${updatedGarden.careBalance} Care remains.`
@@ -3993,8 +3993,8 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
         runtime.statusMessage = garden?.preview
           ? "Garden Membership saves and expands this land."
           : (garden?.careBalance ?? 0) >= cost
-            ? `Parcel selected. Confirm below to unlock it for ${cost} Care.`
-            : `Earn ${Math.max(0, cost - (garden?.careBalance ?? 0))} more Care to open this parcel.`;
+            ? `Land selected. Confirm below to unlock it for ${cost} Care.`
+            : `Earn ${Math.max(0, cost - (garden?.careBalance ?? 0))} more Care to open this land.`;
         publishUi();
         return;
       }

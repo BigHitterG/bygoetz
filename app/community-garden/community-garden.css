@@ -940,34 +940,6 @@
 
 .cg-return-clearing-contents span { font-size: 0.78rem; }
 
-.cg-expansion-mode {
-  display: flex;
-  margin-top: 4px;
-  border: 1px solid rgba(129, 155, 102, 0.46);
-  background: rgba(21, 70, 47, 0.68);
-  box-shadow: 1px 1px 0 rgba(5, 37, 24, 0.16);
-}
-
-.cg-expansion-mode button {
-  min-height: 24px;
-  border: 0;
-  border-right: 1px solid rgba(182, 205, 155, 0.22);
-  background: transparent;
-  color: rgba(232, 240, 216, 0.82);
-  font: inherit;
-  font-size: 0.44rem;
-  font-weight: 900;
-  padding: 3px 7px;
-  text-transform: uppercase;
-}
-
-.cg-expansion-mode button:last-child { border-right: 0; }
-.cg-expansion-mode button.is-active {
-  background: rgba(112, 143, 84, 0.72);
-  color: #f2f0cf;
-}
-.cg-expansion-mode button:disabled { opacity: 0.48; }
-
 .cg-land-shaping-hint {
   margin-top: 4px;
   max-width: 86px;

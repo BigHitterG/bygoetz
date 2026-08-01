@@ -492,9 +492,11 @@ export async function getMyGarden(stewardId: string): Promise<MyGardenState> {
   const expansionCandidates = freeformExpansion
     ? getExpansionCandidates(unlockedParcels, progress.plot_level)
     : [];
-  // Classic Care-funded expansion never disappears. Caretaker adds the
-  // freeform option; it does not replace the familiar next parcel.
-  const nextExpansion = getNextExpansion(progress.plot_level);
+  // The classic spiral is the sole expansion path until land shaping unlocks.
+  // After that milestone, individual adjacent clearings replace it entirely.
+  const nextExpansion = freeformExpansion
+    ? null
+    : getNextExpansion(progress.plot_level);
   return {
     careBalance: progress.care_balance,
     lifetimeCare: progress.lifetime_care,

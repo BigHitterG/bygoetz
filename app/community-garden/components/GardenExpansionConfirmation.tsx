@@ -41,7 +41,7 @@ export function GardenExpansionConfirmation({
       >
         <p className="cg-kicker">My Garden expansion</p>
         <span className="cg-expansion-confirmation-lock" aria-hidden="true" />
-        <h2 id="cg-expansion-confirmation-title">Unlock this parcel?</h2>
+        <h2 id="cg-expansion-confirmation-title">Unlock this land?</h2>
         <p id="cg-expansion-confirmation-description">
           This will use <strong>{careCost.toLocaleString()} Care</strong> and
           add this land to My Garden. Later, you may return an empty clearing to
