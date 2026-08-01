@@ -16,28 +16,28 @@ const stats = parseSocialStats({
   livingGardenDiscoveries: 3,
 });
 
-test("daily social drafts prioritize recent matching product work", () => {
+test("daily social drafts always produce the three factual bulletin lanes", () => {
   const drafts = buildDailyStoryDrafts(date, [{
     sha: "a".repeat(40),
-    title: "Give Living Garden visitors unique artwork",
+    title: "Improve My Garden builder layout preview",
     url: "https://github.com/BigHitterG/bygoetz/commit/example",
     committedAt: date.toISOString(),
   }], stats, 3);
   assert.equal(drafts.length, 3);
-  assert.ok(drafts.some((draft) => draft.key === "living-garden" || draft.key === "goldfinch-field-guide"));
+  assert.deepEqual(drafts.map((draft) => draft.creativeBrief.bulletinType), ["garden_status", "how_it_works", "garden_discovery"]);
   assert.ok(drafts.some((draft) => draft.sourceType === "repository"));
 });
 
 test("every story is a complete vertical-first cross-channel packet", () => {
   const drafts = buildDailyStoryDrafts(date, [], stats, 5);
-  assert.equal(drafts.length, 5);
+  assert.equal(drafts.length, 3);
   for (const draft of drafts) {
     assert.equal(draft.reelPlan.shots.length, 3);
     assert.ok(draft.reelPlan.targetSeconds >= 10 && draft.reelPlan.targetSeconds <= 30);
     assert.match(draft.reelPlan.fallbackVisual, /diagram|explainer/i);
     assert.deepEqual(new Set(draft.variants.map((variant) => variant.channel)), new Set(SOCIAL_CHANNELS));
     assert.match(draft.assetUrl, /^\/community-garden\/social-captures\//);
-    assert.ok(["transformation-timelapse", "narrated-gameplay", "companion-post"].includes(draft.creativeBrief.family));
+    assert.equal(draft.creativeBrief.family, "basil-bulletin");
   }
 });
 
@@ -61,10 +61,8 @@ test("Social Studio migration keeps drafts private and approvals explicit", () =
   const videoMigration = readFileSync(new URL("../supabase/migrations/20260731143000_basil_social_video_packages.sql", import.meta.url), "utf8");
   assert.match(videoMigration, /basil-social-assets/);
   assert.match(videoMigration, /public\.basil_social_feedback/);
-  assert.match(studio, /Approve 3 videos/);
-  assert.match(server, /\.in\("channel", \["youtube", "instagram", "reddit"\]\)/);
-  assert.match(server, /\.in\("status", \["draft", "failed"\]\)/);
-  assert.doesNotMatch(server, /\.in\("status", \["draft", "failed", "rejected"\]\)/);
+  assert.match(studio, /Approve video \+ 3 posts/);
+  assert.match(server, /approve_basil_social_story/);
   assert.match(studio, /Save feedback for the next run/);
 });
 
@@ -79,17 +77,18 @@ test("Vercel keeps two cron jobs while adding the daily social run", () => {
 test("video packages derive captions from narration and replay real watering effects", () => {
   const renderer = readFileSync(new URL("../scripts/basil-render-social-video.mjs", import.meta.url), "utf8");
   const narrator = readFileSync(new URL("../scripts/basil-edge-tts.py", import.meta.url), "utf8");
-  const piano = readFileSync(new URL("../scripts/basil-generate-piano.py", import.meta.url), "utf8");
+  const music = readFileSync(new URL("../scripts/basil-generate-garden-loop.py", import.meta.url), "utf8");
   const scene = readFileSync(new URL("../app/community-garden/social-capture/SocialCaptureScene.tsx", import.meta.url), "utf8");
   const packageJson = readFileSync(new URL("../package.json", import.meta.url), "utf8");
   assert.match(renderer, /basil-edge-tts\.py/);
   assert.match(narrator, /boundary="WordBoundary"/);
-  assert.match(renderer, /basil-generate-piano\.py/);
+  assert.match(renderer, /basil-generate-garden-loop\.py/);
   assert.match(renderer, /amix=inputs=2/);
   assert.match(renderer, /backgroundMusicProvider/);
   assert.match(renderer, /implementedScenes/);
   assert.match(renderer, /truth claim must be explicitly supported/i);
-  assert.match(piano, /Cmaj7, Am7, Fmaj7, G6/);
+  assert.match(music, /BPM = 112\.0/);
+  assert.match(music, /Original four-bar garden loop/);
   assert.match(renderer, /setCaptionCues/);
   assert.match(renderer, /refusing to render an unsynchronized package/);
   assert.match(renderer, /BASIL_CAPTION_TIMINGS/);
@@ -135,25 +134,28 @@ test("database approval guard limits bulk approval to the primary validated vide
   assert.match(guard, /return null/);
 });
 
-test("three-video review adds distinct scenes, daily feedback, and nine-post approval", () => {
+test("three-video review adds distinct bulletin scenes and per-story approval", () => {
   const renderer = readFileSync(new URL("../scripts/basil-render-social-video.mjs", import.meta.url), "utf8");
   const scene = readFileSync(new URL("../app/community-garden/social-capture/SocialCaptureScene.tsx", import.meta.url), "utf8");
   const studio = readFileSync(new URL("../app/community-garden/social-studio/SocialStudio.tsx", import.meta.url), "utf8");
   const server = readFileSync(new URL("../lib/communityGarden/socialStudio.ts", import.meta.url), "utf8");
-  const migration = readFileSync(new URL("../supabase/migrations/20260731213853_basil_social_three_video_review.sql", import.meta.url), "utf8");
+  const migration = readFileSync(new URL("../supabase/migrations/20260801203117_basil_social_story_package_approval.sql", import.meta.url), "utf8");
   assert.match(renderer, /--recipe/);
-  assert.match(renderer, /rose-planting/);
-  assert.match(renderer, /pollinator-transformation/);
+  assert.match(renderer, /garden-status/);
+  assert.match(renderer, /watering-how-to/);
+  assert.match(renderer, /builder-mode/);
   assert.match(scene, /kind: "plant"/);
   assert.match(scene, /kind: "water"/);
-  assert.match(scene, /Planting a rose bed/);
-  assert.match(scene, /Building a pollinator corner/);
+  assert.match(scene, /Today's shared garden/);
+  assert.match(scene, /My Garden builder mode/);
   assert.match(studio, /const CHANNEL_ORDER: Channel\[\] = \["instagram", "youtube", "reddit"\]/);
   assert.match(studio, /Save daily feedback/);
-  assert.match(studio, /Approve 3 videos/);
-  assert.match(server, /validStoryIds\.length !== 3/);
-  assert.match(migration, /alter column story_id drop not null/);
+  assert.match(studio, /Approve video \+ 3 posts/);
+  assert.match(server, /approveSocialStory/);
+  assert.match(migration, /approve_basil_social_story/);
   assert.match(migration, /story\.rank between 1 and 3/);
+  assert.match(migration, /asset\.kind = 'poster'/);
+  assert.match(migration, /grant execute.*service_role/i);
 });
 
 test("notification capability sends the review email only after the video upload", () => {

@@ -12,6 +12,6 @@ export default async function BasilSocialCapturePage({
 }: {
   searchParams: Promise<{ scene?: string }>;
 }) {
-  const { scene = "water-chain" } = await searchParams;
+  const { scene = "watering-how-to" } = await searchParams;
   return <SocialCaptureScene scene={scene} />;
 }

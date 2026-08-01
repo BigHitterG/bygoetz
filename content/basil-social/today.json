@@ -1,69 +1,32 @@
 {
-  "schemaVersion": 1,
-  "id": "founder-shared-garden-v1",
-  "contentFamily": "narrated-gameplay",
-  "objective": "product_understanding",
-  "format": "narrated_gameplay",
-  "scene": "water-chain",
-  "intendedAudience": "Cozy-game players who like calm shared worlds and visible progress.",
+  "schemaVersion": 2,
+  "id": "garden-status-2248-v1",
+  "contentFamily": "basil-bulletin",
+  "bulletinType": "garden_status",
+  "bulletinLabel": "Garden status",
+  "objective": "garden_status",
+  "format": "status_bulletin",
+  "scene": "garden-status",
+  "gameplayRecipe": "deterministic-garden-status-v1",
+  "intendedAudience": "Existing and curious Basil players who want a quick factual garden update.",
   "distribution": "organic",
-  "hypothesis": "A sincere founder explanation over continuous watering gameplay will improve completion and qualified game visits.",
-  "alternateHooks": [
-    "Why make a gardening game shared by everyone?",
-    "Most gardening games give you a world of your own.",
-    "I wanted progress to mean helping someone you have never met."
-  ],
+  "hypothesis": "A concrete changing garden number will make the shared world legible and give viewers a reason to return.",
+  "alternateHooks": ["2,248 flowers are growing in Basil today.", "Here is what is growing in the shared garden right now.", "Today's Basil garden count is 2,248."],
   "platforms": ["youtube_shorts", "instagram_reels", "reddit"],
   "destinationUrl": "https://basilcommunitygarden.com/",
-  "trackingCode": "utm_source=social&utm_medium=organic&utm_campaign=basil_daily&utm_content=founder_shared_garden_v1",
-  "truthClaims": [
-    {
-      "claim": "Basil is playable in a browser.",
-      "supported": true,
-      "basis": "Production Basil browser experience."
-    },
-    {
-      "claim": "Players enter the same shared Community Garden and can water flowers planted by others.",
-      "supported": true,
-      "basis": "Existing Community Garden and watering mechanics."
-    }
-  ],
-  "title": "Why I made Basil shared",
-  "summary": "A founder explanation of why Basil begins in one shared Community Garden instead of a separate private world for every player.",
-  "whyToday": "This is the clearest introduction to Basil's central difference: a calm garden where one person's care can become part of somebody else's return visit.",
-  "header": "A founder note",
-  "hook": "Most gardening games give you a world of your own.",
-  "durationSeconds": 27,
-  "minimumDurationSeconds": 24,
-  "narration": "Most gardening games give you a world of your own. I wanted Basil to begin with the opposite idea. Everyone enters the same living garden. You can plant a flower, leave, and somebody you have never met may come along and water it. Their care changes what you return to. That is the whole experiment behind Basil: what happens when progress means leaving a shared place a little better than you found it?",
-  "sourceNote": "Founder commentary grounded in Basil's actual shared Community Garden and watering mechanics.",
-  "gameplayLabel": "Shared garden care",
-  "gameplayProgressLabel": "flowers watered for others",
-  "outroLine": "Plant something for the next person.",
-  "outroUrl": "basilcommunitygarden.com",
+  "trackingCode": "utm_source=social&utm_medium=organic&utm_campaign=basil_daily&utm_content=garden_status_2248",
+  "truthClaims": [{"claim":"The shared garden contains 2,248 flowers: 1,320 roses, 625 lavender plants, and 303 sunflowers.","supported":true,"basis":"Production aggregate snapshot measured 2026-08-01T20:34:11.392242+00:00."}],
+  "title": "Garden status: 2,248 flowers growing",
+  "summary": "A factual daily snapshot of the shared Basil garden.",
+  "whyToday": "This bulletin uses the latest production aggregate garden snapshot.",
+  "hook": "2,248 flowers are growing in Basil today.",
+  "minimumDurationSeconds": 16,
+  "narration": "Garden status. Two thousand two hundred forty-eight flowers are growing in Basil's shared garden today. That includes one thousand three hundred twenty roses, six hundred twenty-five lavender plants, and three hundred three sunflowers. This is a current aggregate snapshot, so tomorrow's garden may look different. Basil is free to play in your browser.",
+  "sourceNote": "Production aggregate snapshot measured 2026-08-01; no individual player data is used.",
+  "overlay": {"header":"Today's shared garden","gameplayLabel":"Garden status","progressValue":"2,248","progressLabel":"flowers growing","footer":"See what changes tomorrow."},
   "platformCopy": {
-    "youtube": {
-      "headline": "Why I made a gardening game shared by everyone",
-      "body": "Most gardening games give you a world of your own. Basil starts with the opposite idea: one shared garden, where a flower you plant can be watered by someone you have never met. Plant one free in your browser.",
-      "hashtags": ["BasilCommunityGarden", "CozyGames", "IndieGame"]
-    },
-    "instagram": {
-      "headline": "What if a gardening game belonged to everyone?",
-      "body": "I made Basil around one small experiment: plant something, leave, and return to a garden another person may have cared for. It is calm, shared, and playable in your browser.",
-      "hashtags": ["BasilCommunityGarden", "CozyGaming", "IndieDev"]
-    },
-    "reddit": {
-      "headline": "I made a gardening game where everyone enters the same garden",
-      "body": "Most gardening games begin by giving each player a private world. I wanted to try the opposite with Basil: one shared Community Garden where you can plant a flower and somebody else may later water it. I am curious whether shared progress makes a peaceful game feel more meaningful. What would make you want to return to a garden like this?",
-      "hashtags": []
-    }
-  },
-  "beats": [
-    { "start": 0, "end": 4.2, "text": "Most gardening games give you a world of your own." },
-    { "start": 4.2, "end": 8.2, "text": "I wanted Basil to begin with the opposite idea." },
-    { "start": 8.2, "end": 11.2, "text": "Everyone enters the same living garden." },
-    { "start": 11.2, "end": 17.2, "text": "You can plant a flower, leave, and somebody else may water it." },
-    { "start": 17.2, "end": 21.2, "text": "Their care changes what you return to." },
-    { "start": 21.2, "end": 27, "text": "What happens when progress means leaving a shared place better than you found it?" }
-  ]
+    "youtube": {"headline":"2,248 flowers are growing in Basil today","body":"Today's Basil garden bulletin: 2,248 shared-garden flowers, including 1,320 roses, 625 lavender plants, and 303 sunflowers.","hashtags":["BasilCommunityGarden","CozyGames","IndieGame"]},
+    "instagram": {"headline":"Today's Basil garden: 2,248 flowers","body":"2,248 flowers are currently growing in Basil's shared garden: 1,320 roses, 625 lavender plants, and 303 sunflowers.","hashtags":["BasilCommunityGarden","CozyGames","GardenUpdate"]},
+    "reddit": {"headline":"A quick Basil garden status: 2,248 flowers","body":"Today's aggregate snapshot shows 2,248 flowers growing in Basil's shared garden: 1,320 roses, 625 lavender plants, and 303 sunflowers. I'm testing a short daily garden bulletin so the community can see how the shared space changes over time. Which count would be most useful to include next?","hashtags":[]}
+  }
 }

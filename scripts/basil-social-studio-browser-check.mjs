@@ -71,7 +71,7 @@ try {
   const studio = await page.evaluate(() => ({
     hasContent: document.body.innerText.includes("Basil Social Studio"),
     hasOverlay: Boolean(document.querySelector("[data-nextjs-dialog], .vite-error-overlay, #webpack-dev-server-client-overlay")),
-    approveAll: Array.from(document.querySelectorAll("button")).some((button) => button.textContent?.includes("Approve all")),
+    storyApproval: Array.from(document.querySelectorAll("button")).some((button) => button.textContent?.includes("Approve video + 3 posts")),
     revision: Array.from(document.querySelectorAll("button")).some((button) => button.textContent?.includes("Request revision")),
     horizontalOverflow: document.documentElement.scrollWidth > document.documentElement.clientWidth + 2,
   }));
@@ -81,7 +81,7 @@ try {
   if (!capture.hasContent || capture.hasOverlay || capture.dimensions?.width !== 1080 || capture.dimensions?.height !== 1920 || capture.time !== "1.550" || !capture.taskProgress) {
     throw new Error(`Capture verification failed: ${JSON.stringify(capture)}`);
   }
-  if (!studio.hasContent || studio.hasOverlay || !studio.approveAll || !studio.revision || studio.horizontalOverflow) {
+  if (!studio.hasContent || studio.hasOverlay || !studio.storyApproval || !studio.revision || studio.horizontalOverflow) {
     throw new Error(`Studio verification failed: ${JSON.stringify(studio)}`);
   }
   if (errors.length) throw new Error(`Browser console errors: ${errors.join(" | ")}`);

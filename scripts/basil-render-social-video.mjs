@@ -22,11 +22,11 @@ const outputPoster = resolve(outputDirectory, `${outputStem}-poster.jpg`);
 const narrationFile = resolve(outputDirectory, `${outputStem}-narration.mp3`);
 const narrationWordTimingFile = resolve(outputDirectory, `${outputStem}-word-timing.json`);
 const captionTimingFile = resolve(outputDirectory, `${outputStem}-caption-timing.json`);
-const pianoFile = resolve(outputDirectory, `${outputStem}-original-piano.wav`);
+const musicFile = resolve(outputDirectory, `${outputStem}-original-garden-loop.wav`);
 const outputManifest = resolve(outputDirectory, `${outputStem}.manifest.json`);
 const captureFps = 12;
 const narration = recipe.narration;
-const implementedScenes = new Set(["water-chain", "rose-planting", "pollinator-transformation"]);
+const implementedScenes = new Set(["garden-status", "watering-how-to", "builder-mode"]);
 
 function run(command, args, options = {}) {
   return new Promise((resolvePromise, reject) => {
@@ -43,7 +43,7 @@ function resolvePython() {
     process.platform === "win32" ? "python" : "python3",
   ].filter(Boolean);
   const python = candidates.find((candidate) => candidate === "python" || candidate === "python3" || existsSync(candidate));
-  if (!python) throw new Error("Python is required for neural narration and the original piano bed.");
+  if (!python) throw new Error("Python is required for neural narration and the original garden music bed.");
   return python;
 }
 
@@ -146,14 +146,14 @@ async function createBackgroundMusic(durationSeconds) {
     return { audioInput: resolve(suppliedMusic), provider: "supplied-music" };
   }
   await run(resolvePython(), [
-    resolve(root, "scripts", "basil-generate-piano.py"),
+    resolve(root, "scripts", "basil-generate-garden-loop.py"),
     "--duration", String(durationSeconds + 1),
-    "--output", pianoFile,
+    "--output", musicFile,
   ]);
-  if (!existsSync(pianoFile) || statSync(pianoFile).size < 100_000) {
-    throw new Error("The original relaxing piano bed failed validation.");
+  if (!existsSync(musicFile) || statSync(musicFile).size < 100_000) {
+    throw new Error("The original upbeat garden loop failed validation.");
   }
-  return { audioInput: pianoFile, provider: "original-procedural-piano" };
+  return { audioInput: musicFile, provider: "original-procedural-garden-loop" };
 }
 
 function loadSuppliedNarration() {
@@ -178,6 +178,7 @@ async function captureFrames(page, baseUrl, captionCues, durationSeconds) {
   await page.locator('[data-capture-ready="true"]').waitFor({ state: "visible", timeout: 30_000 });
   await page.waitForFunction(() => Boolean(window.__BASIL_SOCIAL_CAPTURE__), undefined, { timeout: 30_000 });
   await page.evaluate((cues) => window.__BASIL_SOCIAL_CAPTURE__?.setCaptionCues(cues), captionCues);
+  await page.evaluate((overlay) => window.__BASIL_SOCIAL_CAPTURE__?.setBulletinOverlay(overlay), recipe.overlay ?? {});
   const dimensions = await page.evaluate(() => window.__BASIL_SOCIAL_CAPTURE__?.dimensions);
   if (dimensions?.width !== 1080 || dimensions?.height !== 1920) {
     throw new Error("The Basil capture scene did not report a 1080x1920 render surface.");
@@ -261,7 +262,7 @@ async function main() {
     "-i", join(frameDirectory, "frame-%04d.png"),
     "-i", narrationPackage.audioInput,
     "-i", musicPackage.audioInput,
-    "-filter_complex", `[0:v]fps=30,format=yuv420p[v];[1:a]aresample=48000,apad,volume=1.8[narration];[2:a]aresample=48000,volume=0.16,highpass=f=90,lowpass=f=6500[piano];[narration][piano]amix=inputs=2:duration=shortest:dropout_transition=0,afade=t=out:st=${fadeStart}:d=0.8[a]`,
+    "-filter_complex", `[0:v]fps=30,format=yuv420p[v];[1:a]aresample=48000,apad,volume=1.8[narration];[2:a]aresample=48000,volume=0.14,highpass=f=90,lowpass=f=7200[music];[narration][music]amix=inputs=2:duration=shortest:dropout_transition=0,afade=t=out:st=${fadeStart}:d=0.8[a]`,
     "-map", "[v]",
     "-map", "[a]",
     "-t", String(durationSeconds),
@@ -286,10 +287,12 @@ async function main() {
     schemaVersion: 2,
     recipe: recipe.id,
     contentFamily: recipe.contentFamily,
+    bulletinType: recipe.bulletinType,
+    bulletinLabel: recipe.bulletinLabel,
     objective: recipe.objective,
     format: recipe.format,
     scene: recipe.scene,
-    gameplayRecipe: recipe.gameplayRecipe ?? "deterministic-watering-round-v1",
+    gameplayRecipe: recipe.gameplayRecipe,
     title: recipe.title,
     summary: recipe.summary,
     whyToday: recipe.whyToday,

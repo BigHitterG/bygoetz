@@ -2,16 +2,16 @@
 
 This runbook creates an approval-first daily loop without an OpenAI API key:
 
-1. At 6:00 a.m. Chicago time, Codex reads performance and feedback, creates three distinct original videos, adapts each for Instagram, YouTube, and Reddit, validates them, and uploads them privately to Basil Creator Studio.
-2. The private Creator Studio email link lets the reviewer watch all three videos, edit copy, approve nine posts, and store per-video or whole-package feedback.
-3. At 8:00 a.m. Chicago time, Codex checks the stored approval. It does nothing if approval is absent. When approved, it downloads each exact validated package and prepares the nine signed-in platform composers.
+1. At 6:45 a.m. Chicago time, Codex reads performance and feedback, creates three distinct factual bulletin videos, adapts each for Instagram, YouTube, and Reddit, validates them, and uploads them privately to Basil Creator Studio.
+2. The private Creator Studio email link lets the reviewer watch all three videos, edit copy, approve each video-and-three-post package independently, and store per-video or whole-package feedback.
+3. At 8:00 a.m. Chicago time, Codex checks each story's stored approval independently. It prepares only approved packages and leaves unapproved packages untouched.
 4. Browser posting pauses immediately before each final Publish/Post action for confirmation. After a confirmed post succeeds, Codex records its public URL in Supabase.
-5. The next 6:00 a.m. run reads prior feedback and platform results before selecting the next creative hypothesis.
+5. The next 6:45 a.m. run reads prior feedback and platform results before selecting the next factual bulletin subjects.
 
 ## Required setup
 
 - Create both schedules from this existing Codex chat so they inherit this chat's context and available plugins.
-- Use the local Basil project at `C:\Users\Thomas Raymond Goetz\Documents\Codex\2026-07-30\okay-so-we-were-just-working\bygoetz`.
+- Use the local Basil project at `C:\Users\Thomas Raymond Goetz\Documents\Codex\2026-07-30\okay-we-were-just-working-on\basil-social-three-videos`.
 - Choose **local project** mode, not a worktree. The two tasks share local rendered artifacts.
 - Keep the computer powered on, connected to the internet, and the Codex desktop app running.
 - Use workspace-write permissions. The tasks need repository writes, network access for neural narration, Supabase access, and read-only browser access.
@@ -26,7 +26,7 @@ Browser access is verified on every run. A missing session, account mismatch, lo
 
 ## Task 1: Create the daily package
 
-Schedule: every day at **6:00 a.m. America/Chicago**.
+Schedule: every day at **6:45 a.m. America/Chicago**.
 
 Destination: **this existing chat**.
 
@@ -40,13 +40,13 @@ Copy this entire prompt:
 >
 > Use the signed-in Codex in-app Browser read-only to inspect the correct accounts: Instagram `basilcommunitygarden`, YouTube Studio channel `Basil`, and Reddit `u/bygoetz`. Never like, comment, follow, edit a profile, upload, or publish during this task. Collect comparable observations for existing posts at approximately 1 hour, 24 hours, and 7 days when available. Distinguish missing data from a measured zero. Update `content/basil-social/channel-memory.json` with the measurement time, public post URL, platform, hook/format identifiers, and available views or impressions, chose-to-view, average percentage watched, completion, replays, shares, saves, meaningful comments, profile/link activity, Basil sessions, game starts, and first flowers planted. Do not infer causation from a small sample.
 >
-> Read recent posts and comments by `u/bygoetz` to preserve the founder's direct, conversational voice. Do not copy an old post. Use first-person curiosity or delight only when it is genuine. Prefer concrete garden actions and nouns over corporate language. For Instagram and YouTube, treat the first week as controlled voice development because those Basil accounts began without content history.
+> Use an automated Basil bulletin voice: calm, concise, concrete, and transparent. Do not use sentimental founder monologues, fables, unrelated lore, or generic inspiration. First-person language is allowed only in the Reddit discussion question when it truthfully describes the developer's test. Prefer visible actions, current counts, numbered steps, and exact game nouns.
 >
-> Select three different creative hypotheses and use three different implemented capture recipes: `water-chain`, `rose-planting`, and `pollinator-transformation`. Rotate their order and concepts over time, but never label footage as an action the selected scene does not perform. The three packages must differ in visible garden layout, flower mix or density, hook, narration subject, and creative hypothesis. Narration must remain calm and intelligible, captions must derive from narration word boundaries, and the quiet original piano must remain beneath the voice.
+> Produce exactly one package in each lane: **Garden status** from a current aggregate snapshot, **How Basil works** for one demonstrated mechanic, and **Garden discovery** for one demonstrated feature or progression system. Use the implemented scenes `garden-status`, `watering-how-to`, and `builder-mode`. The scenes must remain visually distinct: a dense shared-garden walk, a focused watering interaction, and a personal-garden layout preview. Never label footage as an action the selected scene does not perform. Narration must remain calm and intelligible, captions must derive from narration word boundaries, and Basil's original upbeat woodland-game loop must remain quiet beneath the voice. Never copy a recognizable copyrighted melody or arrangement.
 >
 > Update `content/basil-social/today.json`, `content/basil-social/today-2.json`, and `content/basil-social/today-3.json` completely. Every recipe must include the objective, format, executable scene, hook, calm narration, intended audience, organic-or-paid distribution, hypothesis, at least two alternative openings, supported truth claims with a concrete basis, platforms, destination URL, a unique per-video tracking code, target duration, CTA, summary, why-today explanation, and complete Instagram, YouTube, and Reddit copy. Do not use an OpenAI API key or any paid text-generation API.
 >
-> Run the Social Studio tests. Render all three recipes by running `pnpm social:render-sample -- --recipe=content/basil-social/today.json`, then the same command with `today-2.json` and `today-3.json`. Reject any output unless it validates as 1080x1920 MP4, H.264/AAC, stable frame rate, no gray or blank frames, visible gameplay action matching its scene, safe captions synchronized to narration, at least 2.5 seconds of final payoff, a correct poster, calm narration, and quiet relaxing piano.
+> Run the Social Studio tests. Render all three recipes by running `pnpm social:render-sample -- --recipe=content/basil-social/today.json`, then the same command with `today-2.json` and `today-3.json`. Reject any output unless it validates as 1080x1920 MP4, H.264/AAC, stable frame rate, no gray or blank frames, visible gameplay action matching its scene, safe captions synchronized to narration, at least 2.5 seconds of final payoff, a correct poster, calm narration, and quiet original garden-loop music.
 >
 > Through the connected Supabase tool, find today's newest `basil_social_digests` row and its rank-1, rank-2, and rank-3 stories. The Vercel digest may be starting at the same time, so retry the lookup briefly instead of creating a duplicate. Pair `today.json` with rank 1, `today-2.json` with rank 2, and `today-3.json` with rank 3. For each story, call `public.issue_basil_social_transfer_token(story_id, 'upload')`, then immediately run `pnpm social:upload-package -- --recipe=<paired-recipe-path> --story-id=<story-id> --transfer-token=<returned-token>`. Never print or store a one-time token.
 >
@@ -54,7 +54,7 @@ Copy this entire prompt:
 >
 > Finish with a compact three-row report: concept, scene, hook, duration, platform adaptations, feedback applied, truth checks, validation result, private Studio readiness, and any stop condition. If any required video fails, keep all nine posts unapproved and report the exact failure.
 
-The 5:55 a.m. Vercel cron creates the private digest without emailing. The 6:00 a.m. Codex task sends the review email only after the MP4 and poster pass validation and upload successfully.
+The 5:55 a.m. Vercel cron creates the private digest without emailing. The 6:45 a.m. Codex task sends the review email only after all three MP4s and posters pass validation and upload successfully.
 
 ## Task 2: Check approval and prepare posting
 
@@ -68,9 +68,9 @@ Copy this entire prompt:
 
 > You are Basil's approval-gated publishing agent. Work only in the Basil repository associated with this task. Never reinterpret silence, opening an email, watching a video, or old approval as permission to publish.
 >
-> Through the connected Supabase tool, find today's newest rank-1, rank-2, and rank-3 Basil Social Studio stories. Require three distinct validated private videos and exactly nine `manual_ready` variants: Instagram, YouTube, and Reddit for each story. If the complete set is not approved, make no external changes and report exactly: `Awaiting Creator Studio approval.` If revision feedback is queued or any story is held, make no external changes and report that revision is required.
+> Through the connected Supabase tool, find today's newest rank-1, rank-2, and rank-3 Basil Social Studio stories. Evaluate each story independently. A story is eligible only when it has a distinct validated private MP4 and poster and exactly three `manual_ready` variants: Instagram, YouTube, and Reddit. Skip any unapproved or held story without changing it. If no story is eligible, make no external changes and report exactly: `Awaiting Creator Studio approval.` Queued feedback or a held state blocks only the affected story unless the feedback has a null `story_id`, in which case it applies to all three.
 >
-> For each of the three story IDs, call `public.issue_basil_social_transfer_token(story_id, 'download')`, then run `pnpm social:prepare-approved -- --story-id=<story-id> --transfer-token=<returned-token> --run-key=<daily-run-key>`. Never print or store a token. Read all three generated queues. Each may contain at most one Instagram post, one YouTube post, and one Reddit post. Never add a channel, rewrite approved text, swap media, or use a different story.
+> For each eligible story ID only, call `public.issue_basil_social_transfer_token(story_id, 'download')`, then run `pnpm social:prepare-approved -- --story-id=<story-id> --transfer-token=<returned-token> --run-key=<daily-run-key>`. Never print or store a token. Each queue may contain at most one Instagram post, one YouTube post, and one Reddit post. Never add a channel, rewrite approved text, swap media, or use a different story.
 >
 > Use only the signed-in Codex in-app Browser. Verify the destination before entering any content: Instagram must be `basilcommunitygarden`; YouTube Studio must be channel `Basil`; Reddit must be `u/bygoetz`. Reddit's default destination is only `r/BasilCommunity`. Never post to another subreddit unless that exact community is named in the approved Studio variant. Stop a channel on any account mismatch, login request, challenge, CAPTCHA, permission prompt, duplicate-post warning, upload-processing failure, or unfamiliar required field.
 >
@@ -85,7 +85,7 @@ Copy this entire prompt:
 ## Approval and feedback behavior
 
 - Opening the private email link never approves or publishes anything.
-- **Approve 3 videos · 9 posts** can move only the three validated daily videos' Instagram, YouTube, and Reddit variants to `manual_ready`.
+- **Approve video + 3 posts** appears at the top of each bulletin and atomically moves only that validated video's Instagram, YouTube, and Reddit variants to `manual_ready`.
 - TikTok is not part of the active Studio review or scheduled publishing queue.
 - Per-video and general feedback are stored in `basil_social_feedback`, return the affected package to a held/draft state, and are read by the next creation run.
 - The private download endpoint refuses drafts and consumes each capability after one use.
@@ -93,7 +93,7 @@ Copy this entire prompt:
 
 ## First-week operating rule
 
-Start with three videos and nine platform adaptations per day. Do not jump to six or ten daily videos until several comparable results exist. The first three deterministic scenes deliberately test a watering loop, a focused rose-planting loop, and a mixed-flower transformation.
+Start with three videos and nine platform adaptations per day. Do not jump to six or ten daily videos until several comparable results exist. The first three deterministic scenes deliberately establish one changing garden-status bulletin, one repeatable mechanic lesson, and one rotating feature discovery.
 
 Evaluate the first week primarily by:
 

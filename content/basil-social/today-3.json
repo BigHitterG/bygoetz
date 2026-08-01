@@ -1,69 +1,32 @@
 {
-  "schemaVersion": 1,
-  "id": "pollinator-corner-transformation-v1",
-  "contentFamily": "transformation-timelapse",
-  "objective": "first_plant",
-  "format": "garden-transformation",
-  "scene": "pollinator-transformation",
-  "gameplayRecipe": "deterministic-pollinator-transformation-v1",
-  "intendedAudience": "Garden and cozy-game viewers who enjoy satisfying before-and-after progress.",
+  "schemaVersion": 2,
+  "id": "builder-mode-v1",
+  "contentFamily": "basil-bulletin",
+  "bulletinType": "garden_discovery",
+  "bulletinLabel": "Garden discovery",
+  "objective": "feature_discovery",
+  "format": "feature_walkthrough",
+  "scene": "builder-mode",
+  "gameplayRecipe": "deterministic-builder-mode-v1",
+  "intendedAudience": "Cozy-game players who enjoy arranging and personalizing a garden.",
   "distribution": "organic",
-  "hypothesis": "A visibly empty center filling with varied flowers will improve completion and make the garden-building loop immediately legible.",
-  "alternateHooks": [
-    "Can this empty patch become a pollinator corner?",
-    "Seven flowers, one small garden change.",
-    "I left the middle open on purpose."
-  ],
+  "hypothesis": "Showing a lesser-known planning tool in use will create curiosity while accurately demonstrating deeper play.",
+  "alternateHooks": ["Did you know My Garden has a Builder Mode?", "Plan the shape before you plant it.", "Preview a garden layout before placing it."],
   "platforms": ["youtube_shorts", "instagram_reels", "reddit"],
   "destinationUrl": "https://basilcommunitygarden.com/",
-  "trackingCode": "utm_source=social&utm_medium=organic&utm_campaign=basil_daily&utm_content=pollinator_corner_transformation_v1",
-  "truthClaims": [
-    {
-      "claim": "Basil includes several flower types that can be arranged in the garden.",
-      "supported": true,
-      "basis": "Basil's production plant catalog and planting mechanics."
-    },
-    {
-      "claim": "Basil is playable in a browser.",
-      "supported": true,
-      "basis": "Production Basil browser experience."
-    }
-  ],
-  "title": "Turning an empty patch into a pollinator corner",
-  "summary": "Mary fills the open center of a flower border with bee balm, sunflower, lavender, and daisies until the patch reads as a finished garden corner.",
-  "whyToday": "The transformation format gives viewers a clear before, active middle, and finished payoff while showing several real Basil flower choices.",
-  "header": "Building a pollinator corner",
-  "hook": "Can this empty patch become a pollinator corner?",
-  "durationSeconds": 24,
-  "minimumDurationSeconds": 22,
-  "narration": "Can this empty patch become a pollinator corner? I left the middle open and started with bee balm, then added sunflower, lavender, and a few daisies. There is no perfect arrangement. I just look for the next space that feels too quiet. Seven flowers later, the empty patch reads like a place instead of a gap. That is usually enough for me.",
-  "sourceNote": "Founder narration grounded in Basil's real flower catalog and deterministic planting replay.",
-  "gameplayLabel": "Garden transformation",
-  "gameplayProgressLabel": "flowers added",
-  "outroLine": "Build a corner of your own.",
-  "outroUrl": "basilcommunitygarden.com",
+  "trackingCode": "utm_source=social&utm_medium=organic&utm_campaign=basil_daily&utm_content=builder_mode",
+  "truthClaims": [{"claim":"My Garden includes a Builder Mode that previews a personal garden layout.","supported":true,"basis":"Current Basil personal-garden renderer and Builder Mode implementation."}],
+  "title": "Garden discovery: Builder Mode",
+  "summary": "A factual walkthrough of previewing a personal garden layout.",
+  "whyToday": "The discovery lane rotates through real Basil systems beyond the daily status and core mechanic.",
+  "hook": "Did you know My Garden has a Builder Mode?",
+  "minimumDurationSeconds": 17,
+  "narration": "Garden discovery. My Garden includes a Builder Mode for planning a personal layout. Start with an open section, then preview the cells you want to use. The marked shape lets you inspect the path before you commit it. Place the layout when it looks right, then continue planting around it. It is a simple way to plan before you build.",
+  "sourceNote": "Feature walkthrough grounded in Basil's current personal-garden renderer and Builder Mode implementation.",
+  "overlay": {"header":"My Garden builder mode","gameplayLabel":"Layout preview","progressLabel":"cells planned","footer":"Plan it before you plant it."},
   "platformCopy": {
-    "youtube": {
-      "headline": "Can this empty patch become a pollinator corner?",
-      "body": "Seven small planting choices turn an open patch into a finished corner in Basil. Bee balm, sunflower, lavender, or daisies—which would you place first?",
-      "hashtags": ["BasilCommunityGarden", "CozyGames", "GardenDesign"]
-    },
-    "instagram": {
-      "headline": "Filling the quiet part of the garden",
-      "body": "I left the middle open, then filled it one flower at a time. Bee balm, sunflower, lavender, and daisies—no perfect arrangement required.",
-      "hashtags": ["BasilCommunityGarden", "CozyGaming", "GardenInspiration"]
-    },
-    "reddit": {
-      "headline": "I turned this empty patch into a small pollinator corner",
-      "body": "I started with bee balm and kept choosing whichever open tile felt too quiet. After sunflower, lavender, and a few daisies, the middle finally read as a place instead of a gap. Which flower would you have started with?",
-      "hashtags": []
-    }
-  },
-  "beats": [
-    { "start": 0, "end": 4, "text": "Can this become a pollinator corner?" },
-    { "start": 4, "end": 9, "text": "Start with bee balm, then add sunflower." },
-    { "start": 9, "end": 14, "text": "Lavender and daisies fill the quiet spaces." },
-    { "start": 14, "end": 20, "text": "Seven flowers turn the gap into a place." },
-    { "start": 20, "end": 24, "text": "That is usually enough for me." }
-  ]
+    "youtube": {"headline":"How Builder Mode works in Basil","body":"Preview a personal garden shape, inspect the path, and place it when the layout looks right.","hashtags":["BasilCommunityGarden","CozyGames","IndieGame"]},
+    "instagram": {"headline":"Did you know Basil has a Builder Mode?","body":"My Garden lets you preview a personal layout before placing it. Plan the shape, check the path, then build.","hashtags":["BasilCommunityGarden","CozyGaming","PixelGarden"]},
+    "reddit": {"headline":"A quick look at Builder Mode in Basil's My Garden","body":"My Garden has a Builder Mode for previewing a personal layout before committing it. The goal is to make arranging a garden readable: plan the shape, inspect the path, and then place it. What part of garden building would you want demonstrated next?","hashtags":[]}
+  }
 }
