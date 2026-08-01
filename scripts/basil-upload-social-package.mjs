@@ -1,5 +1,4 @@
 import { createHash } from "node:crypto";
-import { spawnSync } from "node:child_process";
 import { createRequire } from "node:module";
 import { readFileSync, statSync } from "node:fs";
 import { basename, dirname, resolve } from "node:path";
@@ -52,34 +51,18 @@ if (!serviceRoleKey) {
   if (!/^[0-9a-f-]{36}$/i.test(storyId) || !/^[0-9a-f]{64}$/.test(transferToken)) {
     throw new Error("Without a local service key, pass the one-time --story-id=<uuid> and --transfer-token=<64-hex-token> issued through the Supabase connector.");
   }
-  let result;
-  if (process.platform === "win32") {
-    const upload = spawnSync("curl.exe", [
-      "--silent", "--show-error", "--fail-with-body", "--max-time", "120",
-      "-X", "POST",
-      "-H", `x-basil-story-id: ${storyId}`,
-      "-H", `x-basil-transfer-token: ${transferToken}`,
-      "-F", `video=@${resolve(manifest.video)};type=video/mp4`,
-      "-F", `poster=@${resolve(manifest.poster)};type=image/jpeg`,
-      "-F", `manifest=@${manifestPath};type=application/json`,
-      `${supabaseUrl}/functions/v1/basil-social-transfer`,
-    ], { encoding: "utf8", windowsHide: true });
-    result = JSON.parse(upload.stdout || "{}");
-    if (upload.status !== 0) throw new Error(result.error ?? upload.stderr.trim() ?? "Basil social upload failed.");
-  } else {
-    const form = new FormData();
-    form.set("video", new Blob([readFileSync(resolve(manifest.video))], { type: "video/mp4" }), basename(resolve(manifest.video)));
-    form.set("poster", new Blob([readFileSync(resolve(manifest.poster))], { type: "image/jpeg" }), basename(resolve(manifest.poster)));
-    form.set("manifest", JSON.stringify(manifest));
-    const response = await fetch(`${supabaseUrl}/functions/v1/basil-social-transfer`, {
-      method: "POST",
-      headers: { "x-basil-story-id": storyId, "x-basil-transfer-token": transferToken },
-      body: form,
-      signal: AbortSignal.timeout(120_000),
-    });
-    result = await response.json().catch(() => ({}));
-    if (!response.ok) throw new Error(result.error ?? `Basil social upload failed with HTTP ${response.status}.`);
-  }
+  const form = new FormData();
+  form.set("video", new Blob([readFileSync(resolve(manifest.video))], { type: "video/mp4" }), basename(resolve(manifest.video)));
+  form.set("poster", new Blob([readFileSync(resolve(manifest.poster))], { type: "image/jpeg" }), basename(resolve(manifest.poster)));
+  form.set("manifest", JSON.stringify(manifest));
+  const response = await fetch(`${supabaseUrl}/functions/v1/basil-social-transfer`, {
+    method: "POST",
+    headers: { "x-basil-story-id": storyId, "x-basil-transfer-token": transferToken },
+    body: form,
+    signal: AbortSignal.timeout(120_000),
+  });
+  const result = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(result.error ?? `Basil social upload failed with HTTP ${response.status}.`);
   console.log(JSON.stringify(result));
   process.exit(0);
 }
@@ -173,3 +156,4 @@ for (const channel of ["youtube", "instagram", "reddit"]) {
   if (copyError) throw copyError;
 }
 console.log(JSON.stringify({ ok: true, storyId, assets: assets.map((asset) => asset.kind) }));
+

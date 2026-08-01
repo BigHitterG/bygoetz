@@ -34,7 +34,13 @@ Deno.serve(async (request) => {
   const key = serviceKey();
   if (!url || !key) return response(500, { error: "Supabase server credentials are unavailable." });
   const supabase = createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
-  const purpose = request.method === "POST" ? "upload" : request.method === "GET" ? "download" : "";
+  const purpose = request.method === "POST"
+    ? "upload"
+    : request.method === "GET"
+      ? "download"
+      : request.method === "DELETE"
+        ? "cleanup"
+        : "";
   if (!purpose) return response(405, { error: "Method not allowed." });
   const { data: claimed, error: claimError } = await supabase.rpc("claim_basil_social_transfer_token", {
     p_story_id: storyId,
@@ -71,6 +77,30 @@ Deno.serve(async (request) => {
     }
     if (!signed.video) return response(409, { error: "This story does not have a validated video." });
     return response(200, { storyId, assets: signed, posts: variants });
+  }
+
+  if (request.method === "DELETE") {
+    const { data: assets, error: assetError } = await supabase.from("basil_social_assets")
+      .select("id,bucket_id,object_path")
+      .eq("story_id", storyId);
+    if (assetError) return response(500, { error: assetError.message });
+    const byBucket = new Map<string, string[]>();
+    for (const asset of assets ?? []) {
+      const paths = byBucket.get(asset.bucket_id) ?? [];
+      paths.push(asset.object_path);
+      byBucket.set(asset.bucket_id, paths);
+    }
+    for (const [bucket, paths] of byBucket) {
+      const { error } = await supabase.storage.from(bucket).remove(paths);
+      if (error) return response(409, { error: error.message });
+    }
+    if (assets?.length) {
+      const { error } = await supabase.from("basil_social_assets")
+        .delete()
+        .in("id", assets.map((asset) => asset.id));
+      if (error) return response(500, { error: error.message });
+    }
+    return response(200, { ok: true, storyId, removed: assets?.length ?? 0 });
   }
 
   const uploaded: string[] = [];
@@ -170,3 +200,4 @@ Deno.serve(async (request) => {
     return response(409, { error: error instanceof Error ? error.message : "Basil social transfer failed." });
   }
 });
+
