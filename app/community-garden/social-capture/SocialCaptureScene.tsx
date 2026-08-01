@@ -17,7 +17,7 @@ const BASE_DATE = Date.parse("2026-07-31T12:00:00.000Z");
 const ROUND_SECONDS = 3;
 const ACTION_START_SECONDS = 1.25;
 
-export type SocialCaptureRecipe = "water-chain" | "rose-planting" | "pollinator-transformation";
+export type SocialCaptureRecipe = "garden-status" | "watering-how-to" | "builder-mode";
 
 type TimedWord = { text: string; start: number; end: number };
 type CaptionCue = { text: string; start: number; end: number; words?: TimedWord[] };
@@ -30,7 +30,11 @@ type PlantingScene = {
   header: string;
   gameplayLabel: string;
   progressLabel: string;
+  action: "walk" | "build";
+  mode: "community" | "personal";
 };
+
+type BulletinOverlay = { header?: string; gameplayLabel?: string; progressLabel?: string; progressValue?: string; footer?: string };
 
 const WATERING_ROUNDS: WateringRound[] = [
   { station: [-4, -3], targets: [[-5, -4, "lavender"], [-4, -4, "rose"], [-5, -2, "daisy"]] },
@@ -41,22 +45,26 @@ const WATERING_ROUNDS: WateringRound[] = [
   { station: [-5, 1], targets: [[-6, 2, "sunflower"], [-6, 0, "tulip"], [-4, 1, "bee_balm"]] },
 ];
 
-const PLANTING_SCENES: Record<Exclude<SocialCaptureRecipe, "water-chain">, PlantingScene> = {
-  "rose-planting": {
-    targets: [[-4, 1, "rose"], [-2, 0, "rose"], [0, 1, "rose"], [2, 0, "rose"], [4, 1, "rose"], [2, 3, "rose"]],
-    background: [[-6, -3, "lavender"], [-3, -4, "rose"], [0, -4, "lavender"], [3, -4, "rose"], [6, -3, "lavender"]],
+const PLANTING_SCENES: Record<Exclude<SocialCaptureRecipe, "watering-how-to">, PlantingScene> = {
+  "garden-status": {
+    targets: [[-6, 2, "rose"], [-3, -1, "lavender"], [0, 2, "sunflower"], [3, -1, "bee_balm"], [6, 2, "tulip"]],
+    background: [[-7, -4, "lavender"], [-5, -4, "rose"], [-3, -4, "daisy"], [-1, -4, "sunflower"], [1, -4, "tulip"], [3, -4, "bee_balm"], [5, -4, "rose"], [7, -4, "lavender"], [-7, 5, "sunflower"], [-5, 5, "tulip"], [-3, 5, "bee_balm"], [-1, 5, "rose"], [1, 5, "lavender"], [3, 5, "daisy"], [5, 5, "sunflower"], [7, 5, "tulip"]],
     camera: [0, 0],
-    header: "Planting a rose bed",
-    gameplayLabel: "Rose planting",
-    progressLabel: "roses planted",
+    header: "Today's shared garden",
+    gameplayLabel: "Garden status",
+    progressLabel: "flowers growing",
+    action: "walk",
+    mode: "community",
   },
-  "pollinator-transformation": {
-    targets: [[-3, -1, "bee_balm"], [-1, -2, "sunflower"], [1, -1, "lavender"], [3, -2, "daisy"], [2, 1, "bee_balm"], [0, 2, "sunflower"], [-2, 1, "lavender"]],
-    background: [[-6, -4, "tulip"], [-5, -2, "daisy"], [-5, 2, "lavender"], [-3, 4, "sunflower"], [0, 5, "bee_balm"], [3, 4, "daisy"], [5, 2, "tulip"], [5, -2, "lavender"], [4, -4, "sunflower"]],
+  "builder-mode": {
+    targets: [[-4, -2, "lavender"], [-2, -1, "rose"], [0, 0, "tulip"], [2, 1, "daisy"], [4, 2, "sunflower"], [2, 3, "bee_balm"]],
+    background: [[-5, 3, "rose"], [-3, 3, "lavender"], [-1, 3, "tulip"]],
     camera: [0, 0],
-    header: "Building a pollinator corner",
-    gameplayLabel: "Garden transformation",
-    progressLabel: "flowers added",
+    header: "My Garden builder mode",
+    gameplayLabel: "Layout preview",
+    progressLabel: "cells planned",
+    action: "build",
+    mode: "personal",
   },
 };
 
@@ -155,7 +163,7 @@ function plantingMaryAt(scene: PlantingScene, seconds: number) {
 function plantingPlantsAt(scene: PlantingScene, seconds: number) {
   const plants = scene.background.map((target, index) => plantRecord(`social-background-${index}`, target));
   scene.targets.forEach((target, index) => {
-    if (seconds >= index * ROUND_SECONDS + ACTION_START_SECONDS) {
+    if (scene.action === "walk" || seconds >= index * ROUND_SECONDS + ACTION_START_SECONDS) {
       plants.push(plantRecord(`social-planted-${index}`, target));
     }
   });
@@ -163,11 +171,13 @@ function plantingPlantsAt(scene: PlantingScene, seconds: number) {
 }
 
 function plantingSelectionAt(scene: PlantingScene, seconds: number): SelectedCell {
+  if (scene.action === "walk") return null;
   const { target, phase } = plantingState(scene, seconds);
   return phase >= 0.82 && phase <= 1.9 ? { gridX: target[0], gridY: target[1] } : null;
 }
 
 function plantingEffectsAt(scene: PlantingScene, seconds: number): GardenEffect[] {
+  if (scene.action === "walk") return [];
   const { targetIndex, target, phase } = plantingState(scene, seconds);
   const roundStartedAt = targetIndex * ROUND_SECONDS;
   const effects: GardenEffect[] = [];
@@ -186,19 +196,21 @@ declare global {
     __BASIL_SOCIAL_CAPTURE__?: {
       setTime: (seconds: number) => Promise<void>;
       setCaptionCues: (cues: CaptionCue[]) => Promise<void>;
+      setBulletinOverlay: (overlay: BulletinOverlay) => Promise<void>;
       dimensions: { width: number; height: number };
     };
   }
 }
 
 export function SocialCaptureScene({ scene: requestedScene }: { scene: string }) {
-  const scene: SocialCaptureRecipe = requestedScene === "rose-planting" || requestedScene === "pollinator-transformation"
+  const scene: SocialCaptureRecipe = requestedScene === "garden-status" || requestedScene === "builder-mode"
     ? requestedScene
-    : "water-chain";
+    : "watering-how-to";
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [seconds, setSeconds] = useState(0);
   const [captionCues, setCaptionCues] = useState<CaptionCue[]>(FALLBACK_CAPTIONS);
-  const plantingScene = scene === "water-chain" ? null : PLANTING_SCENES[scene];
+  const [overlay, setOverlay] = useState<BulletinOverlay>({});
+  const plantingScene = scene === "watering-how-to" ? null : PLANTING_SCENES[scene];
 
   const draw = useCallback((captureSeconds: number) => {
     const canvas = canvasRef.current;
@@ -213,7 +225,7 @@ export function SocialCaptureScene({ scene: requestedScene }: { scene: string })
     renderGarden(context, {
       viewport: { width: CAPTURE_WIDTH, height: CAPTURE_HEIGHT },
       camera: { x: cameraBase.x, y: cameraBase.y + 92 },
-      zoom: scene === "rose-planting" ? 4.7 : scene === "pollinator-transformation" ? 4.25 : 4.4,
+      zoom: scene === "garden-status" ? 3.9 : scene === "builder-mode" ? 4.65 : 4.5,
       mary,
       duck: { x: duck.x - 24, y: duck.y + 18 },
       plants,
@@ -229,7 +241,17 @@ export function SocialCaptureScene({ scene: requestedScene }: { scene: string })
       effects: plantingScene ? plantingEffectsAt(plantingScene, captureSeconds) : wateringEffectsAt(captureSeconds, mary),
       moving: plantingScene ? plantingState(plantingScene, captureSeconds).phase < 1.05 : wateringState(captureSeconds).phase < 1.05,
       now: BASE_DATE + captureSeconds * 1000,
-      mode: "community",
+      mode: plantingScene?.mode ?? "community",
+      personalGarden: plantingScene?.mode === "personal" ? {
+        minX: -7, minY: -6, width: 15, height: 13, maxWidth: 15, maxHeight: 13,
+        elements: [], paths: [{ gridX: -5, gridY: 0 }, { gridX: -4, gridY: 0 }, { gridX: -3, gridY: 0 }],
+        nextExpansion: null,
+      } : undefined,
+      builderPreview: plantingScene?.action === "build" ? {
+        mode: "place",
+        cells: plantingScene.targets.slice(0, Math.max(1, Math.floor(captureSeconds / ROUND_SECONDS) + 1)).map(([gridX, gridY]) => ({ gridX, gridY })),
+        invalidCell: null,
+      } : undefined,
       reducedMotion: false,
     });
   }, [plantingScene, scene]);
@@ -246,6 +268,10 @@ export function SocialCaptureScene({ scene: requestedScene }: { scene: string })
         setCaptionCues(nextCues);
         await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
       },
+      setBulletinOverlay: async (nextOverlay) => {
+        setOverlay(nextOverlay);
+        await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
+      },
     };
     return () => { delete window.__BASIL_SOCIAL_CAPTURE__; };
   }, []);
@@ -257,22 +283,23 @@ export function SocialCaptureScene({ scene: requestedScene }: { scene: string })
   const progress = plantingScene
     ? Math.min(plantingScene.targets.length, Math.max(0, Math.floor((seconds - ACTION_START_SECONDS) / ROUND_SECONDS) + 1))
     : wateringState(seconds).absoluteRound * 3 + (wateringState(seconds).phase >= ACTION_START_SECONDS ? 3 : 0);
-  const header = plantingScene?.header ?? "Shared garden care";
-  const gameplayLabel = plantingScene?.gameplayLabel ?? "Watering chain";
-  const progressLabel = plantingScene?.progressLabel ?? "flowers watered";
+  const header = overlay.header ?? plantingScene?.header ?? "How watering works";
+  const gameplayLabel = overlay.gameplayLabel ?? plantingScene?.gameplayLabel ?? "Two-tap watering";
+  const progressLabel = overlay.progressLabel ?? plantingScene?.progressLabel ?? "flowers watered";
+  const progressValue = overlay.progressValue ?? String(progress);
 
   return (
     <main className={styles.capture} data-capture-ready="true" data-time={seconds.toFixed(3)} data-scene={scene}>
       <canvas ref={canvasRef} width={CAPTURE_WIDTH} height={CAPTURE_HEIGHT} aria-label={`Basil ${gameplayLabel.toLowerCase()} gameplay`} />
       <div className={styles.vignette} aria-hidden="true" />
       <header className={styles.header}><span>{header}</span><strong>BASIL</strong></header>
-      <aside className={styles.gameplayStatus} aria-label="Gameplay task progress"><span>{gameplayLabel}</span><strong>{progress} {progressLabel}</strong></aside>
+      <aside className={styles.gameplayStatus} aria-label="Gameplay task progress"><span>{gameplayLabel}</span><strong>{progressValue} {progressLabel}</strong></aside>
       <section className={`${styles.caption} ${isClosing ? styles.captionClosing : ""}`} aria-live="off">
         <p>{cue?.words?.length
           ? cue.words.map((word, index) => <span className={index === activeWordIndex ? styles.activeWord : index < activeWordIndex ? styles.spokenWord : undefined} key={`${word.start}-${word.text}`}>{word.text}{index < cue.words!.length - 1 ? " " : ""}</span>)
           : cue?.text ?? "Basil Community Garden"}</p>
       </section>
-      <footer className={`${styles.footer} ${isClosing ? styles.footerVisible : ""}`}><span>Plant something for the next person.</span><strong>basilcommunitygarden.com</strong></footer>
+      <footer className={`${styles.footer} ${isClosing ? styles.footerVisible : ""}`}><span>{overlay.footer ?? "Play free in your browser."}</span><strong>basilcommunitygarden.com</strong></footer>
     </main>
   );
 }

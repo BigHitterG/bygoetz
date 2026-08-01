@@ -6,13 +6,13 @@ Opening the email link never publishes content. The final review token is carrie
 
 ## Daily workflow
 
-1. Vercel calls `/api/cron/basil-social` at 10:55 UTC, which is 5:55 a.m. Chicago daylight time, to create the private daily digest without emailing. The local Codex production task begins at 6:00 a.m., renders and uploads the validated package, and then consumes a one-time `notify` capability to send the private review email.
+1. Vercel calls `/api/cron/basil-social` at 10:55 UTC, which is 5:55 a.m. Chicago daylight time, to create the private daily digest without emailing. The local Codex production task begins at 6:45 a.m., renders and uploads the validated package, and then consumes a one-time `notify` capability to send the private review email.
 2. The route reads the last fourteen days of GitHub commits and calls `get_basil_social_stats()` for aggregate, non-identifying garden totals.
-3. `socialContent.ts` creates three factual placeholder packets. The 6 a.m. Codex task replaces all three with validated packages using the `water-chain`, `rose-planting`, and `pollinator-transformation` scene library. The publishing queue accepts exactly three adaptations from each video: YouTube Short, Instagram Reel, and a selective Reddit companion.
+3. `socialContent.ts` creates exactly three factual bulletin packets: Garden status, How Basil works, and Garden discovery. The 6:45 a.m. Codex task replaces all three with validated packages using `garden-status`, `watering-how-to`, and `builder-mode`. The publishing queue accepts exactly three adaptations from each video: YouTube Short, Instagram Reel, and a selective Reddit companion.
 4. If `OPENAI_API_KEY` is configured, the selected drafts are refined through the Responses API using strict structured output. Failure falls back to the curated drafts rather than failing the daily run.
-5. The digest, story, channel variants, evidence, vertical production brief, and private approval state are stored in Supabase. TikTok remains an individually reviewed future channel and is excluded from the three-post daily approval.
+5. The digest, story, three channel variants, evidence, vertical production brief, and private approval state are stored in Supabase. TikTok is not part of the current daily workflow.
 6. Resend sends one idempotent review email.
-7. The reviewer edits, copies, approves, skips, and marks manually published variants in `/community-garden/social-studio`.
+7. The reviewer edits copy, approves each video-and-three-post package from the top of its card, requests revisions, and records manually published variants in `/community-garden/social-studio`.
 
 Each story separates the two deliverables clearly:
 
@@ -54,15 +54,16 @@ Phase 1 now has a deterministic vertical capture route at `/community-garden/soc
 
 Implementation status is intentionally strict:
 
-- Complete: clean 1080x1920 capture surface, real renderer footage, local H.264/AAC MP4, poster, calm neural narration, word-boundary captions, quiet original piano, private Supabase delivery, phone playback, Approve All, and revision feedback.
-- Executable today: `water-chain`. The renderer rejects any manifest that names a scene not actually implemented, so it cannot silently substitute unrelated footage.
+- Complete: clean 1080x1920 capture surface, real renderer footage, local H.264/AAC MP4, poster, calm neural narration, word-boundary captions, quiet original garden-loop music, private Supabase delivery, phone playback, per-bulletin approval, and revision feedback.
+- Executable today: `garden-status`, `watering-how-to`, and `builder-mode`. The renderer rejects any manifest that names a scene not actually implemented, so it cannot silently substitute unrelated footage.
 - Still to build: `my-garden-transformation`, `shared-garden-day-change`, `plant-first-flower`, `weed-cleanup`, `habitat-discovery`, `heritage-flower-reveal`, `garden-before-after`, and `two-design-choices`, plus multi-opening re-edits and automated gameplay checkpoint analysis for those scenes.
 - Assisted, not API-autonomous: browser posting to YouTube, Instagram, and Reddit after approval. OAuth platform adapters and automatic performance ingestion are not implemented.
 
-The first two content families are:
+The three daily bulletin lanes are:
 
-1. **Transformation timelapse** — the default performance format. Begin on a readable before-state, accelerate planting/building, hold the completed garden, and end on one concrete invitation.
-2. **Narrated gameplay** — the Minecraft-parkour analogue for Basil. Mary performs a continuous, recognizable game task while an original, fact-checked plant story, farm fable, garden history, or founder observation provides the curiosity loop. The current deterministic recipe walks a lush garden, selects flowers, sprays the real watering effect, updates watered state, and awards the real Care effect without touching a production garden.
+1. **Garden status** — a dated aggregate snapshot paired with a wide, dense shared-garden walk.
+2. **How Basil works** — one numbered input-to-result mechanic demonstration, beginning with the two-tap watering loop.
+3. **Garden discovery** — one real feature or progression system demonstrated in a visually distinct scene, beginning with My Garden Builder Mode.
 
 The daily creative contract lives in `content/basil-social/today.json`. It contains the objective, format, executable scene, hook, narration, audience, hypothesis, alternative openings, truth claims and their basis, platform list, tracked destination, target duration, and CTA. `content/basil-social/channel-memory.json` is the durable cross-run channel memory: it stores read-only platform baselines, the founder's observed Reddit language, experiment notes, and comparable result windows. Caption timings are not hand-authored there. Narration is generated first, exact word boundaries are returned with that audio, and only then are the frames captured. The capture recipe remains deterministic; Codex changes the creative brief rather than editing the renderer each morning.
 
@@ -81,21 +82,21 @@ The renderer produces these files in `artifacts/basil-social-studio/`:
 - a 1080x1920 JPEG poster;
 - a neural MP3 narration track;
 - narration-derived word and phrase timing JSON;
-- an original locally generated relaxing piano bed, mixed quietly beneath narration;
+- an original locally generated upbeat woodland-game loop, mixed quietly beneath narration;
 - a structured JSON manifest;
 - a decode-validation result before the package is accepted.
 
 The prototype narration provider uses the maintained Python `edge-tts` client with a calm Microsoft Edge neural voice and does not require an OpenAI API key. It is an online dependency, so a machine rendering the package needs network access. Basil never falls back to the old robotic local voice: a failed neural generation fails the package instead. The client requests `WordBoundary` metadata from the same stream that writes the MP3, so captions track the spoken audio. `BASIL_SOCIAL_TTS_VOICE`, `BASIL_SOCIAL_TTS_RATE`, `BASIL_SOCIAL_TTS_PITCH`, and `BASIL_SOCIAL_TTS_VOLUME` tune the prototype voice.
 
-The renderer also creates a deterministic, original Cmaj7–Am7–Fmaj7–G6 piano bed locally and mixes it at a low level under the narration. It does not download or reuse a copyrighted song. Set `BASIL_BACKGROUND_MUSIC` to a licensed local audio file when a different track is preferred; narration remains the dominant channel.
+The renderer also creates a deterministic, original 112 BPM woodland-game loop locally and mixes it at a low level under the narration. Its motif and arrangement are original; it does not download, quote, or imitate a recognizable copyrighted melody. Set `BASIL_BACKGROUND_MUSIC` to a licensed local audio file when a different track is preferred; narration remains the dominant channel.
 
 A preferred founder recording or licensed voice can replace the prototype by setting `BASIL_NARRATION_AUDIO`. The matching narration-derived timing JSON is mandatory in `BASIL_CAPTION_TIMINGS`; supplying audio without timing fails validation. This keeps captions aligned even when the voice, pacing, or provider changes. ElevenLabs can later use its text-to-speech-with-timestamps response to satisfy the same contract without changing the video renderer.
 
 ## Private storage and phone review
 
-Migration `20260731143000_basil_social_video_packages.sql` creates the private asset and feedback records. Migration `20260731170000_basil_social_one_time_transfers.sql` adds 15-minute, single-use transfer capabilities. Migration `20260731180000_basil_social_approval_guard.sql` creates the database approval guard. Migration `20260731213853_basil_social_three_video_review.sql` extends that guard to three validated videos and permits whole-package feedback with a null `story_id`. Unsupported channels and unvalidated videos remain blocked independently of the Studio client.
+Migration `20260731143000_basil_social_video_packages.sql` creates the private asset and feedback records. Migration `20260731170000_basil_social_one_time_transfers.sql` adds 15-minute, single-use transfer capabilities. Migration `20260731180000_basil_social_approval_guard.sql` creates the database approval guard. Migration `20260731213853_basil_social_three_video_review.sql` extends that guard to three validated videos and permits whole-package feedback with a null `story_id`. Migration `20260801203117_basil_social_story_package_approval.sql` adds the service-role-only atomic approval function for one video, poster, and its three channel drafts. Unsupported channels and unvalidated assets remain blocked independently of the Studio client.
 
-The bucket is private and capped at 100 MB per object. Metadata and feedback tables have RLS enabled; `public`, `anon`, and `authenticated` have no grants. After the existing digest token is verified, the server creates one-hour signed URLs for the MP4 and poster. The phone receives only the deployed Studio link from the email, so video playback, Approve All, individual approvals, and revision requests work without remote-desktop access to the computer.
+The bucket is private and capped at 100 MB per object. Metadata and feedback tables have RLS enabled; `public`, `anon`, and `authenticated` have no grants. After the existing digest token is verified, the server creates one-hour signed URLs for the MP4 and poster. The phone receives only the deployed Studio link from the email, so video playback, per-bulletin approval, and revision requests work without remote-desktop access to the computer.
 
 The computer does not need a local Supabase service-role key. The scheduled Codex task uses the connected Supabase tool to mint a short-lived one-time capability, then passes it to the upload script:
 
@@ -109,15 +110,15 @@ The upload is transactional at the asset level: if metadata insertion fails, the
 
 The repository side of both scheduled tasks is ready. The final schedules are created in the desktop app's **Scheduled** view; Codex CLI does not provide that management UI. Both tasks must use this checkout in local-project mode, not an isolated worktree, because the render and the 8:00 a.m. publishing handoff share local artifacts.
 
-Create a daily 6:00 a.m. Chicago-time task with this prompt:
+Create a daily 6:45 a.m. Chicago-time task with this prompt:
 
-> Use the complete 6 a.m. three-video creation prompt in `docs/basil-social-scheduled-tasks.md`. That runbook is the durable source of truth for repository paths, feedback consumption, scene selection, rendering, Supabase upload capabilities, validation, and review-email delivery.
+> Use the complete 6:45 a.m. three-video creation prompt in `docs/basil-social-scheduled-tasks.md`. That runbook is the durable source of truth for repository paths, feedback consumption, bulletin selection, rendering, Supabase upload capabilities, validation, and review-email delivery.
 
 Create a second daily 8:00 a.m. Chicago-time task with this prompt:
 
-> Use the complete 8 a.m. approval-gated publishing prompt in `docs/basil-social-scheduled-tasks.md`. It requires all three validated videos and all nine approvals, downloads each story separately, and preserves the final-action confirmation requirement for external publication.
+> Use the complete 8 a.m. approval-gated publishing prompt in `docs/basil-social-scheduled-tasks.md`. It evaluates each story independently, downloads only approved story packages, and preserves the final-action confirmation requirement for external publication.
 
-The desktop must be signed in to Codex, awake, and running with access to this checkout for both local tasks. The phone workflow is email -> private deployed Studio -> Watch / Edit / Approve All / Request revision. Approval is stored in Supabase, so the 8:00 a.m. computer task can see it without the phone connecting to the local machine. Scheduled run notifications are available in the desktop/web **Scheduled** inbox; phone delivery should rely on the email and Studio link rather than assuming a Codex mobile task inbox.
+The desktop must be signed in to Codex, awake, and running with access to this checkout for both local tasks. The phone workflow is email -> private deployed Studio -> Watch / Edit / Approve video + 3 posts / Request revision. Approval is stored in Supabase, so the 8:00 a.m. computer task can see it without the phone connecting to the local machine. Scheduled run notifications are available in the desktop/web **Scheduled** inbox; phone delivery should rely on the email and Studio link rather than assuming a Codex mobile task inbox.
 
 The protected route still supports `prepare`, `notify`, and normal scheduled modes for server-side use. The no-extra-API Codex workflow uses connected Supabase capabilities instead, so no production secret needs to be copied onto the computer. Upload and email notification use separate one-time capabilities; the email is sent only after the finished private video is verified.
 
@@ -134,7 +135,7 @@ When a platform adapter is added, keep these invariants:
 - OAuth refresh tokens remain encrypted and server-only.
 - A provider response is stored as a normalized external ID and public URL, not as an unrestricted raw payload.
 - Reddit communities outside `r/basilcommunity` remain manual and individually reviewed.
-- YouTube, Instagram, and TikTok initially upload privately or as drafts until the relevant app review/audit is complete.
+- YouTube and Instagram initially upload privately or as drafts until the relevant app review/audit is complete. Reddit remains manually reviewed per community.
 
 ## Data model
 

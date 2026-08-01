@@ -81,6 +81,15 @@ type FeedbackRow = {
   created_at: string;
 };
 
+type EmailStory = {
+  id: string;
+  title: string;
+  whyToday: string;
+  assetUrl: string;
+  assetKind: "image" | "video";
+  bulletinLabel: string;
+};
+
 function tokenHash(token: string) {
   return createHash("sha256").update(token).digest("hex");
 }
@@ -169,9 +178,19 @@ function connectorStatus() {
   };
 }
 
-function renderDigestEmail(digestId: string, token: string, stories: Array<{ title: string; whyToday: string; assetUrl: string; assetKind: "image" | "video" }>) {
+function bulletinLabelFromEvidence(evidence: unknown) {
+  if (!evidence || typeof evidence !== "object") return "Basil bulletin";
+  const record = evidence as Record<string, unknown>;
+  const manifest = record.productionManifest ?? record.creativeBrief;
+  if (!manifest || typeof manifest !== "object") return "Basil bulletin";
+  const label = (manifest as Record<string, unknown>).bulletinLabel;
+  return typeof label === "string" && label.trim() ? label.trim().slice(0, 80) : "Basil bulletin";
+}
+
+function renderDigestEmail(digestId: string, token: string, stories: EmailStory[]) {
   const reviewUrl = `${getBasilUrl(`/community-garden/social-studio?digest=${digestId}`)}#token=${token}`;
   const cards = stories.map((story, index) => {
+    const storyUrl = `${reviewUrl}&story=${story.id}`;
     const visual = story.assetKind === "image"
       ? `<img src="${escapeHtml(getBasilUrl(story.assetUrl))}" alt="Actual Basil gameplay for ${escapeHtml(story.title)}" width="580" style="display:block;width:100%;height:auto;max-height:340px;object-fit:cover">`
       : `<div style="padding:44px 20px;background:#314239;color:#fff8e8;text-align:center"><div style="font:800 12px Arial,sans-serif;letter-spacing:1.6px;color:#e7c879">FINISHED VERTICAL VIDEO</div><div style="font:700 24px Georgia,serif;margin-top:9px">Poster + MP4 ready in Studio</div></div>`;
@@ -179,13 +198,13 @@ function renderDigestEmail(digestId: string, token: string, stories: Array<{ tit
     <tr><td style="padding:0 0 18px">
       <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border:2px solid #352823;background:#fff8e8">
         <tr><td>${visual}</td></tr>
-        <tr><td style="padding:18px 20px"><div style="font:700 12px Arial,sans-serif;letter-spacing:1.4px;color:#a43d3d">${story.assetKind === "video" ? "VIDEO PACKAGE" : "STORY"} ${index + 1}</div><h2 style="font:700 22px Georgia,serif;margin:6px 0 8px;color:#302321">${escapeHtml(story.title)}</h2><p style="font:15px/1.55 Arial,sans-serif;color:#5b4a42;margin:0">${escapeHtml(story.whyToday)}</p></td></tr>
+        <tr><td style="padding:18px 20px"><div style="font:700 12px Arial,sans-serif;letter-spacing:1.4px;color:#a43d3d">${escapeHtml(story.bulletinLabel.toUpperCase())} · ${index + 1} OF 3</div><h2 style="font:700 22px Georgia,serif;margin:6px 0 8px;color:#302321">${escapeHtml(story.title)}</h2><p style="font:15px/1.55 Arial,sans-serif;color:#5b4a42;margin:0">${escapeHtml(story.whyToday)}</p><p style="margin:18px 0 0"><a href="${storyUrl}" style="display:inline-block;background:#a94343;color:#fff8e8;border:2px solid #302321;padding:11px 17px;text-decoration:none;font:700 14px Arial,sans-serif">Review and approve this bulletin</a></p></td></tr>
       </table>
     </td></tr>`;
   }).join("");
   const videoCount = stories.filter((story) => story.assetKind === "video").length;
-  const html = `<!doctype html><html><body style="margin:0;background:#e7dfcf;color:#302321"><table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr><td align="center" style="padding:28px 12px"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:620px"><tr><td style="border:3px solid #302321;background:#f5e8ca;padding:28px 26px;text-align:center"><div style="font:700 30px Georgia,serif;letter-spacing:2px">BASIL</div><div style="font:700 12px Arial,sans-serif;letter-spacing:2px;margin-top:5px">SOCIAL STUDIO</div><h1 style="font:700 27px Georgia,serif;margin:22px 0 10px">Today’s package is ready</h1><p style="font:16px/1.5 Arial,sans-serif;margin:0;color:#5b4a42">${videoCount} finished video${videoCount === 1 ? "" : "s"}, ${stories.length} stories, poster thumbnails, and channel copy are waiting for review.</p><p style="margin:22px 0 4px"><a href="${reviewUrl}" style="display:inline-block;background:#a94343;color:#fff8e8;border:2px solid #302321;padding:13px 22px;text-decoration:none;font:700 15px Arial,sans-serif">Watch and review the package</a></p><p style="font:12px/1.5 Arial,sans-serif;color:#6b5a51;margin:10px 0 0">Opening the Studio never publishes anything. Approve All and revision controls are inside.</p></td></tr><tr><td style="height:18px"></td></tr>${cards}<tr><td style="font:12px/1.5 Arial,sans-serif;color:#6b5a51;text-align:center;padding:8px 20px">Sent privately to ${escapeHtml(REVIEWERS.join(", "))}. This review link expires in seven days.</td></tr></table></td></tr></table></body></html>`;
-  const text = `Basil Social Studio\n\n${videoCount} finished videos are ready for review. Opening the Studio never publishes anything.\n\n${stories.map((story, index) => `${index + 1}. ${story.title}\n${story.whyToday}`).join("\n\n")}\n\nReview: ${reviewUrl}`;
+  const html = `<!doctype html><html><body style="margin:0;background:#e7dfcf;color:#302321"><table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr><td align="center" style="padding:28px 12px"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:620px"><tr><td style="border:3px solid #302321;background:#f5e8ca;padding:28px 26px;text-align:center"><div style="font:700 30px Georgia,serif;letter-spacing:2px">BASIL</div><div style="font:700 12px Arial,sans-serif;letter-spacing:2px;margin-top:5px">DAILY GARDEN BULLETIN</div><h1 style="font:700 27px Georgia,serif;margin:22px 0 10px">Three factual videos are ready</h1><p style="font:16px/1.5 Arial,sans-serif;margin:0;color:#5b4a42">Garden status, one game mechanic, and one garden discovery—each with Instagram, YouTube, and Reddit copy.</p><p style="margin:22px 0 4px"><a href="${reviewUrl}" style="display:inline-block;background:#a94343;color:#fff8e8;border:2px solid #302321;padding:13px 22px;text-decoration:none;font:700 15px Arial,sans-serif">Review all three bulletins</a></p><p style="font:12px/1.5 Arial,sans-serif;color:#6b5a51;margin:10px 0 0">Opening a link does not approve or publish. Approve each bulletin inside Studio.</p></td></tr><tr><td style="height:18px"></td></tr>${cards}<tr><td style="font:12px/1.5 Arial,sans-serif;color:#6b5a51;text-align:center;padding:8px 20px">Sent privately to ${escapeHtml(REVIEWERS.join(", "))}. This review link expires in seven days.</td></tr></table></td></tr></table></body></html>`;
+  const text = `Basil Daily Garden Bulletin\n\n${videoCount} finished videos are ready. Opening a link does not approve or publish anything.\n\n${stories.map((story, index) => `${index + 1}. ${story.bulletinLabel}: ${story.title}\n${story.whyToday}\nReview: ${reviewUrl}&story=${story.id}`).join("\n\n")}\n\nReview all: ${reviewUrl}`;
   return { reviewUrl, html, text };
 }
 
@@ -239,7 +258,7 @@ export async function createDailySocialDigest(date = new Date(), options: { send
   }
 
   try {
-    const emailStories: Array<{ title: string; whyToday: string; assetUrl: string; assetKind: "image" | "video" }> = [];
+    const emailStories: EmailStory[] = [];
     for (const [index, draft] of drafts.entries()) {
       const { data: story, error: storyError } = await supabase.from("basil_social_stories").insert({
         digest_id: digest.id,
@@ -264,7 +283,7 @@ export async function createDailySocialDigest(date = new Date(), options: { send
         hashtags: variant.hashtags,
       })));
       if (variantError) throw variantError;
-      emailStories.push({ title: draft.title, whyToday: draft.whyToday, assetUrl: draft.assetUrl, assetKind: draft.assetKind });
+      emailStories.push({ id: story.id as string, title: draft.title, whyToday: draft.whyToday, assetUrl: draft.assetUrl, assetKind: draft.assetKind, bulletinLabel: draft.creativeBrief.bulletinLabel });
     }
     if (!sendEmail) return { id: digest.id as string, created: true, status: "review_ready", emailSent: false };
     const rendered = renderDigestEmail(digest.id as string, token, emailStories);
@@ -272,7 +291,7 @@ export async function createDailySocialDigest(date = new Date(), options: { send
       from: FROM,
       to: REVIEWERS,
       replyTo: REPLY_TO,
-      subject: `Basil Social Studio: today’s video package is ready`,
+      subject: "Basil Garden Bulletin: 3 videos ready to review",
       html: rendered.html,
       text: rendered.text,
       headers: { "X-Entity-Ref-ID": `basil-social-${runKey}` },
@@ -304,7 +323,7 @@ export async function resendLatestSocialDigest(requestKey: string) {
 
   const { data: stories, error: storiesError } = await supabase
     .from("basil_social_stories")
-    .select("title,why_today,asset_url,asset_kind")
+    .select("id,title,why_today,asset_url,asset_kind,evidence")
     .eq("digest_id", digest.id)
     .neq("status", "archived")
     .order("rank", { ascending: true });
@@ -327,10 +346,12 @@ export async function resendLatestSocialDigest(requestKey: string) {
   if (tokenError) throw tokenError;
 
   const emailStories = stories.map((story) => ({
+    id: story.id as string,
     title: story.title as string,
     whyToday: story.why_today as string,
     assetUrl: story.asset_url as string,
     assetKind: story.asset_kind as "image" | "video",
+    bulletinLabel: bulletinLabelFromEvidence(story.evidence),
   }));
   const rendered = renderDigestEmail(digest.id as string, token, emailStories);
   try {
@@ -338,7 +359,7 @@ export async function resendLatestSocialDigest(requestKey: string) {
       from: FROM,
       to: REVIEWERS,
       replyTo: REPLY_TO,
-      subject: `Basil Social Studio: ${stories.length} stories ready (resent)`,
+      subject: `Basil Garden Bulletin: ${stories.length} videos ready to review`,
       html: rendered.html,
       text: rendered.text,
       headers: { "X-Entity-Ref-ID": `basil-social-resend-${digest.id}` },
@@ -563,43 +584,24 @@ export async function decideSocialVariant(
   return data as VariantRow;
 }
 
-export async function approveAllSocialVariants(digestId: string, token: string) {
+export async function approveSocialStory(digestId: string, token: string, storyId: string) {
   const digest = await findAuthorizedDigest(digestId, token);
   if (!digest) throw new Error("This Social Studio link is invalid.");
   if (new Date(digest.approval_expires_at).getTime() <= Date.now()) throw new Error("This Social Studio link has expired.");
+  if (!/^[0-9a-f-]{36}$/i.test(storyId)) throw new Error("A valid bulletin is required.");
   const supabase = getSupabaseAdmin();
-  const { data: stories, error: storiesError } = await supabase
+  const { data: story, error: storyError } = await supabase
     .from("basil_social_stories")
-    .select("id,rank")
+    .select("id")
+    .eq("id", storyId)
     .eq("digest_id", digestId)
-    .eq("status", "ready")
-    .gte("rank", 1)
-    .lte("rank", 3)
-    .order("rank", { ascending: true })
-    .limit(3);
-  if (storiesError) throw storiesError;
-  if (!stories?.length) return { approved: 0, readyVideos: 0, reason: "no_video_stories" };
-  const storyIds = stories.map((story) => story.id as string);
-  const { data: videos, error: videoError } = await supabase
-    .from("basil_social_assets")
-    .select("story_id")
-    .in("story_id", storyIds)
-    .eq("kind", "video")
-    .eq("validation_status", "valid");
-  if (videoError) throw videoError;
-  const validStoryIds = [...new Set((videos ?? []).map((video) => video.story_id as string))];
-  if (validStoryIds.length !== 3) return { approved: 0, readyVideos: validStoryIds.length, reason: "videos_not_ready" };
-  const now = new Date().toISOString();
-  const { data, error } = await supabase
-    .from("basil_social_variants")
-    .update({ status: "manual_ready", approved_at: now, last_error: null, updated_at: now })
-    .in("story_id", validStoryIds)
-    .in("channel", ["youtube", "instagram", "reddit"])
-    .in("status", ["draft", "failed"])
-    .select("id");
+    .maybeSingle();
+  if (storyError) throw storyError;
+  if (!story) throw new Error("This bulletin does not belong to the review.");
+  const { data, error } = await supabase.rpc("approve_basil_social_story", { p_story_id: storyId });
   if (error) throw error;
   await refreshDigestStatus(digestId);
-  return { approved: data?.length ?? 0, readyVideos: validStoryIds.length };
+  return data as { story_id: string; approved: number };
 }
 
 export async function requestSocialRevision(

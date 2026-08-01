@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import styles from "./social-studio.module.css";
 
-type Channel = "reddit" | "youtube" | "instagram" | "tiktok";
+type Channel = "reddit" | "youtube" | "instagram";
 type Variant = {
   id: string;
   channel: Channel;
@@ -21,6 +21,8 @@ type ReelPlan = {
   fallbackVisual: string;
 };
 type ProductionBrief = {
+  bulletinType: string;
+  bulletinLabel: string;
   objective: string;
   format: string;
   scene: string;
@@ -82,7 +84,6 @@ const CHANNEL_ORDER: Channel[] = ["instagram", "youtube", "reddit"];
 const CHANNEL_LABELS: Record<Channel, string> = {
   instagram: "Instagram Reel",
   youtube: "YouTube Short",
-  tiktok: "TikTok",
   reddit: "Reddit companion",
 };
 
@@ -172,6 +173,8 @@ function parseProductionBrief(evidence: Record<string, unknown>): ProductionBrie
       })
     : [];
   return {
+    bulletinType: typeof value.bulletinType === "string" ? value.bulletinType : "basil_bulletin",
+    bulletinLabel: typeof value.bulletinLabel === "string" ? value.bulletinLabel : "Basil bulletin",
     objective: typeof value.objective === "string" ? value.objective : "Not assigned",
     format: typeof value.format === "string" ? value.format : typeof value.videoFormat === "string" ? value.videoFormat : "Not assigned",
     scene: typeof value.scene === "string" ? value.scene : typeof value.captureRecipe === "string" ? value.captureRecipe : "Not assigned",
@@ -279,7 +282,7 @@ function DailyFeedbackControl({
       <div>
         <p className={styles.eyebrow}>Daily feedback</p>
         <h2>Notes for all three videos</h2>
-        <p>The next 6 a.m. Codex task reads queued notes before choosing scenes, narration, and platform copy.</p>
+        <p>The next 6:45 a.m. Codex task reads queued notes before choosing scenes, narration, and platform copy.</p>
         {feedback[0] ? <small>Latest: {feedback[0].feedback}</small> : null}
       </div>
       <label>
@@ -328,8 +331,7 @@ function VariantEditor({
     }
   }
 
-  async function decide(decision: "approve" | "reject" | "draft" | "published") {
-    if (decision === "approve" && !window.confirm(`Approve this ${CHANNEL_LABELS[variant.channel]} for manual posting?`)) return;
+  async function decide(decision: "reject" | "draft" | "published") {
     let publishedUrl = "";
     if (decision === "published") {
       publishedUrl = window.prompt("Optional: paste the live post URL so Basil can measure it later.", variant.publishedUrl ?? "") ?? "";
@@ -337,16 +339,8 @@ function VariantEditor({
     setBusy(true);
     setNotice("");
     try {
-      if (decision === "approve") {
-        await request("save", {
-          variantId: variant.id,
-          headline,
-          body,
-          hashtags: hashtags.split(/[\s,]+/).map((tag) => tag.replace(/^#/, "")).filter(Boolean),
-        });
-      }
       await request("decision", { variantId: variant.id, decision, publishedUrl });
-      setNotice(decision === "approve" ? "Ready to post" : decision === "published" ? "Marked published" : "Updated");
+      setNotice(decision === "published" ? "Marked published" : "Updated");
       await onRefresh();
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "Could not update");
@@ -377,7 +371,6 @@ function VariantEditor({
       </label>
       <div className={styles.variantActions}>
         {variant.status !== "published" ? <button type="button" onClick={() => void save()} disabled={disabled || busy}>Save</button> : null}
-        {variant.status === "draft" || variant.status === "failed" ? <button className={styles.primaryAction} type="button" onClick={() => void decide("approve")} disabled={disabled || busy}>Approve</button> : null}
         {variant.status === "manual_ready" ? <button className={styles.publishAction} type="button" onClick={() => void decide("published")} disabled={disabled || busy}>Mark posted</button> : null}
         {variant.status === "manual_ready" || variant.status === "rejected" ? <button type="button" onClick={() => void decide("draft")} disabled={disabled || busy}>Return to draft</button> : null}
         {variant.status !== "rejected" && variant.status !== "published" ? <button className={styles.rejectAction} type="button" onClick={() => void decide("reject")} disabled={disabled || busy}>Skip</button> : null}
@@ -388,14 +381,61 @@ function VariantEditor({
   );
 }
 
+function StoryApprovalControl({
+  story,
+  disabled,
+  request,
+  onRefresh,
+}: {
+  story: Story;
+  disabled: boolean;
+  request: (action: string, payload: Record<string, unknown>) => Promise<unknown>;
+  onRefresh: () => Promise<void>;
+}) {
+  const [busy, setBusy] = useState(false);
+  const [notice, setNotice] = useState("");
+  const activeVariants = CHANNEL_ORDER.map((channel) => story.variants.find((variant) => variant.channel === channel)).filter((variant): variant is Variant => Boolean(variant));
+  const approved = activeVariants.length === 3 && activeVariants.every((variant) => variant.status === "manual_ready" || variant.status === "published");
+  const hasFinishedAssets = story.assetKind === "video" && Boolean(story.posterUrl);
+  const productionBrief = parseProductionBrief(story.evidence);
+
+  async function approve() {
+    if (!window.confirm(`Approve “${story.title}” and its saved Instagram, YouTube, and Reddit posts for the posting task?`)) return;
+    setBusy(true);
+    setNotice("");
+    try {
+      const result = await request("approve-story", { storyId: story.id }) as { approved: number };
+      setNotice(`${result.approved} channel posts approved together`);
+      await onRefresh();
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Could not approve this bulletin");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className={`${styles.storyApproval} ${approved ? styles.storyApproved : ""}`}>
+      <div>
+        <span>{productionBrief?.bulletinLabel ?? "Basil bulletin"}</span>
+        <strong>{approved ? "Approved for all three channels" : "Approve this content package"}</strong>
+        <small>One decision covers the video and its Instagram, YouTube, and Reddit copy.</small>
+      </div>
+      <button type="button" onClick={() => void approve()} disabled={disabled || busy || approved || !hasFinishedAssets || activeVariants.length !== 3}>
+        {approved ? "Approved" : hasFinishedAssets ? "Approve video + 3 posts" : "Waiting for validated video + poster"}
+      </button>
+      {notice ? <span className={styles.notice} role="status">{notice}</span> : null}
+    </div>
+  );
+}
+
 export function SocialStudio() {
   const digestIdRef = useRef("");
   const tokenRef = useRef("");
   const [digest, setDigest] = useState<Digest | null>(null);
   const [state, setState] = useState<"loading" | "ready" | "error">("loading");
   const [message, setMessage] = useState("");
-  const [approvalBusy, setApprovalBusy] = useState(false);
-  const [approvalNotice, setApprovalNotice] = useState("");
+  const storyIdRef = useRef("");
 
   async function request(action: string, payload: Record<string, unknown> = {}) {
     const response = await fetch(`/api/community-garden/social-studio${action === "review" ? "" : `?action=${action}`}`, {
@@ -414,23 +454,6 @@ export function SocialStudio() {
     setState("ready");
   }
 
-  async function approveAll() {
-    if (!window.confirm("Approve all three validated videos and their saved Instagram, YouTube, and Reddit posts for the 8 a.m. publishing task?")) return;
-    setApprovalBusy(true);
-    setApprovalNotice("");
-    try {
-      const result = await request("approve-all") as { approved: number; readyVideos: number; reason?: string };
-      setApprovalNotice(result.reason === "videos_not_ready"
-        ? `${result.readyVideos} of 3 videos are validated; all three must be ready before approval`
-        : `${result.approved} posts across 3 videos are ready for the scheduled publishing task`);
-      await load();
-    } catch (error) {
-      setApprovalNotice(error instanceof Error ? error.message : "Could not approve the package");
-    } finally {
-      setApprovalBusy(false);
-    }
-  }
-
   useEffect(() => {
     const url = new URL(window.location.href);
     if (process.env.NODE_ENV !== "production" && url.searchParams.get("demo") === "1") {
@@ -444,6 +467,7 @@ export function SocialStudio() {
     const digestId = url.searchParams.get("digest") ?? "";
     const fragment = new URLSearchParams(window.location.hash.slice(1));
     const token = fragment.get("token") ?? "";
+    storyIdRef.current = fragment.get("story") ?? "";
     window.history.replaceState({}, "", `${window.location.pathname}?digest=${encodeURIComponent(digestId)}`);
     digestIdRef.current = digestId;
     tokenRef.current = token;
@@ -463,6 +487,7 @@ export function SocialStudio() {
       if (!response.ok) throw new Error(result.error ?? "The Social Studio could not be loaded.");
       setDigest(result as Digest);
       setState("ready");
+      if (storyIdRef.current) requestAnimationFrame(() => document.getElementById(`story-${storyIdRef.current}`)?.scrollIntoView({ behavior: "smooth", block: "start" }));
     }).catch((error) => {
       setState("error");
       setMessage(error instanceof Error ? error.message : "The Social Studio could not be loaded.");
@@ -493,19 +518,6 @@ export function SocialStudio() {
             <div><span>Sent to</span><strong>{digest.reviewers.join(", ")}</strong></div>
           </section>
 
-          <section className={styles.deliveryGuide}>
-            <div>
-              <p className={styles.eyebrow}>What is ready today</p>
-              <strong>{digest.stories.filter((story) => story.assetKind === "video").length} of 3 finished videos</strong>
-              <span>Each video has Instagram, YouTube, and Reddit copy.</span>
-              <div className={styles.packageActions}>
-                <button type="button" onClick={() => void approveAll()} disabled={digest.expired || approvalBusy || digest.stories.filter((story) => story.assetKind === "video").length !== 3}>Approve 3 videos · 9 posts</button>
-                {approvalNotice ? <span role="status">{approvalNotice}</span> : null}
-              </div>
-            </div>
-            <p><b>Approve 3 videos · 9 posts</b> queues the three validated videos for Instagram, YouTube, and Reddit. The 8 a.m. Codex task still checks this stored approval before preparing any post. Opening or watching never publishes anything.</p>
-          </section>
-
           <section className={styles.connections}>
             <div>
               <p className={styles.eyebrow}>Publishing desk</p>
@@ -527,17 +539,18 @@ export function SocialStudio() {
               const reelPlan = parseReelPlan(story.evidence);
               const productionBrief = parseProductionBrief(story.evidence);
               return (
-                <section className={styles.story} key={story.id}>
+                <section className={styles.story} id={`story-${story.id}`} key={story.id}>
+                  <StoryApprovalControl story={story} disabled={digest.expired} request={request} onRefresh={load} />
                   <div className={styles.storyLead}>
                     <div className={styles.storyCopy}>
-                      <p className={styles.eyebrow}>Story {storyIndex + 1} / {story.sourceType.replaceAll("_", " ")}</p>
+                      <p className={styles.eyebrow}>{productionBrief?.bulletinLabel ?? `Bulletin ${storyIndex + 1}`} / {story.sourceType.replaceAll("_", " ")}</p>
                       <h2>{story.title}</h2>
                       <p className={styles.summary}>{story.summary}</p>
                       <div className={styles.whyToday}><span>Why today</span>{story.whyToday}</div>
                       {story.sourceRef ? <a className={styles.sourceLink} href={story.sourceRef} target="_blank" rel="noreferrer">View supporting repository change</a> : null}
                       {productionBrief ? (
                         <div className={styles.productionBrief}>
-                          <p className={styles.eyebrow}>Production manifest</p>
+                          <p className={styles.eyebrow}>Bulletin facts</p>
                           <div className={styles.productionFacts}>
                             <div><small>Objective</small><strong>{productionBrief.objective.replaceAll("_", " ")}</strong></div>
                             <div><small>Format</small><strong>{productionBrief.format.replaceAll("_", " ")}</strong></div>

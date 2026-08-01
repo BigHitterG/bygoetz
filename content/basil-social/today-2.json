@@ -1,69 +1,32 @@
 {
-  "schemaVersion": 1,
-  "id": "one-rose-at-a-time-v1",
-  "contentFamily": "narrated-gameplay",
-  "objective": "first_plant",
-  "format": "micro-loop",
-  "scene": "rose-planting",
-  "gameplayRecipe": "deterministic-rose-planting-v1",
-  "intendedAudience": "Cozy-game players who enjoy small, visible acts of progress.",
+  "schemaVersion": 2,
+  "id": "watering-how-to-v1",
+  "contentFamily": "basil-bulletin",
+  "bulletinType": "how_it_works",
+  "bulletinLabel": "How Basil works",
+  "objective": "mechanic_education",
+  "format": "mechanic_walkthrough",
+  "scene": "watering-how-to",
+  "gameplayRecipe": "deterministic-watering-how-to-v1",
+  "intendedAudience": "New players who need to understand one Basil interaction in under twenty seconds.",
   "distribution": "organic",
-  "hypothesis": "A simple planting loop with an immediate visual payoff will make Basil understandable without a feature explanation.",
-  "alternateHooks": [
-    "What can one rose change?",
-    "A quiet minute in the shared garden.",
-    "I started with one empty row."
-  ],
+  "hypothesis": "A numbered input-to-result demonstration will improve product understanding.",
+  "alternateHooks": ["Water three flowers in two taps.", "Basil's watering loop has three steps.", "Choose, preview, then water."],
   "platforms": ["youtube_shorts", "instagram_reels", "reddit"],
   "destinationUrl": "https://basilcommunitygarden.com/",
-  "trackingCode": "utm_source=social&utm_medium=organic&utm_campaign=basil_daily&utm_content=one_rose_at_a_time_v1",
-  "truthClaims": [
-    {
-      "claim": "Players can plant roses in Basil's Community Garden.",
-      "supported": true,
-      "basis": "Basil's production planting mechanic and rose plant definition."
-    },
-    {
-      "claim": "Basil is playable in a browser.",
-      "supported": true,
-      "basis": "Production Basil browser experience."
-    }
-  ],
-  "title": "Planting one quiet row of roses",
-  "summary": "Mary moves through an open patch and plants a rose at each stop, turning a sparse strip of garden into a small rose bed.",
-  "whyToday": "This shows the most basic promise of Basil clearly: choose a place, plant something, and leave the garden visibly different.",
-  "header": "Planting a rose bed",
-  "hook": "What can one rose change?",
-  "durationSeconds": 21,
-  "minimumDurationSeconds": 19,
-  "narration": "What can one rose change? Not much by itself, which is partly why I like planting one. You choose a quiet patch, place it, and move to the next open space. A row begins to take shape one small decision at a time. In Basil, that rose stays in the shared garden for the next person to find.",
-  "sourceNote": "Founder narration grounded in Basil's real rose planting and shared Community Garden mechanics.",
-  "gameplayLabel": "Rose planting",
-  "gameplayProgressLabel": "roses planted",
-  "outroLine": "Plant one for the next person.",
-  "outroUrl": "basilcommunitygarden.com",
+  "trackingCode": "utm_source=social&utm_medium=organic&utm_campaign=basil_daily&utm_content=watering_how_to",
+  "truthClaims": [{"claim":"Basil's watering interaction previews a nearby group before the player confirms the watering action.","supported":true,"basis":"Current Basil watering selection and renderer implementation."}],
+  "title": "How watering works: choose, preview, water",
+  "summary": "A three-step demonstration of Basil's watering loop.",
+  "whyToday": "A repeatable mechanic bulletin should teach one visible action from input to result.",
+  "hook": "Water three flowers in two taps.",
+  "minimumDurationSeconds": 16,
+  "narration": "How watering works in Basil. First, choose a water droplet near the flowers you want to care for. Basil previews the nearby group, so you can see where the water will spread. Tap again to confirm the action. The flowers are watered together, and the garden records the care. Choose, preview, then water.",
+  "sourceNote": "Mechanic explanation grounded in Basil's current watering selection and renderer implementation.",
+  "overlay": {"header":"How watering works","gameplayLabel":"Two-tap watering","progressLabel":"flowers watered","footer":"Choose. Preview. Water."},
   "platformCopy": {
-    "youtube": {
-      "headline": "What can one rose change?",
-      "body": "A small rose-planting loop in Basil's shared Community Garden. Pick an open patch, plant one, and leave the garden different for whoever arrives next.",
-      "hashtags": ["BasilCommunityGarden", "CozyGames", "IndieGame"]
-    },
-    "instagram": {
-      "headline": "One quiet row of roses",
-      "body": "I like that Basil's progress can be this small: choose a patch, plant one rose, and leave something behind for the next person.",
-      "hashtags": ["BasilCommunityGarden", "CozyGaming", "IndieDev"]
-    },
-    "reddit": {
-      "headline": "I planted a small row of roses in the shared garden",
-      "body": "This is the simplest Basil loop: walk to an open patch, plant one rose, and keep going until the space has changed. I like the idea that somebody else can later come across the row. Would you keep it all roses or mix another flower into it?",
-      "hashtags": []
-    }
-  },
-  "beats": [
-    { "start": 0, "end": 4, "text": "What can one rose change?" },
-    { "start": 4, "end": 8, "text": "Choose a quiet patch and place it." },
-    { "start": 8, "end": 13, "text": "A row takes shape one small decision at a time." },
-    { "start": 13, "end": 18, "text": "The rose stays in the shared garden." },
-    { "start": 18, "end": 21, "text": "The next person may find it." }
-  ]
+    "youtube": {"headline":"How Basil's two-tap watering works","body":"Choose a droplet, preview the nearby group, then tap again to water the flowers together.","hashtags":["BasilCommunityGarden","GameMechanics","CozyGames"]},
+    "instagram": {"headline":"Choose. Preview. Water.","body":"Basil's watering loop shows the nearby group before you confirm the action.","hashtags":["BasilCommunityGarden","CozyGaming","GameDesign"]},
+    "reddit": {"headline":"A quick look at Basil's two-tap watering loop","body":"Basil's watering action uses a preview before confirmation: choose a droplet, inspect the nearby group, then tap again to water the flowers together. Does that read clearly in the clip, or would you want a stronger selection indicator?","hashtags":[]}
+  }
 }

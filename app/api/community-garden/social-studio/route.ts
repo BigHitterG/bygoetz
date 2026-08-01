@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import {
-  approveAllSocialVariants,
+  approveSocialStory,
   decideSocialVariant,
   requestSocialRevision,
   reviewSocialDigest,
@@ -74,8 +74,9 @@ export async function POST(request: Request) {
       );
       return NextResponse.json({ ok: true, variant });
     }
-    if (action === "approve-all") {
-      const result = await approveAllSocialVariants(payload.digestId, payload.token);
+    if (action === "approve-story") {
+      if (!payload.storyId) return NextResponse.json({ error: "A bulletin is required." }, { status: 400 });
+      const result = await approveSocialStory(payload.digestId, payload.token, payload.storyId);
       return NextResponse.json({ ok: true, ...result });
     }
     if (action === "revision") {
