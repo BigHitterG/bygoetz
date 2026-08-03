@@ -21,17 +21,6 @@ type ReelPlan = {
   fallbackVisual: string;
 };
 type ProductionBrief = {
-  agent: {
-    displayName: string;
-    autonomyTier: number;
-    plannerMode: string;
-    disclosureLabel: string;
-    disclosureText: string;
-  } | null;
-  contentLane: string;
-  captureMode: string;
-  captureProvenance: Record<string, unknown>;
-  sourceActionIds: string[];
   bulletinType: string;
   bulletinLabel: string;
   objective: string;
@@ -175,9 +164,6 @@ function parseProductionBrief(evidence: Record<string, unknown>): ProductionBrie
   const candidate = evidence.productionManifest ?? evidence.creativeBrief;
   if (!candidate || typeof candidate !== "object") return null;
   const value = candidate as Record<string, unknown>;
-  const rawAgent = value.agent && typeof value.agent === "object"
-    ? value.agent as Record<string, unknown>
-    : null;
   const truthClaims = Array.isArray(value.truthClaims)
     ? value.truthClaims.flatMap((claim) => {
         if (!claim || typeof claim !== "object") return [];
@@ -187,21 +173,6 @@ function parseProductionBrief(evidence: Record<string, unknown>): ProductionBrie
       })
     : [];
   return {
-    agent: rawAgent ? {
-      displayName: typeof rawAgent.displayName === "string" ? rawAgent.displayName : "Wren",
-      autonomyTier: typeof rawAgent.autonomyTier === "number" ? rawAgent.autonomyTier : 0,
-      plannerMode: typeof rawAgent.plannerMode === "string" ? rawAgent.plannerMode : "deterministic",
-      disclosureLabel: typeof rawAgent.disclosureLabel === "string" ? rawAgent.disclosureLabel : "WREN · AI GARDEN STEWARD",
-      disclosureText: typeof rawAgent.disclosureText === "string" ? rawAgent.disclosureText : "",
-    } : null,
-    contentLane: typeof value.contentLane === "string" ? value.contentLane : "basil_bulletin",
-    captureMode: typeof value.captureMode === "string" ? value.captureMode : "deterministic",
-    captureProvenance: value.captureProvenance && typeof value.captureProvenance === "object"
-      ? value.captureProvenance as Record<string, unknown>
-      : {},
-    sourceActionIds: Array.isArray(value.sourceActionIds)
-      ? value.sourceActionIds.filter((id): id is string => typeof id === "string")
-      : [],
     bulletinType: typeof value.bulletinType === "string" ? value.bulletinType : "basil_bulletin",
     bulletinLabel: typeof value.bulletinLabel === "string" ? value.bulletinLabel : "Basil bulletin",
     objective: typeof value.objective === "string" ? value.objective : "Not assigned",
@@ -310,8 +281,8 @@ function DailyFeedbackControl({
     <section className={styles.dailyFeedback}>
       <div>
         <p className={styles.eyebrow}>Daily feedback</p>
-        <h2>Notes for all three videos</h2>
-        <p>The next 6:45 a.m. Codex task reads queued notes before choosing scenes, narration, and platform copy.</p>
+        <h2>Notes for all three content packages</h2>
+        <p>The next 6:45 a.m. Codex task reads queued notes before choosing video scenes, the diagram concept, narration, and platform copy.</p>
         {feedback[0] ? <small>Latest: {feedback[0].feedback}</small> : null}
       </div>
       <label>
@@ -424,12 +395,16 @@ function StoryApprovalControl({
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState("");
   const activeVariants = CHANNEL_ORDER.map((channel) => story.variants.find((variant) => variant.channel === channel)).filter((variant): variant is Variant => Boolean(variant));
-  const approved = activeVariants.length === 3 && activeVariants.every((variant) => variant.status === "manual_ready" || variant.status === "published");
-  const hasFinishedAssets = story.assetKind === "video" && Boolean(story.posterUrl);
+  const expectedChannels = story.assetKind === "image" ? 2 : 3;
+  const channelNames = story.assetKind === "image" ? "Instagram and Reddit" : "Instagram, YouTube, and Reddit";
+  const approved = activeVariants.length === expectedChannels && activeVariants.every((variant) => variant.status === "manual_ready" || variant.status === "published");
+  const hasFinishedAssets = story.assetKind === "video"
+    ? Boolean(story.posterUrl) && story.assets.some((asset) => asset.kind === "video")
+    : story.assets.some((asset) => asset.kind === "image");
   const productionBrief = parseProductionBrief(story.evidence);
 
   async function approve() {
-    if (!window.confirm(`Approve “${story.title}” and its saved Instagram, YouTube, and Reddit posts for the posting task?`)) return;
+    if (!window.confirm(`Approve “${story.title}” and its saved ${channelNames} posts for the posting task?`)) return;
     setBusy(true);
     setNotice("");
     try {
@@ -447,11 +422,15 @@ function StoryApprovalControl({
     <div className={`${styles.storyApproval} ${approved ? styles.storyApproved : ""}`}>
       <div>
         <span>{productionBrief?.bulletinLabel ?? "Basil bulletin"}</span>
-        <strong>{approved ? "Approved for all three channels" : "Approve this content package"}</strong>
-        <small>One decision covers the video and its Instagram, YouTube, and Reddit copy.</small>
+        <strong>{approved ? `Approved for ${channelNames}` : "Approve this content package"}</strong>
+        <small>One decision covers the {story.assetKind === "video" ? "video" : "diagram"} and its {channelNames} copy.</small>
       </div>
-      <button type="button" onClick={() => void approve()} disabled={disabled || busy || approved || !hasFinishedAssets || activeVariants.length !== 3}>
-        {approved ? "Approved" : hasFinishedAssets ? "Approve video + 3 posts" : "Waiting for validated video + poster"}
+      <button type="button" onClick={() => void approve()} disabled={disabled || busy || approved || !hasFinishedAssets || activeVariants.length !== expectedChannels}>
+        {approved
+          ? "Approved"
+          : hasFinishedAssets
+            ? story.assetKind === "video" ? "Approve video + 3 posts" : "Approve diagram + 2 posts"
+            : story.assetKind === "video" ? "Waiting for validated video + poster" : "Waiting for validated diagram"}
       </button>
       {notice ? <span className={styles.notice} role="status">{notice}</span> : null}
     </div>
@@ -579,32 +558,12 @@ export function SocialStudio() {
                       {story.sourceRef ? <a className={styles.sourceLink} href={story.sourceRef} target="_blank" rel="noreferrer">View supporting repository change</a> : null}
                       {productionBrief ? (
                         <div className={styles.productionBrief}>
-                          {productionBrief.agent ? (
-                            <div className={styles.wrenDisclosure}>
-                              <div>
-                                <strong>{productionBrief.agent.disclosureLabel}</strong>
-                                <span>Autonomy tier {productionBrief.agent.autonomyTier} · {productionBrief.agent.plannerMode.replaceAll("_", " ")}</span>
-                              </div>
-                              <p>{productionBrief.agent.disclosureText}</p>
-                            </div>
-                          ) : null}
-                          <p className={styles.eyebrow}>Production facts</p>
+                          <p className={styles.eyebrow}>Bulletin facts</p>
                           <div className={styles.productionFacts}>
-                            <div><small>Content lane</small><strong>{productionBrief.contentLane.replaceAll("_", " ")}</strong></div>
-                            <div><small>Capture</small><strong>{productionBrief.captureMode.replaceAll("_", " ")}</strong></div>
                             <div><small>Objective</small><strong>{productionBrief.objective.replaceAll("_", " ")}</strong></div>
                             <div><small>Format</small><strong>{productionBrief.format.replaceAll("_", " ")}</strong></div>
                             <div><small>Scene</small><strong>{productionBrief.scene.replaceAll("-", " ")}</strong></div>
                             <div><small>Delivery</small><strong>{productionBrief.distribution}</strong></div>
-                          </div>
-                          <div className={styles.provenanceNote}>
-                            <small>Action provenance</small>
-                            <p>{typeof productionBrief.captureProvenance.truthLabel === "string"
-                              ? productionBrief.captureProvenance.truthLabel
-                              : "Capture provenance is stored in the private production manifest."}</p>
-                            {productionBrief.sourceActionIds.length
-                              ? <span>{productionBrief.sourceActionIds.length} verified source action{productionBrief.sourceActionIds.length === 1 ? "" : "s"}</span>
-                              : <span>No specific production mutation is claimed by this video.</span>}
                           </div>
                           <div className={styles.productionNarrative}>
                             <div><small>Audience</small><p>{productionBrief.intendedAudience}</p></div>
@@ -631,24 +590,24 @@ export function SocialStudio() {
                     </div>
                     <div className={styles.visualColumn}>
                       <div className={styles.assetStatus}>
-                        <span>{story.assetKind === "video" ? "Ready video" : "Ready image"}</span>
+                        <span>{story.assetKind === "video" ? "Ready video" : "Ready diagram"}</span>
                         <p>{story.assetKind === "video"
                           ? "This is a finished video file you can download and upload."
-                          : "This is the actual downloadable post image. The Reel section below is a production plan, not a finished video."}</p>
+                          : "This is the finished, game-accurate 4:5 image for Instagram and Reddit."}</p>
                       </div>
-                      <div className={styles.verticalPreview}>
+                      <div className={`${styles.verticalPreview} ${story.assetKind === "image" ? styles.diagramPreview : ""}`}>
                         {story.assetKind === "video" ? (
                           <video src={story.assetUrl} poster={story.posterUrl ?? undefined} controls playsInline preload="metadata" />
                         ) : (
                           // The original static file avoids an image-optimizer rendering failure seen in the private Studio.
-                          <img src={story.assetUrl} alt={`Actual Basil gameplay for ${story.title}`} width={591} height={1280} loading="eager" />
+                          <img src={story.assetUrl} alt={`Game-accurate Basil diagram for ${story.title}`} width={1080} height={1350} loading="eager" />
                         )}
-                        <span>{story.assetKind === "video" ? "Ready video" : "Ready image · actual gameplay"}</span>
+                        <span>{story.assetKind === "video" ? "Ready video" : "Ready diagram · actual renderer"}</span>
                       </div>
-                      {story.assets.find((asset) => asset.kind === "video") ? (
+                      {story.assets.find((asset) => asset.kind === story.assetKind) ? (
                         <div className={styles.assetMetadata}>
-                          <span>{story.assets.find((asset) => asset.kind === "video")?.width}×{story.assets.find((asset) => asset.kind === "video")?.height}</span>
-                          <span>{formatDuration(story.assets.find((asset) => asset.kind === "video")?.durationMs ?? null)}</span>
+                          <span>{story.assets.find((asset) => asset.kind === story.assetKind)?.width}×{story.assets.find((asset) => asset.kind === story.assetKind)?.height}</span>
+                          {story.assetKind === "video" ? <span>{formatDuration(story.assets.find((asset) => asset.kind === "video")?.durationMs ?? null)}</span> : <span>4:5 social image</span>}
                           <span>Validated</span>
                         </div>
                       ) : null}
@@ -659,7 +618,7 @@ export function SocialStudio() {
                     </div>
                   </div>
 
-                  {reelPlan && story.assetKind !== "video" ? (
+                  {reelPlan && story.assetKind !== "video" && !story.assets.some((asset) => asset.kind === "image") ? (
                     <div className={styles.reelBrief}>
                       <div className={styles.reelHeading}>
                         <span>Reel production brief</span>

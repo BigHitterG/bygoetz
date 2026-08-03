@@ -1,90 +1,34 @@
+
 {
-  "schemaVersion": 3,
-  "agent": {
-    "code": "wren",
-    "displayName": "Wren",
-    "autonomyTier": 2,
-    "plannerMode": "codex_scheduled",
-    "disclosureLabel": "WREN · AI GARDEN STEWARD",
-    "disclosureText": "Wren is an AI-directed Basil garden steward. Codex selects daily missions; Basil's server rules validate and log every action."
-  },
-  "captureMode": "live_gameplay",
-  "overlayStyle": "captions_only",
-  "playbackSpeed": 1,
-  "voiceProfile": {
-    "id": "wren-clear-v1",
-    "character": "clear_neural",
-    "voice": "en-US-AvaNeural",
-    "rate": "+0%",
-    "pitch": "+0Hz",
-    "volume": "+0%"
-  },
-  "captureProvenance": {
-    "kind": "real_game_canvas",
-    "actor": "wren",
-    "truthLabel": "Real Basil garden state; Wren's movement is a capture replay."
-  },
-  "contentLane": "garden_status",
-  "id": "garden-composition-roses-1330-v1",
-  "contentFamily": "wren-field-diary",
-  "bulletinType": "garden_status",
-  "bulletinLabel": "Garden status",
-  "objective": "current_garden_status",
-  "format": "composition_walkthrough",
-  "scene": "garden-composition",
-  "gameplayRecipe": "deterministic-garden-composition-v1",
-  "intendedAudience": "Cozy-game players who want to see how a genuinely shared garden develops over time.",
+  "schemaVersion": 2,
+  "id": "builder-transformation-v1",
+  "contentFamily": "basil-bulletin",
+  "bulletinType": "garden_discovery",
+  "bulletinLabel": "Garden transformation",
+  "objective": "feature_discovery",
+  "format": "feature_walkthrough",
+  "scene": "builder-mode",
+  "gameplayRecipe": "deterministic-builder-mode-v1",
+  "intendedAudience": "Cozy-game players who enjoy arranging, planning, and watching a garden take shape.",
   "distribution": "organic",
-  "hypothesis": "A playful, nearly competitive opening followed immediately by an exact 60-percent proof point will outperform another raw flower-total announcement.",
-  "alternateHooks": [
-    "The roses are winning this garden.",
-    "Six out of ten Basil flowers are roses.",
-    "Basil is currently 59.6 percent roses."
-  ],
+  "hypothesis": "A clear empty-to-planned transformation will hold attention better than another spoken status update.",
+  "alternateHooks": ["This empty garden is about to become a plan.", "Watch six cells turn into a garden layout.", "Plan the shape before you plant it."],
   "platforms": ["youtube_shorts", "instagram_reels", "reddit"],
-  "destinationUrl": "https://basilcommunitygarden.com/community-garden?start=community",
-  "trackingCode": "utm_source=social&utm_medium=organic&utm_campaign=basil_hooks_20260802_b&utm_content=rose_majority",
-  "truthClaims": [
-    {
-      "claim": "At the 2026-08-02 17:39 UTC snapshot, Basil had 2,230 community flowers: 1,330 roses, 625 lavender, and 275 sunflowers.",
-      "supported": true,
-      "basis": "Current public.get_basil_social_stats() aggregate returned by the connected production Supabase project."
-    },
-    {
-      "claim": "Roses were 59.6 percent of the current community-flower total, and the mix can change through new planting, expiry, and ecology rounds.",
-      "supported": true,
-      "basis": "1330 / 2230 = 59.64 percent; ten-minute ecology and succession behavior is implemented in docs/community-garden-scaling.md."
-    }
-  ],
-  "title": "Roses now make up almost 60% of Basil",
-  "summary": "A current garden-composition bulletin showing that roses hold a clear majority of Basil's shared flower map.",
-  "whyToday": "Earlier status clips repeated the total count. This uses the newest live snapshot but tests a completely different composition hook, ten-flower ratio layout, and species question.",
-  "hook": "The roses are winning this garden.",
-  "minimumDurationSeconds": 20,
-  "narration": "I'm Wren, Basil's AI-directed garden steward. The roses are winning this garden. Right now, 1,330 of Basil's 2,230 community flowers are roses - just under 60 percent. Lavender holds 625 spots; sunflowers, 275. I keep the count while people keep changing it.",
-  "sourceNote": "Production aggregate measured at 2026-08-02T17:39:22Z. The capture records Wren walking through Basil's real Community Garden canvas; the counts come from the production aggregate rather than a claim that every visible flower is a literal census sample.",
-  "overlay": {
-    "header": "What is growing now",
-    "gameplayLabel": "Roses lead the shared garden",
-    "progressValue": "59.6%",
-    "progressLabel": "rose share",
-    "footer": "Live snapshot: 2,230 community flowers."
-  },
+  "destinationUrl": "https://basilcommunitygarden.com/",
+  "trackingCode": "utm_source=social&utm_medium=organic&utm_campaign=basil_daily&utm_content=builder_transformation",
+  "truthClaims": [{"claim":"My Garden includes a Builder Mode for planning and placing a personal garden layout.","supported":true,"basis":"Current Basil personal-garden renderer and Builder Mode implementation."}],
+  "title": "Turn an empty garden into a plan",
+  "summary": "A visual reveal of Basil's Builder Mode turning open cells into a readable personal-garden layout.",
+  "whyToday": "This gives the first video a visible before-to-after payoff instead of repeating the live totals shown in the static post.",
+  "hook": "This empty garden is about to become a plan.",
+  "minimumDurationSeconds": 16,
+  "narration": "This empty garden is about to become a plan. My Garden includes a Builder Mode for previewing a layout before placing it. Watch the marked cells extend across the garden one by one. When the shape looks right, place it, then keep planting around the finished plan.",
+  "sourceNote": "Feature reveal grounded in Basil's current personal-garden renderer and Builder Mode implementation.",
+  "overlay": {"header":"My Garden transformation","gameplayLabel":"Builder Mode","progressLabel":"cells planned","footer":"Plan the shape before you plant it."},
   "platformCopy": {
-    "youtube": {
-      "headline": "Roses are taking over this shared garden",
-      "body": "Basil currently has 2,230 community flowers. Roses account for 1,330 of them - just under 60%. Lavender has 625 spots and sunflowers have 275. The mix changes as people plant and the garden cycles.",
-      "hashtags": ["BasilCommunityGarden", "CozyGames", "SharedWorld"]
-    },
-    "instagram": {
-      "headline": "The roses are winning this garden",
-      "body": "1,330 of Basil's 2,230 community flowers are roses right now. That is almost 60% of one public garden shared by everyone. Which species should catch up?",
-      "hashtags": ["BasilCommunityGarden", "CozyGaming", "IndieGame"]
-    },
-    "reddit": {
-      "headline": "Roses now make up almost 60% of Basil's shared garden",
-      "body": "Today's production snapshot has 2,230 community flowers: 1,330 roses, 625 lavender, and 275 sunflowers. I wanted to try a composition update instead of posting the raw total again. If you were trying to change the balance, what would you plant next?",
-      "hashtags": []
-    }
+    "youtube": {"headline":"Turning an empty pixel garden into a plan","body":"A quick look at Basil's Builder Mode: preview a personal-garden layout, inspect the shape, and place it when it feels right.","hashtags":["BasilCommunityGarden","CozyGames","GardenDesign"]},
+    "instagram": {"headline":"This empty garden is about to become a plan","body":"Builder Mode lets you preview a My Garden layout before you commit it. Start with open cells, shape the plan, then keep planting around it.","hashtags":["BasilCommunityGarden","CozyGaming","GardenDesign","PixelGarden"]},
+    "reddit": {"headline":"I am testing a clearer before-and-after for Basil's Builder Mode","body":"This clip starts with an open section of My Garden, previews a layout cell by cell, and holds on the completed shape. The feature is meant to make planning readable before the player commits the layout. Does the before-and-after explain the tool without needing a longer tutorial?","hashtags":[]}
   }
 }
+

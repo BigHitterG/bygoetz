@@ -1,3 +1,4 @@
+
 import { createHash } from "node:crypto";
 import { createRequire } from "node:module";
 import { readFileSync, statSync } from "node:fs";
@@ -44,6 +45,8 @@ const dailyRecipe = require(recipePath);
 const manifestStem = String(dailyRecipe.id ?? "basil-social-sample").replace(/[^a-z0-9_-]+/gi, "-");
 const manifestPath = resolve(option("--manifest") || resolve(root, "artifacts", "basil-social-studio", `${manifestStem}.manifest.json`));
 const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
+const assetKind = manifest.assetKind === "image" ? "image" : "video";
+const channels = assetKind === "image" ? ["instagram", "reddit"] : ["youtube", "instagram", "reddit"];
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "https://qripkmzrujarmmbgewub.supabase.co";
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const transferToken = option("--transfer-token");
@@ -52,8 +55,12 @@ if (!serviceRoleKey) {
     throw new Error("Without a local service key, pass the one-time --story-id=<uuid> and --transfer-token=<64-hex-token> issued through the Supabase connector.");
   }
   const form = new FormData();
-  form.set("video", new Blob([readFileSync(resolve(manifest.video))], { type: "video/mp4" }), basename(resolve(manifest.video)));
-  form.set("poster", new Blob([readFileSync(resolve(manifest.poster))], { type: "image/jpeg" }), basename(resolve(manifest.poster)));
+  if (assetKind === "image") {
+    form.set("image", new Blob([readFileSync(resolve(manifest.image))], { type: "image/png" }), basename(resolve(manifest.image)));
+  } else {
+    form.set("video", new Blob([readFileSync(resolve(manifest.video))], { type: "video/mp4" }), basename(resolve(manifest.video)));
+    form.set("poster", new Blob([readFileSync(resolve(manifest.poster))], { type: "image/jpeg" }), basename(resolve(manifest.poster)));
+  }
   form.set("manifest", JSON.stringify(manifest));
   const response = await fetch(`${supabaseUrl}/functions/v1/basil-social-transfer`, {
     method: "POST",
@@ -79,23 +86,13 @@ if (!/^[0-9a-f-]{36}$/i.test(storyId)) throw new Error("The destination Social S
 const { data: story, error: storyError } = await supabase.from("basil_social_stories").select("id,digest_id,evidence").eq("id", storyId).maybeSingle();
 if (storyError) throw storyError;
 if (!story) throw new Error("The Social Studio story was not found.");
-let agentProfileId = null;
-if (manifest.agent?.code) {
-  const { data: agentProfile, error: agentError } = await supabase
-    .from("basil_agent_profiles")
-    .select("id")
-    .eq("code", manifest.agent.code)
-    .eq("enabled", true)
-    .maybeSingle();
-  if (agentError) throw agentError;
-  if (!agentProfile) throw new Error(`The ${manifest.agent.code} agent profile was not found.`);
-  agentProfileId = agentProfile.id;
-}
 
-const assets = [
-  { kind: "video", path: resolve(manifest.video), mimeType: "video/mp4", width: manifest.width, height: manifest.height, durationMs: manifest.durationMs },
-  { kind: "poster", path: resolve(manifest.poster), mimeType: "image/jpeg", width: manifest.width, height: manifest.height, durationMs: null },
-];
+const assets = assetKind === "image"
+  ? [{ kind: "image", path: resolve(manifest.image), mimeType: "image/png", width: manifest.width, height: manifest.height, durationMs: null }]
+  : [
+      { kind: "video", path: resolve(manifest.video), mimeType: "video/mp4", width: manifest.width, height: manifest.height, durationMs: manifest.durationMs },
+      { kind: "poster", path: resolve(manifest.poster), mimeType: "image/jpeg", width: manifest.width, height: manifest.height, durationMs: null },
+    ];
 for (const asset of assets) {
   const objectPath = `${story.digest_id}/${storyId}/${Date.now()}-${basename(asset.path)}`;
   const bytes = readFileSync(asset.path);
@@ -121,12 +118,7 @@ for (const asset of assets) {
       recipe: manifest.recipe,
       contentFamily: manifest.contentFamily,
       codec: manifest.codec,
-        productionManifest: {
-        agent: manifest.agent,
-        agentMissionId: manifest.agentMissionId,
-        contentLane: manifest.contentLane,
-        captureMode: manifest.captureMode,
-        captureProvenance: manifest.captureProvenance,
+      productionManifest: {
         objective: manifest.objective,
         format: manifest.format,
         scene: manifest.scene,
@@ -152,19 +144,12 @@ await supabase.from("basil_social_stories").update({
   title: manifest.title,
   summary: manifest.summary,
   why_today: manifest.whyToday,
-  asset_kind: "video",
-  agent_profile_id: agentProfileId,
-  agent_mission_id: manifest.agentMissionId ?? null,
-  autonomy_tier: manifest.agent?.autonomyTier ?? null,
-  agent_disclosure: manifest.agent?.disclosureText ?? null,
-  content_lane: manifest.contentLane ?? null,
-  creative_hypothesis: manifest.hypothesis ?? null,
-  capture_provenance: manifest.captureProvenance ?? {},
+  asset_kind: assetKind,
   evidence: { ...previousEvidence, productionManifest: manifest },
   status: "ready",
   updated_at: new Date().toISOString(),
 }).eq("id", storyId);
-for (const channel of ["youtube", "instagram", "reddit"]) {
+for (const channel of channels) {
   const copy = manifest.platformCopy?.[channel];
   if (!copy?.headline || !copy?.body || !Array.isArray(copy.hashtags)) {
     throw new Error(`The ${channel} copy is missing from the production manifest.`);
@@ -179,5 +164,14 @@ for (const channel of ["youtube", "instagram", "reddit"]) {
   }).eq("story_id", storyId).eq("channel", channel).neq("status", "published");
   if (copyError) throw copyError;
 }
+if (assetKind === "image") {
+  const { error: removeVideoDraftError } = await supabase.from("basil_social_variants")
+    .delete()
+    .eq("story_id", storyId)
+    .eq("channel", "youtube")
+    .neq("status", "published");
+  if (removeVideoDraftError) throw removeVideoDraftError;
+}
 console.log(JSON.stringify({ ok: true, storyId, assets: assets.map((asset) => asset.kind) }));
+
 

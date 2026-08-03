@@ -1,3 +1,4 @@
+
 .capture {
   position: relative;
   width: 100vw;
@@ -135,63 +136,3 @@
 .footer span { font-size: clamp(12px, 2.8vw, 30px); font-weight: 700; }
 .footer strong { color: #f1d08b; font-size: clamp(12px, 2.6vw, 28px); letter-spacing: .04em; }
 
-.agentCapture :global(.cg-canvas) {
-  width: 100%;
-  height: 100%;
-  touch-action: none;
-}
-
-.agentBrand,
-.agentIdentity,
-.agentFact,
-.agentDisclosure {
-  position: absolute;
-  z-index: 3;
-  background: rgba(27, 37, 30, .9);
-  border: 2px solid rgba(255, 248, 232, .9);
-  box-shadow: 5px 5px 0 rgba(19, 27, 22, .48);
-}
-
-.agentBrand {
-  top: 4.5%;
-  left: 6%;
-  padding: .34em .48em .28em;
-  color: #fff8e8;
-  font: 900 clamp(28px, 5.2vw, 56px)/1 Georgia, serif;
-  letter-spacing: .04em;
-}
-
-.agentIdentity {
-  top: 4.5%;
-  right: 6%;
-  display: flex;
-  align-items: baseline;
-  gap: .45em;
-  padding: .48em .62em;
-  font-size: clamp(14px, 2.5vw, 27px);
-}
-
-.agentIdentity strong { color: #f1d08b; }
-.agentIdentity span { font-weight: 800; letter-spacing: .055em; }
-
-.agentFact {
-  top: 10.5%;
-  left: 6%;
-  display: flex;
-  align-items: baseline;
-  gap: .35em;
-  padding: .42em .58em;
-  font-size: clamp(16px, 3vw, 32px);
-}
-
-.agentFact strong { color: #f1d08b; font-size: 1.35em; }
-.agentFact span { font-weight: 800; }
-
-.agentDisclosure {
-  right: 6%;
-  bottom: 5%;
-  padding: .42em .6em;
-  color: rgba(255, 248, 232, .92);
-  font-size: clamp(12px, 2.15vw, 23px);
-  font-weight: 750;
-}

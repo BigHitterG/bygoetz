@@ -1,3 +1,4 @@
+
 import { createRequire } from "node:module";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
@@ -8,16 +9,6 @@ const root = resolve(import.meta.dirname, "..");
 
 function option(name) {
   return process.argv.find((argument) => argument.startsWith(`${name}=`))?.slice(name.length + 1) ?? "";
-}
-
-function writePreparedQueue(outputDirectory, queue) {
-  const queuePath = resolve(outputDirectory, `approved-queue-${queue.storyId}.json`);
-  const legacyQueuePath = resolve(outputDirectory, "approved-queue.json");
-  const serialized = `${JSON.stringify(queue, null, 2)}\n`;
-  writeFileSync(queuePath, serialized, "utf8");
-  // Keep the legacy pointer for one-story callers, but retain every story's queue.
-  writeFileSync(legacyQueuePath, serialized, "utf8");
-  return { queuePath, legacyQueuePath };
 }
 
 for (const filename of [".env.local", ".env"]) {
@@ -53,16 +44,16 @@ if (!serviceRoleKey) {
   const outputDirectory = resolve(root, "artifacts", "basil-social-publish", runKey);
   mkdirSync(outputDirectory, { recursive: true });
   const downloaded = {};
-  for (const kind of ["video", "poster"]) {
+  for (const kind of ["video", "poster", "image"]) {
     if (typeof payload.assets?.[kind] !== "string") continue;
     const assetResponse = await fetch(payload.assets[kind], { signal: AbortSignal.timeout(120_000) });
     if (!assetResponse.ok) throw new Error(`Could not download the approved ${kind}.`);
-    const extension = kind === "video" ? "mp4" : "jpg";
+    const extension = kind === "video" ? "mp4" : kind === "image" ? "png" : "jpg";
     const path = resolve(outputDirectory, `${transferStoryId}-${kind}.${extension}`);
     writeFileSync(path, Buffer.from(await assetResponse.arrayBuffer()));
     downloaded[kind] = path;
   }
-  if (!downloaded.video) throw new Error("The approved transfer did not include a validated video.");
+  if (!downloaded.video && !downloaded.image) throw new Error("The approved transfer did not include a validated video or diagram.");
   const platformOrder = ["youtube", "instagram", "reddit"];
   const approved = platformOrder.flatMap((channel) => (payload.posts ?? []).filter((variant) => variant.channel === channel).slice(0, 1));
   const queue = {
@@ -81,8 +72,9 @@ if (!serviceRoleKey) {
       publishState: "approved_not_published",
     })),
   };
-  const { queuePath, legacyQueuePath } = writePreparedQueue(outputDirectory, queue);
-  console.log(JSON.stringify({ ok: true, approved: queue.posts.length, queue: queuePath, legacyQueue: legacyQueuePath, video: downloaded.video, poster: downloaded.poster ?? null }, null, 2));
+  const queuePath = resolve(outputDirectory, "approved-queue.json");
+  writeFileSync(queuePath, `${JSON.stringify(queue, null, 2)}\n`, "utf8");
+  console.log(JSON.stringify({ ok: true, approved: queue.posts.length, queue: queuePath, video: downloaded.video ?? null, image: downloaded.image ?? null, poster: downloaded.poster ?? null }, null, 2));
   process.exit(0);
 }
 const supabase = createClient(supabaseUrl, serviceRoleKey, { auth: { persistSession: false, autoRefreshToken: false } });
@@ -107,14 +99,14 @@ const storyIds = (stories ?? []).map((story) => story.id);
 if (!storyIds.length) throw new Error("The latest Social Studio package has no stories.");
 
 const [{ data: assets, error: assetsError }, { data: variants, error: variantsError }] = await Promise.all([
-  supabase.from("basil_social_assets").select("id,story_id,kind,bucket_id,object_path,mime_type,created_at").in("story_id", storyIds).eq("validation_status", "valid").in("kind", ["video", "poster"]).order("created_at", { ascending: false }),
+  supabase.from("basil_social_assets").select("id,story_id,kind,bucket_id,object_path,mime_type,created_at").in("story_id", storyIds).eq("validation_status", "valid").in("kind", ["video", "poster", "image"]).order("created_at", { ascending: false }),
   supabase.from("basil_social_variants").select("id,story_id,channel,headline,body,hashtags,status").in("story_id", storyIds).eq("status", "manual_ready").in("channel", ["youtube", "instagram", "reddit"]),
 ]);
 if (assetsError) throw assetsError;
 if (variantsError) throw variantsError;
 
-const sourceStory = (stories ?? []).find((story) => (assets ?? []).some((asset) => asset.story_id === story.id && asset.kind === "video"));
-if (!sourceStory) throw new Error("No approved package has a validated video yet.");
+const sourceStory = (stories ?? []).find((story) => (assets ?? []).some((asset) => asset.story_id === story.id && (asset.kind === "video" || asset.kind === "image")));
+if (!sourceStory) throw new Error("No approved package has a validated video or diagram yet.");
 const platformOrder = ["youtube", "instagram", "reddit"];
 const approved = platformOrder.flatMap((channel) => (variants ?? []).filter((variant) => variant.story_id === sourceStory.id && variant.channel === channel).slice(0, 1));
 if (!approved.length) {
@@ -125,17 +117,17 @@ if (!approved.length) {
 const outputDirectory = resolve(root, "artifacts", "basil-social-publish", digest.run_key);
 mkdirSync(outputDirectory, { recursive: true });
 const downloaded = {};
-for (const kind of ["video", "poster"]) {
+for (const kind of ["video", "poster", "image"]) {
   const asset = (assets ?? []).find((candidate) => candidate.story_id === sourceStory.id && candidate.kind === kind);
   if (!asset) continue;
   const { data, error } = await supabase.storage.from(asset.bucket_id).download(asset.object_path);
   if (error) throw error;
-  const extension = kind === "video" ? "mp4" : "jpg";
+  const extension = kind === "video" ? "mp4" : kind === "image" ? "png" : "jpg";
   const path = resolve(outputDirectory, `${sourceStory.id}-${kind}.${extension}`);
   writeFileSync(path, Buffer.from(await data.arrayBuffer()));
   downloaded[kind] = path;
 }
-if (!downloaded.video) throw new Error("The validated video could not be downloaded.");
+if (!downloaded.video && !downloaded.image) throw new Error("The validated video or diagram could not be downloaded.");
 
 const destinationUrl = "https://basilcommunitygarden.com/";
 const queue = {
@@ -156,5 +148,7 @@ const queue = {
     publishState: "approved_not_published",
   })),
 };
-const { queuePath, legacyQueuePath } = writePreparedQueue(outputDirectory, queue);
-console.log(JSON.stringify({ ok: true, approved: queue.posts.length, queue: queuePath, legacyQueue: legacyQueuePath, video: downloaded.video, poster: downloaded.poster ?? null }, null, 2));
+const queuePath = resolve(outputDirectory, "approved-queue.json");
+writeFileSync(queuePath, `${JSON.stringify(queue, null, 2)}\n`, "utf8");
+console.log(JSON.stringify({ ok: true, approved: queue.posts.length, queue: queuePath, video: downloaded.video ?? null, image: downloaded.image ?? null, poster: downloaded.poster ?? null }, null, 2));
+

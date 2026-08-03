@@ -1,3 +1,4 @@
+
 .studio {
   --ink: #302522;
   --paper: #f6ecd7;
@@ -142,6 +143,7 @@
 .assetStatus > span { display: inline-block; padding: 5px 8px; border: 1px solid var(--ink); background: #758c68; color: white; text-transform: uppercase; letter-spacing: .1em; font-size: 9px; font-weight: 800; }
 .assetStatus p { margin: 7px 0 0; color: #66554d; font: 12px/1.45 Arial, sans-serif; }
 .verticalPreview { position: relative; width: min(100%, 330px); aspect-ratio: 9 / 16; border: 3px solid var(--ink); background: #1f1a18; overflow: hidden; box-shadow: 7px 7px 0 rgba(48, 37, 34, .2); }
+.diagramPreview { aspect-ratio: 4 / 5; }
 .verticalPreview img,
 .verticalPreview video { width: 100%; height: 100%; object-fit: cover; object-position: center; display: block; }
 .verticalPreview span { position: absolute; left: 10px; bottom: 10px; padding: 6px 8px; background: rgba(25, 20, 18, .86); color: white; text-transform: uppercase; letter-spacing: .1em; font: 700 9px Arial, sans-serif; }
@@ -248,35 +250,4 @@
   .variants { padding: 20px 16px; }
   .verticalPreview { width: 100%; max-width: 330px; }
 }
-.wrenDisclosure {
-  display: grid;
-  gap: .55rem;
-  margin-bottom: 1rem;
-  padding: .9rem;
-  border: 1px solid rgba(113, 139, 91, .48);
-  background: rgba(228, 237, 208, .52);
-}
 
-.wrenDisclosure div {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: .5rem;
-}
-
-.wrenDisclosure strong { color: #34492f; letter-spacing: .04em; }
-.wrenDisclosure span { color: #52634b; font-size: .78rem; font-weight: 750; text-transform: uppercase; }
-.wrenDisclosure p, .provenanceNote p { margin: 0; }
-
-.provenanceNote {
-  display: grid;
-  gap: .3rem;
-  margin: .85rem 0;
-  padding: .75rem;
-  border-left: 4px solid #77945d;
-  background: rgba(255, 255, 255, .58);
-}
-
-.provenanceNote small { font-weight: 850; text-transform: uppercase; }
-.provenanceNote span { color: #5a6554; font-size: .82rem; }
