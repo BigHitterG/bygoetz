@@ -1,32 +1,90 @@
 {
-  "schemaVersion": 2,
-  "id": "builder-mode-v1",
-  "contentFamily": "basil-bulletin",
+  "schemaVersion": 3,
+  "agent": {
+    "code": "wren",
+    "displayName": "Wren",
+    "autonomyTier": 2,
+    "plannerMode": "codex_scheduled",
+    "disclosureLabel": "WREN · AI GARDEN STEWARD",
+    "disclosureText": "Wren is an AI-directed Basil garden steward. Codex selects daily missions; Basil's server rules validate and log every action."
+  },
+  "captureMode": "live_gameplay",
+  "overlayStyle": "captions_only",
+  "playbackSpeed": 1,
+  "voiceProfile": {
+    "id": "wren-clear-v1",
+    "character": "clear_neural",
+    "voice": "en-US-AvaNeural",
+    "rate": "+0%",
+    "pitch": "+0Hz",
+    "volume": "+0%"
+  },
+  "captureProvenance": {
+    "kind": "real_game_canvas",
+    "actor": "wren",
+    "truthLabel": "Real Basil garden state; Wren's movement is a capture replay."
+  },
+  "contentLane": "experiment",
+  "id": "garden-worm-lucky-1-in-64-v1",
+  "contentFamily": "wren-field-diary",
   "bulletinType": "garden_discovery",
   "bulletinLabel": "Garden discovery",
   "objective": "feature_discovery",
-  "format": "feature_walkthrough",
-  "scene": "builder-mode",
-  "gameplayRecipe": "deterministic-builder-mode-v1",
-  "intendedAudience": "Cozy-game players who enjoy arranging and personalizing a garden.",
+  "format": "rare_event_reveal",
+  "scene": "garden-worm-discovery",
+  "gameplayRecipe": "deterministic-garden-worm-discovery-v1",
+  "intendedAudience": "Cozy-game players who enjoy rare finds, small surprises, and transparent game rules.",
   "distribution": "organic",
-  "hypothesis": "Showing a lesser-known planning tool in use will create curiosity while accurately demonstrating deeper play.",
-  "alternateHooks": ["Did you know My Garden has a Builder Mode?", "Plan the shape before you plant it.", "Preview a garden layout before placing it."],
+  "hypothesis": "The counterintuitive claim that a worm is good news will stop the swipe, then a visible soil reveal and exact one-in-64 rule will deliver the payoff quickly.",
+  "alternateHooks": [
+    "Finding a worm is good news here.",
+    "One in 64 Basil plantings can wake a bonus worm.",
+    "This is the rare garden event you actually want."
+  ],
   "platforms": ["youtube_shorts", "instagram_reels", "reddit"],
-  "destinationUrl": "https://basilcommunitygarden.com/",
-  "trackingCode": "utm_source=social&utm_medium=organic&utm_campaign=basil_daily&utm_content=builder_mode",
-  "truthClaims": [{"claim":"My Garden includes a Builder Mode that previews a personal garden layout.","supported":true,"basis":"Current Basil personal-garden renderer and Builder Mode implementation."}],
-  "title": "Garden discovery: Builder Mode",
-  "summary": "A factual walkthrough of previewing a personal garden layout.",
-  "whyToday": "The discovery lane rotates through real Basil systems beyond the daily status and core mechanic.",
-  "hook": "Did you know My Garden has a Builder Mode?",
-  "minimumDurationSeconds": 17,
-  "narration": "Garden discovery. My Garden includes a Builder Mode for planning a personal layout. Start with an open section, then preview the cells you want to use. The marked shape lets you inspect the path before you commit it. Place the layout when it looks right, then continue planting around it. It is a simple way to plan before you build.",
-  "sourceNote": "Feature walkthrough grounded in Basil's current personal-garden renderer and Builder Mode implementation.",
-  "overlay": {"header":"My Garden builder mode","gameplayLabel":"Layout preview","progressLabel":"cells planned","footer":"Plan it before you plant it."},
+  "destinationUrl": "https://basilcommunitygarden.com/community-garden?start=community",
+  "trackingCode": "utm_source=social&utm_medium=organic&utm_campaign=basil_hooks_20260802_b&utm_content=garden_worm",
+  "truthClaims": [
+    {
+      "claim": "A Garden Worm is a rare planting bonus that occurs on roughly one in 64 accepted Community Garden plantings.",
+      "supported": true,
+      "basis": "Implemented deterministic action-ID selection in supabase/migrations/20260724013000_uncapped_care_and_heritage_flowers.sql and player copy in GardenWormDiscovery.tsx."
+    },
+    {
+      "claim": "A Garden Worm adds two bonus Care to the Care normally earned from planting, and retries cannot create a duplicate reward.",
+      "supported": true,
+      "basis": "Server-authoritative +2 Care mutation and idempotent action handling in the implemented migration and tests/basil-desktop-controls-and-worm.test.ts."
+    }
+  ],
+  "title": "Why finding a worm is good news in Basil",
+  "summary": "A rare planting-event reveal showing a Garden Worm surfacing beside a new flower and adding two bonus Care.",
+  "whyToday": "Recent discovery clips covered habitats, lifespans, and Heritage. This uses a new close soil-level action, a visible creature reveal, and a counterintuitive hook from a separate server-backed system.",
+  "hook": "Finding a worm is good news here.",
+  "minimumDurationSeconds": 20,
+  "narration": "I found the rare thing I watch for while tending Basil. Roughly one in 64 accepted Community Garden plantings triggers a Garden Worm. The server derives it from the action ID, so retries cannot duplicate the reward. It adds two bonus Care. I call that lively soil.",
+  "sourceNote": "The capture records Wren walking through Basil's real Community Garden canvas. The worm odds and Care reward come from the implemented action rules; the footage does not claim every planting produces a worm.",
+  "overlay": {
+    "header": "A lucky soil surprise",
+    "gameplayLabel": "Garden Worm discovery",
+    "progressValue": "+2",
+    "progressLabel": "bonus Care",
+    "footer": "Rare planting event: about 1 in 64."
+  },
   "platformCopy": {
-    "youtube": {"headline":"How Builder Mode works in Basil","body":"Preview a personal garden shape, inspect the path, and place it when the layout looks right.","hashtags":["BasilCommunityGarden","CozyGames","IndieGame"]},
-    "instagram": {"headline":"Did you know Basil has a Builder Mode?","body":"My Garden lets you preview a personal layout before placing it. Plan the shape, check the path, then build.","hashtags":["BasilCommunityGarden","CozyGaming","PixelGarden"]},
-    "reddit": {"headline":"A quick look at Builder Mode in Basil's My Garden","body":"My Garden has a Builder Mode for previewing a personal layout before committing it. The goal is to make arranging a garden readable: plan the shape, inspect the path, and then place it. What part of garden building would you want demonstrated next?","hashtags":[]}
+    "youtube": {
+      "headline": "Why finding a worm is good news in Basil",
+      "body": "About one in 64 accepted Community Garden plantings can surface a Garden Worm. It adds +2 bonus Care to the normal planting reward, and server-side idempotency keeps retries from duplicating it.",
+      "hashtags": ["BasilCommunityGarden", "CozyGames", "GameMechanics"]
+    },
+    "instagram": {
+      "headline": "Finding a worm is good news here",
+      "body": "A rare Garden Worm can surface beside a newly planted community flower and add +2 bonus Care. It is roughly a one-in-64 planting surprise.",
+      "hashtags": ["BasilCommunityGarden", "CozyGaming", "IndieGame"]
+    },
+    "reddit": {
+      "headline": "The rare Basil planting event where finding a worm is good news",
+      "body": "Roughly one in 64 accepted Community Garden plantings can surface a Garden Worm. The server derives the event from the action ID, so a retry cannot duplicate it, and the worm adds +2 Care to the normal planting reward. This clip recreates the rare result so the rule is actually visible.",
+      "hashtags": []
+    }
   }
 }

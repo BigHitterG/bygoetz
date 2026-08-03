@@ -16,7 +16,7 @@ const stats = parseSocialStats({
   livingGardenDiscoveries: 3,
 });
 
-test("daily social drafts always produce the three factual bulletin lanes", () => {
+test("daily social drafts always produce three transparent Wren packages", () => {
   const drafts = buildDailyStoryDrafts(date, [{
     sha: "a".repeat(40),
     title: "Improve My Garden builder layout preview",
@@ -25,6 +25,11 @@ test("daily social drafts always produce the three factual bulletin lanes", () =
   }], stats, 3);
   assert.equal(drafts.length, 3);
   assert.deepEqual(drafts.map((draft) => draft.creativeBrief.bulletinType), ["garden_status", "how_it_works", "garden_discovery"]);
+  assert.deepEqual(drafts.map((draft) => draft.contentLane), ["garden_status", "field_footage", "experiment"]);
+  assert.ok(drafts.every((draft) => draft.agent?.code === "wren"));
+  assert.ok(drafts.every((draft) => draft.agent?.autonomyTier === 2));
+  assert.ok(drafts.every((draft) => draft.agent?.plannerMode === "codex_scheduled"));
+  assert.ok(drafts.every((draft) => draft.captureMode === "live_gameplay"));
   assert.ok(drafts.some((draft) => draft.sourceType === "repository"));
 });
 
@@ -37,8 +42,22 @@ test("every story is a complete vertical-first cross-channel packet", () => {
     assert.match(draft.reelPlan.fallbackVisual, /diagram|explainer/i);
     assert.deepEqual(new Set(draft.variants.map((variant) => variant.channel)), new Set(SOCIAL_CHANNELS));
     assert.match(draft.assetUrl, /^\/community-garden\/social-captures\//);
-    assert.equal(draft.creativeBrief.family, "basil-bulletin");
+    assert.equal(draft.creativeBrief.family, "wren-field-diary");
   }
+});
+
+test("Wren runtime remains private, auditable, and ready for a future planner adapter", () => {
+  const migration = readFileSync(new URL("../supabase/migrations/20260802225340_basil_wren_agent_runtime.sql", import.meta.url), "utf8");
+  const planner = readFileSync(new URL("../lib/communityGarden/agentPlanner.ts", import.meta.url), "utf8");
+  const capture = readFileSync(new URL("../app/community-garden/social-capture/AgentCaptureScene.tsx", import.meta.url), "utf8");
+  assert.match(migration, /account_kind = 'system_agent'/);
+  assert.match(migration, /basil_agent_action_traces/);
+  assert.match(migration, /revoke all on table public\.basil_agent_profiles from public, anon, authenticated/i);
+  assert.match(migration, /planner_mode in \('deterministic', 'codex_scheduled', 'external_api'\)/);
+  assert.match(planner, /external Wren planner is disabled/i);
+  assert.match(capture, /actorAppearance="wren"/);
+  assert.match(capture, /setCaptureFollowActor\(4\.35\)/);
+  assert.match(capture, /AI-directed · actions validated and logged by Basil/);
 });
 
 test("Social Studio migration keeps drafts private and approvals explicit", () => {
@@ -82,6 +101,7 @@ test("video packages derive captions from narration and replay real watering eff
   const packageJson = readFileSync(new URL("../package.json", import.meta.url), "utf8");
   assert.match(renderer, /basil-edge-tts\.py/);
   assert.match(narrator, /boundary="WordBoundary"/);
+  assert.match(narrator, /voice_profile = recipe\.get\("voiceProfile", \{\}\)/);
   assert.match(renderer, /basil-generate-garden-loop\.py/);
   assert.match(renderer, /amix=inputs=2/);
   assert.match(renderer, /backgroundMusicProvider/);
@@ -92,6 +112,12 @@ test("video packages derive captions from narration and replay real watering eff
   assert.match(renderer, /setCaptionCues/);
   assert.match(renderer, /refusing to render an unsynchronized package/);
   assert.match(renderer, /BASIL_CAPTION_TIMINGS/);
+  assert.match(renderer, /new MediaRecorder/);
+  assert.match(renderer, /garden_canvas_media_recorder/);
+  assert.match(renderer, /wren-clear-v1/);
+  assert.match(renderer, /overlayStyle !== "captions_only"/);
+  assert.match(renderer, /setpts=PTS\/\$\{playbackSpeed\}/);
+  assert.match(renderer, /nextjs-portal \{ display: none !important; \}/);
   assert.doesNotMatch(renderer, /text2wav/);
   assert.doesNotMatch(packageJson, /@echristian\/edge-tts/);
   assert.doesNotMatch(packageJson, /text2wav/);
@@ -143,11 +169,23 @@ test("three-video review adds distinct bulletin scenes and per-story approval", 
   assert.match(renderer, /--recipe/);
   assert.match(renderer, /garden-status/);
   assert.match(renderer, /watering-how-to/);
+  assert.match(renderer, /weed-cleanup/);
   assert.match(renderer, /builder-mode/);
+  assert.match(renderer, /habitat-discovery/);
+  assert.match(renderer, /daily-care-bonus/);
+  assert.match(renderer, /flower-lifespans/);
+  assert.match(renderer, /heritage-flower-reveal/);
+  assert.match(renderer, /garden-composition/);
+  assert.match(renderer, /plant-first-flower/);
+  assert.match(renderer, /garden-worm-discovery/);
   assert.match(scene, /kind: "plant"/);
   assert.match(scene, /kind: "water"/);
   assert.match(scene, /Today's shared garden/);
   assert.match(scene, /My Garden builder mode/);
+  assert.match(scene, /social-weed-/);
+  assert.match(scene, /garden_sparrow/);
+  assert.match(scene, /actorWaypoints/);
+  assert.match(scene, /gardenWorm/);
   assert.match(studio, /const CHANNEL_ORDER: Channel\[\] = \["instagram", "youtube", "reddit"\]/);
   assert.match(studio, /Save daily feedback/);
   assert.match(studio, /Approve video \+ 3 posts/);

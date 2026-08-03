@@ -47,6 +47,7 @@
     "test:living-garden": "node --experimental-strip-types tests/basil-living-garden.test.ts",
     "test:social-studio": "node --experimental-strip-types tests/basil-social-studio.test.ts",
     "social:render-sample": "node scripts/basil-render-social-video.mjs",
+    "social:inspect-capture": "node scripts/basil-inspect-social-capture.mjs",
     "social:upload-package": "node scripts/basil-upload-social-package.mjs",
     "social:prepare-approved": "node scripts/basil-prepare-approved-posts.mjs",
     "social:mark-published": "node scripts/basil-mark-social-published.mjs",
@@ -57,17 +58,17 @@
     "test:browser:phase5": "node scripts/basil-browser-check.mjs"
   },
   "dependencies": {
-    "@supabase/supabase-js": "latest",
-    "next": "latest",
-    "react": "latest",
-    "react-dom": "latest",
-    "resend": "latest",
-    "stripe": "latest"
+    "@supabase/supabase-js": "2.111.0",
+    "next": "16.2.12",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "resend": "6.18.1",
+    "stripe": "22.4.0"
   },
   "devDependencies": {
-    "@types/node": "latest",
-    "@types/react": "latest",
-    "@types/react-dom": "latest",
+    "@types/node": "26.1.2",
+    "@types/react": "19.2.17",
+    "@types/react-dom": "19.2.3",
     "eslint": "^9.0.0",
     "eslint-config-next": "16.2.10",
     "@ffmpeg-installer/ffmpeg": "1.1.0",

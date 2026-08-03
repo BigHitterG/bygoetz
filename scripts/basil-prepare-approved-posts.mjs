@@ -10,6 +10,16 @@ function option(name) {
   return process.argv.find((argument) => argument.startsWith(`${name}=`))?.slice(name.length + 1) ?? "";
 }
 
+function writePreparedQueue(outputDirectory, queue) {
+  const queuePath = resolve(outputDirectory, `approved-queue-${queue.storyId}.json`);
+  const legacyQueuePath = resolve(outputDirectory, "approved-queue.json");
+  const serialized = `${JSON.stringify(queue, null, 2)}\n`;
+  writeFileSync(queuePath, serialized, "utf8");
+  // Keep the legacy pointer for one-story callers, but retain every story's queue.
+  writeFileSync(legacyQueuePath, serialized, "utf8");
+  return { queuePath, legacyQueuePath };
+}
+
 for (const filename of [".env.local", ".env"]) {
   try {
     for (const line of readFileSync(resolve(root, filename), "utf8").split(/\r?\n/)) {
@@ -71,9 +81,8 @@ if (!serviceRoleKey) {
       publishState: "approved_not_published",
     })),
   };
-  const queuePath = resolve(outputDirectory, "approved-queue.json");
-  writeFileSync(queuePath, `${JSON.stringify(queue, null, 2)}\n`, "utf8");
-  console.log(JSON.stringify({ ok: true, approved: queue.posts.length, queue: queuePath, video: downloaded.video, poster: downloaded.poster ?? null }, null, 2));
+  const { queuePath, legacyQueuePath } = writePreparedQueue(outputDirectory, queue);
+  console.log(JSON.stringify({ ok: true, approved: queue.posts.length, queue: queuePath, legacyQueue: legacyQueuePath, video: downloaded.video, poster: downloaded.poster ?? null }, null, 2));
   process.exit(0);
 }
 const supabase = createClient(supabaseUrl, serviceRoleKey, { auth: { persistSession: false, autoRefreshToken: false } });
@@ -147,6 +156,5 @@ const queue = {
     publishState: "approved_not_published",
   })),
 };
-const queuePath = resolve(outputDirectory, "approved-queue.json");
-writeFileSync(queuePath, `${JSON.stringify(queue, null, 2)}\n`, "utf8");
-console.log(JSON.stringify({ ok: true, approved: queue.posts.length, queue: queuePath, video: downloaded.video, poster: downloaded.poster ?? null }, null, 2));
+const { queuePath, legacyQueuePath } = writePreparedQueue(outputDirectory, queue);
+console.log(JSON.stringify({ ok: true, approved: queue.posts.length, queue: queuePath, legacyQueue: legacyQueuePath, video: downloaded.video, poster: downloaded.poster ?? null }, null, 2));

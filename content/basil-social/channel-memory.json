@@ -1,10 +1,21 @@
 {
-  "measuredAt": "2026-07-31T19:00:00.000Z",
+  "measuredAt": "2026-08-02T17:39:22.283Z",
   "measurementMode": "signed-in-browser-read-only",
+  "recentPublishedTopics": [
+    {"publishedOn":"2026-08-01","lane":"garden_status","scene":"garden-status","topic":"2,264-flower aggregate snapshot","hook":"A quick Basil garden status","visualLayout":"shared-garden north flower cluster"},
+    {"publishedOn":"2026-08-01","lane":"how_it_works","scene":"watering-how-to","topic":"two-tap watering preview","hook":"A quick look at Basil's two-tap watering loop","visualLayout":"six-station watering circuit"},
+    {"publishedOn":"2026-08-01","lane":"garden_discovery","scene":"builder-mode","topic":"My Garden Builder Mode","hook":"A quick look at Builder Mode","visualLayout":"diagonal personal-garden preview; do not reuse"},
+    {"publishedOn":"2026-08-01","lane":"garden_status","scene":"garden-status","topic":"2,257-flower aggregate snapshot","hook":"The Basil garden added nine flowers since the last snapshot.","visualLayout":"shared-garden zigzag action path"},
+    {"publishedOn":"2026-08-01","lane":"how_it_works","scene":"weed-cleanup","topic":"weeds in crowded 16-by-16 patches","hook":"Why do weeds appear in Basil?","visualLayout":"six-point cleanup circuit"},
+    {"publishedOn":"2026-08-01","lane":"garden_discovery","scene":"habitat-discovery","topic":"Garden Sparrow habitat recipe","hook":"Three flowers can bring this birdhouse to life.","visualLayout":"birdhouse with three-flower habitat triangle"},
+    {"publishedOn":"2026-08-01","lane":"how_it_works","scene":"daily-care-bonus","topic":"first daily action earns +4 Care","hook":"Your first helpful garden action today earns four Care.","visualLayout":"two-action Care comparison with Mary and duck","publicUrls":{"instagram":"https://www.instagram.com/basilcommunitygarden/reel/Dbha1uFRx4B/","youtube":"https://youtube.com/shorts/J09yZ52P4mc","reddit":"https://www.reddit.com/r/BasilCommunity/comments/1vd708y/the_first_helpful_basil_action_each_day_earns_4/"}},
+    {"publishedOn":"2026-08-01","lane":"garden_discovery","scene":"flower-lifespans","topic":"ordinary flower lifespans: 7, 14, and 21 days","hook":"One Basil flower lasts three times longer than another.","visualLayout":"sunflower, rose, and lavender comparison","publicUrls":{"instagram":"https://www.instagram.com/basilcommunitygarden/reel/DbhbQ8qRHRj/","youtube":"https://youtube.com/shorts/RfJX-hziQtA","reddit":"https://www.reddit.com/r/BasilCommunity/comments/1vd71h6/basils_ordinary_flower_lifespans_are_7_14_and_21/"}},
+    {"publishedOn":"2026-08-01","lane":"garden_discovery","scene":"heritage-flower-reveal","topic":"six Heritage Flower qualification checks","hook":"A Basil flower can become permanent—but only after six checks.","visualLayout":"close-framed Heritage reveal with six neighboring flowers","publicUrls":{"instagram":"https://www.instagram.com/basilcommunitygarden/reel/DbhbiN5Rjnu/","youtube":"https://youtube.com/shorts/3n33PisLJck","reddit":"https://www.reddit.com/r/BasilCommunity/comments/1vd7286/how_one_basil_flower_becomes_a_permanent_heritage/"}}
+  ],
   "accounts": {
     "instagram": {
       "handle": "basilcommunitygarden",
-      "posts": 0,
+      "posts": 10,
       "followers": 0,
       "voiceStatus": "new-channel-experiment",
       "notes": [
@@ -16,12 +27,13 @@
     "youtube": {
       "channel": "Basil",
       "subscribers": 0,
-      "viewsLast28Days": 0,
+      "viewsLast28Days": null,
       "watchHoursLast28Days": 0,
       "voiceStatus": "new-channel-experiment",
       "notes": [
-        "No videos or historical performance exist yet.",
-        "Test readable question-first and payoff-first Short titles without clickbait claims."
+        "The signed-in public channel page exposed four Shorts at this measurement; newer uploads were not yet visible there, so missing rows are not measured zeros.",
+        "The first raw garden-count Short showed 44 public views, Builder Mode 20, watering 16, and the newer 2,257-flower status Short showed no views at the time checked.",
+        "The sample is too small for a winner, but the clearest current status proof point has the strongest early public count. Continue testing specific proof-led and curiosity-led openings."
       ]
     },
     "reddit": {
@@ -30,6 +42,12 @@
       "communityMembersObserved": 3,
       "voiceStatus": "founder-reference",
       "observedExamples": [
+        {
+          "title": "ONCE YOU COMPLETE ENOUGH TASKS AND THE BASE MAP YOU CAN NOW BRANCH HOW YOU WISH",
+          "url": "https://www.reddit.com/r/BasilCommunity/comments/1vbfhqo/once_you_complete_enough_tasks_and_the_base_map/",
+          "views": 3,
+          "measurementWindow": "early"
+        },
         {
           "title": "The Garden Catalog explains what each saved My Garden item costs, when it unlocks, how much room it needs, and whether Builder Mode supports it.",
           "url": "https://www.reddit.com/r/BasilCommunity/comments/1v9hx0c/the_garden_catalog_explains_what_each_saved_my/",
@@ -70,7 +88,47 @@
       ]
     }
   },
+  "performanceObservations": [
+    {
+      "measuredAt": "2026-08-02T17:39:22.283Z",
+      "platform": "youtube",
+      "url": "https://youtube.com/shorts/vcD18eGfKNo",
+      "hookFormat": "raw-count / garden-status",
+      "views": 44,
+      "measurementWindow": "early-public-page",
+      "missingMetrics": ["choseToView", "averagePercentageWatched", "completion", "replays", "shares", "saves", "profileActivity", "firstFlowers"]
+    },
+    {
+      "measuredAt": "2026-08-02T17:39:22.283Z",
+      "platform": "youtube",
+      "url": "https://youtube.com/shorts/Dx9bDykyGmI",
+      "hookFormat": "question / builder-mode",
+      "views": 20,
+      "measurementWindow": "early-public-page",
+      "missingMetrics": ["choseToView", "averagePercentageWatched", "completion", "replays", "shares", "saves", "profileActivity", "firstFlowers"]
+    },
+    {
+      "measuredAt": "2026-08-02T17:39:22.283Z",
+      "platform": "youtube",
+      "url": "https://youtube.com/shorts/IrJnkc6kHHc",
+      "hookFormat": "numbered-action / watering-how-to",
+      "views": 16,
+      "measurementWindow": "early-public-page",
+      "missingMetrics": ["choseToView", "averagePercentageWatched", "completion", "replays", "shares", "saves", "profileActivity", "firstFlowers"]
+    },
+    {
+      "measuredAt": "2026-08-02T17:39:22.283Z",
+      "platform": "youtube",
+      "url": "https://youtube.com/shorts/R3Tl59v2Odo",
+      "hookFormat": "delta-count / garden-status",
+      "views": 0,
+      "measurementWindow": "very-early-public-page",
+      "notes": "YouTube displayed 'No views'; treat this as a very early observation, not a stable result.",
+      "missingMetrics": ["choseToView", "averagePercentageWatched", "completion", "replays", "shares", "saves", "profileActivity", "firstFlowers"]
+    }
+  ],
   "learningRules": [
+    "Future Builder Mode capture must mirror the implemented in-game layout mechanic exactly. Do not show diagonal placement or movement when the live mechanic does not support it; today's approved example may publish, but the next Builder Mode recipe must correct this visual mismatch.",
     "Treat this as a small baseline, not proof of a winning format.",
     "Compare each post at approximately 1 hour, 24 hours, and 7 days when the platform exposes those windows.",
     "Record impressions or views, chose-to-view when available, average percentage watched, completion, shares, saves, meaningful comments, profile or link activity, Basil sessions, game starts, and first flowers planted.",

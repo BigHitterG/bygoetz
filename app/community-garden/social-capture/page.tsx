@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { SocialCaptureScene } from "./SocialCaptureScene";
+import { AgentCaptureScene } from "./AgentCaptureScene";
 
 export const metadata: Metadata = {
   title: "Basil Social Capture",
@@ -10,8 +11,11 @@ export const metadata: Metadata = {
 export default async function BasilSocialCapturePage({
   searchParams,
 }: {
-  searchParams: Promise<{ scene?: string }>;
+  searchParams: Promise<{ scene?: string; captureMode?: string }>;
 }) {
-  const { scene = "watering-how-to" } = await searchParams;
+  const { scene = "watering-how-to", captureMode } = await searchParams;
+  if (captureMode === "live_gameplay") {
+    return <AgentCaptureScene scene={scene} />;
+  }
   return <SocialCaptureScene scene={scene} />;
 }

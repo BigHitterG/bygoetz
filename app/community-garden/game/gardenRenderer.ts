@@ -77,6 +77,7 @@ export type RenderGardenState = {
   camera: WorldPoint;
   zoom: number;
   mary: WorldPoint;
+  actorAppearance?: "mary" | "wren";
   duck: WorldPoint;
   plants: PlantRecord[];
   weeds: Array<{ id: string; grid_x: number; grid_y: number; spawned_at: string }>;
@@ -2738,6 +2739,84 @@ function drawMary(
   ctx.restore();
 }
 
+function drawWren(
+  ctx: CanvasRenderingContext2D,
+  point: WorldPoint,
+  camera: WorldPoint,
+  viewport: GardenViewport,
+  moving: boolean,
+  now: number,
+  zoom: number,
+) {
+  const screen = worldToScreen(point, camera, viewport, zoom);
+  const step = moving && Math.floor(now / 160) % 2 === 0 ? 1 : 0;
+  const blink = Math.floor(now / 2200) % 5 === 0;
+  ctx.save();
+  ctx.translate(Math.round(screen.x), Math.round(screen.y) - step * zoom);
+  ctx.scale(zoom, zoom);
+
+  // A small, original garden automaton: moss body, amber face, seedling antenna.
+  ctx.fillStyle = "#26382c";
+  ctx.fillRect(-7, -19, 14, 14);
+  ctx.fillRect(-9, -15, 18, 8);
+  ctx.fillStyle = "#77945d";
+  ctx.fillRect(-6, -17, 12, 11);
+  ctx.fillStyle = "#d8a64e";
+  ctx.fillRect(-5, -15, 10, 7);
+  ctx.fillStyle = "#2a2721";
+  ctx.fillRect(-3, -12, 2, blink ? 1 : 2);
+  ctx.fillRect(2, -12, 2, blink ? 1 : 2);
+
+  ctx.fillStyle = "#526f48";
+  ctx.fillRect(-7, -5, 14, 11);
+  ctx.fillStyle = "#b8cf82";
+  ctx.fillRect(-3, -2, 6, 5);
+  ctx.fillStyle = "#394b37";
+  ctx.fillRect(-8, -4, 3, 8);
+  ctx.fillRect(5, -4, 3, 8);
+
+  ctx.fillStyle = "#27352b";
+  ctx.fillRect(-6, 5, 5, 4 + step);
+  ctx.fillRect(1, 5, 5, 5 - step);
+  ctx.fillStyle = "#1e2721";
+  ctx.fillRect(-7, 8 + step, 6, 2);
+  ctx.fillRect(1, 9 - step, 6, 2);
+
+  ctx.fillStyle = "#354c34";
+  ctx.fillRect(-1, -23, 2, 5);
+  ctx.fillStyle = "#91b85e";
+  ctx.fillRect(0, -25, 5, 3);
+  ctx.fillRect(-4, -24, 4, 3);
+  ctx.restore();
+}
+
+function drawActor(
+  ctx: CanvasRenderingContext2D,
+  state: RenderGardenState,
+) {
+  if (state.actorAppearance === "wren") {
+    drawWren(
+      ctx,
+      state.mary,
+      state.camera,
+      state.viewport,
+      state.moving,
+      state.now,
+      state.zoom,
+    );
+    return;
+  }
+  drawMary(
+    ctx,
+    state.mary,
+    state.camera,
+    state.viewport,
+    state.moving,
+    state.now,
+    state.zoom,
+  );
+}
+
 function drawBuilderPreview(
   ctx: CanvasRenderingContext2D,
   preview: NonNullable<RenderGardenState["builderPreview"]>,
@@ -3063,7 +3142,7 @@ export function renderGarden(ctx: CanvasRenderingContext2D, state: RenderGardenS
         state.zoom,
       );
     }
-    drawMary(ctx, state.mary, state.camera, state.viewport, state.moving, state.now, state.zoom);
+    drawActor(ctx, state);
     drawSuggestedPlantingLabel(
       ctx,
       state.suggestedPlantingCell,
@@ -3286,7 +3365,7 @@ export function renderGarden(ctx: CanvasRenderingContext2D, state: RenderGardenS
       state.zoom,
     );
   }
-  drawMary(ctx, state.mary, state.camera, state.viewport, state.moving, state.now, state.zoom);
+  drawActor(ctx, state);
   drawSuggestedPlantingLabel(
     ctx,
     state.suggestedPlantingCell,

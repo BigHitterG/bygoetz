@@ -79,6 +79,18 @@ if (!/^[0-9a-f-]{36}$/i.test(storyId)) throw new Error("The destination Social S
 const { data: story, error: storyError } = await supabase.from("basil_social_stories").select("id,digest_id,evidence").eq("id", storyId).maybeSingle();
 if (storyError) throw storyError;
 if (!story) throw new Error("The Social Studio story was not found.");
+let agentProfileId = null;
+if (manifest.agent?.code) {
+  const { data: agentProfile, error: agentError } = await supabase
+    .from("basil_agent_profiles")
+    .select("id")
+    .eq("code", manifest.agent.code)
+    .eq("enabled", true)
+    .maybeSingle();
+  if (agentError) throw agentError;
+  if (!agentProfile) throw new Error(`The ${manifest.agent.code} agent profile was not found.`);
+  agentProfileId = agentProfile.id;
+}
 
 const assets = [
   { kind: "video", path: resolve(manifest.video), mimeType: "video/mp4", width: manifest.width, height: manifest.height, durationMs: manifest.durationMs },
@@ -109,7 +121,12 @@ for (const asset of assets) {
       recipe: manifest.recipe,
       contentFamily: manifest.contentFamily,
       codec: manifest.codec,
-      productionManifest: {
+        productionManifest: {
+        agent: manifest.agent,
+        agentMissionId: manifest.agentMissionId,
+        contentLane: manifest.contentLane,
+        captureMode: manifest.captureMode,
+        captureProvenance: manifest.captureProvenance,
         objective: manifest.objective,
         format: manifest.format,
         scene: manifest.scene,
@@ -136,6 +153,13 @@ await supabase.from("basil_social_stories").update({
   summary: manifest.summary,
   why_today: manifest.whyToday,
   asset_kind: "video",
+  agent_profile_id: agentProfileId,
+  agent_mission_id: manifest.agentMissionId ?? null,
+  autonomy_tier: manifest.agent?.autonomyTier ?? null,
+  agent_disclosure: manifest.agent?.disclosureText ?? null,
+  content_lane: manifest.contentLane ?? null,
+  creative_hypothesis: manifest.hypothesis ?? null,
+  capture_provenance: manifest.captureProvenance ?? {},
   evidence: { ...previousEvidence, productionManifest: manifest },
   status: "ready",
   updated_at: new Date().toISOString(),

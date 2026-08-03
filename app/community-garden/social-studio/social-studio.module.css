@@ -248,3 +248,35 @@
   .variants { padding: 20px 16px; }
   .verticalPreview { width: 100%; max-width: 330px; }
 }
+.wrenDisclosure {
+  display: grid;
+  gap: .55rem;
+  margin-bottom: 1rem;
+  padding: .9rem;
+  border: 1px solid rgba(113, 139, 91, .48);
+  background: rgba(228, 237, 208, .52);
+}
+
+.wrenDisclosure div {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: .5rem;
+}
+
+.wrenDisclosure strong { color: #34492f; letter-spacing: .04em; }
+.wrenDisclosure span { color: #52634b; font-size: .78rem; font-weight: 750; text-transform: uppercase; }
+.wrenDisclosure p, .provenanceNote p { margin: 0; }
+
+.provenanceNote {
+  display: grid;
+  gap: .3rem;
+  margin: .85rem 0;
+  padding: .75rem;
+  border-left: 4px solid #77945d;
+  background: rgba(255, 255, 255, .58);
+}
+
+.provenanceNote small { font-weight: 850; text-transform: uppercase; }
+.provenanceNote span { color: #5a6554; font-size: .82rem; }
