@@ -38,17 +38,6 @@ export type DraftStory = {
   whyToday: string;
   assetUrl: string;
   assetKind: "image" | "video";
-  agent?: {
-    code: "wren";
-    displayName: "Wren";
-    autonomyTier: 2;
-    plannerMode: "codex_scheduled";
-    disclosureLabel: string;
-    disclosureText: string;
-  };
-  captureMode?: "live_gameplay" | "deterministic";
-  contentLane?: "agent_diary" | "field_footage" | "experiment" | "garden_status" | "founder_context";
-  captureProvenance?: Record<string, unknown>;
   reelPlan: {
     hook: string;
     shots: string[];
@@ -57,12 +46,12 @@ export type DraftStory = {
     fallbackVisual: string;
   };
   creativeBrief: {
-    family: "basil-bulletin" | "wren-field-diary";
-    bulletinType: "garden_status" | "how_it_works" | "garden_discovery";
+    family: "basil-bulletin";
+    bulletinType: "garden_status" | "how_it_works" | "garden_discovery" | "garden_diagram";
     bulletinLabel: string;
     captureRecipe: string;
-    objective: "garden_status" | "mechanic_education" | "feature_discovery";
-    videoFormat: "status_bulletin" | "mechanic_walkthrough" | "feature_walkthrough";
+    objective: "garden_status" | "mechanic_education" | "feature_discovery" | "concept_education";
+    videoFormat: "status_bulletin" | "mechanic_walkthrough" | "feature_walkthrough" | "diagram_explainer";
     scene: string;
     intendedAudience: string;
     distribution: "organic" | "paid";
@@ -389,79 +378,19 @@ export function buildDailyStoryDrafts(
   _count = 3,
 ) {
   const day = chicagoDayNumber(date);
-  const measured = new Intl.DateTimeFormat("en-US", { timeZone: "America/Chicago", month: "short", day: "numeric" }).format(date);
   const commonChecks = [
-    "Real Basil GardenCanvas footage or an explicitly labeled replay of Wren's real action trace",
+    "Actual Basil renderer footage only",
     "1080x1920 H.264/AAC MP4 with poster",
     "Narration-derived word timing for every caption",
     "No unsupported game, garden, or botanical claim",
-    "Persistent WREN · AI GARDEN STEWARD disclosure remains readable",
-    "No browser chrome, minimap, compass, or north marker",
   ];
-  const destinationUrl = "https://basilcommunitygarden.com/";
-  const statusClaim = `Basil's shared garden currently contains ${stats.communityFlowers} flowers.`;
   const cards = [
-    {
-      key: `garden-status-${day}`,
-      sourceType: "garden_stats" as const,
-      sourceRef: null,
-      title: `Garden status: ${stats.communityFlowers} flowers growing`,
-      summary: `A dated, factual look at the shared garden: ${stats.roses} roses, ${stats.lavender} lavender plants, and ${stats.sunflowers} sunflowers among ${stats.communityFlowers} total flowers.`,
-      whyToday: `This bulletin uses Basil's current aggregate garden snapshot measured ${measured}.`,
-      assetUrl: GAMEPLAY_ROSES,
-      assetKind: "image" as const,
-      reelPlan: {
-        hook: `${stats.communityFlowers} flowers are growing in Basil today.`,
-        shots: ["Open on the current total.", "Walk Mary through a dense, mixed shared-garden path.", "Show the three leading flower counts."],
-        payoff: "Hold on the widest garden view with the current total visible.",
-        targetSeconds: 15,
-        fallbackVisual: "A dated Basil garden-status explainer card using only aggregate counts.",
-      },
-      fact: statusClaim,
-      creativeBrief: {
-        family: "wren-field-diary" as const,
-        bulletinType: "garden_status" as const,
-        bulletinLabel: "Garden status",
-        captureRecipe: "deterministic-garden-status-v1",
-        objective: "garden_status" as const,
-        videoFormat: "status_bulletin" as const,
-        scene: "garden-status",
-        intendedAudience: "Existing and curious Basil players who want a quick factual garden update.",
-        distribution: "organic" as const,
-        hypothesis: "A concrete changing garden number will make the shared world legible and give viewers a reason to return.",
-        alternateHooks: [`${stats.communityFlowers} flowers are growing today.`, `Today's shared-garden count is ${stats.communityFlowers}.`, `Here is what is growing in Basil right now.`],
-        destinationUrl,
-        trackingCode: `utm_source=social&utm_medium=organic&utm_campaign=basil_daily&utm_content=garden_status_${day}`,
-        truthClaims: [{ claim: statusClaim, supported: true, basis: `Supabase aggregate snapshot at ${stats.measuredAt}` }],
-        narrationDirection: "Let Wren deliver a dated field note in a calm, clear voice. Name Wren as AI-directed when identity is relevant, and avoid invented feelings or causality.",
-        requiredChecks: commonChecks,
-      },
-      variants: [
-        { channel: "instagram" as const, headline: `Today's Basil garden: ${stats.communityFlowers} flowers`, body: `${stats.communityFlowers} flowers are currently growing in Basil's shared garden, including ${stats.roses} roses, ${stats.lavender} lavender plants, and ${stats.sunflowers} sunflowers.`, hashtags: ["BasilCommunityGarden", "CozyGames", "GardenUpdate"] },
-        { channel: "youtube" as const, headline: `${stats.communityFlowers} flowers are growing in Basil today`, body: `Today's Basil garden bulletin: ${stats.communityFlowers} shared-garden flowers, including ${stats.roses} roses, ${stats.lavender} lavender plants, and ${stats.sunflowers} sunflowers.`, hashtags: ["BasilCommunityGarden", "CozyGames", "IndieGame"] },
-        { channel: "reddit" as const, headline: `A quick Basil garden status: ${stats.communityFlowers} flowers`, body: `Today's aggregate snapshot shows ${stats.communityFlowers} flowers growing in Basil's shared garden: ${stats.roses} roses, ${stats.lavender} lavender plants, and ${stats.sunflowers} sunflowers. I'm testing a short daily garden bulletin so the community can see how the shared space changes over time. Which count or change would be most useful to include next?`, hashtags: [] },
-      ],
-    },
-    buildMechanicBulletin(STORY_LIBRARY.find((card) => card.key === "watering-spread")!, changes, commonChecks, day),
     buildDiscoveryBulletin(changes, commonChecks, day),
+    buildMechanicBulletin(STORY_LIBRARY.find((card) => card.key === "watering-spread")!, changes, commonChecks, day),
+    buildCommunityDiagram(changes, stats, day),
   ];
   return cards.map((card, index): DraftStory => ({
     ...card,
-    agent: {
-      code: "wren",
-      displayName: "Wren",
-      autonomyTier: 2,
-      plannerMode: "codex_scheduled",
-      disclosureLabel: "WREN · AI GARDEN STEWARD",
-      disclosureText: "Wren is an AI-directed Basil garden steward. Codex selects daily missions; Basil's server rules validate and log every action.",
-    },
-    captureMode: "live_gameplay",
-    contentLane: index === 0 ? "garden_status" : index === 1 ? "field_footage" : "experiment",
-    captureProvenance: {
-      kind: "real_game_canvas",
-      actor: "wren",
-      truthLabel: "Real Basil garden state; Wren's movement is a capture replay.",
-    },
     evidence: {
       fact: card.fact,
       aggregateStats: stats,
@@ -471,6 +400,52 @@ export function buildDailyStoryDrafts(
     },
     variants: card.variants.filter((variant) => isChannel(variant.channel)).map((variant) => ({ ...variant, channel: variant.channel as SocialChannel, hashtags: [...variant.hashtags] })),
   }));
+}
+
+function buildDiscoveryBulletin(changes: RepositoryChange[], requiredChecks: string[], day: number) {
+  const matchingChange = changes.find((change) => /builder|personal garden|my garden|layout/i.test(change.title));
+  const fact = "My Garden includes a Builder Mode for planning and placing a personal garden layout.";
+  return {
+    key: `builder-mode-${day}`,
+    sourceType: matchingChange ? "repository" as const : "evergreen" as const,
+    sourceRef: matchingChange?.url ?? null,
+    title: "Turn an empty garden into a plan",
+    summary: "A visual reveal of Basil's Builder Mode turning open cells into a readable personal-garden layout.",
+    whyToday: "This gives the first video a visible before-to-after payoff instead of repeating the live totals shown in the static post.",
+    assetUrl: GAMEPLAY_LAVENDER,
+    assetKind: "image" as const,
+    reelPlan: {
+      hook: "This empty garden is about to become a plan.",
+      shots: ["Open on sparse My Garden cells.", "Preview a short layout as Mary moves through the garden.", "Place the completed shape and hold on the result."],
+      payoff: "Hold on the completed personal-garden layout for at least three seconds.",
+      targetSeconds: 16,
+      fallbackVisual: "A labeled Builder Mode explainer using the real personal-garden renderer.",
+    },
+    fact,
+    creativeBrief: {
+      family: "basil-bulletin" as const,
+      bulletinType: "garden_discovery" as const,
+      bulletinLabel: "Garden transformation",
+      captureRecipe: "deterministic-builder-mode-v1",
+      objective: "feature_discovery" as const,
+      videoFormat: "feature_walkthrough" as const,
+      scene: "builder-mode",
+      intendedAudience: "Cozy-game players who enjoy arranging, planning, and watching a garden take shape.",
+      distribution: "organic" as const,
+      hypothesis: "A clear empty-to-planned transformation will hold attention better than another spoken status update.",
+      alternateHooks: ["This empty garden is about to become a plan.", "Watch six cells turn into a garden layout.", "Plan the shape before you plant it."],
+      destinationUrl: "https://basilcommunitygarden.com/",
+      trackingCode: `utm_source=social&utm_medium=organic&utm_campaign=basil_daily&utm_content=builder_transformation_${day}`,
+      truthClaims: [{ claim: fact, supported: true, basis: matchingChange?.url ?? "Basil personal-garden renderer and Builder Mode implementation" }],
+      narrationDirection: "Lead with the visible transformation, then explain the feature in one concise sentence. Do not narrate setup that the viewer cannot see.",
+      requiredChecks,
+    },
+    variants: [
+      { channel: "instagram" as const, headline: "This empty garden is about to become a plan", body: "Builder Mode lets you preview a My Garden layout before you commit it. Start with open cells, shape the plan, then keep planting around it.", hashtags: ["BasilCommunityGarden", "CozyGaming", "GardenDesign", "PixelGarden"] },
+      { channel: "youtube" as const, headline: "Turning an empty pixel garden into a plan", body: "A quick look at Basil's Builder Mode: preview a personal-garden layout, inspect the shape, and place it when it feels right.", hashtags: ["BasilCommunityGarden", "CozyGames", "GardenDesign"] },
+      { channel: "reddit" as const, headline: "I am testing a clearer before-and-after for Basil's Builder Mode", body: "This clip starts with an open section of My Garden, previews a layout cell by cell, and holds on the completed shape. The feature is meant to make planning readable before the player commits the layout. Does the before-and-after explain the tool without needing a longer tutorial?", hashtags: [] },
+    ],
+  };
 }
 
 function buildMechanicBulletin(card: StoryCard, changes: RepositoryChange[], requiredChecks: string[], day: number) {
@@ -487,7 +462,7 @@ function buildMechanicBulletin(card: StoryCard, changes: RepositoryChange[], req
     reelPlan: card.reelPlan,
     fact: card.fact,
     creativeBrief: {
-      family: "wren-field-diary" as const,
+      family: "basil-bulletin" as const,
       bulletinType: "how_it_works" as const,
       bulletinLabel: "How Basil works",
       captureRecipe: "deterministic-watering-how-to-v1",
@@ -501,55 +476,61 @@ function buildMechanicBulletin(card: StoryCard, changes: RepositoryChange[], req
       destinationUrl: "https://basilcommunitygarden.com/",
       trackingCode: `utm_source=social&utm_medium=organic&utm_campaign=basil_daily&utm_content=watering_how_to_${day}`,
       truthClaims: [{ claim: card.fact, supported: true, basis: matchingChange?.url ?? "Basil watering implementation and curated product field guide" }],
-      narrationDirection: "Let Wren explain the mechanic from a first-person field perspective. Keep it factual, concise, and limited to actions visible in the capture.",
+      narrationDirection: "Explain the mechanic as three short numbered steps. Use calm, factual language and name only actions visible in the capture.",
       requiredChecks,
     },
     variants: card.variants,
   };
 }
 
-function buildDiscoveryBulletin(changes: RepositoryChange[], requiredChecks: string[], day: number) {
-  const matchingChange = changes.find((change) => /builder|personal garden|my garden|layout/i.test(change.title));
-  const fact = "My Garden includes a builder mode for planning and placing a personal garden layout.";
+function buildCommunityDiagram(changes: RepositoryChange[], stats: SocialStats, day: number) {
+  const matchingChange = changes.find((change) => /community garden|plant|grid|water|garden/i.test(change.title));
+  const fact = `The live Basil community garden contains ${stats.communityFlowers} flowers: ${stats.roses} roses, ${stats.lavender} lavender plants, and ${stats.sunflowers} sunflowers.`;
   return {
-    key: `builder-mode-${day}`,
+    key: `community-grid-diagram-${day}`,
     sourceType: matchingChange ? "repository" as const : "evergreen" as const,
     sourceRef: matchingChange?.url ?? null,
-    title: "Garden discovery: Builder Mode",
-    summary: "A factual walkthrough of planning a personal garden path before committing the layout.",
-    whyToday: "The discovery lane rotates through real Basil systems so the daily bulletin teaches more than one repeated action.",
+    title: `Live map: ${stats.communityFlowers} flowers in one shared garden`,
+    summary: "A current, game-accurate view of planting diversity in Basil's shared community garden.",
+    whyToday: "This image uses today's real community-garden arrangement and current totals rather than a seeded test garden.",
     assetUrl: GAMEPLAY_LAVENDER,
     assetKind: "image" as const,
     reelPlan: {
-      hook: "Did you know My Garden has a Builder Mode?",
-      shots: ["Open in a sparse personal garden.", "Preview a short curved planting path.", "Place the layout and reveal the finished garden shape."],
-      payoff: "Hold on the completed personal-garden layout.",
-      targetSeconds: 16,
-      fallbackVisual: "A labeled Builder Mode explainer using the real personal-garden renderer.",
+      hook: `${stats.communityFlowers} flowers. One shared garden.`,
+      shots: ["Load today's production community-garden snapshot.", "Frame the densest visible section containing roses, lavender, and sunflowers.", "Label only the three current planting totals."],
+      payoff: "A complete, readable 4:5 live garden map focused on planting diversity.",
+      targetSeconds: 0,
+      fallbackVisual: "The deterministic Basil diagram renderer is the required source, not a fallback illustration.",
     },
     fact,
     creativeBrief: {
-      family: "wren-field-diary" as const,
-      bulletinType: "garden_discovery" as const,
-      bulletinLabel: "Garden discovery",
-      captureRecipe: "deterministic-builder-mode-v1",
-      objective: "feature_discovery" as const,
-      videoFormat: "feature_walkthrough" as const,
-      scene: "builder-mode",
-      intendedAudience: "Cozy-game players who enjoy arranging and personalizing a garden.",
+      family: "basil-bulletin" as const,
+      bulletinType: "garden_diagram" as const,
+      bulletinLabel: "Game diagram",
+      captureRecipe: "deterministic-community-grid-diagram-v1",
+      objective: "concept_education" as const,
+      videoFormat: "diagram_explainer" as const,
+      scene: "community-grid-diagram",
+      intendedAudience: "Cozy-game players attracted by a dense, changing community garden and social-world premise.",
       distribution: "organic" as const,
-      hypothesis: "Showing a lesser-known planning tool in use will create curiosity while accurately demonstrating deeper play.",
-      alternateHooks: ["Did you know My Garden has a Builder Mode?", "Plan the shape before you plant it.", "This is how Basil previews a garden layout."],
+      hypothesis: "A visually dense live garden snapshot with three simple planting totals will stop attention and earn more saves, profile visits, and game starts than a rules-heavy diagram.",
+      alternateHooks: [`${stats.communityFlowers} flowers. One shared garden.`, "This is what everyone has planted so far.", `${stats.roses} roses—and they all share one map.`],
       destinationUrl: "https://basilcommunitygarden.com/",
-      trackingCode: `utm_source=social&utm_medium=organic&utm_campaign=basil_daily&utm_content=builder_mode_${day}`,
-      truthClaims: [{ claim: fact, supported: true, basis: matchingChange?.url ?? "Basil personal-garden renderer and curated product field guide" }],
-      narrationDirection: "Frame this as something Wren inspected or tried. Show the input and visible result, and avoid claiming functionality outside the demonstrated capture.",
-      requiredChecks,
+      trackingCode: `utm_source=social&utm_medium=organic&utm_campaign=basil_daily&utm_content=community_grid_diagram_${day}`,
+      truthClaims: [{ claim: fact, supported: true, basis: `Production aggregate snapshot at ${stats.measuredAt}; the image renderer also checks the live coordinate snapshot${matchingChange ? `; ${matchingChange.url}` : ""}` }],
+      narrationDirection: null,
+      requiredChecks: [
+        "Actual Basil renderer and integer grid coordinates only",
+        "1080x1350 PNG with no invented game objects or invalid planting positions",
+        "The image is generated from the current production community-garden coordinate snapshot",
+        "Roses, lavender, sunflowers, Mary, and the shared-garden density remain readable",
+        "Annotations are limited to the current planting totals and remain outside the primary garden view",
+        "No unsupported game, garden, or botanical claim",
+      ],
     },
     variants: [
-      { channel: "instagram" as const, headline: "Did you know Basil has a Builder Mode?", body: "My Garden lets you preview a personal layout before placing it. Plan the shape, check the path, then build the garden you want.", hashtags: ["BasilCommunityGarden", "CozyGaming", "GameMechanics", "PixelGarden"] },
-      { channel: "youtube" as const, headline: "How Builder Mode works in Basil", body: "Open My Garden, preview the shape of your layout, and place it when the path looks right. A quick look at Basil's personal-garden Builder Mode.", hashtags: ["BasilCommunityGarden", "CozyGames", "IndieGame"] },
-      { channel: "reddit" as const, headline: "A quick look at Builder Mode in Basil's My Garden", body: "My Garden has a Builder Mode for previewing a personal layout before you commit it. The goal is to make arranging a garden readable: plan the shape, inspect the path, and then place it. I'm turning individual mechanics like this into short factual bulletins. What part of garden building would you want demonstrated next?", hashtags: [] },
+      { channel: "instagram" as const, headline: `${stats.communityFlowers} flowers. One shared garden.`, body: `This is Basil's live community garden today: ${stats.roses} roses, ${stats.lavender} lavender plants, and ${stats.sunflowers} sunflowers sharing one map. Where would you plant next?`, hashtags: ["BasilCommunityGarden", "CozyGaming", "PixelGarden", "CommunityGarden"] },
+      { channel: "reddit" as const, headline: `The live Basil garden now has ${stats.communityFlowers} flowers—here is the planting mix`, body: `I rendered this directly from today's shared Basil garden rather than arranging a promotional test scene. The current map contains ${stats.roses} roses, ${stats.lavender} lavender plants, and ${stats.sunflowers} sunflowers. I want these static posts to show what the community is actually building, not an abstract version of it. Which live garden view or comparison would be useful to map next?`, hashtags: [] },
     ],
   };
 }
@@ -618,7 +599,7 @@ export async function refineDraftsWithOpenAI(drafts: DraftStory[], changes: Repo
                       whyToday: { type: "string" },
                       variants: {
                         type: "array",
-                        minItems: SOCIAL_CHANNELS.length,
+                        minItems: 2,
                         maxItems: SOCIAL_CHANNELS.length,
                         items: {
                           type: "object",
@@ -644,7 +625,7 @@ export async function refineDraftsWithOpenAI(drafts: DraftStory[], changes: Repo
             role: "system",
             content: [{
               type: "input_text",
-              text: "You are Basil Community Garden's factual bulletin editor. Rewrite only the supplied drafts. Preserve every factual boundary, bulletin lane, and story key. Lead with concrete garden status, a demonstrated mechanic, or a demonstrated feature. Never add fables, sentimental founder narration, invented statistics, shipped features, wildlife rules, rewards, or API capabilities. Reddit should invite a specific product discussion without repeated promotion. YouTube and Instagram copy must describe only visible gameplay. Do not add links except when already present. Return the required JSON only.",
+              text: "You are Basil Community Garden's factual bulletin editor. Rewrite only the supplied drafts. Preserve every factual boundary, bulletin lane, story key, asset kind, and original set of channels. Lead with concrete garden status, a demonstrated mechanic, or a game-accurate diagram concept. Never add fables, sentimental founder narration, invented statistics, shipped features, wildlife rules, rewards, or API capabilities. Reddit should invite a specific product discussion without repeated promotion. YouTube and Instagram copy must describe only the supplied gameplay or diagram. A diagram must remain Instagram and Reddit only. Do not add links except when already present. Return the required JSON only.",
             }],
           },
           {
@@ -679,7 +660,11 @@ export async function refineDraftsWithOpenAI(drafts: DraftStory[], changes: Repo
           hashtags: variant.hashtags.filter((tag): tag is string => typeof tag === "string").slice(0, 12),
         };
       });
-      if (variants.some((variant) => !variant) || new Set(variants.map((variant) => variant?.channel)).size !== SOCIAL_CHANNELS.length) return drafts;
+      const originalChannels = new Set(original.variants.map((variant) => variant.channel));
+      const refinedChannels = new Set(variants.map((variant) => variant?.channel));
+      if (variants.some((variant) => !variant)
+        || refinedChannels.size !== originalChannels.size
+        || [...refinedChannels].some((channel) => !channel || !originalChannels.has(channel))) return drafts;
       refined.push({
         ...original,
         title: typeof story.title === "string" ? story.title.slice(0, 180) : original.title,

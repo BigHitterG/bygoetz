@@ -1,0 +1,21 @@
+
+.diagram { position: relative; width: 100vw; height: 100vh; overflow: hidden; background: #26342b; color: #fff8e8; font-family: Arial, Helvetica, sans-serif; }
+.diagram canvas { width: 100%; height: 100%; display: block; image-rendering: pixelated; }
+.tint { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(25, 33, 27, .9) 0 25%, transparent 47% 76%, rgba(25, 33, 27, .8) 100%); pointer-events: none; }
+.title { position: absolute; top: 4.2%; left: 6.2%; right: 6.2%; text-align: center; text-shadow: 0 .12em .3em rgba(17, 22, 18, .78); }
+.title span { color: #f1d08b; font-size: clamp(10px, 2vw, 22px); font-weight: 900; letter-spacing: .22em; }
+.title h1 { margin: .2em 0 .12em; font: 900 clamp(28px, 5.5vw, 59px)/.98 Georgia, serif; letter-spacing: -.035em; text-wrap: balance; }
+.title p { margin: 0 auto; max-width: 82%; font-size: clamp(12px, 2.3vw, 25px); font-weight: 700; line-height: 1.25; }
+.leaders { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.leaders path { fill: none; stroke: #f1d08b; stroke-width: 5; stroke-linecap: round; stroke-dasharray: 12 9; filter: drop-shadow(0 2px 2px rgba(21, 27, 23, .65)); }
+.leaders circle { fill: #a94343; stroke: #fff8e8; stroke-width: 4; }
+.callout { position: absolute; min-width: 20%; padding: 1.1% 1.5%; border: 3px solid #fff8e8; border-radius: 10px; background: rgba(38, 52, 43, .94); box-shadow: 7px 7px 0 rgba(28, 36, 30, .65); text-align: center; }
+.callout strong { display: block; color: #f1d08b; font: 900 clamp(20px, 4vw, 44px)/.9 Georgia, serif; }
+.callout span { display: block; margin-top: .35em; font-size: clamp(9px, 1.7vw, 19px); font-weight: 900; letter-spacing: .1em; }
+.rose { top: 38%; left: 5%; }
+.lavender { top: 38%; right: 5%; }
+.sunflower { left: 38%; bottom: 18%; }
+.footer { position: absolute; z-index: 3; left: 0; right: 0; bottom: 0; min-height: 8.5%; display: flex; align-items: flex-start; justify-content: space-between; gap: 1em; border-top: 3px solid rgba(255, 248, 232, .78); padding: 1.8% 6% 0; background: #26342b; text-shadow: 0 2px 6px rgba(17, 22, 18, .8); }
+.footer span { font-size: clamp(10px, 2vw, 22px); font-weight: 900; letter-spacing: .08em; }
+.footer strong { color: #f1d08b; font-size: clamp(10px, 1.9vw, 21px); }
+

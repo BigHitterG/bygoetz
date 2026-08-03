@@ -1,90 +1,49 @@
+
 {
-  "schemaVersion": 3,
-  "agent": {
-    "code": "wren",
-    "displayName": "Wren",
-    "autonomyTier": 2,
-    "plannerMode": "codex_scheduled",
-    "disclosureLabel": "WREN · AI GARDEN STEWARD",
-    "disclosureText": "Wren is an AI-directed Basil garden steward. Codex selects daily missions; Basil's server rules validate and log every action."
-  },
-  "captureMode": "live_gameplay",
-  "overlayStyle": "captions_only",
-  "playbackSpeed": 1,
-  "voiceProfile": {
-    "id": "wren-clear-v1",
-    "character": "clear_neural",
-    "voice": "en-US-AvaNeural",
-    "rate": "+0%",
-    "pitch": "+0Hz",
-    "volume": "+0%"
-  },
-  "captureProvenance": {
-    "kind": "real_game_canvas",
-    "actor": "wren",
-    "truthLabel": "Real Basil garden state; Wren's movement is a capture replay."
-  },
-  "contentLane": "experiment",
-  "id": "garden-worm-lucky-1-in-64-v1",
-  "contentFamily": "wren-field-diary",
-  "bulletinType": "garden_discovery",
-  "bulletinLabel": "Garden discovery",
-  "objective": "feature_discovery",
-  "format": "rare_event_reveal",
-  "scene": "garden-worm-discovery",
-  "gameplayRecipe": "deterministic-garden-worm-discovery-v1",
-  "intendedAudience": "Cozy-game players who enjoy rare finds, small surprises, and transparent game rules.",
+  "schemaVersion": 2,
+  "id": "live-plant-diversity-v1",
+  "assetKind": "image",
+  "contentFamily": "basil-bulletin",
+  "bulletinType": "garden_diagram",
+  "bulletinLabel": "Live garden map",
+  "objective": "garden_status",
+  "format": "diagram_explainer",
+  "scene": "community-grid-diagram",
+  "gameplayRecipe": "live-community-snapshot-diversity-v1",
+  "intendedAudience": "Cozy-game players attracted by a dense, changing community garden and social-world premise.",
   "distribution": "organic",
-  "hypothesis": "The counterintuitive claim that a worm is good news will stop the swipe, then a visible soil reveal and exact one-in-64 rule will deliver the payoff quickly.",
-  "alternateHooks": [
-    "Finding a worm is good news here.",
-    "One in 64 Basil plantings can wake a bonus worm.",
-    "This is the rare garden event you actually want."
-  ],
-  "platforms": ["youtube_shorts", "instagram_reels", "reddit"],
-  "destinationUrl": "https://basilcommunitygarden.com/community-garden?start=community",
-  "trackingCode": "utm_source=social&utm_medium=organic&utm_campaign=basil_hooks_20260802_b&utm_content=garden_worm",
+  "hypothesis": "A visually dense live garden snapshot with three simple planting totals will stop attention and earn more saves, profile visits, and game starts than a rules-heavy diagram.",
+  "alternateHooks": ["{{plantCount}} flowers. One shared garden.", "This is what everyone has planted so far.", "{{roses}} rosesâ€”and they all share one map."],
+  "platforms": ["instagram_post", "reddit"],
+  "destinationUrl": "https://basilcommunitygarden.com/",
+  "trackingCode": "utm_source=social&utm_medium=organic&utm_campaign=basil_daily&utm_content=live_plant_diversity",
+  "snapshotExpectation": {
+    "minimumPlantCount": 1,
+    "requiredTypes": ["rose", "lavender", "sunflower"]
+  },
   "truthClaims": [
     {
-      "claim": "A Garden Worm is a rare planting bonus that occurs on roughly one in 64 accepted Community Garden plantings.",
+      "claim": "The live Basil community garden contains {{plantCount}} flowers: {{roses}} roses, {{lavender}} lavender plants, and {{sunflowers}} sunflowers.",
       "supported": true,
-      "basis": "Implemented deterministic action-ID selection in supabase/migrations/20260724013000_uncapped_care_and_heritage_flowers.sql and player copy in GardenWormDiscovery.tsx."
-    },
-    {
-      "claim": "A Garden Worm adds two bonus Care to the Care normally earned from planting, and retries cannot create a duplicate reward.",
-      "supported": true,
-      "basis": "Server-authoritative +2 Care mutation and idempotent action handling in the implemented migration and tests/basil-desktop-controls-and-worm.test.ts."
+      "basis": "Production community-garden snapshot generated {{generatedAt}}. The renderer derives the image and all four totals from the same snapshot."
     }
   ],
-  "title": "Why finding a worm is good news in Basil",
-  "summary": "A rare planting-event reveal showing a Garden Worm surfacing beside a new flower and adding two bonus Care.",
-  "whyToday": "Recent discovery clips covered habitats, lifespans, and Heritage. This uses a new close soil-level action, a visible creature reveal, and a counterintuitive hook from a separate server-backed system.",
-  "hook": "Finding a worm is good news here.",
-  "minimumDurationSeconds": 20,
-  "narration": "I found the rare thing I watch for while tending Basil. Roughly one in 64 accepted Community Garden plantings triggers a Garden Worm. The server derives it from the action ID, so retries cannot duplicate the reward. It adds two bonus Care. I call that lively soil.",
-  "sourceNote": "The capture records Wren walking through Basil's real Community Garden canvas. The worm odds and Care reward come from the implemented action rules; the footage does not claim every planting produces a worm.",
-  "overlay": {
-    "header": "A lucky soil surprise",
-    "gameplayLabel": "Garden Worm discovery",
-    "progressValue": "+2",
-    "progressLabel": "bonus Care",
-    "footer": "Rare planting event: about 1 in 64."
-  },
+  "title": "Live map: {{plantCount}} flowers in one shared garden",
+  "summary": "A current, game-accurate view of planting diversity in Basil's shared community garden.",
+  "whyToday": "This image uses today's real community-garden arrangement and current totals rather than a seeded test garden.",
+  "hook": "{{plantCount}} flowers. One shared garden.",
+  "sourceNote": "Rendered from Basil's current production community-garden snapshot with the real game renderer and coordinates.",
   "platformCopy": {
-    "youtube": {
-      "headline": "Why finding a worm is good news in Basil",
-      "body": "About one in 64 accepted Community Garden plantings can surface a Garden Worm. It adds +2 bonus Care to the normal planting reward, and server-side idempotency keeps retries from duplicating it.",
-      "hashtags": ["BasilCommunityGarden", "CozyGames", "GameMechanics"]
-    },
     "instagram": {
-      "headline": "Finding a worm is good news here",
-      "body": "A rare Garden Worm can surface beside a newly planted community flower and add +2 bonus Care. It is roughly a one-in-64 planting surprise.",
-      "hashtags": ["BasilCommunityGarden", "CozyGaming", "IndieGame"]
+      "headline": "{{plantCount}} flowers. One shared garden.",
+      "body": "This is Basil's live community garden today: {{roses}} roses, {{lavender}} lavender plants, and {{sunflowers}} sunflowers sharing one map. Where would you plant next?",
+      "hashtags": ["BasilCommunityGarden", "CozyGaming", "PixelGarden", "CommunityGarden"]
     },
     "reddit": {
-      "headline": "The rare Basil planting event where finding a worm is good news",
-      "body": "Roughly one in 64 accepted Community Garden plantings can surface a Garden Worm. The server derives the event from the action ID, so a retry cannot duplicate it, and the worm adds +2 Care to the normal planting reward. This clip recreates the rare result so the rule is actually visible.",
+      "headline": "The live Basil garden now has {{plantCount}} flowersâ€”here is the planting mix",
+      "body": "I rendered this directly from today's shared Basil garden rather than arranging a promotional test scene. The current map contains {{roses}} roses, {{lavender}} lavender plants, and {{sunflowers}} sunflowers. I want these static posts to show what the community is actually building, not an abstract version of it. Which live garden view or comparison would be useful to map next?",
       "hashtags": []
     }
   }
 }
+

@@ -10,13 +10,6 @@ import {
   type RepositoryChange,
   type SocialChannel,
 } from "./socialContent";
-import {
-  getWrenAgentProfile,
-  upsertWrenMission,
-  WREN_AUTONOMY_TIER,
-  WREN_DISCLOSURE_TEXT,
-  WREN_PLANNER_MODE,
-} from "./wrenAgent";
 
 const REVIEWERS = (process.env.BASIL_SOCIAL_REVIEW_EMAILS ?? "info@bygoetz.com")
   .split(",")
@@ -49,13 +42,6 @@ type StoryRow = {
   evidence: Record<string, unknown>;
   rank: number;
   status: string;
-  agent_profile_id: string | null;
-  agent_mission_id: string | null;
-  autonomy_tier: number | null;
-  agent_disclosure: string | null;
-  content_lane: string | null;
-  creative_hypothesis: string | null;
-  capture_provenance: Record<string, unknown>;
 };
 
 type VariantRow = {
@@ -193,12 +179,12 @@ function connectorStatus() {
 }
 
 function bulletinLabelFromEvidence(evidence: unknown) {
-  if (!evidence || typeof evidence !== "object") return "Wren field note";
+  if (!evidence || typeof evidence !== "object") return "Basil bulletin";
   const record = evidence as Record<string, unknown>;
   const manifest = record.productionManifest ?? record.creativeBrief;
-  if (!manifest || typeof manifest !== "object") return "Wren field note";
+  if (!manifest || typeof manifest !== "object") return "Basil bulletin";
   const label = (manifest as Record<string, unknown>).bulletinLabel;
-  return typeof label === "string" && label.trim() ? label.trim().slice(0, 80) : "Wren field note";
+  return typeof label === "string" && label.trim() ? label.trim().slice(0, 80) : "Basil bulletin";
 }
 
 function renderDigestEmail(digestId: string, token: string, stories: EmailStory[]) {
@@ -206,19 +192,20 @@ function renderDigestEmail(digestId: string, token: string, stories: EmailStory[
   const cards = stories.map((story, index) => {
     const storyUrl = `${reviewUrl}&story=${story.id}`;
     const visual = story.assetKind === "image"
-      ? `<img src="${escapeHtml(getBasilUrl(story.assetUrl))}" alt="Actual Basil gameplay for ${escapeHtml(story.title)}" width="580" style="display:block;width:100%;height:auto;max-height:340px;object-fit:cover">`
-      : `<div style="padding:44px 20px;background:#314239;color:#fff8e8;text-align:center"><div style="font:800 12px Arial,sans-serif;letter-spacing:1.6px;color:#e7c879">WREN · AI GARDEN STEWARD</div><div style="font:700 24px Georgia,serif;margin-top:9px">Real Basil footage + MP4 ready</div></div>`;
+      ? `<div style="padding:44px 20px;background:#314239;color:#fff8e8;text-align:center"><div style="font:800 12px Arial,sans-serif;letter-spacing:1.6px;color:#e7c879">FINISHED GAME DIAGRAM</div><div style="font:700 24px Georgia,serif;margin-top:9px">4:5 PNG ready in Studio</div></div>`
+      : `<div style="padding:44px 20px;background:#314239;color:#fff8e8;text-align:center"><div style="font:800 12px Arial,sans-serif;letter-spacing:1.6px;color:#e7c879">FINISHED VERTICAL VIDEO</div><div style="font:700 24px Georgia,serif;margin-top:9px">Poster + MP4 ready in Studio</div></div>`;
     return `
     <tr><td style="padding:0 0 18px">
       <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border:2px solid #352823;background:#fff8e8">
         <tr><td>${visual}</td></tr>
-        <tr><td style="padding:18px 20px"><div style="font:700 12px Arial,sans-serif;letter-spacing:1.4px;color:#a43d3d">${escapeHtml(story.bulletinLabel.toUpperCase())} · ${index + 1} OF 3</div><h2 style="font:700 22px Georgia,serif;margin:6px 0 8px;color:#302321">${escapeHtml(story.title)}</h2><p style="font:15px/1.55 Arial,sans-serif;color:#5b4a42;margin:0">${escapeHtml(story.whyToday)}</p><p style="margin:18px 0 0"><a href="${storyUrl}" style="display:inline-block;background:#a94343;color:#fff8e8;border:2px solid #302321;padding:11px 17px;text-decoration:none;font:700 14px Arial,sans-serif">Review and approve this field note</a></p></td></tr>
+        <tr><td style="padding:18px 20px"><div style="font:700 12px Arial,sans-serif;letter-spacing:1.4px;color:#a43d3d">${escapeHtml(story.bulletinLabel.toUpperCase())} · ${index + 1} OF 3</div><h2 style="font:700 22px Georgia,serif;margin:6px 0 8px;color:#302321">${escapeHtml(story.title)}</h2><p style="font:15px/1.55 Arial,sans-serif;color:#5b4a42;margin:0">${escapeHtml(story.whyToday)}</p><p style="margin:18px 0 0"><a href="${storyUrl}" style="display:inline-block;background:#a94343;color:#fff8e8;border:2px solid #302321;padding:11px 17px;text-decoration:none;font:700 14px Arial,sans-serif">Review and approve this bulletin</a></p></td></tr>
       </table>
     </td></tr>`;
   }).join("");
   const videoCount = stories.filter((story) => story.assetKind === "video").length;
-  const html = `<!doctype html><html><body style="margin:0;background:#e7dfcf;color:#302321"><table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr><td align="center" style="padding:28px 12px"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:620px"><tr><td style="border:3px solid #302321;background:#f5e8ca;padding:28px 26px;text-align:center"><div style="font:700 30px Georgia,serif;letter-spacing:2px">BASIL</div><div style="font:700 12px Arial,sans-serif;letter-spacing:2px;margin-top:5px">WREN'S DAILY FIELD NOTES</div><h1 style="font:700 27px Georgia,serif;margin:22px 0 10px">Three new garden videos are ready</h1><p style="font:16px/1.5 Arial,sans-serif;margin:0;color:#5b4a42">Wren's diary, real field footage, and one fresh experiment—each with Instagram, YouTube, and Reddit copy.</p><p style="font:12px/1.5 Arial,sans-serif;color:#6b5a51;margin:10px 0 0">Wren is AI-directed. Codex selects missions; Basil validates and logs every action.</p><p style="margin:22px 0 4px"><a href="${reviewUrl}" style="display:inline-block;background:#a94343;color:#fff8e8;border:2px solid #302321;padding:13px 22px;text-decoration:none;font:700 15px Arial,sans-serif">Review all three field notes</a></p><p style="font:12px/1.5 Arial,sans-serif;color:#6b5a51;margin:10px 0 0">Opening a link does not approve or publish. Approve each package inside Studio.</p></td></tr><tr><td style="height:18px"></td></tr>${cards}<tr><td style="font:12px/1.5 Arial,sans-serif;color:#6b5a51;text-align:center;padding:8px 20px">Sent privately to ${escapeHtml(REVIEWERS.join(", "))}. This review link expires in seven days.</td></tr></table></td></tr></table></body></html>`;
-  const text = `Basil — Wren's Daily Field Notes\n\n${videoCount} finished videos are ready. Wren is AI-directed: Codex selects missions and Basil validates and logs every action. Opening a link does not approve or publish anything.\n\n${stories.map((story, index) => `${index + 1}. ${story.bulletinLabel}: ${story.title}\n${story.whyToday}\nReview: ${reviewUrl}&story=${story.id}`).join("\n\n")}\n\nReview all: ${reviewUrl}`;
+  const imageCount = stories.filter((story) => story.assetKind === "image").length;
+  const html = `<!doctype html><html><body style="margin:0;background:#e7dfcf;color:#302321"><table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr><td align="center" style="padding:28px 12px"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:620px"><tr><td style="border:3px solid #302321;background:#f5e8ca;padding:28px 26px;text-align:center"><div style="font:700 30px Georgia,serif;letter-spacing:2px">BASIL</div><div style="font:700 12px Arial,sans-serif;letter-spacing:2px;margin-top:5px">DAILY GARDEN BULLETIN</div><h1 style="font:700 27px Georgia,serif;margin:22px 0 10px">Two videos + one diagram are ready</h1><p style="font:16px/1.5 Arial,sans-serif;margin:0;color:#5b4a42">Two factual gameplay bulletins for Instagram, YouTube, and Reddit—plus one game-accurate diagram for Instagram and Reddit.</p><p style="margin:22px 0 4px"><a href="${reviewUrl}" style="display:inline-block;background:#a94343;color:#fff8e8;border:2px solid #302321;padding:13px 22px;text-decoration:none;font:700 15px Arial,sans-serif">Review all three bulletins</a></p><p style="font:12px/1.5 Arial,sans-serif;color:#6b5a51;margin:10px 0 0">Opening a link does not approve or publish. Approve each bulletin inside Studio.</p></td></tr><tr><td style="height:18px"></td></tr>${cards}<tr><td style="font:12px/1.5 Arial,sans-serif;color:#6b5a51;text-align:center;padding:8px 20px">Sent privately to ${escapeHtml(REVIEWERS.join(", "))}. This review link expires in seven days.</td></tr></table></td></tr></table></body></html>`;
+  const text = `Basil Daily Garden Bulletin\n\n${videoCount} finished videos and ${imageCount} finished diagram are ready. Opening a link does not approve or publish anything.\n\n${stories.map((story, index) => `${index + 1}. ${story.bulletinLabel}: ${story.title}\n${story.whyToday}\nReview: ${reviewUrl}&story=${story.id}`).join("\n\n")}\n\nReview all: ${reviewUrl}`;
   return { reviewUrl, html, text };
 }
 
@@ -247,32 +234,6 @@ export async function createDailySocialDigest(date = new Date(), options: { send
   if (statsResult.error) throw statsResult.error;
   const stats = parseSocialStats(statsResult.data);
   const baseDrafts = buildDailyStoryDrafts(date, changes, stats, configuredStoryCount());
-  const wrenProfile = await getWrenAgentProfile();
-  const wrenMission = await upsertWrenMission({
-    runKey,
-    missionDate: runKey.slice("daily-".length),
-    objective: "Choose and document one truthful, visually clear garden mission after reviewing recent Wren actions, Creator Studio feedback, and social performance.",
-    scope: "mixed",
-    plannerVersion: "codex-scheduled-v1",
-    plan: {
-      state: "awaiting_scheduled_codex_plan",
-      socialLanes: ["agent_diary", "field_footage", "experiment"],
-      videos: 3,
-    },
-    constraints: {
-      allowedActions: ["walk", "plant", "water", "weed", "builder", "inspect", "wait"],
-      publishingRequiresCreatorStudioApproval: true,
-      productionMutationRetakesForbidden: true,
-      externalApiPlannerEnabled: false,
-      dailyCareBudget: 6,
-      maxMyGardenActionsPerSession: 3,
-    },
-    truthBasis: {
-      gardenStatsMeasuredAt: stats.measuredAt,
-      repositoryChanges: changes.map((change) => change.sha),
-      disclosure: WREN_DISCLOSURE_TEXT,
-    },
-  });
   const drafts = await refineDraftsWithOpenAI(baseDrafts, changes);
   const token = randomBytes(32).toString("base64url");
   const now = new Date().toISOString();
@@ -287,13 +248,6 @@ export async function createDailySocialDigest(date = new Date(), options: { send
       aggregateStats: stats,
       repositoryChanges: changes,
       generator: process.env.OPENAI_API_KEY ? (process.env.OPENAI_SOCIAL_MODEL ?? "gpt-5.6-terra") : "curated-template-library",
-      agent: {
-        id: wrenProfile.id,
-        code: wrenProfile.code,
-        autonomyTier: WREN_AUTONOMY_TIER,
-        plannerMode: WREN_PLANNER_MODE,
-        missionId: wrenMission.id,
-      },
     },
   }).select("id").single();
   if (digestError) {
@@ -318,13 +272,6 @@ export async function createDailySocialDigest(date = new Date(), options: { send
         asset_url: draft.assetUrl,
         asset_kind: draft.assetKind,
         evidence: draft.evidence,
-        agent_profile_id: wrenProfile.id,
-        agent_mission_id: wrenMission.id,
-        autonomy_tier: WREN_AUTONOMY_TIER,
-        agent_disclosure: WREN_DISCLOSURE_TEXT,
-        content_lane: draft.contentLane ?? null,
-        creative_hypothesis: draft.creativeBrief.hypothesis,
-        capture_provenance: draft.captureProvenance ?? {},
         rank: index + 1,
         status: "ready",
       }).select("id").single();
@@ -345,7 +292,7 @@ export async function createDailySocialDigest(date = new Date(), options: { send
       from: FROM,
       to: REVIEWERS,
       replyTo: REPLY_TO,
-      subject: "Wren's Basil field diary: 3 videos ready to review",
+      subject: "Basil Garden Bulletin: 2 videos + 1 diagram ready",
       html: rendered.html,
       text: rendered.text,
       headers: { "X-Entity-Ref-ID": `basil-social-${runKey}` },
@@ -413,7 +360,7 @@ export async function resendLatestSocialDigest(requestKey: string) {
       from: FROM,
       to: REVIEWERS,
       replyTo: REPLY_TO,
-      subject: `Basil Garden Bulletin: ${stories.length} videos ready to review`,
+      subject: "Basil Garden Bulletin: 2 videos + 1 diagram ready",
       html: rendered.html,
       text: rendered.text,
       headers: { "X-Entity-Ref-ID": `basil-social-resend-${digest.id}` },

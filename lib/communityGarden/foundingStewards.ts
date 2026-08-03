@@ -1,3 +1,4 @@
+
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import {
   MAX_WATERING_TARGETS,
@@ -14,7 +15,6 @@ import {
   loadCommunityGardenSnapshot,
   submitCommunityGardenAction,
 } from "./publicGardenServer";
-import { executeWrenMyGardenMission } from "./wrenAgent";
 
 const TUTORIAL_CLEARANCE_TILES = 12;
 const REGION_SIZE = 16;
@@ -560,7 +560,6 @@ export async function runCommunityGardenFoundingStewardSession(now = new Date())
     .eq("run_id", run.run_id);
   if (completeError) throw completeError;
 
-  const wrenMyGarden = await executeWrenMyGardenMission(now);
   return {
     runDate: schedule.runDate,
     sessionSlot: schedule.sessionSlot,
@@ -569,10 +568,10 @@ export async function runCommunityGardenFoundingStewardSession(now = new Date())
     actionsAttemptedThisSession: outcomes.length,
     actionsSucceededThisSession: outcomes.filter((outcome) => outcome.success).length,
     actionsSucceededToday: successful.length,
-    wrenMyGarden,
     targetActions,
   };
 }
 
 // Backward-compatible export used by the existing cron route and older tests.
 export const runCommunityGardenFoundingStewards = runCommunityGardenFoundingStewardSession;
+

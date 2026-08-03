@@ -1,8 +1,10 @@
+
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "@supabase/supabase-js";
 
 const MAX_VIDEO_BYTES = 100 * 1024 * 1024;
 const MAX_POSTER_BYTES = 15 * 1024 * 1024;
+const MAX_IMAGE_BYTES = 20 * 1024 * 1024;
 const allowedChannels = ["youtube", "instagram", "reddit"];
 
 function response(status: number, value: unknown) {
@@ -61,21 +63,21 @@ Deno.serve(async (request) => {
         .select("kind,bucket_id,object_path,created_at")
         .eq("story_id", storyId)
         .eq("validation_status", "valid")
-        .in("kind", ["video", "poster"])
+        .in("kind", ["video", "poster", "image"])
         .order("created_at", { ascending: false }),
     ]);
     if (variantError) return response(500, { error: variantError.message });
     if (assetError) return response(500, { error: assetError.message });
     if (!variants?.length) return response(409, { error: "This story has no explicitly approved posts." });
     const signed: Record<string, string> = {};
-    for (const kind of ["video", "poster"]) {
+    for (const kind of ["video", "poster", "image"]) {
       const asset = assets?.find((candidate) => candidate.kind === kind);
       if (!asset) continue;
       const { data, error } = await supabase.storage.from(asset.bucket_id).createSignedUrl(asset.object_path, 15 * 60);
       if (error) return response(500, { error: error.message });
       signed[kind] = data.signedUrl;
     }
-    if (!signed.video) return response(409, { error: "This story does not have a validated video." });
+    if (!signed.video && !signed.image) return response(409, { error: "This story does not have a validated video or diagram." });
     return response(200, { storyId, assets: signed, posts: variants });
   }
 
@@ -108,12 +110,22 @@ Deno.serve(async (request) => {
     const form = await request.formData();
     const video = form.get("video");
     const poster = form.get("poster");
+    const image = form.get("image");
     const manifestPart = form.get("manifest");
-    if (!(video instanceof File) || video.type !== "video/mp4" || video.size < 100_000 || video.size > MAX_VIDEO_BYTES) {
-      return response(400, { error: "A valid MP4 within the private bucket limit is required." });
-    }
-    if (!(poster instanceof File) || poster.type !== "image/jpeg" || poster.size < 10_000 || poster.size > MAX_POSTER_BYTES) {
-      return response(400, { error: "A valid JPEG poster is required." });
+    const diagramFile = image instanceof File ? image : null;
+    const isImagePackage = diagramFile !== null;
+    if (isImagePackage && (video instanceof File || poster instanceof File)) return response(400, { error: "A package must contain either one diagram or one video with its poster." });
+    if (isImagePackage) {
+      if (diagramFile.type !== "image/png" || diagramFile.size < 100_000 || diagramFile.size > MAX_IMAGE_BYTES) {
+        return response(400, { error: "A valid PNG diagram within the private bucket limit is required." });
+      }
+    } else {
+      if (!(video instanceof File) || video.type !== "video/mp4" || video.size < 100_000 || video.size > MAX_VIDEO_BYTES) {
+        return response(400, { error: "A valid MP4 within the private bucket limit is required." });
+      }
+      if (!(poster instanceof File) || poster.type !== "image/jpeg" || poster.size < 10_000 || poster.size > MAX_POSTER_BYTES) {
+        return response(400, { error: "A valid JPEG poster is required." });
+      }
     }
     const manifestText = typeof manifestPart === "string"
       ? manifestPart
@@ -123,8 +135,11 @@ Deno.serve(async (request) => {
     if (!manifestText) return response(400, { error: "A valid production manifest is required." });
     const manifest = JSON.parse(manifestText) as Record<string, unknown>;
     const claims = Array.isArray(manifest.truthClaims) ? manifest.truthClaims as Array<Record<string, unknown>> : [];
-    if (manifest.width !== 1080 || manifest.height !== 1920 || manifest.codec !== "H.264/AAC" || manifest.validationStatus !== "valid") {
-      return response(400, { error: "The video manifest did not pass Basil's vertical delivery contract." });
+    const dimensionsValid = isImagePackage
+      ? manifest.assetKind === "image" && manifest.width === 1080 && manifest.height === 1350 && manifest.codec === "PNG"
+      : manifest.assetKind !== "image" && manifest.width === 1080 && manifest.height === 1920 && manifest.codec === "H.264/AAC";
+    if (!dimensionsValid || manifest.validationStatus !== "valid") {
+      return response(400, { error: `The ${isImagePackage ? "diagram" : "video"} manifest did not pass Basil's delivery contract.` });
     }
     if (!claims.length || claims.some((claim) => claim.supported !== true || typeof claim.basis !== "string")) {
       return response(400, { error: "Every production truth claim must be supported." });
@@ -132,20 +147,23 @@ Deno.serve(async (request) => {
     const platformCopy = manifest.platformCopy && typeof manifest.platformCopy === "object"
       ? manifest.platformCopy as Record<string, Record<string, unknown>>
       : {};
-    if (allowedChannels.some((channel) => {
+    const requiredChannels = isImagePackage ? ["instagram", "reddit"] : allowedChannels;
+    if (requiredChannels.some((channel) => {
       const copy = platformCopy[channel];
       return !copy || typeof copy.headline !== "string" || typeof copy.body !== "string" || !Array.isArray(copy.hashtags);
     })) {
-      return response(400, { error: "YouTube, Instagram, and Reddit copy must be included in the production manifest." });
+      return response(400, { error: `${requiredChannels.join(", ")} copy must be included in the production manifest.` });
     }
     const { data: story, error: storyError } = await supabase.from("basil_social_stories").select("id,digest_id,evidence").eq("id", storyId).maybeSingle();
     if (storyError) throw storyError;
     if (!story) return response(404, { error: "The Social Studio story was not found." });
     const packageId = crypto.randomUUID();
-    const files = [
-      { kind: "video", file: video, path: `${story.digest_id}/${storyId}/${packageId}.mp4`, width: manifest.width, height: manifest.height, durationMs: manifest.durationMs },
-      { kind: "poster", file: poster, path: `${story.digest_id}/${storyId}/${packageId}-poster.jpg`, width: manifest.width, height: manifest.height, durationMs: null },
-    ];
+    const files = isImagePackage
+      ? [{ kind: "image", file: diagramFile, path: `${story.digest_id}/${storyId}/${packageId}.png`, width: manifest.width, height: manifest.height, durationMs: null }]
+      : [
+          { kind: "video", file: video as File, path: `${story.digest_id}/${storyId}/${packageId}.mp4`, width: manifest.width, height: manifest.height, durationMs: manifest.durationMs },
+          { kind: "poster", file: poster as File, path: `${story.digest_id}/${storyId}/${packageId}-poster.jpg`, width: manifest.width, height: manifest.height, durationMs: null },
+        ];
     for (const asset of files) {
       const bytes = await asset.file.arrayBuffer();
       const { error: uploadError } = await supabase.storage.from("basil-social-assets").upload(asset.path, bytes, {
@@ -176,13 +194,13 @@ Deno.serve(async (request) => {
       title: typeof manifest.title === "string" ? manifest.title : undefined,
       summary: typeof manifest.summary === "string" ? manifest.summary : undefined,
       why_today: typeof manifest.whyToday === "string" ? manifest.whyToday : undefined,
-      asset_kind: "video",
+      asset_kind: isImagePackage ? "image" : "video",
       evidence: { ...previousEvidence, productionManifest: manifest },
       status: "ready",
       updated_at: new Date().toISOString(),
     }).eq("id", storyId);
     if (updateError) throw updateError;
-    for (const channel of allowedChannels) {
+    for (const channel of requiredChannels) {
       const copy = platformCopy[channel];
       const { error: copyError } = await supabase.from("basil_social_variants").update({
         headline: String(copy.headline).slice(0, 300),
@@ -194,10 +212,19 @@ Deno.serve(async (request) => {
       }).eq("story_id", storyId).eq("channel", channel).neq("status", "published");
       if (copyError) throw copyError;
     }
+    if (isImagePackage) {
+      const { error: removeVideoDraftError } = await supabase.from("basil_social_variants")
+        .delete()
+        .eq("story_id", storyId)
+        .eq("channel", "youtube")
+        .neq("status", "published");
+      if (removeVideoDraftError) throw removeVideoDraftError;
+    }
     return response(200, { ok: true, storyId, assets: files.map((asset) => asset.kind) });
   } catch (error) {
     if (uploaded.length) await supabase.storage.from("basil-social-assets").remove(uploaded);
     return response(409, { error: error instanceof Error ? error.message : "Basil social transfer failed." });
   }
 });
+
 

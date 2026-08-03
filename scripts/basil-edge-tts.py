@@ -1,3 +1,4 @@
+
 """Generate Basil narration audio and exact word timings with Edge TTS."""
 
 import argparse
@@ -28,13 +29,10 @@ async def synthesize(args: argparse.Namespace) -> None:
     audio_path.parent.mkdir(parents=True, exist_ok=True)
     timing_path.parent.mkdir(parents=True, exist_ok=True)
 
-    voice_profile = recipe.get("voiceProfile", {})
-    if not isinstance(voice_profile, dict):
-        raise ValueError("voiceProfile must be an object when supplied.")
-    voice = os.environ.get("BASIL_SOCIAL_TTS_VOICE", voice_profile.get("voice", "en-US-AvaNeural"))
-    rate = os.environ.get("BASIL_SOCIAL_TTS_RATE", voice_profile.get("rate", "+0%"))
-    pitch = os.environ.get("BASIL_SOCIAL_TTS_PITCH", voice_profile.get("pitch", "+0Hz"))
-    volume = os.environ.get("BASIL_SOCIAL_TTS_VOLUME", voice_profile.get("volume", "+0%"))
+    voice = os.environ.get("BASIL_SOCIAL_TTS_VOICE", "en-US-AvaNeural")
+    rate = os.environ.get("BASIL_SOCIAL_TTS_RATE", "+0%")
+    pitch = os.environ.get("BASIL_SOCIAL_TTS_PITCH", "+0Hz")
+    volume = os.environ.get("BASIL_SOCIAL_TTS_VOLUME", "+0%")
     communicator = edge_tts.Communicate(
         narration,
         voice,
@@ -69,3 +67,4 @@ async def synthesize(args: argparse.Namespace) -> None:
 
 if __name__ == "__main__":
     asyncio.run(synthesize(parse_args()))
+
