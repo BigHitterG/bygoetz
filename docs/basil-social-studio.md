@@ -1,6 +1,6 @@
 # Basil Social Studio
 
-Basil Social Studio is an approval-first, vertical-content-first daily editorial workflow. It combines product truth, creator feedback, platform observations, and Basil's field guide into three distinct daily videos. Each video receives Instagram, YouTube, and Reddit adaptations before a private review link is emailed to `info@bygoetz.com`.
+Basil Social Studio is an approval-first, vertical-content-first daily editorial workflow centered on Wren, Basil's transparent AI-directed garden steward. It combines real action provenance, product truth, creator feedback, platform observations, and Basil's field guide into three distinct daily videos. Each video receives Instagram, YouTube, and Reddit adaptations before a private review link is emailed to `info@bygoetz.com`.
 
 Opening the email link never publishes content. The final review token is carried in the URL fragment, removed from browser history immediately, and submitted only through same-origin POST requests. Supabase stores only a SHA-256 hash of the token.
 
@@ -8,8 +8,8 @@ Opening the email link never publishes content. The final review token is carrie
 
 1. Vercel calls `/api/cron/basil-social` at 10:55 UTC, which is 5:55 a.m. Chicago daylight time, to create the private daily digest without emailing. The local Codex production task begins at 6:45 a.m., renders and uploads the validated package, and then consumes a one-time `notify` capability to send the private review email.
 2. The route reads the last fourteen days of GitHub commits and calls `get_basil_social_stats()` for aggregate, non-identifying garden totals.
-3. `socialContent.ts` creates exactly three factual bulletin packets: Garden status, How Basil works, and Garden discovery. The 6:45 a.m. Codex task replaces all three with validated packages using `garden-status`, `watering-how-to`, and `builder-mode`. The publishing queue accepts exactly three adaptations from each video: YouTube Short, Instagram Reel, and a selective Reddit companion.
-4. If `OPENAI_API_KEY` is configured, the selected drafts are refined through the Responses API using strict structured output. Failure falls back to the curated drafts rather than failing the daily run.
+3. `socialContent.ts` creates three safe Wren starter packets. The 6:45 a.m. scheduled Codex planner replaces them with fresh, evidence-backed packages selected against Wren's recent missions, real action traces, feedback, topic history, hook history, layout history, and available results. The default lanes are Agent diary, Field footage, and Experiment/discovery; a materially changed Garden status or founder-context story may replace one.
+4. No OpenAI API key or paid text-generation API is required. Scheduled Codex is the active creative planner. A future live model adapter is present but disabled; enabling it later does not grant direct game, database, or publishing authority.
 5. The digest, story, three channel variants, evidence, vertical production brief, and private approval state are stored in Supabase. TikTok is not part of the current daily workflow.
 6. Resend sends one idempotent review email.
 7. The reviewer edits copy, approves each video-and-three-post package from the top of its card, requests revisions, and records manually published variants in `/community-garden/social-studio`.
@@ -36,6 +36,12 @@ Visual preference order:
 
 Generated explanatory imagery must never be described as gameplay. The daily starter assets are actual mobile gameplay captures supplied for Basil.
 
+### Cover and thumbnail policy
+
+Each approved video may also receive an original portrait marketing cover. The cover is intentionally separate from the validated gameplay poster: the poster proves what the video contains, while the cover makes the subject legible at small phone sizes. Covers use one clear focal point, roughly three to six large high-contrast words, and a center-safe composition. Mary and Basil's duck may appear when they fit the demonstrated subject. Generated art must match the approved video's promise, remain recognizably Basil, avoid third-party characters and logos, and never be labeled as gameplay.
+
+Instagram's desktop Reel composer accepts a cover image, so Task 2 uses the generated cover and falls back to the validated poster only when generation or upload is unavailable. YouTube Studio desktop does not accept a separate custom thumbnail for Shorts; it tells creators to change the thumbnail in the YouTube mobile app. Task 2 therefore publishes the validated vertical Short with a complete title and description, preserves the generated cover as an optional mobile handoff, and never reports a desktop thumbnail upload that did not occur.
+
 ## Required configuration
 
 - Apply `supabase/migrations/20260730184500_basil_social_studio.sql`.
@@ -46,24 +52,25 @@ Generated explanatory imagery must never be described as gameplay. The daily sta
 
 GitHub ingestion works against the public `BigHitterG/bygoetz` repository without authentication. Configure `GITHUB_TOKEN` for private access or higher API limits.
 
-OpenAI API refinement is optional. Without it, the server workflow remains usable with its curated editorial library. A Codex scheduled task is the no-separate-API path for genuinely new daily creative decisions: Codex reads the brief and data in the repository, writes `content/basil-social/today.json`, runs the local renderer, validates the files, uploads the package, and then invokes the existing email/review flow.
+Scheduled Codex is the current path for genuinely new daily creative decisions: it reads Wren's persistent records and the creative brief, writes `content/basil-social/today.json` plus the second and third recipes, runs the local renderer, validates the files, uploads the package, and invokes the existing email/review flow. See `docs/basil-wren-agent.md` for the autonomy and future-connector boundary.
 
 ## Phase 1 video package
 
-Phase 1 now has a deterministic vertical capture route at `/community-garden/social-capture`. It calls Basil's real `renderGarden` function directly on a 1080x1920 canvas. Browser chrome, scroll position, live-account state, and responsive page crops are not part of the source frame.
+Phase 1 now has a clean vertical capture route at `/community-garden/social-capture`. With `captureMode=live_gameplay`, it mounts Basil's production `GardenCanvas` on a true 1080x1920 surface, uses Wren's permanent sprite, follows Wren with the gameplay camera, and loads the real garden state. Browser chrome, navigation, map UI, compass, the north marker, scroll position, and responsive desktop cropping are excluded from the source frame. The default low-compute path records the game canvas directly with the browser's `MediaRecorder`, retains that raw recording for alternate hooks, and performs one final H.264/AAC encode; deterministic frame capture remains a fallback. The default `captions_only` treatment removes permanent brand, fact-card, and AI-label boxes from the video itself so the garden remains clean; Wren's identity and provenance stay explicit in narration when relevant, platform copy, Studio, and the manifest. A validated `playbackSpeed` from 1x through 4x supports real-time walks or timelapse diaries while narration and word captions remain on their normal timeline.
 
 Implementation status is intentionally strict:
 
-- Complete: clean 1080x1920 capture surface, real renderer footage, local H.264/AAC MP4, poster, calm neural narration, word-boundary captions, quiet original garden-loop music, private Supabase delivery, phone playback, per-bulletin approval, and revision feedback.
-- Executable today: `garden-status`, `watering-how-to`, and `builder-mode`. The renderer rejects any manifest that names a scene not actually implemented, so it cannot silently substitute unrelated footage.
-- Still to build: `my-garden-transformation`, `shared-garden-day-change`, `plant-first-flower`, `weed-cleanup`, `habitat-discovery`, `heritage-flower-reveal`, `garden-before-after`, and `two-design-choices`, plus multi-opening re-edits and automated gameplay checkpoint analysis for those scenes.
-- Assisted, not API-autonomous: browser posting to YouTube, Instagram, and Reddit after approval. OAuth platform adapters and automatic performance ingestion are not implemented.
+- Complete: clean 1080x1920 capture surface, production GardenCanvas footage, Wren sprite and disclosure, controlled walking/camera/checkpoint hooks, local H.264/AAC MP4, poster, calm neural narration, word-boundary captions, quiet original garden-loop music, private Supabase delivery, phone playback, per-package approval, revision feedback, and per-story Instagram cover generation with poster fallback.
+- Complete: private Wren profile, scheduled Tier-2 missions, allowlisted decisions, capped non-player Care budget, persistent My Garden, real action traces, before/after snapshots, draft diary continuity, public transparency page, and a disabled future external-planner adapter.
+- Executable today: live walks through the real Community Garden, Wren field footage, status/diary/experiment narratives, and the existing deterministic recipe library as a clearly labeled fallback. The renderer rejects unsupported manifests rather than silently substituting unrelated footage.
+- Next depth layer: replay individual completed My Garden actions through the production canvas with exact action timing, multi-opening re-edits from one trace, and automated visual checkpoint recognition for transformations.
+- Assisted, not API-autonomous: browser posting to YouTube, Instagram, and Reddit after approval. OAuth platform adapters are not implemented. The normalized metric persistence hook is implemented, while the scheduled task still reads signed-in platform statistics through the browser.
 
-The three daily bulletin lanes are:
+The three default daily lanes are:
 
-1. **Garden status** — a dated aggregate snapshot paired with a wide, dense shared-garden walk.
-2. **How Basil works** — one numbered input-to-result mechanic demonstration, beginning with the two-tap watering loop.
-3. **Garden discovery** — one real feature or progression system demonstrated in a visually distinct scene, beginning with My Garden Builder Mode.
+1. **Agent diary** — what Wren actually attempted, learned, finished, or could not finish, grounded in mission and action IDs.
+2. **Field footage** — satisfying real gameplay with a strong visual opening; narration is optional when music and captions carry it better.
+3. **Experiment or discovery** — a verified garden choice, mechanic, habitat, result, or current fact with a stated creative hypothesis.
 
 The daily creative contract lives in `content/basil-social/today.json`. It contains the objective, format, executable scene, hook, narration, audience, hypothesis, alternative openings, truth claims and their basis, platform list, tracked destination, target duration, and CTA. `content/basil-social/channel-memory.json` is the durable cross-run channel memory: it stores read-only platform baselines, the founder's observed Reddit language, experiment notes, and comparable result windows. Caption timings are not hand-authored there. Narration is generated first, exact word boundaries are returned with that audio, and only then are the frames captured. The capture recipe remains deterministic; Codex changes the creative brief rather than editing the renderer each morning.
 
@@ -86,7 +93,7 @@ The renderer produces these files in `artifacts/basil-social-studio/`:
 - a structured JSON manifest;
 - a decode-validation result before the package is accepted.
 
-The prototype narration provider uses the maintained Python `edge-tts` client with a calm Microsoft Edge neural voice and does not require an OpenAI API key. It is an online dependency, so a machine rendering the package needs network access. Basil never falls back to the old robotic local voice: a failed neural generation fails the package instead. The client requests `WordBoundary` metadata from the same stream that writes the MP3, so captions track the spoken audio. `BASIL_SOCIAL_TTS_VOICE`, `BASIL_SOCIAL_TTS_RATE`, `BASIL_SOCIAL_TTS_PITCH`, and `BASIL_SOCIAL_TTS_VOLUME` tune the prototype voice.
+The prototype narration provider uses the maintained Python `edge-tts` client with a calm Microsoft Edge neural voice and does not require an OpenAI API key. It is an online dependency, so a machine rendering the package needs network access. Basil never falls back to the old unintelligible local synthesizer: a failed neural generation fails the package instead. The client requests `WordBoundary` metadata from the same stream that writes the MP3, so captions track the spoken audio. Every recipe carries a versioned `voiceProfile`; `BASIL_SOCIAL_TTS_VOICE`, `BASIL_SOCIAL_TTS_RATE`, `BASIL_SOCIAL_TTS_PITCH`, and `BASIL_SOCIAL_TTS_VOLUME` remain local overrides. The active `wren-clear-v1` profile intentionally keeps the current clear voice. A later `wren-robot-v1` experiment should begin with another intelligible neural voice and add only a subtle character treatment, then be A/B reviewed in Creator Studio before becoming Wren's default.
 
 The renderer also creates a deterministic, original 112 BPM woodland-game loop locally and mixes it at a low level under the narration. Its motif and arrangement are original; it does not download, quote, or imitate a recognizable copyrighted melody. Set `BASIL_BACKGROUND_MUSIC` to a licensed local audio file when a different track is preferred; narration remains the dominant channel.
 
@@ -143,19 +150,24 @@ When a platform adapter is added, keep these invariants:
 - `basil_social_stories`: factual story, evidence, source, asset, and editorial rank.
 - `basil_social_variants`: editable channel copy and manual approval/publication status.
 - `basil_social_metrics`: normalized 1-hour, 24-hour, and 7-day performance snapshots for future learning.
+- `basil_agent_profiles`: Wren's private system identity, disclosure, appearance, autonomy tier, and active planner mode.
+- `basil_agent_missions` and `basil_agent_decisions`: scheduled goals and ordered, policy-reviewed proposed actions.
+- `basil_agent_action_traces`: replay-safe evidence for completed real actions and source provenance.
+- `basil_agent_garden_snapshots`: persistent before/after My Garden state.
+- `basil_agent_diary_entries`: evidence-backed continuity drafts linked to missions and source actions.
+- `basil_agent_care_ledger`: idempotent daily non-player maintenance grants with an eight-Care hard cap.
 
-All four tables have RLS enabled and are inaccessible to `public`, `anon`, and `authenticated`. Only server-side service-role code can access them.
+All social and Wren runtime tables have RLS enabled and are inaccessible to `public`, `anon`, and `authenticated`. Only server-side service-role code can access them. The public Wren page exposes a deliberately reduced view assembled by server code; it does not open those tables to the Data API.
 
 ## Adding a capture recipe
 
-The next capture layer should create deterministic scene recipes instead of recording production accounts. Each recipe should specify:
+New capture recipes should prefer the production `GardenCanvas` and a completed Wren action trace. Each recipe specifies:
 
-- route and seeded test account;
-- viewport `1080x1920`;
-- initial Mary position and camera zoom;
-- exact taps or movement path;
-- expected visual checkpoint;
-- safe fixture reset;
-- output still and video names.
+- `captureMode=live_gameplay`, garden scope, and source action IDs;
+- viewport `1080x1920`, Wren's initial position, camera zoom, and controlled walk path;
+- expected action and visual checkpoints;
+- whether the footage is live observation or a labeled deterministic replay;
+- a safe retake that never repeats a production mutation;
+- payoff hold, poster frame, caption-safe zones, and output names.
 
-The renderer should fail the story asset step when the expected checkpoint is absent. That prevents an outdated or broken feature from becoming a misleading social post.
+The renderer fails the asset when the manifest lacks Wren's disclosure, uses an unsupported scene, cannot prove an action claim, or misses its checkpoint. Generated scenes remain fallback illustrations and must never be called gameplay.

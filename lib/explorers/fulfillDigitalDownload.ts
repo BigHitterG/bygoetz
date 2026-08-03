@@ -21,6 +21,10 @@ type DownloadLink = {
   key: string;
 };
 
+type DigitalDownloadProduct = NonNullable<
+  ReturnType<typeof getDigitalDownloadProductByStripeProductId>
+>;
+
 function getRequiredEnv(name: string) {
   const value = process.env[name];
 
@@ -65,17 +69,20 @@ async function createSignedDownloadLinks(session: Stripe.Checkout.Session) {
     expand: ["data.price.product"],
   });
 
-  const digitalProducts = lineItems.data
-    .map((lineItem) => {
+  const lineItemRows = lineItems.data as Stripe.LineItem[];
+  const digitalProducts: DigitalDownloadProduct[] = lineItemRows
+    .map((lineItem: Stripe.LineItem): DigitalDownloadProduct | undefined => {
       const stripeProductId = getStripeProductId(lineItem);
       return stripeProductId
         ? getDigitalDownloadProductByStripeProductId(stripeProductId)
         : undefined;
     })
-    .filter((product): product is NonNullable<typeof product> => Boolean(product));
+    .filter((product: DigitalDownloadProduct | undefined): product is DigitalDownloadProduct => Boolean(product));
 
   const uniqueProducts = Array.from(
-    new Map(digitalProducts.map((product) => [product.key, product])).values(),
+    new Map<string, DigitalDownloadProduct>(
+      digitalProducts.map((product: DigitalDownloadProduct) => [product.key, product]),
+    ).values(),
   );
 
   const signedLinks = await Promise.all(

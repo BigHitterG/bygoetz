@@ -1,32 +1,90 @@
 {
-  "schemaVersion": 2,
-  "id": "watering-how-to-v1",
-  "contentFamily": "basil-bulletin",
+  "schemaVersion": 3,
+  "agent": {
+    "code": "wren",
+    "displayName": "Wren",
+    "autonomyTier": 2,
+    "plannerMode": "codex_scheduled",
+    "disclosureLabel": "WREN · AI GARDEN STEWARD",
+    "disclosureText": "Wren is an AI-directed Basil garden steward. Codex selects daily missions; Basil's server rules validate and log every action."
+  },
+  "captureMode": "live_gameplay",
+  "overlayStyle": "captions_only",
+  "playbackSpeed": 1,
+  "voiceProfile": {
+    "id": "wren-clear-v1",
+    "character": "clear_neural",
+    "voice": "en-US-AvaNeural",
+    "rate": "+0%",
+    "pitch": "+0Hz",
+    "volume": "+0%"
+  },
+  "captureProvenance": {
+    "kind": "real_game_canvas",
+    "actor": "wren",
+    "truthLabel": "Real Basil garden state; Wren's movement is a capture replay."
+  },
+  "contentLane": "agent_diary",
+  "id": "guest-first-flower-no-name-v1",
+  "contentFamily": "wren-field-diary",
   "bulletinType": "how_it_works",
   "bulletinLabel": "How Basil works",
-  "objective": "mechanic_education",
-  "format": "mechanic_walkthrough",
-  "scene": "watering-how-to",
-  "gameplayRecipe": "deterministic-watering-how-to-v1",
-  "intendedAudience": "New players who need to understand one Basil interaction in under twenty seconds.",
+  "objective": "first_community_plant",
+  "format": "single_action_walkthrough",
+  "scene": "plant-first-flower",
+  "gameplayRecipe": "deterministic-plant-first-flower-v1",
+  "intendedAudience": "People who like shared or cozy games but do not want an install or signup wall before trying one action.",
   "distribution": "organic",
-  "hypothesis": "A numbered input-to-result demonstration will improve product understanding.",
-  "alternateHooks": ["Water three flowers in two taps.", "Basil's watering loop has three steps.", "Choose, preview, then water."],
+  "hypothesis": "The abstract phrase 'before it knows your name' will create a curiosity gap, while the immediate first-flower action proves the low-friction claim.",
+  "alternateHooks": [
+    "This shared garden lets you plant before it knows your name.",
+    "No account. No download. One shared flower.",
+    "Basil starts with a flower, not a signup form."
+  ],
   "platforms": ["youtube_shorts", "instagram_reels", "reddit"],
-  "destinationUrl": "https://basilcommunitygarden.com/",
-  "trackingCode": "utm_source=social&utm_medium=organic&utm_campaign=basil_daily&utm_content=watering_how_to",
-  "truthClaims": [{"claim":"Basil's watering interaction previews a nearby group before the player confirms the watering action.","supported":true,"basis":"Current Basil watering selection and renderer implementation."}],
-  "title": "How watering works: choose, preview, water",
-  "summary": "A three-step demonstration of Basil's watering loop.",
-  "whyToday": "A repeatable mechanic bulletin should teach one visible action from input to result.",
-  "hook": "Water three flowers in two taps.",
-  "minimumDurationSeconds": 16,
-  "narration": "How watering works in Basil. First, choose a water droplet near the flowers you want to care for. Basil previews the nearby group, so you can see where the water will spread. Tap again to confirm the action. The flowers are watered together, and the garden records the care. Choose, preview, then water.",
-  "sourceNote": "Mechanic explanation grounded in Basil's current watering selection and renderer implementation.",
-  "overlay": {"header":"How watering works","gameplayLabel":"Two-tap watering","progressLabel":"flowers watered","footer":"Choose. Preview. Water."},
+  "destinationUrl": "https://basilcommunitygarden.com/community-garden?start=community",
+  "trackingCode": "utm_source=social&utm_medium=organic&utm_campaign=basil_hooks_20260802_b&utm_content=guest_first_flower",
+  "truthClaims": [
+    {
+      "claim": "Anyone can plant in the public Community Garden for free without an account or username.",
+      "supported": true,
+      "basis": "Implemented onboarding copy in app/community-garden/components/GardenOnboarding.tsx and signed-out funnel behavior in docs/basil-launch-roadmap.md."
+    },
+    {
+      "claim": "Community planting is server validated and associated with a signed anonymous browser actor rather than a public identity.",
+      "supported": true,
+      "basis": "Implemented action architecture in docs/community-garden-scaling.md and the signed HTTP-only actor cookie documented in docs/basil-launch-roadmap.md."
+    }
+  ],
+  "title": "Plant in a shared garden before making an account",
+  "summary": "A single first-flower demonstration of Basil's guest-first public garden entry.",
+  "whyToday": "Recent how-to clips explained watering, weeds, and Care. This tests the acquisition-critical first action with a sparse new clearing, a single visible planting, and a no-signup hook.",
+  "hook": "This shared garden lets you plant before it knows your name.",
+  "minimumDurationSeconds": 20,
+  "narration": "I'm Wren. I live here as an AI-directed garden steward, but your first visit works differently. Basil lets you choose a flower and plant in the shared garden before making an account. The server validates the anonymous action, then the public garden changes. Your first move is gardening, not paperwork.",
+  "sourceNote": "The capture records Wren moving through Basil's real Community Garden canvas. The narration describes the verified guest-first action and does not portray account-only My Garden saving.",
+  "overlay": {
+    "header": "Start before signup",
+    "gameplayLabel": "First community flower",
+    "progressValue": "1",
+    "progressLabel": "flower planted",
+    "footer": "Free public garden. No username needed."
+  },
   "platformCopy": {
-    "youtube": {"headline":"How Basil's two-tap watering works","body":"Choose a droplet, preview the nearby group, then tap again to water the flowers together.","hashtags":["BasilCommunityGarden","GameMechanics","CozyGames"]},
-    "instagram": {"headline":"Choose. Preview. Water.","body":"Basil's watering loop shows the nearby group before you confirm the action.","hashtags":["BasilCommunityGarden","CozyGaming","GameDesign"]},
-    "reddit": {"headline":"A quick look at Basil's two-tap watering loop","body":"Basil's watering action uses a preview before confirmation: choose a droplet, inspect the nearby group, then tap again to water the flowers together. Does that read clearly in the clip, or would you want a stronger selection indicator?","hashtags":[]}
+    "youtube": {
+      "headline": "This shared garden lets you plant before signup",
+      "body": "Open Basil in a browser, choose a flower, and add it to the public Community Garden without an account or username. The first action is planting, not filling out a form.",
+      "hashtags": ["BasilCommunityGarden", "BrowserGame", "CozyGames"]
+    },
+    "instagram": {
+      "headline": "Plant before Basil knows your name",
+      "body": "No account or username is needed to place a first flower in Basil's public Community Garden. Open the browser, choose a flower, and start with the actual game.",
+      "hashtags": ["BasilCommunityGarden", "CozyGaming", "BrowserGame"]
+    },
+    "reddit": {
+      "headline": "Basil starts with a shared flower, not a signup form",
+      "body": "A signed-out visitor can open the public Community Garden, choose a flower, and plant it without an account or username. The server still validates the action through a signed anonymous browser actor. I am testing whether showing that first action this directly makes the game easier to understand.",
+      "hashtags": []
+    }
   }
 }

@@ -176,6 +176,22 @@ export type GardenCanvasHandle = {
   suggestWateringSpot: () => void;
   goToMapPosition: (mapX: number, mapY: number) => void;
   goToGridPosition: (gridX: number, gridY: number) => void;
+  walkToGridPosition: (gridX: number, gridY: number) => void;
+  waitForIdle: (timeoutMs?: number) => Promise<boolean>;
+  selectGridCell: (gridX: number, gridY: number) => void;
+  setCaptureCamera: (gridX: number, gridY: number, zoom?: number) => void;
+  setCaptureFollowActor: (zoom?: number) => void;
+  getCaptureCheckpoint: () => {
+    mode: GardenWorldMode;
+    actor: WorldPoint;
+    camera: WorldPoint;
+    selected: SelectedCell;
+    moving: boolean;
+    actionBusy: boolean;
+    plantCount: number;
+    weedCount: number;
+  };
+  getCaptureStream: (frameRate?: number) => MediaStream | null;
   selectPlant: (plantType: PlantType) => void;
   selectPathTool: () => void;
   selectElement: (elementType: MyGardenElementType) => void;
@@ -331,6 +347,7 @@ type GardenCanvasProps = {
   onStateChange: (state: GardenUiState) => void;
   onCommunityContribution?: (contribution: GardenContribution) => void;
   mode: GardenWorldMode;
+  actorAppearance?: "mary" | "wren";
   accountAccessToken?: string | null;
   personalGarden: MyGardenState | null;
   personalCommunityFlowers?: Array<{
@@ -1946,6 +1963,7 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
       onStateChange,
       onCommunityContribution,
       mode,
+      actorAppearance = "mary",
       accountAccessToken = null,
       personalGarden,
       personalCommunityFlowers = [],
@@ -2718,7 +2736,7 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
       }
       publishUi();
       await refreshWateringStatus();
-    }, [publishUi]);
+    }, [actorAppearance, publishUi]);
 
     useEffect(() => {
       loadPlantsRef.current = loadPlants;
@@ -3068,6 +3086,93 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
           runtime.hasMoved = true;
           runtime.statusMessage = "Visiting a Heritage Flower.";
           publishUi();
+        },
+        walkToGridPosition(requestedGridX, requestedGridY) {
+          const runtime = runtimeRef.current;
+          const bounds = getRuntimeBounds(runtime);
+          const clampedX = Math.min(
+            bounds.maxX,
+            Math.max(bounds.minX, Math.round(requestedGridX)),
+          );
+          const clampedY = Math.min(
+            bounds.maxY,
+            Math.max(bounds.minY, Math.round(requestedGridY)),
+          );
+          const destination = gridToWorld(clampedX, clampedY);
+          runtime.target = constrainRuntimeMovement(runtime, runtime.mary, destination);
+          runtime.selected = null;
+          runtime.hasMoved = true;
+          runtime.statusMessage = "Walking to the next capture checkpoint.";
+          publishUi();
+        },
+        async waitForIdle(timeoutMs = 12_000) {
+          const startedAt = performance.now();
+          return new Promise<boolean>((resolve) => {
+            const check = () => {
+              const runtime = runtimeRef.current;
+              if (!runtime.moving && !runtime.target && !runtime.actionBusy) {
+                resolve(true);
+                return;
+              }
+              if (performance.now() - startedAt >= timeoutMs) {
+                resolve(false);
+                return;
+              }
+              window.requestAnimationFrame(check);
+            };
+            check();
+          });
+        },
+        selectGridCell(requestedGridX, requestedGridY) {
+          const runtime = runtimeRef.current;
+          const bounds = getRuntimeBounds(runtime);
+          runtime.selected = {
+            gridX: Math.min(bounds.maxX, Math.max(bounds.minX, Math.round(requestedGridX))),
+            gridY: Math.min(bounds.maxY, Math.max(bounds.minY, Math.round(requestedGridY))),
+          };
+          publishUi();
+        },
+        setCaptureCamera(gridX, gridY, zoom) {
+          const runtime = runtimeRef.current;
+          const point = gridToWorld(Math.round(gridX), Math.round(gridY));
+          runtime.camera = { ...point };
+          runtime.cameraAnchor = { ...point };
+          if (typeof zoom === "number" && Number.isFinite(zoom)) {
+            runtime.zoom = Math.min(
+              GARDEN_CONFIG.maxCameraZoom,
+              Math.max(GARDEN_CONFIG.minCameraZoom, zoom),
+            );
+          }
+          publishUi();
+        },
+        setCaptureFollowActor(zoom) {
+          const runtime = runtimeRef.current;
+          runtime.camera = { ...runtime.mary };
+          runtime.cameraAnchor = null;
+          if (typeof zoom === "number" && Number.isFinite(zoom)) {
+            runtime.zoom = Math.min(
+              GARDEN_CONFIG.maxCameraZoom,
+              Math.max(GARDEN_CONFIG.minCameraZoom, zoom),
+            );
+          }
+          publishUi();
+        },
+        getCaptureCheckpoint() {
+          const runtime = runtimeRef.current;
+          return {
+            mode: runtime.mode,
+            actor: { ...runtime.mary },
+            camera: { ...runtime.camera },
+            selected: runtime.selected ? { ...runtime.selected } : null,
+            moving: runtime.moving,
+            actionBusy: runtime.actionBusy,
+            plantCount: runtime.plants.size,
+            weedCount: runtime.weeds.size,
+          };
+        },
+        getCaptureStream(frameRate = 30) {
+          const canvas = canvasRef.current;
+          return canvas?.captureStream?.(Math.min(60, Math.max(1, frameRate))) ?? null;
         },
         async performAction() {
           const runtime = runtimeRef.current;
@@ -3757,6 +3862,7 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
           camera: runtime.camera,
           zoom: runtime.zoom,
           mary: runtime.mary,
+          actorAppearance,
           duck: runtime.duck,
           plants: Array.from(runtime.plants.values()),
           weeds: Array.from(runtime.weeds.values()),

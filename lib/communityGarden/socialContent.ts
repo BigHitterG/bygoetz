@@ -38,6 +38,17 @@ export type DraftStory = {
   whyToday: string;
   assetUrl: string;
   assetKind: "image" | "video";
+  agent?: {
+    code: "wren";
+    displayName: "Wren";
+    autonomyTier: 2;
+    plannerMode: "codex_scheduled";
+    disclosureLabel: string;
+    disclosureText: string;
+  };
+  captureMode?: "live_gameplay" | "deterministic";
+  contentLane?: "agent_diary" | "field_footage" | "experiment" | "garden_status" | "founder_context";
+  captureProvenance?: Record<string, unknown>;
   reelPlan: {
     hook: string;
     shots: string[];
@@ -46,7 +57,7 @@ export type DraftStory = {
     fallbackVisual: string;
   };
   creativeBrief: {
-    family: "basil-bulletin";
+    family: "basil-bulletin" | "wren-field-diary";
     bulletinType: "garden_status" | "how_it_works" | "garden_discovery";
     bulletinLabel: string;
     captureRecipe: string;
@@ -380,10 +391,12 @@ export function buildDailyStoryDrafts(
   const day = chicagoDayNumber(date);
   const measured = new Intl.DateTimeFormat("en-US", { timeZone: "America/Chicago", month: "short", day: "numeric" }).format(date);
   const commonChecks = [
-    "Actual Basil renderer footage only",
+    "Real Basil GardenCanvas footage or an explicitly labeled replay of Wren's real action trace",
     "1080x1920 H.264/AAC MP4 with poster",
     "Narration-derived word timing for every caption",
     "No unsupported game, garden, or botanical claim",
+    "Persistent WREN · AI GARDEN STEWARD disclosure remains readable",
+    "No browser chrome, minimap, compass, or north marker",
   ];
   const destinationUrl = "https://basilcommunitygarden.com/";
   const statusClaim = `Basil's shared garden currently contains ${stats.communityFlowers} flowers.`;
@@ -406,7 +419,7 @@ export function buildDailyStoryDrafts(
       },
       fact: statusClaim,
       creativeBrief: {
-        family: "basil-bulletin" as const,
+        family: "wren-field-diary" as const,
         bulletinType: "garden_status" as const,
         bulletinLabel: "Garden status",
         captureRecipe: "deterministic-garden-status-v1",
@@ -420,7 +433,7 @@ export function buildDailyStoryDrafts(
         destinationUrl,
         trackingCode: `utm_source=social&utm_medium=organic&utm_campaign=basil_daily&utm_content=garden_status_${day}`,
         truthClaims: [{ claim: statusClaim, supported: true, basis: `Supabase aggregate snapshot at ${stats.measuredAt}` }],
-        narrationDirection: "Deliver a dated garden bulletin in a calm, clear voice. Lead with the number and avoid sentiment, lore, or invented causality.",
+        narrationDirection: "Let Wren deliver a dated field note in a calm, clear voice. Name Wren as AI-directed when identity is relevant, and avoid invented feelings or causality.",
         requiredChecks: commonChecks,
       },
       variants: [
@@ -434,6 +447,21 @@ export function buildDailyStoryDrafts(
   ];
   return cards.map((card, index): DraftStory => ({
     ...card,
+    agent: {
+      code: "wren",
+      displayName: "Wren",
+      autonomyTier: 2,
+      plannerMode: "codex_scheduled",
+      disclosureLabel: "WREN · AI GARDEN STEWARD",
+      disclosureText: "Wren is an AI-directed Basil garden steward. Codex selects daily missions; Basil's server rules validate and log every action.",
+    },
+    captureMode: "live_gameplay",
+    contentLane: index === 0 ? "garden_status" : index === 1 ? "field_footage" : "experiment",
+    captureProvenance: {
+      kind: "real_game_canvas",
+      actor: "wren",
+      truthLabel: "Real Basil garden state; Wren's movement is a capture replay.",
+    },
     evidence: {
       fact: card.fact,
       aggregateStats: stats,
@@ -459,7 +487,7 @@ function buildMechanicBulletin(card: StoryCard, changes: RepositoryChange[], req
     reelPlan: card.reelPlan,
     fact: card.fact,
     creativeBrief: {
-      family: "basil-bulletin" as const,
+      family: "wren-field-diary" as const,
       bulletinType: "how_it_works" as const,
       bulletinLabel: "How Basil works",
       captureRecipe: "deterministic-watering-how-to-v1",
@@ -473,7 +501,7 @@ function buildMechanicBulletin(card: StoryCard, changes: RepositoryChange[], req
       destinationUrl: "https://basilcommunitygarden.com/",
       trackingCode: `utm_source=social&utm_medium=organic&utm_campaign=basil_daily&utm_content=watering_how_to_${day}`,
       truthClaims: [{ claim: card.fact, supported: true, basis: matchingChange?.url ?? "Basil watering implementation and curated product field guide" }],
-      narrationDirection: "Explain the mechanic as three short numbered steps. Use calm, factual language and name only actions visible in the capture.",
+      narrationDirection: "Let Wren explain the mechanic from a first-person field perspective. Keep it factual, concise, and limited to actions visible in the capture.",
       requiredChecks,
     },
     variants: card.variants,
@@ -501,7 +529,7 @@ function buildDiscoveryBulletin(changes: RepositoryChange[], requiredChecks: str
     },
     fact,
     creativeBrief: {
-      family: "basil-bulletin" as const,
+      family: "wren-field-diary" as const,
       bulletinType: "garden_discovery" as const,
       bulletinLabel: "Garden discovery",
       captureRecipe: "deterministic-builder-mode-v1",
@@ -515,7 +543,7 @@ function buildDiscoveryBulletin(changes: RepositoryChange[], requiredChecks: str
       destinationUrl: "https://basilcommunitygarden.com/",
       trackingCode: `utm_source=social&utm_medium=organic&utm_campaign=basil_daily&utm_content=builder_mode_${day}`,
       truthClaims: [{ claim: fact, supported: true, basis: matchingChange?.url ?? "Basil personal-garden renderer and curated product field guide" }],
-      narrationDirection: "Introduce one feature, show its input and visible result, and avoid promising functionality outside the demonstrated capture.",
+      narrationDirection: "Frame this as something Wren inspected or tried. Show the input and visible result, and avoid claiming functionality outside the demonstrated capture.",
       requiredChecks,
     },
     variants: [
