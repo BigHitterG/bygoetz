@@ -57,6 +57,7 @@ export type GardenRegionStage =
   | "new"
   | "resting"
   | "wild";
+export type GardenRegionPressure = "healthy" | "busy" | "resting";
 export type GardenGuidanceZone = "garden" | "heart" | "growth-ring";
 export type GardenRegionSummary = {
   regionKey: string;
@@ -64,10 +65,12 @@ export type GardenRegionSummary = {
   regionY: number;
   bounds: GardenRegionBounds;
   publicStage: GardenRegionStage;
+  pressureState: GardenRegionPressure;
   supportLevel: 0 | 1 | 2 | 3;
   isOpen: boolean;
   newlyOpened: boolean;
   plantCount: number;
+  plantCapacity: number;
   heritagePlantCount: number;
   weedCount: number;
   occupancyPercent: number;
@@ -328,6 +331,11 @@ export async function fetchGardenRegionManifest(): Promise<GardenRegionManifest>
     "heart",
     "growth-ring",
   ]);
+  const pressureStates = new Set<GardenRegionPressure>([
+    "healthy",
+    "busy",
+    "resting",
+  ]);
   const regions = Array.isArray(data.regions)
     ? data.regions.flatMap((value): GardenRegionSummary[] => {
         if (!value || typeof value !== "object") return [];
@@ -336,6 +344,14 @@ export async function fetchGardenRegionManifest(): Promise<GardenRegionManifest>
         const regionX = Number(region.regionX);
         const regionY = Number(region.regionY);
         const publicStage = String(region.publicStage) as GardenRegionStage;
+        const pressureStateValue = String(region.pressureState);
+        const pressureState = pressureStates.has(
+          pressureStateValue as GardenRegionPressure,
+        )
+          ? (pressureStateValue as GardenRegionPressure)
+          : publicStage === "resting"
+            ? "resting"
+            : "healthy";
         const guidanceZoneValue = region.guidanceZone;
         const guidanceZone =
           typeof guidanceZoneValue === "string" &&
@@ -343,6 +359,8 @@ export async function fetchGardenRegionManifest(): Promise<GardenRegionManifest>
             ? (guidanceZoneValue as GardenGuidanceZone)
             : null;
         const supportLevel = Number(region.supportLevel);
+        const plantCount = Math.max(0, Number(region.plantCount) || 0);
+        const plantCapacity = Math.max(1, Number(region.plantCapacity) || 180);
         if (
           typeof region.regionKey !== "string" ||
           !bounds ||
@@ -359,10 +377,12 @@ export async function fetchGardenRegionManifest(): Promise<GardenRegionManifest>
           regionY,
           bounds,
           publicStage,
+          pressureState,
           supportLevel: supportLevel as 0 | 1 | 2 | 3,
           isOpen: region.isOpen === true,
           newlyOpened: region.newlyOpened === true,
-          plantCount: Math.max(0, Number(region.plantCount) || 0),
+          plantCount,
+          plantCapacity,
           heritagePlantCount: Math.max(0, Number(region.heritagePlantCount) || 0),
           weedCount: Math.max(0, Number(region.weedCount) || 0),
           occupancyPercent: Math.min(100, Math.max(0, Number(region.occupancyPercent) || 0)),
