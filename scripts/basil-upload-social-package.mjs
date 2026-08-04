@@ -1,4 +1,3 @@
-
 import { createHash } from "node:crypto";
 import { createRequire } from "node:module";
 import { readFileSync, statSync } from "node:fs";
@@ -145,6 +144,9 @@ await supabase.from("basil_social_stories").update({
   summary: manifest.summary,
   why_today: manifest.whyToday,
   asset_kind: assetKind,
+  content_lane: manifest.contentLane ?? (assetKind === "image" ? "garden_status" : "field_footage"),
+  creative_hypothesis: manifest.hypothesis ?? null,
+  capture_provenance: manifest.provenance ?? {},
   evidence: { ...previousEvidence, productionManifest: manifest },
   status: "ready",
   updated_at: new Date().toISOString(),

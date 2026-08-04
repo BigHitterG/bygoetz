@@ -1,4 +1,3 @@
-
 """Generate Basil narration audio and exact word timings with Edge TTS."""
 
 import argparse
@@ -29,10 +28,11 @@ async def synthesize(args: argparse.Namespace) -> None:
     audio_path.parent.mkdir(parents=True, exist_ok=True)
     timing_path.parent.mkdir(parents=True, exist_ok=True)
 
-    voice = os.environ.get("BASIL_SOCIAL_TTS_VOICE", "en-US-AvaNeural")
-    rate = os.environ.get("BASIL_SOCIAL_TTS_RATE", "+0%")
-    pitch = os.environ.get("BASIL_SOCIAL_TTS_PITCH", "+0Hz")
-    volume = os.environ.get("BASIL_SOCIAL_TTS_VOLUME", "+0%")
+    voice_settings = recipe.get("voice") if isinstance(recipe.get("voice"), dict) else {}
+    voice = os.environ.get("BASIL_SOCIAL_TTS_VOICE", voice_settings.get("name", "en-US-JennyNeural"))
+    rate = os.environ.get("BASIL_SOCIAL_TTS_RATE", voice_settings.get("rate", "-4%"))
+    pitch = os.environ.get("BASIL_SOCIAL_TTS_PITCH", voice_settings.get("pitch", "-1Hz"))
+    volume = os.environ.get("BASIL_SOCIAL_TTS_VOLUME", voice_settings.get("volume", "+0%"))
     communicator = edge_tts.Communicate(
         narration,
         voice,

@@ -1,4 +1,3 @@
-
 {
   "name": "bygoetz",
   "version": "0.1.0",
@@ -48,6 +47,8 @@
     "test:living-garden": "node --experimental-strip-types tests/basil-living-garden.test.ts",
     "test:social-studio": "node --experimental-strip-types tests/basil-social-studio.test.ts",
     "social:render-sample": "node scripts/basil-render-social-video.mjs",
+    "social:plan-lifecycle": "node scripts/basil-plan-botanical-lifecycle.mjs",
+    "social:render-lifecycle": "node scripts/basil-render-botanical-lifecycle.mjs",
     "social:render-diagram": "node scripts/basil-render-social-diagram.mjs",
     "social:upload-package": "node scripts/basil-upload-social-package.mjs",
     "social:prepare-approved": "node scripts/basil-prepare-approved-posts.mjs",

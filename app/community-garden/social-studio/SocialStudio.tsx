@@ -38,6 +38,7 @@ type SocialAsset = {
   id: string;
   kind: "video" | "poster" | "image" | "audio";
   url: string;
+  downloadUrl: string;
   mimeType: string;
   byteSize: number;
   width: number | null;
@@ -63,6 +64,7 @@ type Story = {
   assetKind: "image" | "video";
   posterUrl: string | null;
   assets: SocialAsset[];
+  supplementalDownload: boolean;
   feedback: Revision[];
   evidence: Record<string, unknown>;
   variants: Variant[];
@@ -113,6 +115,7 @@ const DEVELOPMENT_PREVIEW: Digest = {
     assetKind: "image",
     posterUrl: null,
     assets: [],
+    supplementalDownload: false,
     feedback: [],
     evidence: {
       reelPlan: {
@@ -403,8 +406,20 @@ function StoryApprovalControl({
     : story.assets.some((asset) => asset.kind === "image");
   const productionBrief = parseProductionBrief(story.evidence);
 
+  if (story.supplementalDownload) {
+    return (
+      <div className={styles.storyApproval}>
+        <div>
+          <span>{productionBrief?.bulletinLabel ?? "Basil replay"}</span>
+          <strong>Download-only replay</strong>
+          <small>This previously reviewed video is included for saving to your phone; it is not a new publishing package.</small>
+        </div>
+      </div>
+    );
+  }
+
   async function approve() {
-    if (!window.confirm(`Approve “${story.title}” and its saved ${channelNames} posts for the posting task?`)) return;
+    if (!window.confirm(`Approve â€œ${story.title}â€ and its saved ${channelNames} posts for the posting task?`)) return;
     setBusy(true);
     setNotice("");
     try {
@@ -602,17 +617,17 @@ export function SocialStudio() {
                           // The original static file avoids an image-optimizer rendering failure seen in the private Studio.
                           <img src={story.assetUrl} alt={`Game-accurate Basil diagram for ${story.title}`} width={1080} height={1350} loading="eager" />
                         )}
-                        <span>{story.assetKind === "video" ? "Ready video" : "Ready diagram · actual renderer"}</span>
+                        <span>{story.assetKind === "video" ? "Ready video" : "Ready diagram Â· actual renderer"}</span>
                       </div>
                       {story.assets.find((asset) => asset.kind === story.assetKind) ? (
                         <div className={styles.assetMetadata}>
-                          <span>{story.assets.find((asset) => asset.kind === story.assetKind)?.width}×{story.assets.find((asset) => asset.kind === story.assetKind)?.height}</span>
+                          <span>{story.assets.find((asset) => asset.kind === story.assetKind)?.width}Ã—{story.assets.find((asset) => asset.kind === story.assetKind)?.height}</span>
                           {story.assetKind === "video" ? <span>{formatDuration(story.assets.find((asset) => asset.kind === "video")?.durationMs ?? null)}</span> : <span>4:5 social image</span>}
                           <span>Validated</span>
                         </div>
                       ) : null}
                       <div className={styles.assetActions}>
-                        <a className={styles.primaryMediaAction} href={story.assetUrl} download>Download {story.assetKind}</a>
+                        <a className={styles.primaryMediaAction} href={story.assets.find((asset) => asset.kind === story.assetKind)?.downloadUrl ?? story.assetUrl}>Download {story.assetKind} to your device</a>
                         <a href={story.assetUrl} target="_blank" rel="noreferrer">Open full size</a>
                       </div>
                     </div>
@@ -633,14 +648,14 @@ export function SocialStudio() {
                     </div>
                   ) : null}
 
-                  <RevisionControl
+                  {!story.supplementalDownload ? <RevisionControl
                     story={story}
                     disabled={digest.expired}
                     request={request}
                     onRefresh={load}
-                  />
+                  /> : null}
 
-                  <div className={styles.variants}>
+                  {!story.supplementalDownload ? <div className={styles.variants}>
                     {CHANNEL_ORDER.map((channel) => story.variants.find((variant) => variant.channel === channel)).filter((variant): variant is Variant => Boolean(variant)).map((variant) => (
                       <VariantEditor
                         key={variant.id}
@@ -650,7 +665,7 @@ export function SocialStudio() {
                         onRefresh={load}
                       />
                     ))}
-                  </div>
+                  </div> : null}
                 </section>
               );
             })}
@@ -661,3 +676,4 @@ export function SocialStudio() {
     </main>
   );
 }
+

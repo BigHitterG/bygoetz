@@ -1,4 +1,3 @@
-
 import { spawn } from "node:child_process";
 import { createRequire } from "node:module";
 import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from "node:fs";
@@ -25,9 +24,12 @@ const narrationWordTimingFile = resolve(outputDirectory, `${outputStem}-word-tim
 const captionTimingFile = resolve(outputDirectory, `${outputStem}-caption-timing.json`);
 const musicFile = resolve(outputDirectory, `${outputStem}-original-garden-loop.wav`);
 const outputManifest = resolve(outputDirectory, `${outputStem}.manifest.json`);
-const captureFps = 12;
-const narration = recipe.narration;
-const implementedScenes = new Set(["garden-status", "watering-how-to", "builder-mode"]);
+// Pixel-art source motion remains clear at eight deterministic source frames
+// per second; FFmpeg delivers a stable 30 fps output without spending daily
+// compute on visually redundant browser screenshots.
+const captureFps = 8;
+const narration = recipe.narration ?? null;
+const implementedScenes = new Set(["garden-status", "watering-how-to", "builder-mode", "daily-task-three-varieties", "rose-life-cycle"]);
 
 function run(command, args, options = {}) {
   return new Promise((resolvePromise, reject) => {
@@ -117,7 +119,7 @@ function groupWordTimings(wordTimings) {
 }
 
 async function createNarration() {
-  const voice = process.env.BASIL_SOCIAL_TTS_VOICE ?? "en-US-AvaNeural";
+  const voice = process.env.BASIL_SOCIAL_TTS_VOICE ?? recipe.voice?.name ?? "en-US-JennyNeural";
   const python = resolvePython();
   try {
     await run(python, [
@@ -201,6 +203,15 @@ async function main() {
   if (!Array.isArray(recipe.truthClaims) || recipe.truthClaims.some((claim) => claim?.supported !== true || !claim?.basis)) {
     throw new Error("Every production truth claim must be explicitly supported before rendering.");
   }
+  if (recipe.scene === "rose-life-cycle") {
+    const sourceImage = String(recipe.sourceImage ?? "").replace(/^\/+/, "");
+    if (!sourceImage || !existsSync(resolve(root, "public", sourceImage))) {
+      throw new Error("The rose lifecycle scene requires its documented project-local source image.");
+    }
+    if (recipe.provenance?.generatedWithAI !== true || recipe.provenance?.sourceType !== "ai_generated_botanical_illustration") {
+      throw new Error("AI-assisted botanical footage must declare its generation provenance explicitly.");
+    }
+  }
   mkdirSync(outputDirectory, { recursive: true });
   const encodeOnly = process.argv.includes("--encode-only");
   if (!encodeOnly) {
@@ -208,8 +219,20 @@ async function main() {
     mkdirSync(frameDirectory, { recursive: true });
   }
 
-  let narrationPackage = loadSuppliedNarration();
-  if (!narrationPackage && encodeOnly) {
+  const cleanLifecycle = recipe.scene === "rose-life-cycle" && recipe.presentation === "stage_word_only";
+  if (cleanLifecycle && (recipe.narration || recipe.overlay || (Array.isArray(recipe.captionCues) && recipe.captionCues.length))) {
+    throw new Error("The lifecycle format forbids narration, captions, and bulletin overlays.");
+  }
+  if (cleanLifecycle && (!Array.isArray(recipe.stageWords) || recipe.stageWords.length !== 4 || recipe.stageWords.some((word) => !/^[A-Za-z]+$/.test(word)))) {
+    throw new Error("The lifecycle format requires exactly four single-word stage labels.");
+  }
+  let narrationPackage = cleanLifecycle ? {
+    audioInput: null,
+    captionCues: [],
+    voice: null,
+    provider: "none",
+  } : loadSuppliedNarration();
+  if (!cleanLifecycle && !narrationPackage && encodeOnly) {
     if (!existsSync(narrationFile) || !existsSync(captionTimingFile)) {
       throw new Error("--encode-only requires existing neural narration, caption timing, and capture frames.");
     }
@@ -219,17 +242,19 @@ async function main() {
       voice: "existing-neural-narration",
       provider: "existing",
     };
-  } else if (!narrationPackage) {
+  } else if (!cleanLifecycle && !narrationPackage) {
     narrationPackage = await createNarration();
   }
 
-  const durationSeconds = Math.max(
-    recipe.minimumDurationSeconds ?? 0,
-    Number((narrationPackage.captionCues.at(-1).end + 0.85).toFixed(3)),
-  );
+  const durationSeconds = cleanLifecycle
+    ? Number(((recipe.stageDurationSeconds ?? 5.5) * 4).toFixed(3))
+    : Math.max(
+        recipe.minimumDurationSeconds ?? 0,
+        Number((narrationPackage.captionCues.at(-1).end + 0.85).toFixed(3)),
+      );
   const musicPackage = await createBackgroundMusic(durationSeconds);
 
-  if (!encodeOnly) {
+  if (!encodeOnly && !cleanLifecycle) {
     const captureUrl = new URL(parseOption("--url", "http://localhost:3010/community-garden/social-capture"));
     captureUrl.searchParams.set("scene", recipe.scene);
     const baseUrl = captureUrl.toString();
@@ -250,32 +275,45 @@ async function main() {
       await browser?.close();
       if (server && server.exitCode === null) server.kill();
     }
-  } else if (!existsSync(join(frameDirectory, "frame-0000.png"))) {
+  } else if (!cleanLifecycle && !existsSync(join(frameDirectory, "frame-0000.png"))) {
     throw new Error("--encode-only requires existing capture frames.");
   }
 
   const ffmpeg = require("@ffmpeg-installer/ffmpeg").path;
   if (!ffmpeg || !existsSync(ffmpeg)) throw new Error("The local FFmpeg binary is not installed correctly.");
   const fadeStart = Math.max(0, durationSeconds - 0.8).toFixed(3);
+  const encodingArguments = cleanLifecycle
+    ? (() => {
+        const sourceImage = resolve(root, "public", String(recipe.sourceImage).replace(/^\/+/, ""));
+        const stageDuration = Number(recipe.stageDurationSeconds ?? 5.5);
+        const [seed, seedling, bud, bloom] = recipe.stageWords;
+        const fontFile = "C\\:/Windows/Fonts/segoesc.ttf";
+        const wordFade = `alpha='if(lt(t,0.7),t/0.7,if(lt(t,${stageDuration - 0.7}),1,max(0,(${stageDuration}-t)/0.7)))'`;
+        const stageText = (word) => `drawtext=fontfile='${fontFile}':text='${word}':x=(w-text_w)/2:y=(h-text_h)/2:fontsize=124:fontcolor=white@0.94:${wordFade}`;
+        const visualFilters = [
+          "[0:v]split=4[q0][q1][q2][q3]",
+          `[q0]crop=iw/2:ih/2:0:0,scale=1920:1920,crop=1080:1920:(iw-1080)/2:0,trim=duration=${stageDuration},setpts=PTS-STARTPTS,${stageText(seed)}[s0]`,
+          `[q1]crop=iw/2:ih/2:iw/2:0,scale=1920:1920,crop=1080:1920:(iw-1080)/2:0,trim=duration=${stageDuration},setpts=PTS-STARTPTS,${stageText(seedling)}[s1]`,
+          `[q2]crop=iw/2:ih/2:0:ih/2,scale=1920:1920,crop=1080:1920:(iw-1080)/2:0,trim=duration=${stageDuration},setpts=PTS-STARTPTS,${stageText(bud)}[s2]`,
+          `[q3]crop=iw/2:ih/2:iw/2:ih/2,scale=1920:1920,crop=1080:1920:(iw-1080)/2:0,trim=duration=${stageDuration},setpts=PTS-STARTPTS,${stageText(bloom)}[s3]`,
+          "[s0][s1][s2][s3]concat=n=4:v=1:a=0,fps=30,format=yuv420p[v]",
+          `[1:a]aresample=48000,volume=0.18,highpass=f=90,lowpass=f=7200,atrim=duration=${durationSeconds},afade=t=out:st=${fadeStart}:d=0.8[a]`,
+        ].join(";");
+        return ["-y", "-loop", "1", "-i", sourceImage, "-i", musicPackage.audioInput, "-filter_complex", visualFilters];
+      })()
+    : [
+        "-y",
+        "-framerate", String(captureFps),
+        "-i", join(frameDirectory, "frame-%04d.png"),
+        "-i", narrationPackage.audioInput,
+        "-i", musicPackage.audioInput,
+        "-filter_complex", `[0:v]fps=30,format=yuv420p[v];[1:a]aresample=48000,apad,volume=1.8[narration];[2:a]aresample=48000,volume=0.14,highpass=f=90,lowpass=f=7200[music];[narration][music]amix=inputs=2:duration=shortest:dropout_transition=0,afade=t=out:st=${fadeStart}:d=0.8[a]`,
+      ];
   await run(ffmpeg, [
-    "-y",
-    "-framerate", String(captureFps),
-    "-i", join(frameDirectory, "frame-%04d.png"),
-    "-i", narrationPackage.audioInput,
-    "-i", musicPackage.audioInput,
-    "-filter_complex", `[0:v]fps=30,format=yuv420p[v];[1:a]aresample=48000,apad,volume=1.8[narration];[2:a]aresample=48000,volume=0.14,highpass=f=90,lowpass=f=7200[music];[narration][music]amix=inputs=2:duration=shortest:dropout_transition=0,afade=t=out:st=${fadeStart}:d=0.8[a]`,
-    "-map", "[v]",
-    "-map", "[a]",
-    "-t", String(durationSeconds),
-    "-c:v", "libx264",
-    "-preset", "medium",
-    "-crf", "20",
-    "-profile:v", "high",
-    "-level", "4.1",
-    "-c:a", "aac",
-    "-b:a", "160k",
-    "-movflags", "+faststart",
-    outputVideo,
+    ...encodingArguments,
+    "-map", "[v]", "-map", "[a]", "-t", String(durationSeconds),
+    "-c:v", "libx264", "-preset", "medium", "-crf", "20", "-profile:v", "high", "-level", "4.1",
+    "-c:a", "aac", "-b:a", "160k", "-movflags", "+faststart", outputVideo,
   ]);
   const posterSecond = Math.min(10, Math.max(0.5, durationSeconds / 2)).toFixed(3);
   await run(ffmpeg, ["-y", "-ss", posterSecond, "-i", outputVideo, "-frames:v", "1", "-q:v", "2", outputPoster]);
@@ -283,9 +321,10 @@ async function main() {
   if (statSync(outputVideo).size < 100_000 || statSync(outputPoster).size < 10_000) {
     throw new Error("Rendered social assets failed the minimum size validation.");
   }
-  if (!process.argv.includes("--keep-frames")) rmSync(frameDirectory, { recursive: true, force: true });
+  if (!cleanLifecycle && !process.argv.includes("--keep-frames")) rmSync(frameDirectory, { recursive: true, force: true });
   const manifest = {
     schemaVersion: 2,
+    assetKind: "video",
     recipe: recipe.id,
     contentFamily: recipe.contentFamily,
     bulletinType: recipe.bulletinType,
@@ -301,6 +340,9 @@ async function main() {
     intendedAudience: recipe.intendedAudience,
     distribution: recipe.distribution,
     hypothesis: recipe.hypothesis,
+    viewerJob: recipe.viewerJob,
+    changedTestVariable: recipe.changedTestVariable,
+    contentLane: recipe.contentLane,
     alternateHooks: recipe.alternateHooks,
     platforms: recipe.platforms,
     destinationUrl: recipe.destinationUrl,
@@ -308,14 +350,16 @@ async function main() {
     truthClaims: recipe.truthClaims,
     platformCopy: recipe.platformCopy,
     source: recipe.sourceNote,
+    sourceImage: recipe.sourceImage ?? null,
+    provenance: recipe.provenance ?? { sourceType: "basil_renderer", generatedWithAI: false },
     narration,
     voiceProvider: narrationPackage.provider,
     voice: narrationPackage.voice,
-    captions: captionTimingFile,
-    captionTimingSource: "narration-word-boundaries",
+    captions: cleanLifecycle ? null : captionTimingFile,
+    captionTimingSource: cleanLifecycle ? "none" : "narration-word-boundaries",
     video: outputVideo,
     poster: outputPoster,
-    narrationFile: narrationPackage.audioInput,
+    narrationFile: cleanLifecycle ? null : narrationPackage.audioInput,
     backgroundMusicFile: musicPackage.audioInput,
     backgroundMusicProvider: musicPackage.provider,
     backgroundMusicMix: "quiet-under-narration",

@@ -1,7 +1,6 @@
-
 # Basil Social Studio
 
-Basil Social Studio is an approval-first daily editorial workflow. It combines product truth, creator feedback, platform observations, and Basil's field guide into two distinct daily videos plus one game-accurate diagram. Videos receive Instagram, YouTube, and Reddit adaptations; the static diagram receives Instagram and Reddit adaptations before a private review link is emailed to `info@bygoetz.com`.
+Basil Social Studio is an approval-first daily editorial workflow. It combines product truth, creator feedback, platform observations, and Basil's field guide into two distinct daily videos plus one game-accurate diagram. The working repertoire includes narrated Basil mechanics/gameplay explainers, elegant silent botanical lifecycle videos, and live production-garden diagrams. Videos receive Instagram, YouTube, and Reddit adaptations; the static diagram receives Instagram and Reddit adaptations before a private review link is emailed to `info@bygoetz.com`.
 
 Opening the email link never publishes content. The final review token is carried in the URL fragment, removed from browser history immediately, and submitted only through same-origin POST requests. Supabase stores only a SHA-256 hash of the token.
 
@@ -18,6 +17,7 @@ Opening the email link never publishes content. The final review token is carrie
 Each story separates the two deliverables clearly:
 
 - **Ready image/video:** the actual file available through **Download image** or **Download video**.
+- **Download versus preview:** preview links stream private media in the browser. Download links use a separate, short-lived signed attachment URL with a clean filename so mobile and desktop browsers can save every current or future Studio asset to the device.
 - **Video manifest:** the objective, visible scene, audience, hypothesis, truth checks, and alternate hooks for the finished video shown directly beside it.
 
 **Copy text** puts the headline, caption, and hashtags on the clipboard. It does not copy the media file; the adjacent download action supplies that upload-ready file.
@@ -56,7 +56,7 @@ Phase 1 now has a deterministic vertical capture route at `/community-garden/soc
 Implementation status is intentionally strict:
 
 - Complete: clean 1080x1920 capture surface, real renderer footage, local H.264/AAC MP4, poster, calm neural narration, word-boundary captions, quiet original garden-loop music, private Supabase delivery, phone playback, per-bulletin approval, and revision feedback.
-- Executable today: video scenes `builder-mode`, `watering-how-to`, and `garden-status`, plus the 4:5 static `community-grid-diagram`. The static route requires the current production garden snapshot; it does not fall back to a seeded promotional garden. Each renderer rejects a manifest that names an unimplemented scene, so it cannot silently substitute unrelated footage or invented game geometry.
+- Executable today: Basil-renderer video scenes `builder-mode`, `watering-how-to`, and `garden-status`; the generic `botanical-lifecycle` companion pipeline; and the 4:5 static `community-grid-diagram`. Builder paths obey the implemented orthogonal adjacency rule. The lifecycle pipeline loads a species profile from `content/basil-social/botanical-species/`, creates eleven locked-camera AI keyframes without burned-in text, joins adjacent stages with ten 1â€“2 second aligned transitions, and adds only a high-end centered script stage name and approximate age range during local rendering. It is silent and has no narration, music, bulletin title, Basil label, footer, compass, box, or counter. Pollination must precede petal fall, fruit/seed development must follow it, and eventual plant death must remain distinct from seasonal fruiting for perennial species. The static route requires the current production garden snapshot and never falls back to a seeded promotional garden.
 - Still to build: `my-garden-transformation`, `shared-garden-day-change`, `plant-first-flower`, `weed-cleanup`, `habitat-discovery`, `heritage-flower-reveal`, `garden-before-after`, and `two-design-choices`, plus multi-opening re-edits and automated gameplay checkpoint analysis for those scenes.
 - Assisted, not API-autonomous: browser posting to YouTube, Instagram, and Reddit after approval. OAuth platform adapters and automatic performance ingestion are not implemented.
 
@@ -131,6 +131,13 @@ The protected route still supports `prepare`, `notify`, and normal scheduled mod
 The current release intentionally stops at manual approval and copy-ready content. Connector environment variables are reserved in `.env.example`, and the Studio reports whether each platform is manual or ready for an OAuth hookup.
 
 API credentials are not required for assisted posting. When the creator is signed into YouTube, Instagram, and Reddit in Chrome, the 8:00 a.m. Codex task can use the approved queue and downloaded asset through each platform's normal interface. This is less robust than official APIs: login challenges, UI changes, upload processing, or account selectors can stop a run. APIs remain the better option for fully unattended schedules, metric collection, and high-volume publishing.
+
+### Platform-specific audio and covers
+
+- Instagram Reels use a 9:16 video crop and a dedicated cover at Instagram's recommended 1:1.55 ratio (420x654 or a higher-resolution equivalent). The full approved caption and hashtags must be present in the final caption field.
+- Instagram-library audio is selected only inside Instagram. The desktop composer does not always expose its audio picker; in that case the Instagram variant remains `manual_ready` for mobile completion instead of publishing silently or with substitute audio.
+- YouTube Shorts may use a separately rendered, approved original music mix. The mix must be created for Basil or otherwise licensed; it must not imitate or extract the requested Instagram track.
+- Reddit receives the approved core video unless the package explicitly defines another approved adaptation.
 
 When a platform adapter is added, keep these invariants:
 
