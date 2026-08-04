@@ -26,6 +26,8 @@ type GalleryPreviewProps = {
   onMove: (index: number, direction: -1 | 1) => void;
   availableProducts: ExplorerProduct[];
   onSelectArtwork: (index: number, product: ExplorerProduct) => void;
+  onLayoutChange?: (layout: LayoutId) => void;
+  onRoomChange?: (room: RoomId) => void;
   initialLayoutId?: string;
   initialRoomId?: string;
   selectionControls: ReactNode;
@@ -105,6 +107,8 @@ export function GalleryPreview({
   onMove,
   availableProducts,
   onSelectArtwork,
+  onLayoutChange,
+  onRoomChange,
   initialLayoutId,
   initialRoomId,
   selectionControls,
@@ -183,6 +187,7 @@ export function GalleryPreview({
       overflow: document.documentElement.style.overflow,
       overscrollBehavior: document.documentElement.style.overscrollBehavior,
     };
+    const pickerTriggers = pickerTriggerRefs.current;
 
     document.body.style.overflow = "hidden";
     document.body.style.position = "fixed";
@@ -228,7 +233,7 @@ export function GalleryPreview({
         previousRootStyles.overscrollBehavior;
       window.scrollTo(0, scrollY);
       window.removeEventListener("keydown", handleKeyDown);
-      pickerTriggerRefs.current[pickerIndex]?.focus();
+      pickerTriggers[pickerIndex]?.focus();
     };
   }, [pickerIndex]);
 
@@ -541,7 +546,11 @@ export function GalleryPreview({
                 type="button"
                 key={item.id}
                 aria-pressed={item.id === roomId}
-                onClick={() => setRoomId(item.id)}
+                onClick={() => {
+                  if (item.id === roomId) return;
+                  setRoomId(item.id);
+                  onRoomChange?.(item.id);
+                }}
               >
                 {item.label}
               </button>
@@ -568,7 +577,11 @@ export function GalleryPreview({
                     type="button"
                     key={layout.id}
                     aria-pressed={layout.id === layoutId}
-                    onClick={() => setLayoutId(layout.id)}
+                    onClick={() => {
+                      if (layout.id === layoutId) return;
+                      setLayoutId(layout.id);
+                      onLayoutChange?.(layout.id);
+                    }}
                   >
                     <span
                       className={styles.layoutIcon + " " + iconClass}

@@ -38,6 +38,7 @@ type PageProps = {
   searchParams: Promise<{
     artwork?: string;
     artworks?: string;
+    checkout?: string;
     frame?: string;
     landing?: string;
     layout?: string;
@@ -65,6 +66,7 @@ export default async function Page({ searchParams }: PageProps) {
       checkoutConfigured={isExplorerSetCheckoutConfigured()}
       initialArtworkSlug={initialArtworkSlug}
       initialArtworkSlugs={initialArtworkSlugs}
+      initialCheckoutStatus={params.checkout}
       initialFrameColor={params.frame}
       initialLandingMode={params.landing}
       initialLayoutId={params.layout}

@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
-import { MetaPurchaseTracker } from "@/components/analytics/MetaPurchaseTracker";
+import { ExplorersMetaPurchaseTracker } from "@/components/analytics/ExplorersMetaPurchaseTracker";
+import { getExplorersPurchaseMetaEventId } from "@/lib/analytics/explorersMetaServer";
 import { explorerProducts } from "@/lib/explorers/products";
+import { EXPLORERS_PHYSICAL_ORDER_TYPE } from "@/lib/explorers/orderTypes";
 import { getStripe } from "@/lib/stripe";
 import styles from "@/components/explorers/build-a-set/BuildASet.module.css";
 import { withSiteBasePath } from "@/lib/sitePath";
@@ -25,7 +27,7 @@ export default async function Page({ searchParams }: SuccessPageProps) {
       const session = await getStripe().checkout.sessions.retrieve(sessionId);
       if (
         session.payment_status === "paid" &&
-        session.metadata?.order_type === "explorers_print_set"
+        session.metadata?.order_type === EXPLORERS_PHYSICAL_ORDER_TYPE
       ) {
         purchase = {
           value: (session.amount_total ?? 0) / 100,
@@ -42,7 +44,11 @@ export default async function Page({ searchParams }: SuccessPageProps) {
   return (
     <main className={styles.successPage}>
       {purchase && sessionId ? (
-        <MetaPurchaseTracker sessionId={sessionId} {...purchase} />
+        <ExplorersMetaPurchaseTracker
+          eventId={getExplorersPurchaseMetaEventId(sessionId)}
+          sessionId={sessionId}
+          {...purchase}
+        />
       ) : null}
       <section className={styles.successPanel}>
         <p className={styles.eyebrow}>{purchase ? "Order confirmed" : "Order status"}</p>

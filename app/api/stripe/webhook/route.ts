@@ -9,6 +9,8 @@ import {
   isPendingGardenCheckout,
 } from "@/lib/communityGarden/pendingPurchase";
 import { fulfillDigitalDownloadCheckout } from "@/lib/explorers/fulfillDigitalDownload";
+import { EXPLORERS_PHYSICAL_ORDER_TYPE } from "@/lib/explorers/orderTypes";
+import { processExplorerPhysicalOrder } from "@/lib/explorers/physicalOrders";
 import { getStripe } from "@/lib/stripe";
 
 export const runtime = "nodejs";
@@ -54,6 +56,8 @@ export async function POST(request: Request) {
           ? isPendingGardenCheckout(session)
             ? await fulfillPendingGardenCheckout(session)
             : await fulfillGardenStewardCheckout(session)
+          : session.metadata?.order_type === EXPLORERS_PHYSICAL_ORDER_TYPE
+            ? await processExplorerPhysicalOrder(session)
           : await fulfillDigitalDownloadCheckout(session);
       return NextResponse.json({ received: true, fulfillment: result });
     }

@@ -1,4 +1,8 @@
-import { NextResponse } from "next/server";
+import { after, NextRequest, NextResponse } from "next/server";
+import {
+  getExplorersCheckoutMetaEventId,
+  sendExplorersInitiateCheckoutConversion,
+} from "@/lib/analytics/explorersMetaServer";
 import { explorerProducts } from "@/lib/explorers/products";
 import {
   explorerOrderQuantities,
@@ -8,6 +12,7 @@ import {
   type ExplorerOrderQuantity,
 } from "@/lib/explorers/buildASet";
 import { getExplorerSetStripeConfiguration } from "@/lib/explorers/buildASetStripe";
+import { EXPLORERS_PHYSICAL_ORDER_TYPE } from "@/lib/explorers/orderTypes";
 import { getStripe } from "@/lib/stripe";
 
 export const runtime = "nodejs";
@@ -22,7 +27,29 @@ type CheckoutRequest = {
 
 const frameColors: ExplorerFrameColor[] = ["natural", "black", "white"];
 
-export async function POST(request: Request) {
+function getClientIpAddress(request: NextRequest) {
+  return (
+    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+    request.headers.get("x-real-ip") ??
+    null
+  );
+}
+
+function getSourceUrl(request: NextRequest, origin: string) {
+  const fallback = `${origin}/explorers/build-a-set`;
+  const referer = request.headers.get("referer");
+  if (!referer) return fallback;
+  try {
+    const url = new URL(referer);
+    return url.origin === origin && url.pathname.startsWith("/explorers/")
+      ? url.toString()
+      : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+export async function POST(request: NextRequest) {
   let payload: CheckoutRequest;
 
   try {
@@ -75,6 +102,11 @@ export async function POST(request: Request) {
 
   const stripe = getStripe();
   const origin = process.env.NEXT_PUBLIC_SITE_URL ?? new URL(request.url).origin;
+  const sourceUrl = getSourceUrl(request, origin);
+  const metaFbp = request.cookies.get("_fbp")?.value;
+  const metaFbc = request.cookies.get("_fbc")?.value;
+  const clientIpAddress = getClientIpAddress(request);
+  const clientUserAgent = request.headers.get("user-agent");
   const artworkTitles = selectedProducts.map((product) => product.title);
   const price = getExplorerOrderPrice(option, quantity);
   const frameColor = option.format === "Framed" ? requestedFrameColor : "none";
@@ -99,7 +131,7 @@ export async function POST(request: Request) {
     finishDescription +
     ".";
   const metadata = {
-    order_type: "explorers_physical_art",
+    order_type: EXPLORERS_PHYSICAL_ORDER_TYPE,
     selected_artworks: artworkTitles.join(" | "),
     selected_slugs: uniqueSlugs.join(","),
     print_option: option.id,
@@ -111,6 +143,9 @@ export async function POST(request: Request) {
     frame_color: frameColor,
     acrylic: option.format === "Framed" ? "optical-grade clear acrylic" : "none",
     set_size: String(quantity),
+    meta_source_url: sourceUrl.slice(0, 500),
+    ...(metaFbp ? { meta_fbp: metaFbp } : {}),
+    ...(metaFbc ? { meta_fbc: metaFbc } : {}),
   };
 
   const session = await stripe.checkout.sessions.create({
@@ -166,6 +201,26 @@ export async function POST(request: Request) {
     );
   }
 
-  return NextResponse.json({ url: session.url });
+  const metaEventId = getExplorersCheckoutMetaEventId(session.id);
+  after(async () => {
+    await sendExplorersInitiateCheckoutConversion({
+      stripeSessionId: session.id,
+      sourceUrl,
+      value: price.totalPriceCents / 100,
+      currency: "usd",
+      artworkSlugs: uniqueSlugs,
+      optionId: option.id,
+      frameColor,
+      fbp: metaFbp,
+      fbc: metaFbc,
+      clientIpAddress,
+      clientUserAgent,
+    });
+  });
+
+  return NextResponse.json({
+    url: session.url,
+    metaEventId,
+  });
 }
 

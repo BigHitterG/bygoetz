@@ -42,8 +42,29 @@ If no shipping-rate ID is supplied, checkout uses
 STRIPE_EXPLORERS_SET_SHIPPING_CENTS or defaults to $12 standard shipping.
 Allowed countries default to US.
 
-## Meta Pixel
+## Explorer-only Meta Pixel and Conversions API
 
-Set NEXT_PUBLIC_META_PIXEL_ID to activate PageView, ViewContent, ArtworkSelection,
-InitiateCheckout, and verified Purchase tracking.
+Explorer commerce tracking is intentionally isolated from Basil. Do not reuse the
+Basil Pixel ID, token, enable switches, event IDs, or delivery ledger.
+
+Configure the dedicated Explorer dataset with:
+
+    NEXT_PUBLIC_EXPLORERS_META_PIXEL_ID
+    NEXT_PUBLIC_EXPLORERS_META_TRACKING_ENABLED=true
+    EXPLORERS_META_CONVERSIONS_API_ENABLED=true
+    EXPLORERS_META_CONVERSIONS_API_TOKEN
+    EXPLORERS_META_GRAPH_API_VERSION=v25.0
+
+During Events Manager verification only, set `EXPLORERS_META_TEST_EVENT_CODE` to
+the code displayed by the Explorer dataset's Test Events screen. Remove it after
+verification.
+
+The Explorer Pixel is mounted only inside `/explorers`. Browser calls use
+`trackSingle`/`trackSingleCustom` with the dedicated Pixel ID. Stripe checkout and
+Purchase events are also delivered through the dedicated Explorer CAPI token, using
+shared Explorer-prefixed event IDs for browser/server deduplication.
+
+Tracked funnel events are PageView, ViewContent, CustomizeProduct,
+InitiateCheckout, verified Purchase, and supporting builder interaction events.
+Purchase is authoritative only after Stripe reports a paid physical Explorer order.
 

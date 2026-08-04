@@ -2,6 +2,10 @@ import {
   ExplorerProduct,
   getRelatedExplorerProducts,
 } from "@/lib/explorers/products";
+import {
+  ExplorersBuilderLink,
+  ExplorersProductView,
+} from "@/components/analytics/ExplorersProductMeta";
 import { withSiteBasePath } from "@/lib/sitePath";
 import { ArtworkImage } from "./ArtworkImage";
 import styles from "./Explorers.module.css";
@@ -18,6 +22,11 @@ export function ExplorerProductPage({ product }: ExplorerProductPageProps) {
 
   return (
     <main className={styles.page}>
+      <ExplorersProductView
+        artworkSlug={product.slug}
+        artworkTitle={product.title}
+        value={Number(product.priceFrom.replace(/[^0-9.]/g, "")) || 0}
+      />
       <section className={styles.detailHero}>
         <a href={withSiteBasePath("/explorers")} className={styles.backLink}>
           Back to The Explorers Series
@@ -55,14 +64,16 @@ export function ExplorerProductPage({ product }: ExplorerProductPageProps) {
                 Framed artwork uses optical-grade clear acrylic instead of traditional
                 glass. Shipping and tax are shown in Stripe checkout.
               </p>
-              <a
+              <ExplorersBuilderLink
                 className={styles.primaryButton}
+                artworkSlug={product.slug}
+                artworkTitle={product.title}
                 href={withSiteBasePath(
                   "/explorers/build-a-set?quantity=1&artwork=" + product.slug,
                 )}
               >
                 Customize and Buy
-              </a>
+              </ExplorersBuilderLink>
             </div>
 
             <div className={styles.singleDigitalOption}>

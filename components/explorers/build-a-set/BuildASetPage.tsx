@@ -2,7 +2,10 @@
 
 import Image from "next/image";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { trackMetaCustomEvent, trackMetaEvent } from "@/lib/analytics/metaPixel";
+import {
+  trackExplorersMetaCustomEvent,
+  trackExplorersMetaEvent,
+} from "@/lib/analytics/explorersMetaPixel";
 import {
   explorerSetOptions,
   formatUsd,
@@ -12,6 +15,7 @@ import {
   type ExplorerSetOptionId,
 } from "@/lib/explorers/buildASet";
 import { explorerProducts, type ExplorerProduct } from "@/lib/explorers/products";
+import { EXPLORERS_PHYSICAL_ORDER_TYPE } from "@/lib/explorers/orderTypes";
 import { withSiteBasePath } from "@/lib/sitePath";
 import { GalleryPreview } from "./GalleryPreview";
 import { MobileSetSummary } from "./MobileSetSummary";
@@ -22,6 +26,7 @@ type BuildASetPageProps = {
   checkoutConfigured: boolean;
   initialArtworkSlug?: string;
   initialArtworkSlugs?: string[];
+  initialCheckoutStatus?: string;
   initialFrameColor?: string;
   initialLandingMode?: string;
   initialLayoutId?: string;
@@ -33,6 +38,7 @@ export function BuildASetPage({
   checkoutConfigured,
   initialArtworkSlug,
   initialArtworkSlugs,
+  initialCheckoutStatus,
   initialFrameColor,
   initialLandingMode,
   initialLayoutId,
@@ -104,7 +110,10 @@ export function BuildASetPage({
       ),
     [selectedSlotProducts],
   );
-  const selectedSlugs = selectedProducts.map((product) => product.slug);
+  const selectedSlugs = useMemo(
+    () => selectedProducts.map((product) => product.slug),
+    [selectedProducts],
+  );
   const selectedOption =
     explorerSetOptions.find((option) => option.id === selectedOptionId) ??
     explorerSetOptions[0];
@@ -114,20 +123,45 @@ export function BuildASetPage({
     ? "Ready to customize"
     : `${selectedProducts.length} of ${quantity} selected`;
   const hasTrackedLanding = useRef(false);
+  const hasTrackedCustomization = useRef(false);
+  const hasTrackedCheckoutCancellation = useRef(false);
+
+  function trackFirstCustomization(
+    changeType: string,
+    parameters?: Record<string, unknown>,
+  ) {
+    if (hasTrackedCustomization.current) return;
+    hasTrackedCustomization.current = true;
+    trackExplorersMetaEvent("CustomizeProduct", {
+      content_name: "Build Your Own Explorers Gallery",
+      content_category: "Explorers physical artwork",
+      content_type: "product_group",
+      content_ids: selectedSlugs,
+      currency: "USD",
+      value: price.totalPriceCents / 100,
+      num_items: quantity,
+      customization_type: changeType,
+      ...parameters,
+    });
+  }
 
   useEffect(() => {
     if (hasTrackedLanding.current) return;
     hasTrackedLanding.current = true;
 
-    trackMetaEvent("ViewContent", {
+    trackExplorersMetaEvent("ViewContent", {
       content_name: "Build Your Own Explorers Print Set",
-      content_category: "Physical Print Set",
+      content_category: "Explorers physical artwork",
       content_type: "product_group",
+      content_ids: selectedSlugs,
+      currency: "USD",
+      value: price.totalPriceCents / 100,
+      num_items: quantity,
       landing_experience: landingMode ?? "default",
     });
 
     if (landingMode) {
-      trackMetaCustomEvent("AdLandingExperienceView", {
+      trackExplorersMetaCustomEvent("AdLandingExperienceView", {
         landing_experience: landingMode,
         room: initialRoomId ?? "wall",
         quantity,
@@ -138,10 +172,27 @@ export function BuildASetPage({
   }, [
     initialRoomId,
     landingMode,
+    price.totalPriceCents,
     quantity,
+    selectedSlugs,
     validInitialFrameColor,
     validInitialOptionId,
   ]);
+
+  useEffect(() => {
+    if (
+      initialCheckoutStatus !== "cancelled" ||
+      hasTrackedCheckoutCancellation.current
+    ) {
+      return;
+    }
+    hasTrackedCheckoutCancellation.current = true;
+    trackExplorersMetaCustomEvent("CheckoutCanceled", {
+      content_ids: selectedSlugs,
+      num_items: quantity,
+      print_option: selectedOption.id,
+    });
+  }, [initialCheckoutStatus, quantity, selectedOption.id, selectedSlugs]);
 
   function handleSelectArtwork(index: number, product: ExplorerProduct) {
     setCheckoutError("");
@@ -171,19 +222,33 @@ export function BuildASetPage({
         );
       }
 
-      trackMetaCustomEvent("ArtworkSelection", {
+      const nextSlugs = next.filter((slug): slug is string => Boolean(slug));
+      trackFirstCustomization("artwork", { content_ids: nextSlugs });
+      trackExplorersMetaCustomEvent("ArtworkSelection", {
         artwork: product.title,
         artwork_slug: product.slug,
         action,
         position: index + 1,
         selected_count: next.filter(Boolean).length,
-        content_ids: next.filter((slug): slug is string => Boolean(slug)),
+        content_ids: nextSlugs,
       });
       return next;
     });
   }
 
   function handleQuantityChange(nextQuantity: ExplorerOrderQuantity) {
+    if (nextQuantity === quantity) return;
+    const nextPrice = getExplorerOrderPrice(selectedOption, nextQuantity);
+    trackFirstCustomization("quantity", {
+      num_items: nextQuantity,
+      value: nextPrice.totalPriceCents / 100,
+    });
+    trackExplorersMetaCustomEvent("GalleryQuantitySelected", {
+      from_quantity: quantity,
+      quantity: nextQuantity,
+      value: nextPrice.totalPriceCents / 100,
+      currency: "USD",
+    });
     setQuantity(nextQuantity);
     setCheckoutError("");
     setSelectedSlots((current) => {
@@ -217,8 +282,44 @@ export function BuildASetPage({
       setAnnouncement(
         `${movingProduct?.title ?? "Artwork"} moved to position ${destination + 1}.`,
       );
+      trackExplorersMetaCustomEvent("ArtworkOrderChanged", {
+        artwork_slug: movingProduct?.slug ?? "unknown",
+        from_position: index + 1,
+        to_position: destination + 1,
+        content_ids: next.filter((slug): slug is string => Boolean(slug)),
+      });
       return next;
     });
+  }
+
+  function handleOptionChange(nextOptionId: ExplorerSetOptionId) {
+    if (nextOptionId === selectedOptionId) return;
+    const nextOption = explorerSetOptions.find((option) => option.id === nextOptionId);
+    if (!nextOption) return;
+    const nextPrice = getExplorerOrderPrice(nextOption, quantity);
+    trackFirstCustomization("finish", {
+      print_option: nextOption.id,
+      value: nextPrice.totalPriceCents / 100,
+    });
+    trackExplorersMetaCustomEvent("FinishChanged", {
+      print_option: nextOption.id,
+      format: nextOption.format,
+      artwork_size: nextOption.size,
+      matted: nextOption.isMatted,
+      value: nextPrice.totalPriceCents / 100,
+      currency: "USD",
+    });
+    setSelectedOptionId(nextOptionId);
+  }
+
+  function handleFrameColorChange(nextFrameColor: ExplorerFrameColor) {
+    if (nextFrameColor === frameColor) return;
+    trackFirstCustomization("frame_color", { frame_color: nextFrameColor });
+    trackExplorersMetaCustomEvent("FrameColorChanged", {
+      frame_color: nextFrameColor,
+      print_option: selectedOption.id,
+    });
+    setFrameColor(nextFrameColor);
   }
 
   async function beginCheckout() {
@@ -237,16 +338,6 @@ export function BuildASetPage({
 
     setBusy(true);
     setCheckoutError("");
-    trackMetaEvent("InitiateCheckout", {
-      value: price.totalPriceCents / 100,
-      currency: "USD",
-      content_type: "product_group",
-      content_ids: selectedSlugs,
-      num_items: quantity,
-      print_option: selectedOption.id,
-      frame_color: selectedOption.format === "Framed" ? frameColor : "none",
-    });
-
     try {
       const response = await fetch("/api/stripe/explorers-set/checkout", {
         method: "POST",
@@ -258,11 +349,38 @@ export function BuildASetPage({
           frameColor,
         }),
       });
-      const result = (await response.json()) as { url?: string; error?: string };
+      const result = (await response.json()) as {
+        url?: string;
+        error?: string;
+        metaEventId?: string;
+      };
       if (!response.ok || !result.url) throw new Error(result.error ?? "Checkout could not open.");
+      trackExplorersMetaEvent(
+        "InitiateCheckout",
+        {
+          value: price.totalPriceCents / 100,
+          currency: "USD",
+          content_name: "The Explorers Series physical artwork",
+          content_category: "Explorers physical artwork",
+          content_type: "product_group",
+          content_ids: selectedSlugs,
+          contents: selectedSlugs.map((id) => ({ id, quantity: 1 })),
+          num_items: quantity,
+          print_option: selectedOption.id,
+          frame_color: selectedOption.format === "Framed" ? frameColor : "none",
+          order_type: EXPLORERS_PHYSICAL_ORDER_TYPE,
+        },
+        result.metaEventId,
+      );
       window.location.assign(result.url);
     } catch (error) {
-      setCheckoutError(error instanceof Error ? error.message : "Checkout could not open.");
+      const message = error instanceof Error ? error.message : "Checkout could not open.";
+      setCheckoutError(message);
+      trackExplorersMetaCustomEvent("CheckoutError", {
+        error_type: "session_creation",
+        print_option: selectedOption.id,
+        num_items: quantity,
+      });
       setBusy(false);
     }
   }
@@ -307,6 +425,12 @@ export function BuildASetPage({
             onMove={handleMove}
             availableProducts={explorerProducts}
             onSelectArtwork={handleSelectArtwork}
+            onLayoutChange={(layout) =>
+              trackExplorersMetaCustomEvent("GalleryLayoutChanged", { layout })
+            }
+            onRoomChange={(room) =>
+              trackExplorersMetaCustomEvent("RoomPreviewChanged", { room })
+            }
             initialLayoutId={initialLayoutId}
             initialRoomId={initialRoomId}
             selectionControls={
@@ -355,8 +479,8 @@ export function BuildASetPage({
                   option={selectedOption}
                   selectedOptionId={selectedOptionId}
                   frameColor={frameColor}
-                  onChange={setSelectedOptionId}
-                  onFrameColorChange={setFrameColor}
+                  onChange={handleOptionChange}
+                  onFrameColorChange={handleFrameColorChange}
                 />
               </div>
               <section className={styles.checkoutSummary} id="set-checkout">

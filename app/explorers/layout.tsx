@@ -1,3 +1,4 @@
+import { ExplorersMetaPixel } from "@/components/analytics/ExplorersMetaPixel";
 import styles from "@/components/explorers/Explorers.module.css";
 import { withSiteBasePath } from "@/lib/sitePath";
 
@@ -6,6 +7,7 @@ export default function ExplorersLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <div className={styles.explorersShell}>
+      <ExplorersMetaPixel />
       <header className={styles.explorersHeader}>
         <a className={styles.explorersLogoLink} href={withSiteBasePath("/explorers")}>
           <img
