@@ -1,0 +1,469 @@
+project:
+  title: Gromas and the Gobbledygooks
+  authors: Minkis Grizwald III and Al Pattywagon
+  manuscript_status: locked edited manuscript v1.0
+  trim_inches:
+  - 6.0
+  - 9.0
+  full_bleed_page_inches:
+  - 6.25
+  - 9.25
+  interior_page_count: 32
+  binding: Hardcover Casewrap
+  recommended_interior_print: Premium Color on 80# white coated paper where available
+  budget_option_warning: Standard Color is not recommended for a full-page image-heavy picture book; proof carefully
+    if used.
+  color_space: sRGB
+  target_ppi: 300
+  single_page_pixels_at_300ppi:
+  - 1875
+  - 2775
+  spread_trim_pixels_at_300ppi:
+  - 3600
+  - 2700
+  spread_master_with_outer_bleed_pixels_at_300ppi:
+  - 3675
+  - 2775
+  visible_page_numbers: false
+  story_spreads: 14
+  publication_art_assets: 19
+  reference_image: references/gromas_reference.jpeg
+pagination:
+- page: 1
+  side: right
+  content: Title page
+  art: prompts/interior/title_page_vignette.txt
+- page: 2
+  side: left
+  content: Copyright page
+  art: prompts/interior/copyright_spot.txt
+- page: 3
+  side: right
+  content: Dedication / visual prelude
+  art: prompts/interior/dedication_prelude.txt
+- pages: &id001
+  - 4
+  - 5
+  content: 'spread_01: The Power Crisis'
+  art: prompts/spreads/spread_01_pages_04-05.txt
+- pages: &id002
+  - 6
+  - 7
+  content: 'spread_02: The People Upstairs and Chet'
+  art: prompts/spreads/spread_02_pages_06-07.txt
+- pages: &id003
+  - 8
+  - 9
+  content: 'spread_03: How the Spinette Works'
+  art: prompts/spreads/spread_03_pages_08-09.txt
+- pages: &id004
+  - 10
+  - 11
+  content: 'spread_04: Spindection and the Three Teams'
+  art: prompts/spreads/spread_04_pages_10-11.txt
+- pages: &id005
+  - 12
+  - 13
+  content: 'spread_05: Five Days of Preparation'
+  art: prompts/spreads/spread_05_pages_12-13.txt
+- pages: &id006
+  - 14
+  - 15
+  content: 'spread_06: Ready at Last'
+  art: prompts/spreads/spread_06_pages_14-15.txt
+- pages: &id007
+  - 16
+  - 17
+  content: 'spread_07: Installation Through the Night'
+  art: prompts/spreads/spread_07_pages_16-17.txt
+- pages: &id008
+  - 18
+  - 19
+  content: 'spread_08: The Final Countdown'
+  art: prompts/spreads/spread_08_pages_18-19.txt
+- pages: &id009
+  - 20
+  - 21
+  content: 'spread_09: Activated—Then Darkness'
+  art: prompts/spreads/spread_09_pages_20-21.txt
+- pages: &id010
+  - 22
+  - 23
+  content: 'spread_10: Waiting for Morning'
+  art: prompts/spreads/spread_10_pages_22-23.txt
+- pages: &id011
+  - 24
+  - 25
+  content: 'spread_11: The Black Shoe'
+  art: prompts/spreads/spread_11_pages_24-25.txt
+- pages: &id012
+  - 26
+  - 27
+  content: 'spread_12: Eureka—A Charge!'
+  art: prompts/spreads/spread_12_pages_26-27.txt
+- pages: &id013
+  - 28
+  - 29
+  content: 'spread_13: A Toast to Gromas'
+  art: prompts/spreads/spread_13_pages_28-29.txt
+- pages: &id014
+  - 30
+  - 31
+  content: 'spread_14: Good Night, Gromas'
+  art: prompts/spreads/spread_14_pages_30-31.txt
+- page: 32
+  side: left
+  content: Colophon / end spot
+  art: prompts/interior/page_32_end_spot.txt
+spreads:
+- id: spread_01
+  title: The Power Crisis
+  pdf_pages: *id001
+  stanzas:
+  - 1
+  - 2
+  purpose: Introduce Gromas, the Gobbledygook community, the hidden under-floor world, and the fading Great Power
+    Supply.
+  text_left: 'Gromas stood and addressed the group
+
+    About the adversity facing the troop.
+
+    “Energy levels are low,” he said with fear.
+
+    “The end of the Great Power Supply is near.”'
+  text_right: '“What’s the plan?” someone shouted aloud,
+
+    From a distant spot in the curious crowd.
+
+    “Our scientists, after much research and talking,
+
+    Discovered a way to harness their walking.”'
+  text_safe_zone: Left page upper-left; right page upper-right. Keep both zones calm, pale, and low-detail.
+  prompt_file: prompts/spreads/spread_01_pages_04-05.txt
+  art_master: art/spreads/spread_01_master.png
+  status: not_generated
+- id: spread_02
+  title: The People Upstairs and Chet
+  pdf_pages: *id002
+  stanzas:
+  - 3
+  - 4
+  purpose: Deliver the wordplay, reveal that the energy source is the human couple upstairs, and introduce Chet
+    as the inventive second-in-command.
+  text_left: '“Wing willey whack didley, what do you mean?
+
+    Who do you speak of—the King and the Queen?”
+
+    “No, you wing wang rompus anew,
+
+    The people upstairs in the apartment for two!”'
+  text_right: '“Here is the device; it’s called a Spinette.”
+
+    “Gazoo! Gazoo!” They all looked to Chet,
+
+    For Chet was the second in command,
+
+    And they knew he’d have a flandiferous plan.'
+  text_safe_zone: Left page upper-left; right page upper-right. Use soft paper-colored breathing space around the
+    verse.
+  prompt_file: prompts/spreads/spread_02_pages_06-07.txt
+  art_master: art/spreads/spread_02_master.png
+  status: not_generated
+- id: spread_03
+  title: How the Spinette Works
+  pdf_pages: *id003
+  stanzas:
+  - 5
+  - 6
+  purpose: Explain the invention clearly and make the energy-harvesting idea visually understandable.
+  text_left: '“We’ll flip-flop a flammy, you flam flam-a-roos,
+
+    And install this device on the floor for their shoes!
+
+    An unnoticed push with scarcely a sound,
+
+    The force of the foot will make the coil go ’round!”'
+  text_right: '“For when they step down with their feet so large,
+
+    Whiz buzz spinaroo—Eureka! A charge!
+
+    Zippy zap zap, zap zap-a-roo!
+
+    The Great Power Supply will be good as new!”'
+  text_safe_zone: Left page lower-left; right page upper-right. Keep the mechanism readable and leave clean tonal
+    fields behind the text.
+  prompt_file: prompts/spreads/spread_03_pages_08-09.txt
+  art_master: art/spreads/spread_03_master.png
+  status: not_generated
+- id: spread_04
+  title: Spindection and the Three Teams
+  pdf_pages: *id004
+  stanzas:
+  - 7
+  - 8
+  purpose: Organize the community into Frontliners, Electricians, and Lookouts while keeping the sequence playful.
+  text_left: 'He waved to the troops and said, “Spindection!”
+
+    And everyone quickly split off to their section.
+
+    “Now listen up, troops. We begin today.
+
+    I’ll go through our tasks, and we’ll be on our way!”'
+  text_right: '“Frontliners first, you’ll install the Spinettes.
+
+    Electricians, make sure the wires are set.
+
+    If someone comes near, Lookouts, tell us who.
+
+    Froggie dock dackery. Frizz wandle zoo.”'
+  text_safe_zone: Left page upper-left; right page upper-right. Maintain an open band above the moving troops.
+  prompt_file: prompts/spreads/spread_04_pages_10-11.txt
+  art_master: art/spreads/spread_04_master.png
+  status: not_generated
+- id: spread_05
+  title: Five Days of Preparation
+  pdf_pages: *id005
+  stanzas:
+  - 9
+  - 10
+  purpose: Show the industrious preparation montage and establish the craft, technology, and toast motifs.
+  text_left: 'The troops went to work; this would take a whole week,
+
+    But the Gobbledygooks would be back at their peak.
+
+    The Electricians carefully crafted the grid
+
+    And networked the power with each wire well hid.'
+  text_right: 'The Frontliners forged ahead with Spinette production,
+
+    And each Spinette was checked for proper function.
+
+    The Lookouts built forts where they’d each take a post,
+
+    And compiled a stock of warm buttered toast.'
+  text_safe_zone: Left page upper-left; right page upper-right. Use dim ceiling space and pale steam as text backgrounds.
+  prompt_file: prompts/spreads/spread_05_pages_12-13.txt
+  art_master: art/spreads/spread_05_master.png
+  status: not_generated
+- id: spread_06
+  title: Ready at Last
+  pdf_pages: *id006
+  stanzas:
+  - 11
+  - 12
+  purpose: Transition from five days of preparation to the dawn installation mission.
+  text_left: 'After five days of work, they finished their preparation
+
+    And looked to Gromas to lead their great nation.
+
+    The troops were ready, and the plan was set.
+
+    They’d move out tomorrow and install the Spinettes.'
+  text_right: 'Early they rose and cooked up a slice
+
+    Of warm buttered toast, which tasted so nice!
+
+    The Gobbledygooks then scurried into position
+
+    And started to see their plans come to fruition.'
+  text_safe_zone: Left page upper-left over evening blue; right page upper-right over dawn cream.
+  prompt_file: prompts/spreads/spread_06_pages_14-15.txt
+  art_master: art/spreads/spread_06_master.png
+  status: not_generated
+- id: spread_07
+  title: Installation Through the Night
+  pdf_pages: *id007
+  stanzas:
+  - 13
+  - 14
+  purpose: Depict the coordinated installation and the physical cost of working through day and night.
+  text_left: 'The Lookouts listened for any buzz or pop,
+
+    And the Frontliners began to saw, hammer, and chop.
+
+    The Electricians looked over the Great Power Supply,
+
+    Constantly checking for wires awry.'
+  text_right: 'They worked through the day and deep into the night,
+
+    Fueling themselves with every buttered-toast bite.
+
+    One after another, each longed for their bed,
+
+    But for the good of the group, they kept working instead.'
+  text_safe_zone: Left page upper-left; right page upper-right. Keep the upper floor surfaces relatively simple.
+  prompt_file: prompts/spreads/spread_07_pages_16-17.txt
+  art_master: art/spreads/spread_07_master.png
+  status: not_generated
+- id: spread_08
+  title: The Final Countdown
+  pdf_pages: *id008
+  stanzas:
+  - 15
+  - 16
+  purpose: Escalate urgency while showing Gromas rallying an exhausted but determined community.
+  text_left: 'Up came the sun, and they worked through the day.
+
+    The end of power was just four hours away.
+
+    The group had it in them, Gromas just knew,
+
+    And rallying the troops was the right thing to do.'
+  text_right: 'Four hours left, and 40 Spinettes to go.
+
+    “Stick!” he yelled. “Stock!” he yelled. “Steck!” he yelled. “Stoe!”
+
+    Two hours left, with 20 Spinettes remaining.
+
+    The troops pushed forward, though power was waning.'
+  text_safe_zone: Left page upper-left; right page upper-right. Keep the countdown action below the verse.
+  prompt_file: prompts/spreads/spread_08_pages_18-19.txt
+  art_master: art/spreads/spread_08_master.png
+  status: not_generated
+- id: spread_09
+  title: Activated—Then Darkness
+  pdf_pages: *id009
+  stanzas:
+  - 17
+  - 18
+  purpose: Deliver the apparent success, the need for a human step, and the complete loss of power.
+  text_left: 'With five minutes left, the last Spinette was installed.
+
+    “Activate the Grid!” Gromas yelled, enthralled.
+
+    Up sprang the Spinettes, ready for power production.
+
+    The apartment was free from the noise of construction.'
+  text_right: 'Now they needed what they were trying to avoid:
+
+    One simple step from a large Humanoid.
+
+    Four minutes, three minutes, two minutes, one.
+
+    Time ran out. There was no power—none.'
+  text_safe_zone: Left page upper-left on warm light; right page lower-right or upper-right on a quiet dark field
+    with cream text.
+  prompt_file: prompts/spreads/spread_09_pages_20-21.txt
+  art_master: art/spreads/spread_09_master.png
+  status: not_generated
+- id: spread_10
+  title: Waiting for Morning
+  pdf_pages: *id010
+  stanzas:
+  - 19
+  - 20
+  purpose: Hold the suspense through the powerless night, then introduce the couple’s morning routine above.
+  text_left: 'The Gobbledygooks clamored as their lights powered down.
+
+    “Bizzdoddy!” “Flambicky!” they said with a frown.
+
+    The troops sat and waited, and Gromas did too,
+
+    For one human step would bring a collective “Gazoo!”'
+  text_right: 'The night passed quickly, and soon came the morning.
+
+    “People are coming!” the Lookouts cried in warning.
+
+    The couple performed their morning routines
+
+    And filled their coffee maker with freshly ground beans.'
+  text_safe_zone: Left page upper-left in a calm dark area; right page upper-right in a pale kitchen-light area.
+  prompt_file: prompts/spreads/spread_10_pages_22-23.txt
+  art_master: art/spreads/spread_10_master.png
+  status: not_generated
+- id: spread_11
+  title: The Black Shoe
+  pdf_pages: *id011
+  stanzas:
+  - 21
+  purpose: Stage the human morning routine and end the spread on the decisive first step.
+  text_left: 'They made their own toast and brewed their own coffee.
+
+    They cleaned up their dishes and fed their dog, Bobby.
+
+    They grabbed their bags and got ready by the door,
+
+    As the man’s black shoe stepped onto the floor.'
+  text_right: null
+  text_safe_zone: One complete quatrain on the left page upper-left. Keep that quadrant quiet and cream-toned; the
+    right page is image-led.
+  prompt_file: prompts/spreads/spread_11_pages_24-25.txt
+  art_master: art/spreads/spread_11_master.png
+  status: not_generated
+- id: spread_12
+  title: Eureka—A Charge!
+  pdf_pages: *id012
+  stanzas:
+  - 22
+  - 23
+  purpose: Show the Spinette working, the power flowing, and the community’s joy as each step adds charge.
+  text_left: 'The Spinette pressed down, and round spun the coil,
+
+    And the Gobbledygooks felt relief from their turmoil.
+
+    The energy flowed through each hidden wire,
+
+    And the bar on the Great Power Supply rose just a tick higher.'
+  text_right: 'One step, two steps, three steps, four—
+
+    For with every step, the bar charged a bit more.
+
+    “Gazoo!” said the Gobbledygooks. “A Billy bop Barlie!
+
+    Swing swang swock, a swock swock a swarley!”'
+  text_safe_zone: Left page upper-left; right page upper-right. Keep luminous energy away from the text blocks.
+  prompt_file: prompts/spreads/spread_12_pages_26-27.txt
+  art_master: art/spreads/spread_12_master.png
+  status: not_generated
+- id: spread_13
+  title: A Toast to Gromas
+  pdf_pages: *id013
+  stanzas:
+  - 24
+  - 25
+  purpose: Celebrate the restored power, honor Gromas, and gently turn toward his next idea and exhaustion.
+  text_left: 'As the man and the woman departed for work,
+
+    The Gobbledygook gang began going berserk.
+
+    They ate buttered toast and raised their glasses to Gromas:
+
+    “To the fearless Gobbledygook who kept his promise!”'
+  text_right: 'Gromas thought to himself as he heard them sing,
+
+    “What new plan for the Gobbledygooks will I bring?”
+
+    As the commotion died down, so did the celebration,
+
+    And sleep became the greatest temptation.'
+  text_safe_zone: Left page upper-left; right page upper-right. Keep celebration lower and reflection quieter on
+    the right.
+  prompt_file: prompts/spreads/spread_13_pages_28-29.txt
+  art_master: art/spreads/spread_13_master.png
+  status: not_generated
+- id: spread_14
+  title: Good Night, Gromas
+  pdf_pages: *id014
+  stanzas:
+  - 26
+  purpose: End with a quiet, emotionally satisfying bedtime image and the lamp-click visual punctuation.
+  text_left: 'Gromas left the festivities for the comfort of bed,
+
+    For now, his pillow was the only place for his head.
+
+    He lay beneath his covers and, with his last bit of might,
+
+    Reached over to his lamp and clicked off the light.'
+  text_right: null
+  text_safe_zone: One complete quatrain on the left page upper-left. Keep the right page almost entirely visual
+    and quiet.
+  prompt_file: prompts/spreads/spread_14_pages_30-31.txt
+  art_master: art/spreads/spread_14_master.png
+  status: not_generated
+cover:
+  front_art_prompt: prompts/covers/front_cover_art.txt
+  back_art_prompt: prompts/covers/back_cover_art.txt
+  final_cover_pdf: Generate only after Lulu custom casewrap template is downloaded for the locked page count and
+    paper.
+  spine_text: Omit for a 32-page Global Distribution edition.
+  barcode: Reserve official template barcode zone on back cover if using an ISBN.

@@ -1,0 +1,90 @@
+naming:
+  main_character: Gromas
+  singular_species: Gobbledygook
+  plural_species: Gobbledygooks
+  second_in_command: Chet
+  device_singular: Spinette
+  device_plural: Spinettes
+  power_device: Great Power Supply
+  dog: Bobby
+reference_priority:
+- user_reference
+- approved_model_sheet
+- written_bible
+- approved_prior_scene
+characters:
+  Gromas:
+    status: locked from user reference
+    reference: references/gromas_reference.jpeg
+    scale_in_world_inches: 4.5
+    colors:
+    - moss green
+    - sage highlight
+    - deep teal shadow
+    - warm brown irises
+    - cream sclera
+    anatomy:
+    - ribbon-like organic body strands
+    - no visible nose
+    - tiny black mouth
+    - four-digit hands
+    - broad three-lobed feet
+    personality:
+    - kind
+    - earnest
+    - capable
+    - encouraging leader
+    - slightly whimsical
+    optional_prop: wooden broom-like staff or pointer; do not force into every scene
+  Chet:
+    status: provisional until user reference is supplied
+    design:
+    - slightly shorter and stockier than Gromas
+    - blue-green
+    - upward-swept crown strands
+    - copper goggles
+    - narrow utility belt
+    personality:
+    - inventive
+    - energetic
+    - warm
+    - second-in-command
+  Frontliners:
+    role: fabrication and installation
+    props:
+    - hammers
+    - saws
+    - clamps
+    - Spinette frames
+  Electricians:
+    role: grid and power
+    props:
+    - copper coils
+    - meters
+    - ceramic insulators
+    - goggles
+  Lookouts:
+    role: listen and warn
+    props:
+    - listening horns
+    - binoculars
+    - flags
+    - fort supplies
+  Human_couple:
+    status: reference to be approved
+    rule: ordinary, warm, mostly cropped, never the focal protagonists
+  Bobby:
+    status: provisional
+    design: friendly medium-sized tan or golden dog with plain collar
+objects:
+  Spinette:
+    status: must be locked by design sheet before final spreads
+    warning: never weapon-like
+  Great_Power_Supply:
+    status: must be locked by design sheet before final spreads
+    states:
+    - low
+    - empty
+    - charging/restored
+  toast:
+    role: recurring warm visual joke and morale food

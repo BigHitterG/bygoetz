@@ -1,0 +1,2 @@
+QUALITY EXCLUSIONS
+No extra limbs, missing limbs, extra fingers, fused hands, detached hands, duplicated Gromas, mismatched eyes, changed character colors, random clothing changes, floating tools, broken perspective, garbled mechanisms, or inconsistent scale. No horror, slime, gore, grotesque teeth, claws, menace, weapons, exposed dangerous electricity, rats, insects, neon cyberpunk, generic Victorian steampunk costumes, heavy sepia, over-saturated plastic surfaces, or clutter behind the text. Do not crop Gromas’s face or key emotional gestures unless specifically directed.

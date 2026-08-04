@@ -1,0 +1,40 @@
+ART-ONLY TWO-PAGE CHILDREN’S PICTURE-BOOK SPREAD. Do not render the manuscript text inside the image.
+
+FORMAT AND COMPOSITION
+- Landscape 4:3 master composition designed to span two 6 x 9 inch portrait pages.
+- Final trim spread is 12 x 9 inches; preserve a quiet vertical gutter zone around the exact center.
+- Important faces, hands, mechanisms, gauge readings, and story actions must not fall within approximately 0.45 inch of either side of the center seam.
+- Extend backgrounds and noncritical texture fully to the outer bleed.
+- Leave the designated text-safe zones low-detail, with sufficient tonal contrast for separately typeset verse.
+- Read visually from left to right.
+
+LOCKED VISUAL LANGUAGE
+- Whimsical, cinematic children’s picture-book realism with watercolor and gouache texture, delicate graphite-like linework, subtle colored-pencil detail, soft atmospheric light, and selectively vignetted paper edges.
+- Richly observed miniature environmental storytelling, warm humor, and believable scale.
+- Hand-painted and literary, not glossy CGI, plastic toy rendering, flat vector art, anime, or photorealism.
+- The Gobbledygooks live in a tiny handmade civilization inside the floor cavity beneath an ordinary apartment: wood joists, floorboards, salvaged platforms, copper wiring, brass gauges, glass, ceramic insulators, fabric scraps, ladders, tools, and warm buttered toast.
+
+REFERENCE PRIORITY
+1. User-supplied character reference images are authoritative.
+2. Approved model sheets are next.
+3. This written brief is next.
+4. Earlier generated scene images are continuity references only after they have been approved.
+
+GROMAS — LOCKED MAIN CHARACTER
+Use references/gromas_reference.jpeg as the authoritative design source. Gromas is a friendly moss-green Gobbledygook with a body covered in long rounded ribbon-like organic strands, large round cream-colored eyes with warm brown irises, a tiny black mouth and no visible nose, rounded green limbs, four-digit hands, broad three-lobed feet, and a soft tactile surface. He is kind, capable, earnest, and expressive. Preserve his silhouette, eye spacing, colors, limb proportions, and face in every spread. His wooden broom-like staff or pointer is optional and should appear only when compositionally justified.
+
+RECURRING OBJECTS
+- Spinette: a harmless shallow circular under-floor pressure generator with a compressible plate, spiral cam or rack, central copper coil, small flywheel, ceramic insulators, and two copper leads. It must not resemble a weapon, mine, trap, or modern commercial product.
+- Great Power Supply: a consistent handmade brass, copper, glass, and wood apparatus with a prominent vertical power bar that can read low, empty, or charging through light level and fill height.
+
+NO-TEXT RULE
+Do not create letters, words, title type, speech bubbles, labels, equations, readable numbers, page numbers, signatures, logos, or watermarks. All text will be added later as real vector typography.
+
+SPREAD-SPECIFIC BRIEF
+Create a quiet suspense spread using a layered cutaway. On the left page, the Gobbledygooks wait in darkness around the silent Great Power Supply. Gromas sits with the troop, present and patient; Chet studies the dead gauge; one Lookout remains at a listening post. Tiny emergency lanterns or faint bioluminescent-like work lights may provide just enough safe blue illumination, but the main power is off. On the right page, morning light begins above the floor. Through a cutaway, show the giant ordinary apartment kitchen: the couple’s hands and partial bodies move through a familiar routine, pouring freshly ground coffee into a coffee maker, opening a cabinet, and preparing breakfast. Keep human faces cropped or softly secondary. Below, Lookouts suddenly hear movement and alert the group, who turn upward. The world should feel intimate and enormous at once. Transition from deep navy and muted moss on the left to soft peach and cream on the right. Maintain a gentle vignette around the waiting Gobbledygooks and a more open full-bleed kitchen cutaway. Do not show the black shoe stepping yet; save that exact payoff for the next spread.
+
+TEXT-SAFE ZONES
+Left page upper-left in a calm dark area; right page upper-right in a pale kitchen-light area.
+
+QUALITY EXCLUSIONS
+No extra limbs, missing limbs, extra fingers, fused hands, detached hands, duplicated Gromas, mismatched eyes, changed character colors, random clothing changes, floating tools, broken perspective, garbled mechanisms, or inconsistent scale. No horror, slime, gore, grotesque teeth, claws, menace, weapons, exposed dangerous electricity, rats, insects, neon cyberpunk, generic Victorian steampunk costumes, heavy sepia, over-saturated plastic surfaces, or clutter behind the text. Do not crop Gromas’s face or key emotional gestures unless specifically directed.
