@@ -1,49 +1,38 @@
-
 {
   "schemaVersion": 2,
-  "id": "live-plant-diversity-v1",
+  "id": "how-to-place-trellis-20260804",
   "assetKind": "image",
   "contentFamily": "basil-bulletin",
   "bulletinType": "garden_diagram",
-  "bulletinLabel": "Live garden map",
-  "objective": "garden_status",
+  "bulletinLabel": "My Garden diagram",
+  "viewerJob": "save_or_discuss",
+  "contentLane": "experiment",
+  "objective": "builder_education",
   "format": "diagram_explainer",
   "scene": "community-grid-diagram",
-  "gameplayRecipe": "live-community-snapshot-diversity-v1",
-  "intendedAudience": "Cozy-game players attracted by a dense, changing community garden and social-world premise.",
+  "diagramMode": "trellis-placement",
+  "gameplayRecipe": "deterministic-personal-trellis-placement-v1",
+  "intendedAudience": "Basil players and cozy-game viewers who want a quick visual guide to My Garden decoration placement.",
   "distribution": "organic",
-  "hypothesis": "A visually dense live garden snapshot with three simple planting totals will stop attention and earn more saves, profile visits, and game starts than a rules-heavy diagram.",
-  "alternateHooks": ["{{plantCount}} flowers. One shared garden.", "This is what everyone has planted so far.", "{{roses}} rosesâ€”and they all share one map."],
+  "hypothesis": "A game-rendered 4:5 placement diagram with only three exact numbers will be useful enough to save and discuss.",
+  "changedTestVariable": "This replaces the recent live planting-diversity map with a mechanic-specific My Garden object diagram and a different personal-garden background.",
+  "alternateHooks": ["A trellis uses exactly one garden tile.", "What does it cost to place a trellis?", "Open tile. Inventory. Trellis."],
   "platforms": ["instagram_post", "reddit"],
   "destinationUrl": "https://basilcommunitygarden.com/",
-  "trackingCode": "utm_source=social&utm_medium=organic&utm_campaign=basil_daily&utm_content=live_plant_diversity",
-  "snapshotExpectation": {
-    "minimumPlantCount": 1,
-    "requiredTypes": ["rose", "lavender", "sunflower"]
-  },
+  "trackingCode": "utm_source=social&utm_medium=organic&utm_campaign=basil_daily_20260804&utm_content=trellis_diagram",
   "truthClaims": [
-    {
-      "claim": "The live Basil community garden contains {{plantCount}} flowers: {{roses}} roses, {{lavender}} lavender plants, and {{sunflowers}} sunflowers.",
-      "supported": true,
-      "basis": "Production community-garden snapshot generated {{generatedAt}}. The renderer derives the image and all four totals from the same snapshot."
-    }
+    { "claim": "The standard Trellis occupies a 1Ã—1 My Garden grid footprint.", "supported": true, "basis": "Production garden_personal_element_catalog and current myGardenCatalog definition." },
+    { "claim": "The standard Trellis costs 50 Care to place and unlocks at 3,250 lifetime Care.", "supported": true, "basis": "Current production catalog values measured 2026-08-04 and quarter-scale Care progression migration." }
   ],
-  "title": "Live map: {{plantCount}} flowers in one shared garden",
-  "summary": "A current, game-accurate view of planting diversity in Basil's shared community garden.",
-  "whyToday": "This image uses today's real community-garden arrangement and current totals rather than a seeded test garden.",
-  "hook": "{{plantCount}} flowers. One shared garden.",
-  "sourceNote": "Rendered from Basil's current production community-garden snapshot with the real game renderer and coordinates.",
+  "title": "How to place a trellis in My Garden",
+  "summary": "A game-accurate 4:5 diagram showing Mary, a real rendered trellis, its one-tile footprint, placement cost, and unlock threshold.",
+  "whyToday": "The latest ten published posts did not cover trellis placement, and the format adds a fresh saveable My Garden reference.",
+  "hook": "A trellis uses exactly one garden tile.",
+  "sourceNote": "Rendered deterministically with Basil's real renderGarden and trellis element glyph on integer My Garden grid coordinates.",
+  "provenance": { "sourceType": "basil_renderer_and_production_catalog", "generatedWithAI": false, "geometry": "personal_integer_grid", "elementType": "trellis" },
   "platformCopy": {
-    "instagram": {
-      "headline": "{{plantCount}} flowers. One shared garden.",
-      "body": "This is Basil's live community garden today: {{roses}} roses, {{lavender}} lavender plants, and {{sunflowers}} sunflowers sharing one map. Where would you plant next?",
-      "hashtags": ["BasilCommunityGarden", "CozyGaming", "PixelGarden", "CommunityGarden"]
-    },
-    "reddit": {
-      "headline": "The live Basil garden now has {{plantCount}} flowersâ€”here is the planting mix",
-      "body": "I rendered this directly from today's shared Basil garden rather than arranging a promotional test scene. The current map contains {{roses}} roses, {{lavender}} lavender plants, and {{sunflowers}} sunflowers. I want these static posts to show what the community is actually building, not an abstract version of it. Which live garden view or comparison would be useful to map next?",
-      "hashtags": []
-    }
+    "instagram": { "headline": "How to place a trellis in My Garden", "body": "The standard Trellis is a one-tile My Garden decoration. It unlocks at 3,250 lifetime Care and costs 50 Care each time you place one. Choose an open grid tile, open your inventory, and place the Trellis.\n\nBuild a garden in Basil: https://basilcommunitygarden.com/?utm_source=instagram&utm_medium=organic&utm_campaign=basil_daily_20260804&utm_content=trellis_diagram", "hashtags": ["BasilCommunityGarden", "CozyGaming", "GardenDesign", "GameGuide"] },
+    "reddit": { "headline": "A game-accurate guide to placing a trellis in Basil's My Garden", "body": "This diagram uses the actual My Garden renderer and catalog values. The standard Trellis occupies one grid tile, unlocks at 3,250 lifetime Care, and costs 50 Care to place. The rose-covered trellis is a separate later item with a larger footprint and different cost.\n\nWould another object guide be more useful for paths, water features, or habitat items?\n\nhttps://basilcommunitygarden.com/?utm_source=reddit&utm_medium=organic&utm_campaign=basil_daily_20260804&utm_content=trellis_diagram", "hashtags": [] }
   }
 }
 

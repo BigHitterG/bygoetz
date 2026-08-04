@@ -1,4 +1,5 @@
 import { createHash, randomBytes } from "node:crypto";
+import { basename } from "node:path";
 import { getResend } from "@/lib/resend";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
 import { getBasilUrl } from "./urls";
@@ -88,6 +89,7 @@ type EmailStory = {
   assetUrl: string;
   assetKind: "image" | "video";
   bulletinLabel: string;
+  supplementalDownload?: boolean;
 };
 
 function tokenHash(token: string) {
@@ -187,6 +189,18 @@ function bulletinLabelFromEvidence(evidence: unknown) {
   return typeof label === "string" && label.trim() ? label.trim().slice(0, 80) : "Basil bulletin";
 }
 
+function supplementalDownloadFromEvidence(evidence: unknown) {
+  if (!evidence || typeof evidence !== "object") return false;
+  const manifest = (evidence as Record<string, unknown>).productionManifest;
+  return Boolean(manifest && typeof manifest === "object" && (manifest as Record<string, unknown>).supplementalDownload === true);
+}
+
+function digestEmailSubject(stories: EmailStory[]) {
+  const videos = stories.filter((story) => story.assetKind === "video").length;
+  const diagrams = stories.filter((story) => story.assetKind === "image").length;
+  return `Basil Garden Bulletin: ${videos} video${videos === 1 ? "" : "s"} + ${diagrams} diagram${diagrams === 1 ? "" : "s"} ready`;
+}
+
 function renderDigestEmail(digestId: string, token: string, stories: EmailStory[]) {
   const reviewUrl = `${getBasilUrl(`/community-garden/social-studio?digest=${digestId}`)}#token=${token}`;
   const cards = stories.map((story, index) => {
@@ -198,13 +212,13 @@ function renderDigestEmail(digestId: string, token: string, stories: EmailStory[
     <tr><td style="padding:0 0 18px">
       <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border:2px solid #352823;background:#fff8e8">
         <tr><td>${visual}</td></tr>
-        <tr><td style="padding:18px 20px"><div style="font:700 12px Arial,sans-serif;letter-spacing:1.4px;color:#a43d3d">${escapeHtml(story.bulletinLabel.toUpperCase())} · ${index + 1} OF 3</div><h2 style="font:700 22px Georgia,serif;margin:6px 0 8px;color:#302321">${escapeHtml(story.title)}</h2><p style="font:15px/1.55 Arial,sans-serif;color:#5b4a42;margin:0">${escapeHtml(story.whyToday)}</p><p style="margin:18px 0 0"><a href="${storyUrl}" style="display:inline-block;background:#a94343;color:#fff8e8;border:2px solid #302321;padding:11px 17px;text-decoration:none;font:700 14px Arial,sans-serif">Review and approve this bulletin</a></p></td></tr>
+        <tr><td style="padding:18px 20px"><div style="font:700 12px Arial,sans-serif;letter-spacing:1.4px;color:#a43d3d">${escapeHtml(story.bulletinLabel.toUpperCase())} Â· ${index + 1} OF ${stories.length}</div><h2 style="font:700 22px Georgia,serif;margin:6px 0 8px;color:#302321">${escapeHtml(story.title)}</h2><p style="font:15px/1.55 Arial,sans-serif;color:#5b4a42;margin:0">${escapeHtml(story.whyToday)}</p><p style="margin:18px 0 0"><a href="${storyUrl}" style="display:inline-block;background:#a94343;color:#fff8e8;border:2px solid #302321;padding:11px 17px;text-decoration:none;font:700 14px Arial,sans-serif">${story.supplementalDownload ? "Open the downloadable replay" : "Review and approve this bulletin"}</a></p></td></tr>
       </table>
     </td></tr>`;
   }).join("");
   const videoCount = stories.filter((story) => story.assetKind === "video").length;
   const imageCount = stories.filter((story) => story.assetKind === "image").length;
-  const html = `<!doctype html><html><body style="margin:0;background:#e7dfcf;color:#302321"><table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr><td align="center" style="padding:28px 12px"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:620px"><tr><td style="border:3px solid #302321;background:#f5e8ca;padding:28px 26px;text-align:center"><div style="font:700 30px Georgia,serif;letter-spacing:2px">BASIL</div><div style="font:700 12px Arial,sans-serif;letter-spacing:2px;margin-top:5px">DAILY GARDEN BULLETIN</div><h1 style="font:700 27px Georgia,serif;margin:22px 0 10px">Two videos + one diagram are ready</h1><p style="font:16px/1.5 Arial,sans-serif;margin:0;color:#5b4a42">Two factual gameplay bulletins for Instagram, YouTube, and Reddit—plus one game-accurate diagram for Instagram and Reddit.</p><p style="margin:22px 0 4px"><a href="${reviewUrl}" style="display:inline-block;background:#a94343;color:#fff8e8;border:2px solid #302321;padding:13px 22px;text-decoration:none;font:700 15px Arial,sans-serif">Review all three bulletins</a></p><p style="font:12px/1.5 Arial,sans-serif;color:#6b5a51;margin:10px 0 0">Opening a link does not approve or publish. Approve each bulletin inside Studio.</p></td></tr><tr><td style="height:18px"></td></tr>${cards}<tr><td style="font:12px/1.5 Arial,sans-serif;color:#6b5a51;text-align:center;padding:8px 20px">Sent privately to ${escapeHtml(REVIEWERS.join(", "))}. This review link expires in seven days.</td></tr></table></td></tr></table></body></html>`;
+  const html = `<!doctype html><html><body style="margin:0;background:#e7dfcf;color:#302321"><table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr><td align="center" style="padding:28px 12px"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:620px"><tr><td style="border:3px solid #302321;background:#f5e8ca;padding:28px 26px;text-align:center"><div style="font:700 30px Georgia,serif;letter-spacing:2px">BASIL</div><div style="font:700 12px Arial,sans-serif;letter-spacing:2px;margin-top:5px">DAILY GARDEN BULLETIN</div><h1 style="font:700 27px Georgia,serif;margin:22px 0 10px">${videoCount} videos + ${imageCount} diagram are ready</h1><p style="font:16px/1.5 Arial,sans-serif;margin:0;color:#5b4a42">The new social packages are ready for review${stories.some((story) => story.supplementalDownload) ? ", with yesterdayâ€™s rose lifecycle included as a download-only replay" : ""}.</p><p style="margin:22px 0 4px"><a href="${reviewUrl}" style="display:inline-block;background:#a94343;color:#fff8e8;border:2px solid #302321;padding:13px 22px;text-decoration:none;font:700 15px Arial,sans-serif">Review all ${stories.length} items</a></p><p style="font:12px/1.5 Arial,sans-serif;color:#6b5a51;margin:10px 0 0">Opening a link does not approve or publish. Approve each new bulletin inside Studio.</p></td></tr><tr><td style="height:18px"></td></tr>${cards}<tr><td style="font:12px/1.5 Arial,sans-serif;color:#6b5a51;text-align:center;padding:8px 20px">Sent privately to ${escapeHtml(REVIEWERS.join(", "))}. This review link expires in seven days.</td></tr></table></td></tr></table></body></html>`;
   const text = `Basil Daily Garden Bulletin\n\n${videoCount} finished videos and ${imageCount} finished diagram are ready. Opening a link does not approve or publish anything.\n\n${stories.map((story, index) => `${index + 1}. ${story.bulletinLabel}: ${story.title}\n${story.whyToday}\nReview: ${reviewUrl}&story=${story.id}`).join("\n\n")}\n\nReview all: ${reviewUrl}`;
   return { reviewUrl, html, text };
 }
@@ -292,7 +306,7 @@ export async function createDailySocialDigest(date = new Date(), options: { send
       from: FROM,
       to: REVIEWERS,
       replyTo: REPLY_TO,
-      subject: "Basil Garden Bulletin: 2 videos + 1 diagram ready",
+      subject: digestEmailSubject(emailStories),
       html: rendered.html,
       text: rendered.text,
       headers: { "X-Entity-Ref-ID": `basil-social-${runKey}` },
@@ -353,6 +367,7 @@ export async function resendLatestSocialDigest(requestKey: string) {
     assetUrl: story.asset_url as string,
     assetKind: story.asset_kind as "image" | "video",
     bulletinLabel: bulletinLabelFromEvidence(story.evidence),
+    supplementalDownload: supplementalDownloadFromEvidence(story.evidence),
   }));
   const rendered = renderDigestEmail(digest.id as string, token, emailStories);
   try {
@@ -360,7 +375,7 @@ export async function resendLatestSocialDigest(requestKey: string) {
       from: FROM,
       to: REVIEWERS,
       replyTo: REPLY_TO,
-      subject: "Basil Garden Bulletin: 2 videos + 1 diagram ready",
+      subject: digestEmailSubject(emailStories),
       html: rendered.html,
       text: rendered.text,
       headers: { "X-Entity-Ref-ID": `basil-social-resend-${digest.id}` },
@@ -411,15 +426,19 @@ export async function reviewSocialDigest(digestId: string, token: string) {
   const assetRows = (assetsResult.data ?? []) as AssetRow[];
   const feedbackRows = (feedbackResult.data ?? []) as FeedbackRow[];
   const signedAssets = await Promise.all(assetRows.map(async (asset) => {
-    const { data, error } = await supabase.storage
-      .from(asset.bucket_id)
-      .createSignedUrl(asset.object_path, 60 * 60);
+    const filename = basename(asset.object_path).replace(/^\d+-/, "") || `basil-social-${asset.kind}`;
+    const [{ data, error }, { data: downloadData, error: downloadError }] = await Promise.all([
+      supabase.storage.from(asset.bucket_id).createSignedUrl(asset.object_path, 60 * 60),
+      supabase.storage.from(asset.bucket_id).createSignedUrl(asset.object_path, 60 * 60, { download: filename }),
+    ]);
     if (error) throw error;
+    if (downloadError) throw downloadError;
     return {
       id: asset.id,
       storyId: asset.story_id,
       kind: asset.kind,
       url: data.signedUrl,
+      downloadUrl: downloadData.signedUrl,
       mimeType: asset.mime_type,
       byteSize: asset.byte_size,
       width: asset.width,
@@ -457,6 +476,7 @@ export async function reviewSocialDigest(digestId: string, token: string) {
         assetKind: primaryVideo ? "video" : primaryImage ? "image" : story.asset_kind,
         posterUrl: poster?.url ?? null,
         assets: storyAssets,
+        supplementalDownload: supplementalDownloadFromEvidence(story.evidence),
         feedback: feedbackRows.filter((item) => item.story_id === story.id),
         evidence: story.evidence,
         rank: story.rank,
@@ -651,3 +671,4 @@ export async function requestSocialRevision(
 export function isSocialChannel(value: unknown): value is SocialChannel {
   return typeof value === "string" && SOCIAL_CHANNELS.includes(value as SocialChannel);
 }
+

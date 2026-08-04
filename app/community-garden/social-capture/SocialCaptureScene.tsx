@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -18,7 +17,7 @@ const BASE_DATE = Date.parse("2026-07-31T12:00:00.000Z");
 const ROUND_SECONDS = 3;
 const ACTION_START_SECONDS = 1.25;
 
-export type SocialCaptureRecipe = "garden-status" | "watering-how-to" | "builder-mode";
+export type SocialCaptureRecipe = "garden-status" | "watering-how-to" | "builder-mode" | "daily-task-three-varieties" | "rose-life-cycle";
 
 type TimedWord = { text: string; start: number; end: number };
 type CaptionCue = { text: string; start: number; end: number; words?: TimedWord[] };
@@ -46,7 +45,7 @@ const WATERING_ROUNDS: WateringRound[] = [
   { station: [-5, 1], targets: [[-6, 2, "sunflower"], [-6, 0, "tulip"], [-4, 1, "bee_balm"]] },
 ];
 
-const PLANTING_SCENES: Record<Exclude<SocialCaptureRecipe, "watering-how-to">, PlantingScene> = {
+const PLANTING_SCENES: Record<"garden-status" | "builder-mode" | "daily-task-three-varieties", PlantingScene> = {
   "garden-status": {
     targets: [[-6, 2, "rose"], [-3, -1, "lavender"], [0, 2, "sunflower"], [3, -1, "bee_balm"], [6, 2, "tulip"]],
     background: [[-7, -4, "lavender"], [-5, -4, "rose"], [-3, -4, "daisy"], [-1, -4, "sunflower"], [1, -4, "tulip"], [3, -4, "bee_balm"], [5, -4, "rose"], [7, -4, "lavender"], [-7, 5, "sunflower"], [-5, 5, "tulip"], [-3, 5, "bee_balm"], [-1, 5, "rose"], [1, 5, "lavender"], [3, 5, "daisy"], [5, 5, "sunflower"], [7, 5, "tulip"]],
@@ -58,14 +57,36 @@ const PLANTING_SCENES: Record<Exclude<SocialCaptureRecipe, "watering-how-to">, P
     mode: "community",
   },
   "builder-mode": {
-    targets: [[-4, -2, "lavender"], [-2, -1, "rose"], [0, 0, "tulip"], [2, 1, "daisy"], [4, 2, "sunflower"], [2, 3, "bee_balm"]],
-    background: [[-5, 3, "rose"], [-3, 3, "lavender"], [-1, 3, "tulip"]],
+    // Builder Mode extends one orthogonally neighboring cell at a time. This
+    // connected path deliberately mirrors that rule instead of jumping across
+    // the isometric screen on a diagonal.
+    targets: [[-4, -1, "rose"], [-3, -1, "rose"], [-2, -1, "rose"], [-2, 0, "rose"], [-1, 0, "rose"], [0, 0, "rose"]],
+    background: [
+      [-6, -4, "rose"], [-5, -4, "rose"], [-4, -4, "lavender"], [-3, -4, "rose"], [-2, -4, "rose"],
+      [0, -4, "rose"], [1, -4, "lavender"], [2, -4, "rose"], [3, -4, "rose"], [4, -4, "rose"],
+      [-6, 3, "rose"], [-5, 3, "rose"], [-4, 3, "sunflower"], [-3, 3, "rose"], [-2, 3, "rose"],
+      [0, 3, "rose"], [1, 3, "lavender"], [2, 3, "rose"], [3, 3, "rose"], [4, 3, "rose"],
+      [-6, 1, "lavender"], [4, 1, "sunflower"], [-6, -2, "rose"], [4, -2, "rose"],
+    ],
     camera: [0, 0],
     header: "My Garden builder mode",
     gameplayLabel: "Layout preview",
     progressLabel: "cells planned",
     action: "build",
     mode: "personal",
+  },
+  "daily-task-three-varieties": {
+    targets: [[-3, 0, "rose"], [0, 0, "lavender"], [3, 0, "sunflower"]],
+    background: [
+      [-7, -4, "daisy"], [-5, -4, "bee_balm"], [-3, -4, "tulip"], [-1, -4, "daisy"], [1, -4, "bee_balm"], [3, -4, "tulip"], [5, -4, "daisy"], [7, -4, "bee_balm"],
+      [-7, 5, "tulip"], [-5, 5, "daisy"], [-3, 5, "bee_balm"], [-1, 5, "tulip"], [1, 5, "daisy"], [3, 5, "bee_balm"], [5, 5, "tulip"], [7, 5, "daisy"],
+    ],
+    camera: [0, 0],
+    header: "Garden Task: A Varied Garden",
+    gameplayLabel: "Task progress",
+    progressLabel: "different varieties",
+    action: "build",
+    mode: "community",
   },
 };
 
@@ -204,16 +225,19 @@ declare global {
 }
 
 export function SocialCaptureScene({ scene: requestedScene }: { scene: string }) {
-  const scene: SocialCaptureRecipe = requestedScene === "garden-status" || requestedScene === "builder-mode"
+  const scene: SocialCaptureRecipe = requestedScene === "garden-status" || requestedScene === "builder-mode" || requestedScene === "daily-task-three-varieties" || requestedScene === "rose-life-cycle"
     ? requestedScene
     : "watering-how-to";
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const lifecycleImageRef = useRef<HTMLImageElement>(null);
   const [seconds, setSeconds] = useState(0);
   const [captionCues, setCaptionCues] = useState<CaptionCue[]>(FALLBACK_CAPTIONS);
   const [overlay, setOverlay] = useState<BulletinOverlay>({});
-  const plantingScene = scene === "watering-how-to" ? null : PLANTING_SCENES[scene];
+  const [lifecycleReady, setLifecycleReady] = useState(false);
+  const plantingScene = scene === "garden-status" || scene === "builder-mode" || scene === "daily-task-three-varieties" ? PLANTING_SCENES[scene] : null;
 
   const draw = useCallback((captureSeconds: number) => {
+    if (scene === "rose-life-cycle") return;
     const canvas = canvasRef.current;
     const context = canvas?.getContext("2d");
     if (!canvas || !context) return;
@@ -226,7 +250,7 @@ export function SocialCaptureScene({ scene: requestedScene }: { scene: string })
     renderGarden(context, {
       viewport: { width: CAPTURE_WIDTH, height: CAPTURE_HEIGHT },
       camera: { x: cameraBase.x, y: cameraBase.y + 92 },
-      zoom: scene === "garden-status" ? 3.9 : scene === "builder-mode" ? 4.65 : 4.5,
+      zoom: scene === "garden-status" ? 3.9 : scene === "builder-mode" ? 4.65 : scene === "daily-task-three-varieties" ? 4.25 : 4.5,
       mary,
       duck: { x: duck.x - 24, y: duck.y + 18 },
       plants,
@@ -259,6 +283,18 @@ export function SocialCaptureScene({ scene: requestedScene }: { scene: string })
 
   useEffect(() => draw(seconds), [draw, seconds]);
   useEffect(() => {
+    if (scene !== "rose-life-cycle") return;
+    const image = lifecycleImageRef.current;
+    if (!image) return;
+    if (image.complete && image.naturalWidth > 0) {
+      setLifecycleReady(true);
+      return;
+    }
+    const markReady = () => setLifecycleReady(true);
+    image.addEventListener("load", markReady, { once: true });
+    return () => image.removeEventListener("load", markReady);
+  }, [scene]);
+  useEffect(() => {
     window.__BASIL_SOCIAL_CAPTURE__ = {
       dimensions: { width: CAPTURE_WIDTH, height: CAPTURE_HEIGHT },
       setTime: async (nextSeconds) => {
@@ -281,20 +317,37 @@ export function SocialCaptureScene({ scene: requestedScene }: { scene: string })
   const activeWordIndex = useMemo(() => cue?.words?.findIndex((word) => seconds >= word.start && seconds < word.end) ?? -1, [cue, seconds]);
   const finalCue = captionCues.at(-1);
   const isClosing = seconds >= (finalCue?.start ?? 18);
+  const lifecycleStages = ["Dormant seed", "New seedling", "Flower bud", "First bloom"];
+  const lifecycleStageIndex = Math.min(lifecycleStages.length - 1, Math.floor(seconds / 4.2));
   const progress = plantingScene
     ? Math.min(plantingScene.targets.length, Math.max(0, Math.floor((seconds - ACTION_START_SECONDS) / ROUND_SECONDS) + 1))
     : wateringState(seconds).absoluteRound * 3 + (wateringState(seconds).phase >= ACTION_START_SECONDS ? 3 : 0);
   const header = overlay.header ?? plantingScene?.header ?? "How watering works";
   const gameplayLabel = overlay.gameplayLabel ?? plantingScene?.gameplayLabel ?? "Two-tap watering";
   const progressLabel = overlay.progressLabel ?? plantingScene?.progressLabel ?? "flowers watered";
-  const progressValue = overlay.progressValue ?? String(progress);
+  const progressValue = scene === "rose-life-cycle" ? lifecycleStages[lifecycleStageIndex] : overlay.progressValue ?? String(progress);
+  const lifecycleTransform = ["translate(0, 0)", "translate(-50%, 0)", "translate(0, -50%)", "translate(-50%, -50%)"][lifecycleStageIndex];
 
   return (
-    <main className={styles.capture} data-capture-ready="true" data-time={seconds.toFixed(3)} data-scene={scene}>
-      <canvas ref={canvasRef} width={CAPTURE_WIDTH} height={CAPTURE_HEIGHT} aria-label={`Basil ${gameplayLabel.toLowerCase()} gameplay`} />
+    <main className={styles.capture} data-capture-ready={scene === "rose-life-cycle" ? (lifecycleReady ? "true" : "false") : "true"} data-time={seconds.toFixed(3)} data-scene={scene}>
+      {scene === "rose-life-cycle" ? (
+        <div className={styles.lifecycleVisual} aria-label="AI-generated botanical sequence showing a rose from seed to first bloom">
+          {/* The source is a documented AI-generated educational plate, never gameplay. */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            ref={lifecycleImageRef}
+            src="/basil-social/rose-first-bloom-v1.png"
+            alt="Four realistic botanical stages of a rose reaching its first bloom"
+            onLoad={() => setLifecycleReady(true)}
+            style={{ transform: lifecycleTransform }}
+          />
+        </div>
+      ) : (
+        <canvas ref={canvasRef} width={CAPTURE_WIDTH} height={CAPTURE_HEIGHT} aria-label={`Basil ${gameplayLabel.toLowerCase()} gameplay`} />
+      )}
       <div className={styles.vignette} aria-hidden="true" />
-      <header className={styles.header}><span>{header}</span><strong>BASIL</strong></header>
-      <aside className={styles.gameplayStatus} aria-label="Gameplay task progress"><span>{gameplayLabel}</span><strong>{progressValue} {progressLabel}</strong></aside>
+      <header className={styles.header}><span>{header}</span><strong>{scene === "rose-life-cycle" ? "ROSE Â· 4 STAGES" : "BASIL"}</strong></header>
+      <aside className={styles.gameplayStatus} aria-label="Story progress"><span>{gameplayLabel}</span><strong>{scene === "rose-life-cycle" ? progressValue : `${progressValue} ${progressLabel}`}</strong></aside>
       <section className={`${styles.caption} ${isClosing ? styles.captionClosing : ""}`} aria-live="off">
         <p>{cue?.words?.length
           ? cue.words.map((word, index) => <span className={index === activeWordIndex ? styles.activeWord : index < activeWordIndex ? styles.spokenWord : undefined} key={`${word.start}-${word.text}`}>{word.text}{index < cue.words!.length - 1 ? " " : ""}</span>)

@@ -1,7 +1,68 @@
-
 {
-  "measuredAt": "2026-07-31T19:00:00.000Z",
+  "measuredAt": "2026-08-03T23:46:00.000Z",
   "measurementMode": "signed-in-browser-read-only",
+  "recentMeasurements": [
+    {
+      "measuredAt": "2026-08-03T23:46:00.000Z",
+      "window": "same_day_follow_up",
+      "instagram": {
+        "publicUrl": "https://www.instagram.com/basilcommunitygarden/reel/Dbg6uZ4RZuO/",
+        "viewsOrImpressions": null,
+        "meaningfulComments": 0,
+        "notes": "The signed-in reel page still did not expose a reliable view count. Missing is not treated as zero."
+      },
+      "youtube": {
+        "channel": "Basil",
+        "recentShorts": [
+          {"title":"Why finding a worm is good news in Basil","publicId":"mH8OZ0Ncr28","views":1,"comments":0},
+          {"title":"This shared garden lets you plant before signup","publicId":"cyxsipSbfkE","views":0,"comments":0},
+          {"title":"Roses are taking over this shared garden","publicId":"IsvAcVCUXFU","views":0,"comments":0}
+        ],
+        "notes": "The visible sample remains too small to select a winner; no causal conclusion is recorded."
+      },
+      "reddit": {
+        "handle": "bygoetz",
+        "community": "r/BasilCommunity",
+        "recentPosts": [
+          {"title":"The rare Basil planting event where finding a worm is good news","publicUrl":"https://www.reddit.com/r/BasilCommunity/comments/1vdsn20/the_rare_basil_planting_event_where_finding_a/","score":1,"comments":0,"views":null},
+          {"title":"Basil starts with a shared flower, not a signup form","publicUrl":"https://www.reddit.com/r/BasilCommunity/comments/1vdsll2/basil_starts_with_a_shared_flower_not_a_signup/","score":1,"comments":0,"views":null}
+        ],
+        "notes": "Per-post views were not visible in the community feed. Missing is not treated as zero."
+      },
+      "interpretation": "No causal conclusion. The existing August 3 review package was preserved because this late heartbeat did not have a fresh unused digest."
+    },
+    {
+      "measuredAt": "2026-08-03T20:47:00.000Z",
+      "window": "early_baseline",
+      "instagram": {
+        "publicUrl": "https://www.instagram.com/basilcommunitygarden/reel/Dbg6uZ4RZuO/",
+        "ageAtMeasurement": "approximately 8 minutes",
+        "viewsOrImpressions": null,
+        "meaningfulComments": 0,
+        "notes": "The signed-in reel page did not expose a reliable view count. Missing is not treated as zero."
+      },
+      "youtube": {
+        "channel": "Basil",
+        "recentShorts": [
+          {"title":"Why finding a worm is good news in Basil","publicId":"mH8OZ0Ncr28","views":1,"comments":0},
+          {"title":"This shared garden lets you plant before signup","publicId":"cyxsipSbfkE","views":0,"comments":0},
+          {"title":"Roses are taking over this shared garden","publicId":"IsvAcVCUXFU","views":0,"comments":0}
+        ],
+        "notes": "The sample is too small to identify a winning subject or hook."
+      },
+      "reddit": {
+        "handle": "bygoetz",
+        "community": "r/BasilCommunity",
+        "recentPosts": [
+          {"title":"The rare Basil planting event where finding a worm is good news","publicUrl":"https://www.reddit.com/r/BasilCommunity/comments/1vdsn20/the_rare_basil_planting_event_where_finding_a/","ageAtMeasurement":"approximately 14 minutes","score":1,"comments":0,"views":null},
+          {"title":"Basil starts with a shared flower, not a signup form","publicUrl":"https://www.reddit.com/r/BasilCommunity/comments/1vdsll2/basil_starts_with_a_shared_flower_not_a_signup/","ageAtMeasurement":"approximately 16 minutes","score":1,"comments":0,"views":null}
+        ],
+        "communityPastWeek": {"visitors":7,"contributions":11},
+        "notes": "Per-post views were not visible in the feed. Missing is not treated as zero."
+      },
+      "interpretation": "No causal conclusion. Continue testing visibly different viewer jobs and capture the 1-hour, 24-hour, and 7-day windows when available."
+    }
+  ],
   "accounts": {
     "instagram": {
       "handle": "basilcommunitygarden",
