@@ -1,10 +1,12 @@
-"use client";
+≠rá^—f•ñÿ¶{é¨y 'v√Æ∂õ≠"use client";
 
 import { useState } from "react";
 import { ArtworkImage } from "@/components/explorers/ArtworkImage";
+import { ExplorersDigitalProductView } from "@/components/analytics/ExplorersProductMeta";
 import styles from "@/components/explorers/Explorers.module.css";
 import { explorerDigitalBundle, explorerProducts } from "@/lib/explorers/products";
 import { withSiteBasePath } from "@/lib/sitePath";
+import { DigitalCheckoutButton } from "./DigitalCheckoutButton";
 
 export function DigitalDownloadsPage() {
   const [selectedSlug, setSelectedSlug] = useState("explorer");
@@ -15,6 +17,11 @@ export function DigitalDownloadsPage() {
 
   return (
     <main className={styles.page}>
+      <ExplorersDigitalProductView
+        productKey="explorers-complete-bundle"
+        productTitle="Complete Explorers Digital Collection"
+        value={9.99}
+      />
       <section className={styles.downloadHero}>
         <a href={withSiteBasePath("/explorers")} className={styles.backLink}>
           Back to The Explorers Series
@@ -79,9 +86,14 @@ export function DigitalDownloadsPage() {
                 checkout.
               </p>
               {explorerDigitalBundle.checkoutLink ? (
-                <a className={styles.primaryButton} href={explorerDigitalBundle.checkoutLink}>
+                <DigitalCheckoutButton
+                  className={styles.primaryButton}
+                  productKey="explorers-complete-bundle"
+                  productTitle="Complete Explorers Digital Collection"
+                  value={9.99}
+                >
                   Continue to Secure Checkout
-                </a>
+                </DigitalCheckoutButton>
               ) : (
                 <button className={styles.disabledButton} type="button" disabled>
                   Stripe Checkout Coming Soon

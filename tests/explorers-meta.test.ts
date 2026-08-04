@@ -1,14 +1,22 @@
-import assert from "node:assert/strict";
+­r‡^Ñf¥–Ø¦{lyÊ'vÃ®¶›­import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 import {
+  buildExplorersDigitalInitiateCheckoutConversion,
+  buildExplorersDigitalPurchaseConversion,
   buildExplorersInitiateCheckoutConversion,
   buildExplorersPurchaseConversion,
+  getExplorersDigitalCheckoutMetaEventId,
+  getExplorersDigitalPurchaseMetaEventId,
   getExplorersCheckoutMetaEventId,
   getExplorersPurchaseMetaEventId,
+  isExplorersDigitalPurchaseEligible,
   isExplorersPhysicalPurchaseEligible,
 } from "../lib/analytics/explorersMetaConversion.ts";
-import { EXPLORERS_PHYSICAL_ORDER_TYPE } from "../lib/explorers/orderTypes.ts";
+import {
+  EXPLORERS_DIGITAL_ORDER_TYPE,
+  EXPLORERS_PHYSICAL_ORDER_TYPE,
+} from "../lib/explorers/orderTypes.ts";
 
 const order = {
   sourceUrl: "https://www.bygoetz.com/explorers/build-a-set?artwork=monkey",
@@ -48,6 +56,32 @@ test("only a paid physical Explorer order is Purchase-eligible", () => {
   );
 });
 
+test("digital checkout and purchase use dedicated IDs and eligibility", () => {
+  const checkoutId = getExplorersDigitalCheckoutMetaEventId(order.stripeSessionId);
+  const purchaseId = getExplorersDigitalPurchaseMetaEventId(order.stripeSessionId);
+  assert.match(checkoutId, /^explorers_digital_checkout_[0-9a-f]{32}$/);
+  assert.match(purchaseId, /^explorers_digital_purchase_[0-9a-f]{32}$/);
+  assert.notEqual(checkoutId, purchaseId);
+  assert.equal(
+    isExplorersDigitalPurchaseEligible({
+      orderType: EXPLORERS_DIGITAL_ORDER_TYPE,
+      paymentStatus: "paid",
+      amountTotal: 999,
+      currency: "usd",
+    }),
+    true,
+  );
+  assert.equal(
+    isExplorersDigitalPurchaseEligible({
+      orderType: EXPLORERS_PHYSICAL_ORDER_TYPE,
+      paymentStatus: "paid",
+      amountTotal: 999,
+      currency: "usd",
+    }),
+    false,
+  );
+});
+
 test("Explorer CAPI payloads share order data without exposing raw email", () => {
   const checkout = buildExplorersInitiateCheckoutConversion({
     ...order,
@@ -70,6 +104,34 @@ test("Explorer CAPI payloads share order data without exposing raw email", () =>
   assert.deepEqual(purchase.custom_data.content_ids, ["monkey"]);
   assert.equal(purchase.custom_data.value, 91);
   assert.equal(JSON.stringify(purchase).includes("Buyer@Example.com"), false);
+  assert.match(purchase.user_data.em![0], /^[0-9a-f]{64}$/);
+});
+
+test("digital CAPI payloads use digital product data without exposing raw email", () => {
+  const digitalOrder = {
+    sourceUrl: "https://www.bygoetz.com/explorers/digital-downloads",
+    stripeSessionId: "cs_test_explorers_digital_123",
+    value: 9.99,
+    currency: "usd",
+    productKeys: ["explorers-complete-bundle"],
+  };
+  const checkout = buildExplorersDigitalInitiateCheckoutConversion({
+    ...digitalOrder,
+    eventId: getExplorersDigitalCheckoutMetaEventId(digitalOrder.stripeSessionId),
+    eventTime: 1_790_000_000,
+  });
+  const purchase = buildExplorersDigitalPurchaseConversion({
+    ...digitalOrder,
+    eventId: getExplorersDigitalPurchaseMetaEventId(digitalOrder.stripeSessionId),
+    eventTime: 1_790_000_100,
+    email: " DigitalBuyer@Example.com ",
+  });
+  assert.equal(checkout.event_name, "InitiateCheckout");
+  assert.equal(purchase.event_name, "Purchase");
+  assert.equal(purchase.custom_data.order_type, EXPLORERS_DIGITAL_ORDER_TYPE);
+  assert.equal(purchase.custom_data.content_category, "Explorers digital download");
+  assert.deepEqual(purchase.custom_data.content_ids, ["explorers-complete-bundle"]);
+  assert.equal(JSON.stringify(purchase).includes("DigitalBuyer@Example.com"), false);
   assert.match(purchase.user_data.em![0], /^[0-9a-f]{64}$/);
 });
 
@@ -113,4 +175,28 @@ test("physical checkout, success verification, and webhook share one Explorer or
   assert.match(successPage, /order_type === EXPLORERS_PHYSICAL_ORDER_TYPE/);
   assert.match(webhookRoute, /processExplorerPhysicalOrder/);
   assert.match(webhookRoute, /session\.metadata\?\.order_type === GARDEN_STEWARD_ORDER_TYPE/);
+});
+
+test("digital checkout, fulfillment, success, and webhook share one Explorer order type", () => {
+  const checkoutRoute = readFileSync(
+    new URL("../app/api/stripe/explorers-digital/checkout/route.ts", import.meta.url),
+    "utf8",
+  );
+  const successPage = readFileSync(
+    new URL("../app/explorers/digital-downloads/success/page.tsx", import.meta.url),
+    "utf8",
+  );
+  const fulfillment = readFileSync(
+    new URL("../lib/explorers/fulfillDigitalDownload.ts", import.meta.url),
+    "utf8",
+  );
+  const webhookRoute = readFileSync(
+    new URL("../app/api/stripe/webhook/route.ts", import.meta.url),
+    "utf8",
+  );
+  assert.match(checkoutRoute, /order_type: EXPLORERS_DIGITAL_ORDER_TYPE/);
+  assert.match(checkoutRoute, /sendExplorersDigitalInitiateCheckoutConversion/);
+  assert.match(successPage, /ExplorersDigitalMetaPurchaseTracker/);
+  assert.match(fulfillment, /session\.metadata\?\.digital_product_keys/);
+  assert.match(webhookRoute, /processExplorerDigitalOrder/);
 });

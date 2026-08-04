@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+≠rá^—f•ñÿ¶{éÏy 'v√Æ∂õ≠import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import {
   fulfillGardenStewardCheckout,
@@ -9,7 +9,11 @@ import {
   isPendingGardenCheckout,
 } from "@/lib/communityGarden/pendingPurchase";
 import { fulfillDigitalDownloadCheckout } from "@/lib/explorers/fulfillDigitalDownload";
-import { EXPLORERS_PHYSICAL_ORDER_TYPE } from "@/lib/explorers/orderTypes";
+import { processExplorerDigitalOrder } from "@/lib/explorers/digitalOrders";
+import {
+  EXPLORERS_DIGITAL_ORDER_TYPE,
+  EXPLORERS_PHYSICAL_ORDER_TYPE,
+} from "@/lib/explorers/orderTypes";
 import { processExplorerPhysicalOrder } from "@/lib/explorers/physicalOrders";
 import { getStripe } from "@/lib/stripe";
 
@@ -58,7 +62,9 @@ export async function POST(request: Request) {
             : await fulfillGardenStewardCheckout(session)
           : session.metadata?.order_type === EXPLORERS_PHYSICAL_ORDER_TYPE
             ? await processExplorerPhysicalOrder(session)
-          : await fulfillDigitalDownloadCheckout(session);
+            : session.metadata?.order_type === EXPLORERS_DIGITAL_ORDER_TYPE
+              ? await processExplorerDigitalOrder(session)
+              : await fulfillDigitalDownloadCheckout(session);
       return NextResponse.json({ received: true, fulfillment: result });
     }
 

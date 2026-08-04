@@ -1,9 +1,9 @@
-import { ArtworkImage } from "@/components/explorers/ArtworkImage";
+≠rá^—f•ñÿ¶{çÏy 'v√Æ∂õ≠import { ArtworkImage } from "@/components/explorers/ArtworkImage";
 import styles from "@/components/explorers/Explorers.module.css";
 import { explorerProducts } from "@/lib/explorers/products";
 import { withSiteBasePath } from "@/lib/sitePath";
 
-export function DigitalDownloadSuccessPage() {
+export function DigitalDownloadSuccessPage({ verified = true }: { verified?: boolean }) {
   const featuredProducts = explorerProducts.slice(0, 4);
 
   return (
@@ -13,18 +13,25 @@ export function DigitalDownloadSuccessPage() {
           Back to The Explorers Series
         </a>
         <div className={styles.successPanel}>
-          <p className={styles.eyebrow}>Payment received</p>
-          <h1>Check your email for your download link.</h1>
+          <p className={styles.eyebrow}>{verified ? "Payment received" : "Order status"}</p>
+          <h1>
+            {verified
+              ? "Check your email for your download link."
+              : "We could not verify this digital order."}
+          </h1>
           <p>
-            Thank you for your purchase. We sent your download link to the email
-            address used at checkout from Goetz at downloads@send.bygoetz.com.
+            {verified
+              ? "Thank you for your purchase. We sent your download link to the email address used at checkout from Goetz at downloads@send.bygoetz.com."
+              : "Return to the digital collection or check your Stripe receipt. No purchase event has been recorded from this page."}
           </p>
-          <p>
-            If you do not see it in a minute or two, please check your spam or junk
-            folder. After you click the download button in the email, the file should
-            save to your computer&apos;s Downloads folder unless your browser asks where to
-            save it.
-          </p>
+          {verified ? (
+            <p>
+              If you do not see it in a minute or two, please check your spam or junk
+              folder. After you click the download button in the email, the file should
+              save to your computer&apos;s Downloads folder unless your browser asks where to
+              save it.
+            </p>
+          ) : null}
           <p>
             If anything looks off, reply to the email and I will help get the files to
             you.

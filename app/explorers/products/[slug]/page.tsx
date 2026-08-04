@@ -1,10 +1,11 @@
-import type { Metadata } from "next";
+≠rá^—f•ñÿ¶{çly 'v√Æ∂õ≠import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { ExplorerProductPage } from "@/components/explorers/ExplorerProductPage";
 import { explorerProducts, getExplorerProduct } from "@/lib/explorers/products";
 
 type ProductPageProps = {
   params: Promise<{ slug: string }>;
+  searchParams: Promise<{ format?: string }>;
 };
 
 export function generateStaticParams() {
@@ -32,11 +33,12 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
   };
 }
 
-export default async function Page({ params }: ProductPageProps) {
+export default async function Page({ params, searchParams }: ProductPageProps) {
   const { slug } = await params;
+  const { format } = await searchParams;
   const product = getExplorerProduct(slug);
 
   if (!product) notFound();
 
-  return <ExplorerProductPage product={product} />;
+  return <ExplorerProductPage product={product} digitalView={format === "digital"} />;
 }

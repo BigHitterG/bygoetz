@@ -1,13 +1,22 @@
-import "server-only";
+≠rá^—f•ñÿ¶{é¨y 'v√Æ∂õ≠import "server-only";
 
 import {
+  buildExplorersDigitalInitiateCheckoutConversion,
+  buildExplorersDigitalPurchaseConversion,
   buildExplorersInitiateCheckoutConversion,
   buildExplorersPurchaseConversion,
+  getExplorersDigitalCheckoutMetaEventId,
+  getExplorersDigitalPurchaseMetaEventId,
   getExplorersCheckoutMetaEventId,
   getExplorersPurchaseMetaEventId,
 } from "./explorersMetaConversion";
 
-export { getExplorersCheckoutMetaEventId, getExplorersPurchaseMetaEventId };
+export {
+  getExplorersCheckoutMetaEventId,
+  getExplorersDigitalCheckoutMetaEventId,
+  getExplorersDigitalPurchaseMetaEventId,
+  getExplorersPurchaseMetaEventId,
+};
 
 const GRAPH_VERSION_PATTERN = /^v\d{1,2}\.0$/;
 
@@ -24,6 +33,19 @@ type ExplorerOrderInput = {
   artworkSlugs: string[];
   optionId: string;
   frameColor: string;
+  email?: string | null;
+  fbp?: string | null;
+  fbc?: string | null;
+  clientIpAddress?: string | null;
+  clientUserAgent?: string | null;
+};
+
+type ExplorerDigitalOrderInput = {
+  stripeSessionId: string;
+  sourceUrl: string;
+  value: number;
+  currency: string;
+  productKeys: string[];
   email?: string | null;
   fbp?: string | null;
   fbc?: string | null;
@@ -108,6 +130,30 @@ export async function sendExplorersInitiateCheckoutConversion(
 export async function sendExplorersPurchaseConversion(input: ExplorerOrderInput) {
   const eventId = getExplorersPurchaseMetaEventId(input.stripeSessionId);
   const conversion = buildExplorersPurchaseConversion({
+    ...input,
+    eventId,
+    eventTime: Math.floor(Date.now() / 1000),
+  });
+  return sendConversion(eventId, conversion);
+}
+
+export async function sendExplorersDigitalInitiateCheckoutConversion(
+  input: ExplorerDigitalOrderInput,
+) {
+  const eventId = getExplorersDigitalCheckoutMetaEventId(input.stripeSessionId);
+  const conversion = buildExplorersDigitalInitiateCheckoutConversion({
+    ...input,
+    eventId,
+    eventTime: Math.floor(Date.now() / 1000),
+  });
+  return sendConversion(eventId, conversion);
+}
+
+export async function sendExplorersDigitalPurchaseConversion(
+  input: ExplorerDigitalOrderInput,
+) {
+  const eventId = getExplorersDigitalPurchaseMetaEventId(input.stripeSessionId);
+  const conversion = buildExplorersDigitalPurchaseConversion({
     ...input,
     eventId,
     eventTime: Math.floor(Date.now() / 1000),

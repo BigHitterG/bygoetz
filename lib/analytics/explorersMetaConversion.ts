@@ -1,8 +1,15 @@
-import { createHash } from "node:crypto";
-import { EXPLORERS_PHYSICAL_ORDER_TYPE } from "../explorers/orderTypes.ts";
+­r‡^Ñf¥–Ø¦{ŽìyÊ'vÃ®¶›­import { createHash } from "node:crypto";
+import {
+  EXPLORERS_DIGITAL_ORDER_TYPE,
+  EXPLORERS_PHYSICAL_ORDER_TYPE,
+} from "../explorers/orderTypes.ts";
 
 const CHECKOUT_EVENT_ID_PATTERN = /^explorers_checkout_[0-9a-f]{32}$/;
 const PURCHASE_EVENT_ID_PATTERN = /^explorers_purchase_[0-9a-f]{32}$/;
+const DIGITAL_CHECKOUT_EVENT_ID_PATTERN =
+  /^explorers_digital_checkout_[0-9a-f]{32}$/;
+const DIGITAL_PURCHASE_EVENT_ID_PATTERN =
+  /^explorers_digital_purchase_[0-9a-f]{32}$/;
 
 type ExplorersMetaUserData = {
   em?: string[];
@@ -29,12 +36,35 @@ type ExplorersOrderConversionInput = {
   clientUserAgent?: string | null;
 };
 
+type ExplorersDigitalOrderConversionInput = {
+  eventId: string;
+  eventTime: number;
+  sourceUrl: string;
+  stripeSessionId: string;
+  value: number;
+  currency: string;
+  productKeys: string[];
+  email?: string | null;
+  fbp?: string | null;
+  fbc?: string | null;
+  clientIpAddress?: string | null;
+  clientUserAgent?: string | null;
+};
+
 export function getExplorersCheckoutMetaEventId(stripeSessionId: string) {
   return `explorers_checkout_${createHash("sha256").update(stripeSessionId).digest("hex").slice(0, 32)}`;
 }
 
 export function getExplorersPurchaseMetaEventId(stripeSessionId: string) {
   return `explorers_purchase_${createHash("sha256").update(stripeSessionId).digest("hex").slice(0, 32)}`;
+}
+
+export function getExplorersDigitalCheckoutMetaEventId(stripeSessionId: string) {
+  return `explorers_digital_checkout_${createHash("sha256").update(stripeSessionId).digest("hex").slice(0, 32)}`;
+}
+
+export function getExplorersDigitalPurchaseMetaEventId(stripeSessionId: string) {
+  return `explorers_digital_purchase_${createHash("sha256").update(stripeSessionId).digest("hex").slice(0, 32)}`;
 }
 
 export function isExplorersPhysicalPurchaseEligible(input: {
@@ -45,6 +75,21 @@ export function isExplorersPhysicalPurchaseEligible(input: {
 }) {
   return (
     input.orderType === EXPLORERS_PHYSICAL_ORDER_TYPE &&
+    input.paymentStatus === "paid" &&
+    typeof input.amountTotal === "number" &&
+    input.amountTotal > 0 &&
+    input.currency === "usd"
+  );
+}
+
+export function isExplorersDigitalPurchaseEligible(input: {
+  orderType?: string | null;
+  paymentStatus?: string | null;
+  amountTotal?: number | null;
+  currency?: string | null;
+}) {
+  return (
+    input.orderType === EXPLORERS_DIGITAL_ORDER_TYPE &&
     input.paymentStatus === "paid" &&
     typeof input.amountTotal === "number" &&
     input.amountTotal > 0 &&
@@ -88,6 +133,21 @@ function buildCustomData(input: ExplorersOrderConversionInput) {
   };
 }
 
+function buildDigitalCustomData(input: ExplorersDigitalOrderConversionInput) {
+  return {
+    value: input.value,
+    currency: input.currency.toUpperCase(),
+    content_name: "The Explorers Series digital download",
+    content_category: "Explorers digital download",
+    content_type: input.productKeys.length > 1 ? "product_group" : "product",
+    content_ids: input.productKeys,
+    contents: input.productKeys.map((id) => ({ id, quantity: 1 })),
+    num_items: input.productKeys.length,
+    order_type: EXPLORERS_DIGITAL_ORDER_TYPE,
+    order_id: input.stripeSessionId,
+  };
+}
+
 export function buildExplorersInitiateCheckoutConversion(
   input: ExplorersOrderConversionInput,
 ) {
@@ -117,5 +177,39 @@ export function buildExplorersPurchaseConversion(input: ExplorersOrderConversion
     event_source_url: input.sourceUrl,
     user_data: buildExplorersMetaUserData(input),
     custom_data: buildCustomData(input),
+  };
+}
+
+export function buildExplorersDigitalInitiateCheckoutConversion(
+  input: ExplorersDigitalOrderConversionInput,
+) {
+  if (!DIGITAL_CHECKOUT_EVENT_ID_PATTERN.test(input.eventId)) {
+    throw new Error("Invalid Explorers digital InitiateCheckout event ID.");
+  }
+  return {
+    event_name: "InitiateCheckout",
+    event_time: input.eventTime,
+    event_id: input.eventId,
+    action_source: "website",
+    event_source_url: input.sourceUrl,
+    user_data: buildExplorersMetaUserData(input),
+    custom_data: buildDigitalCustomData(input),
+  };
+}
+
+export function buildExplorersDigitalPurchaseConversion(
+  input: ExplorersDigitalOrderConversionInput,
+) {
+  if (!DIGITAL_PURCHASE_EVENT_ID_PATTERN.test(input.eventId)) {
+    throw new Error("Invalid Explorers digital Purchase event ID.");
+  }
+  return {
+    event_name: "Purchase",
+    event_time: input.eventTime,
+    event_id: input.eventId,
+    action_source: "website",
+    event_source_url: input.sourceUrl,
+    user_data: buildExplorersMetaUserData(input),
+    custom_data: buildDigitalCustomData(input),
   };
 }

@@ -1,4 +1,4 @@
-.explorersShell {
+≠rá^—f•ñÿ¶{é¨y 'v√Æ∂õ≠.explorersShell {
   min-height: 100vh;
   background: #fffdf8;
 }
@@ -258,7 +258,9 @@
   justify-content: center;
   border: 1px solid #111;
   padding: 0 22px;
+  cursor: pointer;
   color: #111;
+  font-family: inherit;
   font-size: 0.9rem;
   font-weight: 700;
   line-height: 1.2;
@@ -295,6 +297,12 @@
   border-color: #c8c2b8;
   background: #f1ede6;
   color: #77716a;
+}
+
+.primaryButton:disabled,
+.secondaryButton:disabled {
+  cursor: wait;
+  opacity: 0.72;
 }
 
 .digitalBundleCard {

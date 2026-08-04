@@ -1,8 +1,11 @@
-import Stripe from "stripe";
+­r‡^Ñf¥–Ø¦{}¬yÊ'vÃ®¶›­import Stripe from "stripe";
 import { getResend } from "@/lib/resend";
 import { getStripe } from "@/lib/stripe";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
-import { getDigitalDownloadProductByStripeProductId } from "./digitalDownloads";
+import {
+  getDigitalDownloadProductByKey,
+  getDigitalDownloadProductByStripeProductId,
+} from "./digitalDownloads";
 import {
   getDownloadEmailSubject,
   renderDownloadEmailHtml,
@@ -64,20 +67,35 @@ async function createSignedDownloadLinks(session: Stripe.Checkout.Session) {
   const supabase = getSupabaseAdmin();
   const bucket = getRequiredEnv("SUPABASE_DOWNLOAD_BUCKET");
   const ttlSeconds = Number(process.env.DOWNLOAD_LINK_TTL_SECONDS ?? "604800");
-  const lineItems = await stripe.checkout.sessions.listLineItems(session.id, {
-    limit: 100,
-    expand: ["data.price.product"],
-  });
+  const metadataProducts = (session.metadata?.digital_product_keys ?? "")
+    .split(",")
+    .map((key) => getDigitalDownloadProductByKey(key.trim()))
+    .filter(
+      (product: DigitalDownloadProduct | undefined): product is DigitalDownloadProduct =>
+        Boolean(product),
+    );
+  let digitalProducts = metadataProducts;
 
-  const lineItemRows = lineItems.data as Stripe.LineItem[];
-  const digitalProducts: DigitalDownloadProduct[] = lineItemRows
-    .map((lineItem: Stripe.LineItem): DigitalDownloadProduct | undefined => {
-      const stripeProductId = getStripeProductId(lineItem);
-      return stripeProductId
-        ? getDigitalDownloadProductByStripeProductId(stripeProductId)
-        : undefined;
-    })
-    .filter((product: DigitalDownloadProduct | undefined): product is DigitalDownloadProduct => Boolean(product));
+  // Keep supporting previously issued Stripe Payment Links that identify the
+  // download only by the product attached to their line item.
+  if (digitalProducts.length === 0) {
+    const lineItems = await stripe.checkout.sessions.listLineItems(session.id, {
+      limit: 100,
+      expand: ["data.price.product"],
+    });
+    const lineItemRows = lineItems.data as Stripe.LineItem[];
+    digitalProducts = lineItemRows
+      .map((lineItem: Stripe.LineItem): DigitalDownloadProduct | undefined => {
+        const stripeProductId = getStripeProductId(lineItem);
+        return stripeProductId
+          ? getDigitalDownloadProductByStripeProductId(stripeProductId)
+          : undefined;
+      })
+      .filter(
+        (product: DigitalDownloadProduct | undefined): product is DigitalDownloadProduct =>
+          Boolean(product),
+      );
+  }
 
   const uniqueProducts = Array.from(
     new Map<string, DigitalDownloadProduct>(

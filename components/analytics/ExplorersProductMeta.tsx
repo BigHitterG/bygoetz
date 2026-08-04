@@ -1,4 +1,4 @@
-"use client";
+­r‡^Ñf¥–Ø¦{Ž¬yÊ'vÃ®¶›­"use client";
 
 import { useEffect, useRef } from "react";
 import {
@@ -31,6 +31,35 @@ export function ExplorersProductView({
       value,
     });
   }, [artworkSlug, artworkTitle, value]);
+
+  return null;
+}
+
+type ExplorersDigitalProductViewProps = {
+  productKey: string;
+  productTitle: string;
+  value: number;
+};
+
+export function ExplorersDigitalProductView({
+  productKey,
+  productTitle,
+  value,
+}: ExplorersDigitalProductViewProps) {
+  const tracked = useRef(false);
+
+  useEffect(() => {
+    if (tracked.current) return;
+    tracked.current = true;
+    trackExplorersMetaEvent("ViewContent", {
+      content_ids: [productKey],
+      content_name: productTitle,
+      content_category: "Explorers digital download",
+      content_type: "product",
+      currency: "USD",
+      value,
+    });
+  }, [productKey, productTitle, value]);
 
   return null;
 }

@@ -1,6 +1,7 @@
-import { explorerDigitalBundle, explorerProducts } from "@/lib/explorers/products";
+≠rá^—f•ñÿ¶{é¨y 'v√Æ∂õ≠import { explorerDigitalBundle, explorerProducts } from "@/lib/explorers/products";
 import { withSiteBasePath } from "@/lib/sitePath";
 import { ArtworkImage } from "./ArtworkImage";
+import { DigitalCheckoutButton } from "./DigitalCheckoutButton";
 import styles from "./Explorers.module.css";
 
 export function ExplorersPage() {
@@ -75,7 +76,18 @@ export function ExplorersPage() {
             <ul className={styles.bundleList}>
               {explorerDigitalBundle.includes.map((item) => <li key={item}>{item}</li>)}
             </ul>
-            <a className={styles.primaryButton} href={digitalBundleHref}>{digitalBundleCta}</a>
+            {explorerDigitalBundle.checkoutLink ? (
+              <DigitalCheckoutButton
+                className={styles.primaryButton}
+                productKey="explorers-complete-bundle"
+                productTitle="Complete Explorers Digital Collection"
+                value={9.99}
+              >
+                {digitalBundleCta}
+              </DigitalCheckoutButton>
+            ) : (
+              <a className={styles.primaryButton} href={digitalBundleHref}>{digitalBundleCta}</a>
+            )}
           </div>
         </aside>
       </section>

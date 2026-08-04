@@ -1,20 +1,23 @@
-import {
+≠rá^—f•ñÿ¶{è,y 'v√Æ∂õ≠import {
   ExplorerProduct,
   getRelatedExplorerProducts,
 } from "@/lib/explorers/products";
 import {
   ExplorersBuilderLink,
+  ExplorersDigitalProductView,
   ExplorersProductView,
 } from "@/components/analytics/ExplorersProductMeta";
 import { withSiteBasePath } from "@/lib/sitePath";
 import { ArtworkImage } from "./ArtworkImage";
+import { DigitalCheckoutButton } from "./DigitalCheckoutButton";
 import styles from "./Explorers.module.css";
 
 type ExplorerProductPageProps = {
   product: ExplorerProduct;
+  digitalView?: boolean;
 };
 
-export function ExplorerProductPage({ product }: ExplorerProductPageProps) {
+export function ExplorerProductPage({ product, digitalView = false }: ExplorerProductPageProps) {
   const relatedProducts = getRelatedExplorerProducts(product.slug);
   const digitalCheckoutLabel = product.digitalPaymentLink
     ? "Buy Digital File"
@@ -22,11 +25,19 @@ export function ExplorerProductPage({ product }: ExplorerProductPageProps) {
 
   return (
     <main className={styles.page}>
-      <ExplorersProductView
-        artworkSlug={product.slug}
-        artworkTitle={product.title}
-        value={Number(product.priceFrom.replace(/[^0-9.]/g, "")) || 0}
-      />
+      {digitalView ? (
+        <ExplorersDigitalProductView
+          productKey={`${product.slug}-digital-file`}
+          productTitle={`${product.title} Digital File`}
+          value={Number(product.digitalPrice.replace(/[^0-9.]/g, "")) || 0}
+        />
+      ) : (
+        <ExplorersProductView
+          artworkSlug={product.slug}
+          artworkTitle={product.title}
+          value={Number(product.priceFrom.replace(/[^0-9.]/g, "")) || 0}
+        />
+      )}
       <section className={styles.detailHero}>
         <a href={withSiteBasePath("/explorers")} className={styles.backLink}>
           Back to The Explorers Series
@@ -76,7 +87,7 @@ export function ExplorerProductPage({ product }: ExplorerProductPageProps) {
               </ExplorersBuilderLink>
             </div>
 
-            <div className={styles.singleDigitalOption}>
+            <div className={styles.singleDigitalOption} id="digital-download">
               <div>
                 <p className={styles.eyebrow}>Digital file</p>
                 <h2>Download this artwork</h2>
@@ -96,9 +107,14 @@ export function ExplorerProductPage({ product }: ExplorerProductPageProps) {
               </div>
               <strong className={styles.digitalOptionPrice}>{product.digitalPrice}</strong>
               {product.digitalPaymentLink ? (
-                <a className={styles.secondaryButton} href={product.digitalPaymentLink}>
+                <DigitalCheckoutButton
+                  className={styles.secondaryButton}
+                  productKey={`${product.slug}-digital-file`}
+                  productTitle={`${product.title} Digital File`}
+                  value={Number(product.digitalPrice.replace(/[^0-9.]/g, "")) || 0}
+                >
                   {digitalCheckoutLabel}
-                </a>
+                </DigitalCheckoutButton>
               ) : (
                 <button className={styles.disabledButton} type="button" disabled>
                   {digitalCheckoutLabel}
