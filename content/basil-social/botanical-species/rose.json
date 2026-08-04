@@ -1,0 +1,136 @@
+{
+  "schemaVersion": 1,
+  "template": "flowering-plant-v1",
+  "species": "Rose",
+  "scientificName": "Rosa canina",
+  "slug": "rose",
+  "transitionSeconds": 1.5,
+  "cameraLock": {
+    "background": "pure black studio sweep",
+    "lens": "85mm macro-style",
+    "cameraMovement": "none",
+    "zoom": "none",
+    "lighting": "soft upper-left key with subtle upper-right rim",
+    "colorTemperature": "neutral",
+    "centerPoint": "soil mound and terminal growth remain on the vertical optical center"
+  },
+  "stages": [
+    {
+      "id": "seed",
+      "startSeconds": 0,
+      "endSeconds": 2,
+      "label": "Seed",
+      "ageRange": "Day 0",
+      "image": "/basil-social/botanical/rose-v1/01-seed.png",
+      "biology": "A single rose achene rests partly embedded in moist soil."
+    },
+    {
+      "id": "germination",
+      "startSeconds": 2,
+      "endSeconds": 4,
+      "label": "Germination",
+      "ageRange": "After Stratification",
+      "image": "/basil-social/botanical/rose-v1/02-germination.png",
+      "biology": "After its dormancy requirements are met, the radicle and curved shoot emerge."
+    },
+    {
+      "id": "seedling",
+      "startSeconds": 4,
+      "endSeconds": 6,
+      "label": "Seedling",
+      "ageRange": "First 1â€“3 Months",
+      "image": "/basil-social/botanical/rose-v1/03-seedling.png",
+      "biology": "Cotyledons open before the first serrated true leaves develop."
+    },
+    {
+      "id": "juvenile",
+      "startSeconds": 6,
+      "endSeconds": 8,
+      "label": "Vegetative Growth",
+      "ageRange": "Months 3â€“12+",
+      "image": "/basil-social/botanical/rose-v1/04-juvenile.png",
+      "biology": "The perennial plant builds stems, leaves, roots, and stored energy before flowering."
+    },
+    {
+      "id": "bud",
+      "startSeconds": 8,
+      "endSeconds": 10,
+      "label": "Flower Bud",
+      "ageRange": "About 2 Weeks Before Bloom",
+      "image": "/basil-social/botanical/rose-v1/05-bud.png",
+      "biology": "Sepals enclose and protect the developing petals and reproductive structures."
+    },
+    {
+      "id": "opening",
+      "startSeconds": 10,
+      "endSeconds": 12,
+      "label": "Bloom Opening",
+      "ageRange": "Several Days",
+      "image": "/basil-social/botanical/rose-v1/06-opening-bloom.png",
+      "biology": "Petals separate and unfold over several days, depending on cultivar and weather."
+    },
+    {
+      "id": "full-bloom",
+      "startSeconds": 12,
+      "endSeconds": 15,
+      "label": "Full Bloom",
+      "ageRange": "Several Days to 2 Weeks",
+      "image": "/basil-social/botanical/rose-v1/07-full-bloom.png",
+      "biology": "The open five-petaled flower exposes its stamens and receptive floral structures."
+    },
+    {
+      "id": "pollination",
+      "startSeconds": 15,
+      "endSeconds": 17,
+      "label": "Pollination",
+      "ageRange": "While the Flower Is Open",
+      "image": "/basil-social/botanical/rose-v1/08-pollination.png",
+      "biology": "Pollen is transferred to receptive stigmas while the bloom is open."
+    },
+    {
+      "id": "petals-fall",
+      "startSeconds": 17,
+      "endSeconds": 19,
+      "label": "Petals Fall",
+      "ageRange": "After Pollination",
+      "image": "/basil-social/botanical/rose-v1/09-petals-fall.png",
+      "biology": "The petals detach while the fertilized floral base begins fruit development."
+    },
+    {
+      "id": "fruit-and-seed",
+      "startSeconds": 19,
+      "endSeconds": 22,
+      "label": "Rose Hip & Seeds",
+      "ageRange": "Late Summerâ€“Autumn",
+      "image": "/basil-social/botanical/rose-v1/10-rose-hip.png",
+      "biology": "The fleshy hypanthium matures into a rose hip enclosing seed-bearing achenes."
+    },
+    {
+      "id": "plant-death",
+      "startSeconds": 22,
+      "endSeconds": 24,
+      "label": "Plant Death",
+      "ageRange": "Years Later",
+      "image": "/basil-social/botanical/rose-v1/11-plant-death-v3.png",
+      "biology": "Because roses are perennial, whole-plant death is an eventual stage years later rather than an immediate result of producing a rose hip; the stem and leaves wilt and desiccate, the hip shrivels, and the fallen petals rest on the soil."
+    }
+  ],
+  "sources": [
+    {
+      "title": "How to Propagate Roses",
+      "publisher": "Iowa State University Extension",
+      "url": "https://yardandgarden.extension.iastate.edu/how-to/how-propagate-roses"
+    },
+    {
+      "title": "Rose - Rosa",
+      "publisher": "North Carolina Extension Gardener Plant Toolbox",
+      "url": "https://plants.ces.ncsu.edu/plants/rosa/common-name/rose/"
+    },
+    {
+      "title": "Rose Fruit Anatomy",
+      "publisher": "University of Illinois Digital Flowers",
+      "url": "https://www.life.illinois.edu/help/digitalflowers/Fruits/24.htm"
+    }
+  ]
+}
+

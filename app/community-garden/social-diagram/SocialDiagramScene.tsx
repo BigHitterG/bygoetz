@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect, useRef, useState } from "react";
@@ -15,12 +14,14 @@ type PlantCounts = Record<"rose" | "lavender" | "sunflower", number>;
 declare global {
   interface Window {
     __BASIL_SOCIAL_DIAGRAM__?: {
-      source: "live-community-snapshot";
+      source: "live-community-snapshot" | "deterministic-personal-garden";
       generatedAt: string;
       plantCount: number;
       counts: PlantCounts;
       center: { gridX: number; gridY: number };
       dimensions: { width: number; height: number };
+      concept?: "trellis";
+      trellis?: { elementType: "trellis"; footprint: [1, 1]; careCost: 50; lifetimeCareRequired: 3250 };
     };
     __BASIL_SOCIAL_DIAGRAM_CONTROL__?: {
       loadSnapshot: (snapshot: GardenSnapshot) => Promise<void>;
@@ -63,7 +64,7 @@ function anchorForPlant(plant: PlantRecord | undefined, camera: WorldPoint) {
   return worldToScreen(gridToWorld(plant.grid_x, plant.grid_y), camera, { width: WIDTH, height: HEIGHT }, ZOOM);
 }
 
-export function SocialDiagramScene() {
+export function SocialDiagramScene({ concept }: { concept: "live-map" | "trellis" }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [ready, setReady] = useState(false);
   const [counts, setCounts] = useState<PlantCounts>({ rose: 0, lavender: 0, sunflower: 0 });
@@ -72,10 +73,41 @@ export function SocialDiagramScene() {
   useEffect(() => {
     let cancelled = false;
     async function drawLiveGarden(snapshot: GardenSnapshot) {
-      if (cancelled || snapshot.plants.length === 0) throw new Error("The live community garden snapshot is empty.");
+      if (cancelled) return;
       const canvas = canvasRef.current;
       const context = canvas?.getContext("2d");
       if (!canvas || !context) return;
+      if (concept === "trellis") {
+        const plantedAt = "2026-08-04T12:00:00.000Z";
+        const plants: PlantRecord[] = [
+          { id: "trellis-rose-1", grid_x: -3, grid_y: -2, plant_type: "rose", planted_at: plantedAt, last_watered_at: plantedAt, created_at: plantedAt, permanent: true },
+          { id: "trellis-lavender-1", grid_x: 3, grid_y: -2, plant_type: "lavender", planted_at: plantedAt, last_watered_at: plantedAt, created_at: plantedAt, permanent: true },
+          { id: "trellis-sunflower-1", grid_x: -3, grid_y: 3, plant_type: "sunflower", planted_at: plantedAt, last_watered_at: plantedAt, created_at: plantedAt, permanent: true },
+          { id: "trellis-rose-2", grid_x: 3, grid_y: 3, plant_type: "rose", planted_at: plantedAt, last_watered_at: plantedAt, created_at: plantedAt, permanent: true },
+        ];
+        const camera = { x: gridToWorld(0, 0).x, y: gridToWorld(0, 0).y + 52 };
+        renderGarden(context, {
+          viewport: { width: WIDTH, height: HEIGHT }, camera, zoom: 5.25,
+          mary: gridToWorld(-2, 1), duck: gridToWorld(-1, 2), plants, weeds: [],
+          selected: { gridX: 0, gridY: 0 }, wateringTargets: [], wateringCareReadyPlantIds: new Set(), wateringCareStatusLoaded: false,
+          suggestedPlantingCell: { gridX: 0, gridY: 0 }, suggestedWateringCell: null, gardenWorms: [], tutorialDimmed: false,
+          effects: [], moving: false, now: Date.parse(plantedAt), mode: "personal", reducedMotion: true,
+          personalGarden: {
+            minX: -5, minY: -5, width: 11, height: 11, maxWidth: 11, maxHeight: 11,
+            elements: [{ id: "social-trellis", gridX: 0, gridY: 0, elementType: "trellis", careCost: 50 }],
+            paths: [{ gridX: -2, gridY: 2 }, { gridX: -1, gridY: 2 }, { gridX: 0, gridY: 2 }, { gridX: 1, gridY: 2 }, { gridX: 2, gridY: 2 }],
+            nextExpansion: null,
+          },
+        });
+        window.__BASIL_SOCIAL_DIAGRAM__ = {
+          source: "deterministic-personal-garden", generatedAt: plantedAt, plantCount: plants.length,
+          counts: { rose: 2, lavender: 1, sunflower: 1 }, center: { gridX: 0, gridY: 0 }, dimensions: { width: WIDTH, height: HEIGHT },
+          concept: "trellis", trellis: { elementType: "trellis", footprint: [1, 1], careCost: 50, lifetimeCareRequired: 3250 },
+        };
+        requestAnimationFrame(() => requestAnimationFrame(() => setReady(true)));
+        return;
+      }
+      if (snapshot.plants.length === 0) throw new Error("The live community garden snapshot is empty.");
       const center = findDiverseCenter(snapshot.plants);
       const openCell = findOpenCell(snapshot.plants, center);
       const cameraBase = gridToWorld(center.gridX, center.gridY);
@@ -131,13 +163,31 @@ export function SocialDiagramScene() {
       delete window.__BASIL_SOCIAL_DIAGRAM__;
       delete window.__BASIL_SOCIAL_DIAGRAM_CONTROL__;
     };
-  }, []);
+  }, [concept]);
 
   const total = counts.rose + counts.lavender + counts.sunflower;
   return (
     <main className={styles.diagram} data-diagram-ready={ready ? "true" : "false"}>
-      <canvas ref={canvasRef} width={WIDTH} height={HEIGHT} aria-label="Live Basil shared community garden planting diversity map" />
+      <canvas ref={canvasRef} width={WIDTH} height={HEIGHT} aria-label={concept === "trellis" ? "Game-accurate Basil My Garden trellis placement diagram" : "Live Basil shared community garden planting diversity map"} />
       <div className={styles.tint} aria-hidden="true" />
+      {concept === "trellis" ? (
+        <>
+          <header className={styles.title}>
+            <span>MY GARDEN Â· DECOR</span>
+            <h1>How to place<br />a trellis</h1>
+            <p>Choose one open grid tile, then place it from your inventory.</p>
+          </header>
+          <svg className={styles.leaders} viewBox={`0 0 ${WIDTH} ${HEIGHT}`} aria-hidden="true">
+            <path d="M 245 575 C 330 605, 430 650, 535 700" /><circle cx="535" cy="700" r="9" />
+            <path d="M 835 575 C 760 610, 660 650, 555 700" /><circle cx="555" cy="700" r="9" />
+            <path d="M 540 1025 C 540 930, 545 820, 545 730" /><circle cx="545" cy="730" r="9" />
+          </svg>
+          <section className={`${styles.callout} ${styles.rose}`}><strong>1 Ã— 1</strong><span>GRID FOOTPRINT</span></section>
+          <section className={`${styles.callout} ${styles.lavender}`}><strong>50</strong><span>CARE TO PLACE</span></section>
+          <section className={`${styles.callout} ${styles.sunflower}`}><strong>3,250</strong><span>LIFETIME CARE TO UNLOCK</span></section>
+          <footer className={styles.footer}><span>OPEN TILE â†’ INVENTORY â†’ TRELLIS</span><strong>basilcommunitygarden.com</strong></footer>
+        </>
+      ) : <>
       <header className={styles.title}>
         <span>LIVE COMMUNITY GARDEN</span>
         <h1>{total.toLocaleString()} flowers.<br />One shared garden.</h1>
@@ -155,6 +205,7 @@ export function SocialDiagramScene() {
       <section className={`${styles.callout} ${styles.lavender}`}><strong>{counts.lavender.toLocaleString()}</strong><span>LAVENDER</span></section>
       <section className={`${styles.callout} ${styles.sunflower}`}><strong>{counts.sunflower.toLocaleString()}</strong><span>SUNFLOWERS</span></section>
       <footer className={styles.footer}><span>WHERE WOULD YOU PLANT NEXT?</span><strong>basilcommunitygarden.com</strong></footer>
+      </>}
     </main>
   );
 }

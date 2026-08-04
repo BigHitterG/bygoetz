@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "template": "flowering-plant-v1",
+  "species": "Common sunflower",
+  "scientificName": "Helianthus annuus",
+  "slug": "sunflower",
+  "transitionSeconds": 1.5,
+  "cameraLock": {
+    "background": "pure black studio sweep above a small centered mound of dark moist soil",
+    "lens": "85mm macro-style",
+    "cameraMovement": "none",
+    "zoom": "none",
+    "lighting": "soft upper-left key with a subtle upper-right rim light",
+    "colorTemperature": "neutral",
+    "centerPoint": "the same soil mound, stem axis, and flower head remain on the vertical optical center"
+  },
+  "stages": [
+    { "id": "seed", "startSeconds": 0, "endSeconds": 2, "label": "Seed", "ageRange": "Day 0", "image": "/basil-social/botanical/sunflower-v1/01-seed.png", "biology": "One striped sunflower achene rests partly embedded in the same moist soil mound." },
+    { "id": "germination", "startSeconds": 2, "endSeconds": 4, "label": "Germination", "ageRange": "About Days 3â€“10", "image": "/basil-social/botanical/sunflower-v1/02-germination.png", "biology": "The seed coat splits, a white radicle grows downward, and the curved hypocotyl begins lifting toward the surface." },
+    { "id": "seedling", "startSeconds": 4, "endSeconds": 6, "label": "Seedling", "ageRange": "Weeks 1â€“3", "image": "/basil-social/botanical/sunflower-v1/03-seedling.png", "biology": "Two broad green cotyledons open above the soil and the first rough true leaves begin forming." },
+    { "id": "juvenile", "startSeconds": 6, "endSeconds": 8, "label": "Vegetative Growth", "ageRange": "Weeks 3â€“8", "image": "/basil-social/botanical/sunflower-v1/04-juvenile.png", "biology": "The same annual plant develops a thick hairy stem and expanding heart-shaped leaves." },
+    { "id": "bud", "startSeconds": 8, "endSeconds": 10, "label": "Flower Bud", "ageRange": "Before Bloom", "image": "/basil-social/botanical/sunflower-v1/05-bud.png", "biology": "A single terminal green bud forms, enclosed by overlapping pointed bracts." },
+    { "id": "opening", "startSeconds": 10, "endSeconds": 12, "label": "Bloom Opening", "ageRange": "About Days 50â€“95", "image": "/basil-social/botanical/sunflower-v1/06-opening-bloom.png", "biology": "The yellow ray flowers begin unfolding around the still-opening central disk." },
+    { "id": "full-bloom", "startSeconds": 12, "endSeconds": 15, "label": "Full Bloom", "ageRange": "Several Days", "image": "/basil-social/botanical/sunflower-v1/07-full-bloom.png", "biology": "The mature head displays a complete ring of yellow ray flowers around hundreds of tiny disk florets." },
+    { "id": "pollination", "startSeconds": 15, "endSeconds": 17, "label": "Pollination", "ageRange": "During Bloom", "image": "/basil-social/botanical/sunflower-v1/08-pollination.png", "biology": "A bee briefly visits the open disk while a visible flowering ring progresses inward across the florets." },
+    { "id": "petals-fall", "startSeconds": 17, "endSeconds": 19, "label": "Ray Flowers Fade", "ageRange": "After Pollination", "image": "/basil-social/botanical/sunflower-v1/09-petals-fall.png", "biology": "The yellow ray flowers wilt and fall while fertilized disk florets begin filling seeds in the head." },
+    { "id": "fruit-and-seed", "startSeconds": 19, "endSeconds": 22, "label": "Seeds Mature", "ageRange": "30â€“45 Days After Bloom", "image": "/basil-social/botanical/sunflower-v1/10-seed-head.png", "biology": "The heavy head bends downward; its back turns yellow-brown and plump striped achenes are visible in the drying disk." },
+    { "id": "plant-death", "startSeconds": 22, "endSeconds": 24, "label": "Plant Death", "ageRange": "End of the Annual Cycle", "image": "/basil-social/botanical/sunflower-v1/11-plant-death.png", "biology": "The annual plant is fully dead and desiccated: brown drooping seed head, brittle stem, curled dead leaves, and several fallen ray flowers and seeds on the soil." }
+  ],
+  "sources": [
+    { "title": "Sunflower Production Guide", "publisher": "North Dakota State University Extension", "url": "https://www.ndsu.edu/agriculture/extension/publications/sunflower-production-guide" },
+    { "title": "Growing Sunflowers and Their Varieties", "publisher": "Iowa State University Extension", "url": "https://yardandgarden.extension.iastate.edu/how-to/growing-sunflowers-and-their-varieties" },
+    { "title": "Grow your own sunflowers", "publisher": "Oregon State University Extension", "url": "https://extension.oregonstate.edu/catalog/em-9866-grow-your-own-sunflowers" }
+  ]
+}
+

@@ -57,6 +57,9 @@ test("Social Studio migration keeps drafts private and approvals explicit", () =
   assert.match(studio, /Opening the Studio never publishes/i);
   assert.match(studio, /window\.confirm/);
   assert.match(studio, /Download \{story\.assetKind\}/);
+  assert.match(studio, /downloadUrl/);
+  assert.match(server, /createSignedUrl\(asset\.object_path, 60 \* 60, \{ download: filename \}\)/);
+  assert.match(server, /supplementalDownload/);
   assert.match(studio, /finished, game-accurate 4:5 image/i);
   assert.match(studio, /loading="eager"/);
   assert.match(server, /resendLatestSocialDigest/);
@@ -88,6 +91,7 @@ test("video packages derive captions from narration and replay real watering eff
   const packageJson = readFileSync(new URL("../package.json", import.meta.url), "utf8");
   assert.match(renderer, /basil-edge-tts\.py/);
   assert.match(narrator, /boundary="WordBoundary"/);
+  assert.match(narrator, /en-US-JennyNeural/);
   assert.match(renderer, /basil-generate-garden-loop\.py/);
   assert.match(renderer, /amix=inputs=2/);
   assert.match(renderer, /backgroundMusicProvider/);
@@ -151,6 +155,9 @@ test("mixed-media review adds two video scenes, a deterministic diagram, and per
   assert.match(renderer, /--recipe/);
   assert.match(renderer, /garden-status/);
   assert.match(renderer, /watering-how-to/);
+  assert.match(renderer, /rose-life-cycle/);
+  assert.match(renderer, /stage_word_only/);
+  assert.match(renderer, /exactly four single-word stage labels/);
   assert.match(diagramRenderer, /community-grid-diagram/);
   assert.match(diagramRenderer, /1080x1350 PNG delivery contract/);
   assert.match(diagramScene, /renderGarden/);
@@ -163,6 +170,8 @@ test("mixed-media review adds two video scenes, a deterministic diagram, and per
   assert.match(scene, /kind: "water"/);
   assert.match(scene, /Today's shared garden/);
   assert.match(scene, /My Garden builder mode/);
+  assert.match(scene, /Dormant seed/);
+  assert.match(scene, /orthogonally neighboring cell/);
   assert.match(studio, /const CHANNEL_ORDER: Channel\[\] = \["instagram", "youtube", "reddit"\]/);
   assert.match(studio, /Save daily feedback/);
   assert.match(studio, /Approve video \+ 3 posts/);
@@ -174,6 +183,38 @@ test("mixed-media review adds two video scenes, a deterministic diagram, and per
   assert.match(migration, /asset\.kind = 'image'/);
   assert.match(migration, /array\['instagram', 'reddit'\]/);
   assert.match(migration, /grant execute.*service_role/i);
+});
+
+test("Task 1 excludes the ten most recently published topics before choosing new subjects", () => {
+  const runbook = readFileSync(new URL("../docs/basil-social-scheduled-tasks.md", import.meta.url), "utf8");
+  assert.match(runbook, /10 most recently published distinct stories/i);
+  assert.match(runbook, /Reject a candidate that substantially repeats/i);
+  assert.match(runbook, /supplemental download-only replay/i);
+});
+
+test("botanical lifecycle pipeline is species-driven, locked-camera, and biologically ordered", () => {
+  const planner = readFileSync(new URL("../scripts/basil-plan-botanical-lifecycle.mjs", import.meta.url), "utf8");
+  const renderer = readFileSync(new URL("../scripts/basil-render-botanical-lifecycle.mjs", import.meta.url), "utf8");
+  const profile = JSON.parse(readFileSync(new URL("../content/basil-social/botanical-species/rose.json", import.meta.url), "utf8"));
+  const recipe = JSON.parse(readFileSync(new URL("../content/basil-social/today-2.json", import.meta.url), "utf8"));
+  assert.equal(profile.template, "flowering-plant-v1");
+  assert.equal(profile.stages.length, 11);
+  assert.equal(profile.stages.at(-1).endSeconds, 24);
+  assert.ok(profile.stages.findIndex((stage: { id: string }) => stage.id === "pollination") < profile.stages.findIndex((stage: { id: string }) => stage.id === "petals-fall"));
+  assert.ok(profile.stages.findIndex((stage: { id: string }) => stage.id === "petals-fall") < profile.stages.findIndex((stage: { id: string }) => stage.id === "fruit-and-seed"));
+  assert.ok(profile.stages.findIndex((stage: { id: string }) => stage.id === "fruit-and-seed") < profile.stages.findIndex((stage: { id: string }) => stage.id === "plant-death"));
+  assert.equal(recipe.scene, "botanical-lifecycle");
+  assert.equal(recipe.audioMode, "silent");
+  assert.equal(recipe.narration, undefined);
+  assert.match(planner, /--species/);
+  assert.match(planner, /identical camera, lens, framing/);
+  assert.match(renderer, /local-aligned-keyframe-blend-v1/);
+  assert.match(renderer, /blend=all_expr/);
+  assert.match(renderer, /pollination before petal fall and fruit development afterward/);
+  assert.match(renderer, /voiceProvider: "none"/);
+  assert.match(renderer, /VIVALDII\.TTF/);
+  assert.match(renderer, /backgroundMusicProvider: "none"/);
+  assert.doesNotMatch(renderer, /basil-generate-garden-loop\.py/);
 });
 
 test("notification capability sends the review email only after the video upload", () => {
@@ -203,4 +244,5 @@ test("private trial asset cleanup is story-scoped and one-time", () => {
   assert.match(cleanupMigration, /'cleanup'/);
   assert.match(cleanupMigration, /grant execute[\s\S]*to service_role/);
 });
+
 

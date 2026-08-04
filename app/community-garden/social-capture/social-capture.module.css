@@ -1,4 +1,3 @@
-
 .capture {
   position: relative;
   width: 100vw;
@@ -14,6 +13,22 @@
   height: 100%;
   display: block;
   image-rendering: pixelated;
+}
+
+.lifecycleVisual {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: #e9e1d2;
+}
+
+.lifecycleVisual img {
+  width: 200%;
+  height: 200%;
+  max-width: none;
+  display: block;
+  object-fit: cover;
+  filter: saturate(.96) contrast(1.02);
 }
 
 .vignette {

@@ -1,4 +1,3 @@
-
 import { spawn } from "node:child_process";
 import { createRequire } from "node:module";
 import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
@@ -44,6 +43,7 @@ async function waitForServer(url, child) {
 const recipePath = resolve(root, option("--recipe", "content/basil-social/today-3.json"));
 const recipe = require(recipePath);
 let productionRecipe = recipe;
+const diagramMode = recipe.diagramMode === "trellis-placement" ? "trellis-placement" : "live-map";
 if (recipe.assetKind !== "image" || recipe.scene !== "community-grid-diagram") {
   throw new Error("The diagram renderer accepts only the implemented community-grid-diagram image recipe.");
 }
@@ -77,38 +77,48 @@ const outputImage = resolve(outputDirectory, `${stem}.png`);
 const outputManifest = resolve(outputDirectory, `${stem}.manifest.json`);
 mkdirSync(outputDirectory, { recursive: true });
 
-const captureUrl = option("--url", "http://localhost:3010/community-garden/social-diagram");
+const captureUrl = option("--url", `http://localhost:3010/community-garden/social-diagram${diagramMode === "trellis-placement" ? "?concept=trellis" : ""}`);
 const server = process.argv.includes("--no-server")
   ? null
   : spawn(process.execPath, [resolve(root, "node_modules", "next", "dist", "bin", "next"), "dev", "-p", "3010"], { cwd: root, stdio: "inherit", windowsHide: true });
 const playwright = loadPlaywright();
 let browser;
-let liveSnapshot;
+let diagramSnapshot;
 try {
   if (server) await waitForServer(captureUrl, server);
   browser = await playwright.chromium.launch({ headless: true, channel: "msedge" });
   const context = await browser.newContext({ viewport: { width: 540, height: 675 }, deviceScaleFactor: 2 });
   const page = await context.newPage();
-  const snapshotVersion = Math.floor(Date.now() / (10 * 60 * 1000));
-  const snapshotResponse = await context.request.get(`https://basilcommunitygarden.com/api/community-garden/snapshot?version=${snapshotVersion}`, { timeout: 30_000 });
-  if (!snapshotResponse.ok()) throw new Error(`The live Basil garden snapshot returned HTTP ${snapshotResponse.status()}.`);
-  const gardenSnapshot = await snapshotResponse.json();
+  let gardenSnapshot = { plants: [], weeds: [], plantCount: 0, generatedAt: new Date().toISOString() };
+  if (diagramMode === "live-map") {
+    const snapshotVersion = Math.floor(Date.now() / (10 * 60 * 1000));
+    const snapshotResponse = await context.request.get(`https://basilcommunitygarden.com/api/community-garden/snapshot?version=${snapshotVersion}`, { timeout: 30_000 });
+    if (!snapshotResponse.ok()) throw new Error(`The live Basil garden snapshot returned HTTP ${snapshotResponse.status()}.`);
+    gardenSnapshot = await snapshotResponse.json();
+  }
   await page.goto(captureUrl, { waitUntil: "domcontentloaded", timeout: 60_000 });
   await page.waitForFunction(() => Boolean(window.__BASIL_SOCIAL_DIAGRAM_CONTROL__), undefined, { timeout: 30_000 });
   await page.evaluate((snapshot) => window.__BASIL_SOCIAL_DIAGRAM_CONTROL__?.loadSnapshot(snapshot), gardenSnapshot);
   await page.locator('[data-diagram-ready="true"]').waitFor({ state: "visible", timeout: 30_000 });
-  liveSnapshot = await page.evaluate(() => window.__BASIL_SOCIAL_DIAGRAM__);
-  if (!liveSnapshot || liveSnapshot.source !== "live-community-snapshot" || !liveSnapshot.generatedAt) {
-    throw new Error("The diagram did not provide a verified live community-garden snapshot.");
+  diagramSnapshot = await page.evaluate(() => window.__BASIL_SOCIAL_DIAGRAM__);
+  if (!diagramSnapshot?.generatedAt) throw new Error("The diagram did not provide validated provenance.");
+  if (diagramMode === "live-map") {
+    if (diagramSnapshot.source !== "live-community-snapshot") throw new Error("The diagram did not provide a verified live community-garden snapshot.");
+    const expected = recipe.snapshotExpectation;
+    const countSum = Object.values(diagramSnapshot.counts ?? {}).reduce((sum, value) => sum + Number(value || 0), 0);
+    if (!expected || diagramSnapshot.plantCount < expected.minimumPlantCount
+      || expected.requiredTypes.some((type) => !(diagramSnapshot.counts?.[type] > 0))
+      || countSum !== diagramSnapshot.plantCount) {
+      throw new Error(`The live community garden snapshot failed the diversity contract: ${JSON.stringify({ plantCount: diagramSnapshot.plantCount, counts: diagramSnapshot.counts, generatedAt: diagramSnapshot.generatedAt })}`);
+    }
+    productionRecipe = hydrateRecipe(diagramSnapshot);
+  } else if (diagramSnapshot.source !== "deterministic-personal-garden"
+    || diagramSnapshot.trellis?.elementType !== "trellis"
+    || JSON.stringify(diagramSnapshot.trellis?.footprint) !== JSON.stringify([1, 1])
+    || diagramSnapshot.trellis?.careCost !== 50
+    || diagramSnapshot.trellis?.lifetimeCareRequired !== 3250) {
+    throw new Error(`The trellis diagram failed its game-accuracy contract: ${JSON.stringify(diagramSnapshot)}`);
   }
-  const expected = recipe.snapshotExpectation;
-  const countSum = Object.values(liveSnapshot.counts ?? {}).reduce((sum, value) => sum + Number(value || 0), 0);
-  if (!expected || liveSnapshot.plantCount < expected.minimumPlantCount
-    || expected.requiredTypes.some((type) => !(liveSnapshot.counts?.[type] > 0))
-    || countSum !== liveSnapshot.plantCount) {
-    throw new Error(`The live community garden snapshot failed the diversity contract: ${JSON.stringify({ plantCount: liveSnapshot.plantCount, counts: liveSnapshot.counts, generatedAt: liveSnapshot.generatedAt })}`);
-  }
-  productionRecipe = hydrateRecipe(liveSnapshot);
   await page.evaluate(() => document.querySelector("nextjs-portal")?.remove());
   await page.screenshot({ path: outputImage });
   await context.close();
@@ -143,6 +153,9 @@ const manifest = {
   intendedAudience: productionRecipe.intendedAudience,
   distribution: productionRecipe.distribution,
   hypothesis: productionRecipe.hypothesis,
+  viewerJob: productionRecipe.viewerJob,
+  changedTestVariable: productionRecipe.changedTestVariable,
+  contentLane: productionRecipe.contentLane,
   alternateHooks: productionRecipe.alternateHooks,
   platforms: productionRecipe.platforms,
   destinationUrl: productionRecipe.destinationUrl,
@@ -150,7 +163,9 @@ const manifest = {
   truthClaims: productionRecipe.truthClaims,
   platformCopy: productionRecipe.platformCopy,
   source: productionRecipe.sourceNote,
-  liveSnapshot,
+  provenance: productionRecipe.provenance ?? { sourceType: "live_production_snapshot_basil_renderer", generatedWithAI: false },
+  diagramSnapshot,
+  liveSnapshot: diagramMode === "live-map" ? diagramSnapshot : null,
   image: outputImage,
   mimeType: "image/png",
   width,
