@@ -1,0 +1,60 @@
+{
+  "schemaVersion": 1,
+  "description": "Private, durable source archive for reusable Basil social media productions.",
+  "collections": [
+    {
+      "collectionKey": "botanical/rose-v1",
+      "collectionType": "botanical_lifecycle",
+      "title": "Rose lifecycle â€” locked studio specimen v1",
+      "speciesSlug": "rose",
+      "scientificName": "Rosa canina",
+      "sourceStoryId": "16213833-7940-4468-adce-97ddfcb33482",
+      "lifecycleProfile": "content/basil-social/botanical-species/rose.json",
+      "assets": [
+        { "assetKey": "plant-death-alternate-v2", "assetRole": "alternate_keyframe", "stageIndex": 10, "stageKey": "plant-death", "path": "public/basil-social/botanical/rose-v1/11-plant-death-v2.png", "mimeType": "image/png", "width": 941, "height": 1672 },
+        { "assetKey": "species-profile", "assetRole": "species_profile", "path": "content/basil-social/botanical-species/rose.json", "mimeType": "application/json" },
+        { "assetKey": "final-video", "assetRole": "final_video", "path": "artifacts/basil-social-studio/rose-locked-lifecycle-20260803-r2.mp4", "mimeType": "video/mp4", "width": 1080, "height": 1920, "durationMs": 24000 },
+        { "assetKey": "poster", "assetRole": "poster", "path": "artifacts/basil-social-studio/rose-locked-lifecycle-20260803-r2-poster.jpg", "mimeType": "image/jpeg", "width": 1080, "height": 1920 },
+        { "assetKey": "production-manifest", "assetRole": "production_manifest", "path": "artifacts/basil-social-studio/rose-locked-lifecycle-20260803-r2.manifest.json", "mimeType": "application/json" }
+      ]
+    },
+    {
+      "collectionKey": "botanical/sunflower-v1",
+      "collectionType": "botanical_lifecycle",
+      "title": "Sunflower lifecycle â€” locked studio specimen v1",
+      "speciesSlug": "sunflower",
+      "scientificName": "Helianthus annuus",
+      "sourceStoryId": "af373990-4487-44d9-b803-394d66bd9500",
+      "lifecycleProfile": "content/basil-social/botanical-species/sunflower.json",
+      "assets": [
+        { "assetKey": "species-profile", "assetRole": "species_profile", "path": "content/basil-social/botanical-species/sunflower.json", "mimeType": "application/json" },
+        { "assetKey": "final-video", "assetRole": "final_video", "path": "artifacts/basil-social-studio/sunflower-locked-lifecycle-20260804.mp4", "mimeType": "video/mp4", "width": 1080, "height": 1920, "durationMs": 24000 },
+        { "assetKey": "poster", "assetRole": "poster", "path": "artifacts/basil-social-studio/sunflower-locked-lifecycle-20260804-poster.jpg", "mimeType": "image/jpeg", "width": 1080, "height": 1920 },
+        { "assetKey": "production-manifest", "assetRole": "production_manifest", "path": "artifacts/basil-social-studio/sunflower-locked-lifecycle-20260804.manifest.json", "mimeType": "application/json" }
+      ]
+    },
+    {
+      "collectionKey": "diagrams/trellis-placement-20260804",
+      "collectionType": "diagram",
+      "title": "How to place a trellis",
+      "sourceStoryId": "c0d29cb2-df9c-490d-a47f-e3542c601946",
+      "assets": [
+        { "assetKey": "diagram", "assetRole": "diagram", "path": "artifacts/basil-social-studio/how-to-place-trellis-20260804.png", "mimeType": "image/png", "width": 1080, "height": 1350 },
+        { "assetKey": "production-manifest", "assetRole": "production_manifest", "path": "artifacts/basil-social-studio/how-to-place-trellis-20260804.manifest.json", "mimeType": "application/json" }
+      ]
+    },
+    {
+      "collectionKey": "game-mechanics/varied-garden-task-20260804",
+      "collectionType": "game_mechanic",
+      "title": "A Varied Garden â€” three flower varieties",
+      "sourceStoryId": "9108aba5-e420-4e71-b747-82b67129fc80",
+      "assets": [
+        { "assetKey": "final-video", "assetRole": "final_video", "path": "artifacts/basil-social-studio/varied-garden-task-three-types-20260804.mp4", "mimeType": "video/mp4", "width": 1080, "height": 1920, "durationMs": 23082 },
+        { "assetKey": "poster", "assetRole": "poster", "path": "artifacts/basil-social-studio/varied-garden-task-three-types-20260804-poster.jpg", "mimeType": "image/jpeg", "width": 1080, "height": 1920 },
+        { "assetKey": "caption-timing", "assetRole": "caption_timing", "path": "artifacts/basil-social-studio/varied-garden-task-three-types-20260804-caption-timing.json", "mimeType": "application/json" },
+        { "assetKey": "production-manifest", "assetRole": "production_manifest", "path": "artifacts/basil-social-studio/varied-garden-task-three-types-20260804.manifest.json", "mimeType": "application/json" }
+      ]
+    }
+  ]
+}
+

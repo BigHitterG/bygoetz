@@ -51,6 +51,7 @@
     "social:render-lifecycle": "node scripts/basil-render-botanical-lifecycle.mjs",
     "social:render-diagram": "node scripts/basil-render-social-diagram.mjs",
     "social:upload-package": "node scripts/basil-upload-social-package.mjs",
+    "social:archive-evergreen": "node scripts/basil-archive-evergreen-assets.mjs",
     "social:prepare-approved": "node scripts/basil-prepare-approved-posts.mjs",
     "social:mark-published": "node scripts/basil-mark-social-published.mjs",
     "test:stewardship": "node --experimental-strip-types tests/basil-community-stewardship.test.ts",
@@ -77,5 +78,6 @@
     "typescript": "6.0.3"
   }
 }
+
 
 
