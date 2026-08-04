@@ -1,4 +1,4 @@
-≠rá^—f•ñÿ¶{éÏy 'v√Æ∂õ≠import { NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import {
   fulfillGardenStewardCheckout,
@@ -75,3 +75,4 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
+

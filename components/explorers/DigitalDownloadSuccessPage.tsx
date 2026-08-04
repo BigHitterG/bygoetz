@@ -1,4 +1,4 @@
-≠rá^—f•ñÿ¶{çÏy 'v√Æ∂õ≠import { ArtworkImage } from "@/components/explorers/ArtworkImage";
+import { ArtworkImage } from "@/components/explorers/ArtworkImage";
 import styles from "@/components/explorers/Explorers.module.css";
 import { explorerProducts } from "@/lib/explorers/products";
 import { withSiteBasePath } from "@/lib/sitePath";
@@ -68,4 +68,5 @@ export function DigitalDownloadSuccessPage({ verified = true }: { verified?: boo
     </main>
   );
 }
+
 

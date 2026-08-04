@@ -1,4 +1,4 @@
-≠rá^—f•ñÿ¶{è,y 'v√Æ∂õ≠import {
+import {
   ExplorerProduct,
   getRelatedExplorerProducts,
 } from "@/lib/explorers/products";
@@ -146,4 +146,5 @@ export function ExplorerProductPage({ product, digitalView = false }: ExplorerPr
     </main>
   );
 }
+
 

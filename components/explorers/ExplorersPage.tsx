@@ -1,4 +1,4 @@
-≠rá^—f•ñÿ¶{é¨y 'v√Æ∂õ≠import { explorerDigitalBundle, explorerProducts } from "@/lib/explorers/products";
+import { explorerDigitalBundle, explorerProducts } from "@/lib/explorers/products";
 import { withSiteBasePath } from "@/lib/sitePath";
 import { ArtworkImage } from "./ArtworkImage";
 import { DigitalCheckoutButton } from "./DigitalCheckoutButton";
@@ -187,4 +187,5 @@ export function ExplorersPage() {
     </main>
   );
 }
+
 

@@ -1,4 +1,4 @@
-≠rá^—f•ñÿ¶{è,y 'v√Æ∂õ≠import { after, NextRequest, NextResponse } from "next/server";
+import { after, NextRequest, NextResponse } from "next/server";
 import {
   getExplorersDigitalCheckoutMetaEventId,
   sendExplorersDigitalInitiateCheckoutConversion,
@@ -128,3 +128,4 @@ export async function POST(request: NextRequest) {
 
   return NextResponse.json({ url: session.url, metaEventId });
 }
+

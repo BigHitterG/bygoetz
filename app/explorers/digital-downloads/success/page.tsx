@@ -1,4 +1,4 @@
-≠rá^—f•ñÿ¶{~Ïy 'v√Æ∂õ≠import type { Metadata } from "next";
+import type { Metadata } from "next";
 import { ExplorersDigitalMetaPurchaseTracker } from "@/components/analytics/ExplorersDigitalMetaPurchaseTracker";
 import { DigitalDownloadSuccessPage } from "@/components/explorers/DigitalDownloadSuccessPage";
 import { getExplorersDigitalPurchaseMetaEventId } from "@/lib/analytics/explorersMetaServer";
@@ -57,3 +57,4 @@ export default async function Page({ searchParams }: SuccessPageProps) {
     </>
   );
 }
+

@@ -1,4 +1,4 @@
-≠rá^—f•ñÿ¶{é¨y 'v√Æ∂õ≠"use client";
+"use client";
 
 import { useState } from "react";
 import { ArtworkImage } from "@/components/explorers/ArtworkImage";
@@ -106,3 +106,4 @@ export function DigitalDownloadsPage() {
     </main>
   );
 }
+

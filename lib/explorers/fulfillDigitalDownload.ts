@@ -1,4 +1,4 @@
-≠rá^—f•ñÿ¶{}¨y 'v√Æ∂õ≠import Stripe from "stripe";
+import Stripe from "stripe";
 import { getResend } from "@/lib/resend";
 import { getStripe } from "@/lib/stripe";
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin";
@@ -242,3 +242,4 @@ export async function fulfillDigitalDownloadCheckout(
 
   return { status: "sent" };
 }
+

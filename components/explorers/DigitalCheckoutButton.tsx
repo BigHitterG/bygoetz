@@ -1,4 +1,4 @@
-≠rá^—f•ñÿ¶{çly 'v√Æ∂õ≠"use client";
+"use client";
 
 import { useState } from "react";
 import {
@@ -92,3 +92,4 @@ export function DigitalCheckoutButton({
     </>
   );
 }
+

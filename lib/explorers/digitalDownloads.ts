@@ -1,4 +1,4 @@
-≠rá^—f•ñÿ¶{çÏy 'v√Æ∂õ≠export type DigitalDownloadProduct = {
+export type DigitalDownloadProduct = {
   key: string;
   title: string;
   priceCents: number;
@@ -89,3 +89,4 @@ export function getDigitalDownloadProductByStripeProductId(stripeProductId: stri
 export function getDigitalDownloadProductByKey(productKey: string) {
   return productsByKey.get(productKey);
 }
+

@@ -1,4 +1,4 @@
-≠rá^—f•ñÿ¶{é¨y 'v√Æ∂õ≠"use client";
+"use client";
 
 import { useEffect, useRef } from "react";
 import {
@@ -97,3 +97,4 @@ export function ExplorersBuilderLink({
     </a>
   );
 }
+

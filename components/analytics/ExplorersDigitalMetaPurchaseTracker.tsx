@@ -1,14 +1,46 @@
-­r‡^Ñf¥–Ø¦{‹r‰Ý°ë­¦ëH\ÙHÛY[ŽÂ‚š[\ÜÈ\ÙQY™™XÝHœ›ÛHœ™XXÝŽÂš[\ÜÈ˜XÚÑ^Ü™\œÓY]Q]™[Hœ›ÛHÛX‹Ø[˜[]XÜËÙ^Ü™\œÓY]T^[ŽÂš[\ÜÈVÔ‘T”×ÑQÒUSÓÔ‘T—ÕTHHœ›ÛHÛX‹Ù^Ü™\œËÛÜ™\•\\ÈŽÂ‚\H^Ü™\œÑYÚ][Y]T\˜Ú\ÙU˜XÚÙ\”›ÜÈHÂˆ]™[YˆÝš[™ÎÂˆÙ\ÜÚ[Û’YˆÝš[™ÎÂˆ˜[YNˆ[X™\ŽÂˆÝ\œ™[˜ÞNˆÝš[™ÎÂˆ›ÙXÝÙ^\ÎˆÝš[™Ö×NÂŸNÂ‚™^Ü[˜Ý[Ûˆ^Ü™\œÑYÚ][Y]T\˜Ú\ÙU˜XÚÙ\ŠÂˆ]™[YˆÙ\ÜÚ[Û’Yˆ˜[YKˆÝ\œ™[˜ÞKˆ›ÙXÝÙ^\ËŸNˆ^Ü™\œÑYÚ][Y]T\˜Ú\ÙU˜XÚÙ\”›ÜÊHÂˆ\ÙQY™™XÝ
+"use client";
 
+import { useEffect } from "react";
+import { trackExplorersMetaEvent } from "@/lib/analytics/explorersMetaPixel";
+import { EXPLORERS_DIGITAL_ORDER_TYPE } from "@/lib/explorers/orderTypes";
 
-HOˆÂˆÛÛœÝÝÜ˜YÙRÙ^HH^Ü™\œË[Y]KYYÚ][\\˜Ú\ÙN‰ÜÙ\ÜÚ[Û’YXÂˆYˆ
-Ú[™ÝËœÙ\ÜÚ[Û”ÝÜ˜YÙK™Ù]][JÝÜ˜YÙRÙ^JJH™]\›ŽÂ‚ˆÛÛœÝXØÙ\YH˜XÚÑ^Ü™\œÓY]Q]™[
-ˆ”\˜Ú\ÙH‹ˆÂˆ˜[YKˆÝ\œ™[˜ÞNˆÝ\œ™[˜ÞKÕ\\Ø\ÙJ
-KˆÛÛ[Û˜[YNˆ•H^Ü™\œÈÙ\šY\ÈYÚ][ÝÛ›ØY‹ˆÛÛ[ØØ]YÛÜžNˆ‘^Ü™\œÈYÚ][ÝÛ›ØY‹ˆÛÛ[Ý\Nˆ›ÙXÝÙ^\Ë›[™ÝˆHÈœ›ÙXÝÙÜ›Ý\ˆˆœ›ÙXÝ‹ˆÛÛ[ÚYÎˆ›ÙXÝÙ^\ËˆÛÛ[Îˆ›ÙXÝÙ^\Ë›X\
+type ExplorersDigitalMetaPurchaseTrackerProps = {
+  eventId: string;
+  sessionId: string;
+  value: number;
+  currency: string;
+  productKeys: string[];
+};
 
-Y
-HOˆ
-ÈY]X[]NˆHJJKˆ[WÚ][\Îˆ›ÙXÝÙ^\Ë›[™ÝˆÜ™\—Ý\NˆVÔ‘T”×ÑQÒUSÓÔ‘T—ÕTKˆKˆ]™[Yˆ
-NÂˆYˆ
-XØÙ\Y
-HÚ[™ÝËœÙ\ÜÚ[Û”ÝÜ˜YÙKœÙ]][JÝÜ˜YÙRÙ^KŒHŠNÂˆKØÝ\œ™[˜ÞK]™[Y›ÙXÝÙ^\ËÙ\ÜÚ[Û’Y˜[YWJNÂ‚ˆ™]\›ˆ[ÂŸB
+export function ExplorersDigitalMetaPurchaseTracker({
+  eventId,
+  sessionId,
+  value,
+  currency,
+  productKeys,
+}: ExplorersDigitalMetaPurchaseTrackerProps) {
+  useEffect(() => {
+    const storageKey = `explorers-meta-digital-purchase:${sessionId}`;
+    if (window.sessionStorage.getItem(storageKey)) return;
+
+    const accepted = trackExplorersMetaEvent(
+      "Purchase",
+      {
+        value,
+        currency: currency.toUpperCase(),
+        content_name: "The Explorers Series digital download",
+        content_category: "Explorers digital download",
+        content_type: productKeys.length > 1 ? "product_group" : "product",
+        content_ids: productKeys,
+        contents: productKeys.map((id) => ({ id, quantity: 1 })),
+        num_items: productKeys.length,
+        order_type: EXPLORERS_DIGITAL_ORDER_TYPE,
+      },
+      eventId,
+    );
+    if (accepted) window.sessionStorage.setItem(storageKey, "1");
+  }, [currency, eventId, productKeys, sessionId, value]);
+
+  return null;
+}
+

@@ -1,4 +1,4 @@
-≠rá^—f•ñÿ¶{çly 'v√Æ∂õ≠import type { Metadata } from "next";
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { ExplorerProductPage } from "@/components/explorers/ExplorerProductPage";
 import { explorerProducts, getExplorerProduct } from "@/lib/explorers/products";
@@ -42,3 +42,4 @@ export default async function Page({ params, searchParams }: ProductPageProps) {
 
   return <ExplorerProductPage product={product} digitalView={format === "digital"} />;
 }
+

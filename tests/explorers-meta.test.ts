@@ -1,4 +1,4 @@
-≠rá^—f•ñÿ¶{ly 'v√Æ∂õ≠import assert from "node:assert/strict";
+import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 import {
@@ -200,3 +200,4 @@ test("digital checkout, fulfillment, success, and webhook share one Explorer ord
   assert.match(fulfillment, /session\.metadata\?\.digital_product_keys/);
   assert.match(webhookRoute, /processExplorerDigitalOrder/);
 });
+

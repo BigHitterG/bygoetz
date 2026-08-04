@@ -1,4 +1,4 @@
-≠rá^—f•ñÿ¶{çÏy 'v√Æ∂õ≠import "server-only";
+import "server-only";
 
 import type Stripe from "stripe";
 import { isExplorersDigitalPurchaseEligible } from "@/lib/analytics/explorersMetaConversion";
@@ -53,3 +53,4 @@ export async function processExplorerDigitalOrder(session: Stripe.Checkout.Sessi
 
   return { status: "processed" as const, fulfillment, conversion };
 }
+

@@ -1,4 +1,4 @@
-≠rá^—f•ñÿ¶{é¨y 'v√Æ∂õ≠import "server-only";
+import "server-only";
 
 import {
   buildExplorersDigitalInitiateCheckoutConversion,
@@ -160,3 +160,4 @@ export async function sendExplorersDigitalPurchaseConversion(
   });
   return sendConversion(eventId, conversion);
 }
+
