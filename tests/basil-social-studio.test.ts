@@ -216,6 +216,26 @@ test("botanical lifecycle pipeline is species-driven, locked-camera, and biologi
   assert.match(renderer, /backgroundMusicProvider: "none"/);
   assert.doesNotMatch(renderer, /basil-generate-garden-loop\.py/);
 });
+test("evergreen archive preserves lifecycle sources and only finished reusable social assets", () => {
+  const archive = JSON.parse(readFileSync(new URL("../content/basil-social/evergreen-archive.json", import.meta.url), "utf8"));
+  const uploader = readFileSync(new URL("../scripts/basil-archive-evergreen-assets.mjs", import.meta.url), "utf8");
+  const migration = readFileSync(new URL("../supabase/migrations/20260804145541_basil_social_evergreen_archive.sql", import.meta.url), "utf8");
+  const runbook = readFileSync(new URL("../docs/basil-social-scheduled-tasks.md", import.meta.url), "utf8");
+  const rose = archive.collections.find((entry: { collectionKey: string }) => entry.collectionKey === "botanical/rose-v1");
+  const sunflower = archive.collections.find((entry: { collectionKey: string }) => entry.collectionKey === "botanical/sunflower-v1");
+  const diagram = archive.collections.find((entry: { collectionType: string }) => entry.collectionType === "diagram");
+  const mechanic = archive.collections.find((entry: { collectionType: string }) => entry.collectionType === "game_mechanic");
+  assert.ok(rose?.lifecycleProfile);
+  assert.ok(sunflower?.lifecycleProfile);
+  assert.ok(rose.assets.some((asset: { assetRole: string }) => asset.assetRole === "alternate_keyframe"));
+  assert.ok(diagram.assets.some((asset: { assetRole: string }) => asset.assetRole === "diagram"));
+  assert.deepEqual(new Set(mechanic.assets.map((asset: { assetRole: string }) => asset.assetRole)), new Set(["final_video", "poster", "caption_timing", "production_manifest"]));
+  assert.match(uploader, /profile\.stages\.map/);
+  assert.match(uploader, /basil-social-evergreen-transfer/);
+  assert.match(migration, /'basil-social-evergreen'[\s\S]*false/);
+  assert.match(migration, /enable row level security/g);
+  assert.match(runbook, /Preserve every reusable finished package/);
+});
 
 test("notification capability sends the review email only after the video upload", () => {
   const notifyMigration = readFileSync(new URL("../supabase/migrations/20260731190000_basil_social_notify_capability.sql", import.meta.url), "utf8");
@@ -244,5 +264,4 @@ test("private trial asset cleanup is story-scoped and one-time", () => {
   assert.match(cleanupMigration, /'cleanup'/);
   assert.match(cleanupMigration, /grant execute[\s\S]*to service_role/);
 });
-
 

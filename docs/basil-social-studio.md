@@ -56,15 +56,15 @@ Phase 1 now has a deterministic vertical capture route at `/community-garden/soc
 Implementation status is intentionally strict:
 
 - Complete: clean 1080x1920 capture surface, real renderer footage, local H.264/AAC MP4, poster, calm neural narration, word-boundary captions, quiet original garden-loop music, private Supabase delivery, phone playback, per-bulletin approval, and revision feedback.
-- Executable today: Basil-renderer video scenes `builder-mode`, `watering-how-to`, and `garden-status`; the generic `botanical-lifecycle` companion pipeline; and the 4:5 static `community-grid-diagram`. Builder paths obey the implemented orthogonal adjacency rule. The lifecycle pipeline loads a species profile from `content/basil-social/botanical-species/`, creates eleven locked-camera AI keyframes without burned-in text, joins adjacent stages with ten 1â€“2 second aligned transitions, and adds only a high-end centered script stage name and approximate age range during local rendering. It is silent and has no narration, music, bulletin title, Basil label, footer, compass, box, or counter. Pollination must precede petal fall, fruit/seed development must follow it, and eventual plant death must remain distinct from seasonal fruiting for perennial species. The static route requires the current production garden snapshot and never falls back to a seeded promotional garden.
+- Executable today: Basil-renderer video scenes `builder-mode`, `watering-how-to`, and `garden-status`; the generic `botanical-lifecycle` companion pipeline; and the 4:5 static `community-grid-diagram`. Builder paths obey the implemented orthogonal adjacency rule. The lifecycle pipeline loads a species profile from `content/basil-social/botanical-species/`, creates eleven locked-camera AI keyframes without burned-in text, joins adjacent stages with ten 1Ã¢â‚¬â€œ2 second aligned transitions, and adds only a high-end centered script stage name and approximate age range during local rendering. It is silent and has no narration, music, bulletin title, Basil label, footer, compass, box, or counter. Pollination must precede petal fall, fruit/seed development must follow it, and eventual plant death must remain distinct from seasonal fruiting for perennial species. The static route requires the current production garden snapshot and never falls back to a seeded promotional garden.
 - Still to build: `my-garden-transformation`, `shared-garden-day-change`, `plant-first-flower`, `weed-cleanup`, `habitat-discovery`, `heritage-flower-reveal`, `garden-before-after`, and `two-design-choices`, plus multi-opening re-edits and automated gameplay checkpoint analysis for those scenes.
 - Assisted, not API-autonomous: browser posting to YouTube, Instagram, and Reddit after approval. OAuth platform adapters and automatic performance ingestion are not implemented.
 
 The three daily bulletin lanes are:
 
-1. **Visual payoff** â€” a clear garden change or completed action, currently a Builder Mode empty-to-planned transformation.
-2. **How Basil works** â€” one numbered input-to-result mechanic demonstration, beginning with the two-tap watering loop.
-3. **Live garden map** â€” a saveable current view using the production community-garden coordinates, Mary, Basil's actual graphics, and a light annotation layer focused on real planting diversity.
+1. **Visual payoff** Ã¢â‚¬â€ a clear garden change or completed action, currently a Builder Mode empty-to-planned transformation.
+2. **How Basil works** Ã¢â‚¬â€ one numbered input-to-result mechanic demonstration, beginning with the two-tap watering loop.
+3. **Live garden map** Ã¢â‚¬â€ a saveable current view using the production community-garden coordinates, Mary, Basil's actual graphics, and a light annotation layer focused on real planting diversity.
 
 The daily creative contract lives in `content/basil-social/today.json`. It contains the objective, format, executable scene, hook, narration, audience, hypothesis, alternative openings, truth claims and their basis, platform list, tracked destination, target duration, and CTA. `content/basil-social/channel-memory.json` is the durable cross-run channel memory: it stores read-only platform baselines, the founder's observed Reddit language, experiment notes, and comparable result windows. Caption timings are not hand-authored there. Narration is generated first, exact word boundaries are returned with that audio, and only then are the frames captured. The capture recipe remains deterministic; Codex changes the creative brief rather than editing the renderer each morning.
 
@@ -89,7 +89,6 @@ The video renderer produces these files in `artifacts/basil-social-studio/`:
 - a decode-validation result before the package is accepted.
 
 The diagram renderer produces a validated 1080x1350 PNG and structured manifest. It calls Basil's real `renderGarden` function, places plants only on integer grid cells, and uses the production Mary and plant graphics. Generative imagery is not used to decide the diagram's geometry or physics.
-
 The prototype narration provider uses the maintained Python `edge-tts` client with a calm Microsoft Edge neural voice and does not require an OpenAI API key. It is an online dependency, so a machine rendering the package needs network access. Basil never falls back to the old robotic local voice: a failed neural generation fails the package instead. The client requests `WordBoundary` metadata from the same stream that writes the MP3, so captions track the spoken audio. `BASIL_SOCIAL_TTS_VOICE`, `BASIL_SOCIAL_TTS_RATE`, `BASIL_SOCIAL_TTS_PITCH`, and `BASIL_SOCIAL_TTS_VOLUME` tune the prototype voice.
 
 The renderer also creates a deterministic, original 112 BPM woodland-game loop locally and mixes it at a low level under the narration. Its motif and arrangement are original; it does not download, quote, or imitate a recognizable copyrighted melody. Set `BASIL_BACKGROUND_MUSIC` to a licensed local audio file when a different track is preferred; narration remains the dominant channel.
@@ -97,6 +96,20 @@ The renderer also creates a deterministic, original 112 BPM woodland-game loop l
 A preferred founder recording or licensed voice can replace the prototype by setting `BASIL_NARRATION_AUDIO`. The matching narration-derived timing JSON is mandatory in `BASIL_CAPTION_TIMINGS`; supplying audio without timing fails validation. This keeps captions aligned even when the voice, pacing, or provider changes. ElevenLabs can later use its text-to-speech-with-timestamps response to satisfy the same contract without changing the video renderer.
 
 ## Private storage and phone review
+
+### Evergreen production archive
+
+Reusable source media is preserved separately from the short-lived daily review package. Migration `20260804145541_basil_social_evergreen_archive.sql` creates the private `basil-social-evergreen` bucket and a service-role-only catalog for lifecycle collections, diagrams, and final game-mechanic productions. Objects use immutable content-addressed paths; a repeated upload with the same asset key and SHA-256 is idempotent, while a changed asset becomes a new version and the prior version remains available.
+
+`content/basil-social/evergreen-archive.json` is the repository index. Botanical collections expand the species profile into individually cataloged stage keyframes and also retain the profile, final MP4, poster, production manifest, and useful alternate frames. Diagram collections retain the finished PNG and manifest. Game-mechanic collections retain the finished MP4, poster, caption timing, and manifest without preserving disposable capture intermediates.
+
+The scheduled task obtains a short-lived collection-scoped upload capability through the connected Supabase tool, then runs:
+
+```powershell
+pnpm social:archive-evergreen -- --collection-key=<key> --collection-id=<uuid> --transfer-token=<one-time-token>
+```
+
+The local computer never needs a Supabase service-role key, the token is limited by collection, upload count, and expiration, and the upload function calculates the authoritative SHA-256 before cataloging each object.
 
 Migration `20260731143000_basil_social_video_packages.sql` creates the private asset and feedback records. Migration `20260731170000_basil_social_one_time_transfers.sql` adds 15-minute, single-use transfer capabilities. Migration `20260731180000_basil_social_approval_guard.sql` creates the database approval guard. Migration `20260731213853_basil_social_three_video_review.sql` extends that guard to daily ranks 1-3 and permits whole-package feedback with a null `story_id`. Migration `20260801203117_basil_social_story_package_approval.sql` adds service-role-only atomic approval. Migration `20260803194823_basil_social_mixed_media_packages.sql` makes the guard asset-aware: videos require MP4, poster, and three drafts; diagrams require PNG and exactly two drafts. Unsupported channels and unvalidated assets remain blocked independently of the Studio client.
 
@@ -170,4 +183,5 @@ The next capture layer should create deterministic scene recipes instead of reco
 - output still and video names.
 
 The renderer should fail the story asset step when the expected checkpoint is absent. That prevents an outdated or broken feature from becoming a misleading social post.
+
 
