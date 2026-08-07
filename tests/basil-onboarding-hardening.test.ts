@@ -30,6 +30,10 @@ const onboardingSource = await readFile(
   ),
   "utf8",
 );
+const communityGardenCss = await readFile(
+  new URL("../app/community-garden/community-garden.css", import.meta.url),
+  "utf8",
+);
 
 test("required tutorial gestures cannot move Mary away from the commanded tile", () => {
   assert.match(
@@ -143,6 +147,13 @@ test("the opening lesson clearly introduces the worldwide public garden", () => 
     /Anyone online, anywhere in the world, can plant on this same map for free/,
   );
   assert.match(onboardingSource, /No account or username is needed/);
+});
+
+test("reduced motion cannot turn repeating onboarding animations into a rapid shake", () => {
+  assert.match(
+    communityGardenCss,
+    /@media \(prefers-reduced-motion: reduce\) \{[\s\S]*?\.cg-root \*[\s\S]*?animation-duration: 0\.01ms !important;[\s\S]*?animation-iteration-count: 1 !important;/,
+  );
 });
 
 test("My Garden cannot be left before the first guided planting", () => {
