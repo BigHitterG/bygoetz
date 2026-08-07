@@ -32,7 +32,13 @@ function formatTime(value: string | null) {
   }).format(new Date(value));
 }
 
-export function GardenHealthPanel({ session }: { session: Session }) {
+export function GardenHealthPanel({
+  session,
+  onViewCommunityGarden,
+}: {
+  session: Session;
+  onViewCommunityGarden: () => void;
+}) {
   const [state, setState] = useState<HealthState>({ status: "checking" });
   const [refreshing, setRefreshing] = useState(false);
 
@@ -114,6 +120,16 @@ export function GardenHealthPanel({ session }: { session: Session }) {
           <span aria-hidden="true" />
           {statusLabel}
         </div>
+      </div>
+
+      <div className="cg-health-presentation-action">
+        <div>
+          <strong>Projector view</strong>
+          <small>Fit the entire live garden and its perimeter locks to the screen.</small>
+        </div>
+        <button type="button" onClick={onViewCommunityGarden}>
+          View Community Garden Full Screen
+        </button>
       </div>
 
       <div className="cg-health-grid">

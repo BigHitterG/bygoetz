@@ -34,6 +34,7 @@ type GardenMenuProps = {
   onSectionChange: (section: LibrarySection) => void;
   onVisitHeritage?: (gridX: number, gridY: number) => void;
   onVisitHabitat?: (gridX: number, gridY: number) => void;
+  onViewCommunityGarden: () => void;
   guideInitialShelf?: "home" | "habitats";
 };
 
@@ -49,6 +50,7 @@ export function GardenMenu({
   onSectionChange,
   onVisitHeritage,
   onVisitHabitat,
+  onViewCommunityGarden,
   guideInitialShelf = "home",
 }: GardenMenuProps) {
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -184,7 +186,12 @@ export function GardenMenu({
                   initialShelf={guideInitialShelf}
                 />
               ) : null}
-              {section === "account" ? <GardenSteward onVisitHeritage={onVisitHeritage} /> : null}
+              {section === "account" ? (
+                <GardenSteward
+                  onVisitHeritage={onVisitHeritage}
+                  onViewCommunityGarden={onViewCommunityGarden}
+                />
+              ) : null}
               {section === "about" ? <GardenFounder /> : null}
             </div>
             <BasilPolicyLinks compact />

@@ -7168,6 +7168,110 @@
   border-color: var(--cg-red);
 }
 
+.cg-health-presentation-action {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin: 14px 0;
+  border: 2px solid rgba(52, 35, 31, 0.52);
+  background: rgba(243, 216, 141, 0.34);
+  padding: 12px;
+}
+
+.cg-health-presentation-action div {
+  display: grid;
+  gap: 3px;
+}
+
+.cg-health-presentation-action small {
+  line-height: 1.35;
+}
+
+.cg-health-presentation-action button,
+.cg-community-presentation-retry,
+.cg-community-presentation-close {
+  border: 2px solid var(--cg-ink);
+  background: var(--cg-cream);
+  color: var(--cg-ink);
+  box-shadow: 3px 3px 0 rgba(52, 35, 31, 0.45);
+  padding: 10px 13px;
+  font: 900 0.78rem/1.2 "Courier New", ui-monospace, monospace;
+  cursor: pointer;
+}
+
+.cg-community-presentation {
+  position: fixed;
+  z-index: 10000;
+  inset: 0;
+  overflow: hidden;
+  background: #17251d;
+  color: #34231f;
+}
+
+.cg-community-presentation-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+.cg-community-presentation-label {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  display: grid;
+  gap: 1px;
+  border: 2px solid #34231f;
+  background: rgba(255, 244, 223, 0.92);
+  box-shadow: 4px 4px 0 rgba(23, 37, 29, 0.45);
+  padding: 8px 11px;
+  pointer-events: none;
+}
+
+.cg-community-presentation-label strong {
+  font-family: Georgia, serif;
+  font-size: 1.15rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.cg-community-presentation-label span {
+  font-size: 0.68rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.cg-community-presentation-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+}
+
+.cg-community-presentation-retry {
+  position: absolute;
+  top: 82px;
+  left: 16px;
+}
+
+@media (max-width: 620px) {
+  .cg-health-presentation-action {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .cg-community-presentation-label {
+    top: 8px;
+    left: 8px;
+  }
+
+  .cg-community-presentation-close {
+    top: 8px;
+    right: 8px;
+  }
+}
+
 .cg-health-heading,
 .cg-health-footer {
   display: flex;

@@ -156,13 +156,17 @@ function clearAccountLinkFromAddress() {
 
 type GardenStewardProps = {
   onVisitHeritage?: (gridX: number, gridY: number) => void;
+  onViewCommunityGarden: () => void;
 };
 
 function flowerName(type: "rose" | "sunflower" | "lavender") {
   return type.charAt(0).toUpperCase() + type.slice(1);
 }
 
-export function GardenSteward({ onVisitHeritage }: GardenStewardProps) {
+export function GardenSteward({
+  onVisitHeritage,
+  onViewCommunityGarden,
+}: GardenStewardProps) {
   const [session, setSession] = useState<Session | null>(null);
   const [accountState, setAccountState] = useState<AccountState>({ status: "loading" });
   const [authView, setAuthView] = useState<AuthView>("signin");
@@ -1374,7 +1378,10 @@ export function GardenSteward({ onVisitHeritage }: GardenStewardProps) {
       ) : null}
 
       {session && !showAccountLink && !showVerificationPending && !showPaidVerificationPending ? (
-        <GardenHealthPanel session={session} />
+        <GardenHealthPanel
+          session={session}
+          onViewCommunityGarden={onViewCommunityGarden}
+        />
       ) : null}
 
       <div className="cg-steward-privacy">

@@ -59,6 +59,7 @@ import { LivingGardenDiscoveryModal } from "./LivingGardenDiscovery";
 import { GardenBugReporter } from "./GardenBugReporter";
 import { GardenExpansionConfirmation } from "./GardenExpansionConfirmation";
 import { GardenClearingReturnConfirmation } from "./GardenClearingReturnConfirmation";
+import { CommunityGardenPresentation } from "./CommunityGardenPresentation";
 import {
   CommunityStewardshipPanel,
   GardenTaskCelebration,
@@ -334,6 +335,9 @@ export function CommunityGardenApp() {
     useState<CommunityAtlasTarget | null>(null);
   const [world, setWorld] = useState<GardenWorldMode>("community");
   const [menuOpen, setMenuOpen] = useState(false);
+  const [communityPresentationOpen, setCommunityPresentationOpen] =
+    useState(false);
+  const presentationFullscreenRequestedRef = useRef(false);
   const [menuSection, setMenuSection] = useState<LibrarySection>("play");
   const [guideInitialShelf, setGuideInitialShelf] = useState<"home" | "habitats">("home");
   const [careAnnouncement, setCareAnnouncement] = useState("");
@@ -390,6 +394,46 @@ export function CommunityGardenApp() {
   const captureMyGarden = useCallback((scope: GardenShareScope) => {
     return canvasRef.current?.captureGarden(scope) ?? Promise.resolve(null);
   }, []);
+
+  const closeCommunityPresentation = useCallback(() => {
+    setCommunityPresentationOpen(false);
+    if (
+      presentationFullscreenRequestedRef.current &&
+      document.fullscreenElement
+    ) {
+      void document.exitFullscreen().catch(() => undefined);
+    }
+    presentationFullscreenRequestedRef.current = false;
+  }, []);
+
+  const openCommunityPresentation = useCallback(() => {
+    setMenuOpen(false);
+    setInventoryOpen(false);
+    setWorld("community");
+    setCommunityPresentationOpen(true);
+    if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
+      presentationFullscreenRequestedRef.current = true;
+      void document.documentElement.requestFullscreen().catch(() => {
+        presentationFullscreenRequestedRef.current = false;
+      });
+    }
+  }, []);
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      if (
+        communityPresentationOpen &&
+        presentationFullscreenRequestedRef.current &&
+        !document.fullscreenElement
+      ) {
+        presentationFullscreenRequestedRef.current = false;
+        setCommunityPresentationOpen(false);
+      }
+    };
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+    return () =>
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
+  }, [communityPresentationOpen]);
   const myGarden = memberGarden ?? guestPreview.garden;
   const selectedGardenParcel =
     world === "personal" &&
@@ -2897,6 +2941,12 @@ export function CommunityGardenApp() {
             80,
           );
         }}
+        onViewCommunityGarden={openCommunityPresentation}
+      />
+
+      <CommunityGardenPresentation
+        open={communityPresentationOpen}
+        onClose={closeCommunityPresentation}
       />
 
       <GardenMembershipOffer

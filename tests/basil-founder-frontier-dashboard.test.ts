@@ -15,6 +15,10 @@ const dashboard = readFileSync(
   "app/community-garden/components/FounderFrontierDashboard.tsx",
   "utf8",
 );
+const presentation = readFileSync(
+  "app/community-garden/components/CommunityGardenPresentation.tsx",
+  "utf8",
+);
 
 test("the founder frontier RPC is aggregate-only and service-role-only", () => {
   assert.match(migration, /get_community_garden_frontier_dashboard_v2/);
@@ -53,4 +57,14 @@ test("the founder UI is visual, explainable, and cannot change land", () => {
   assert.match(dashboard, /Guests never count as gardeners/);
   assert.doesNotMatch(dashboard, /set_community_garden_region_state_v1/);
   assert.doesNotMatch(dashboard, /fetch\(/);
+});
+
+test("the private admin can project the complete live garden", () => {
+  assert.match(panel, /View Community Garden Full Screen/);
+  assert.match(presentation, /fetchGardenRegionManifest/);
+  assert.match(presentation, /fetchGardenSnapshot/);
+  assert.match(presentation, /manifest\.mapBounds/);
+  assert.match(presentation, /maskOutsideMap/);
+  assert.match(presentation, /wateringCareStatusLoaded: true/);
+  assert.match(presentation, /offscreenCharacter/);
 });
