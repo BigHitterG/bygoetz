@@ -20,6 +20,7 @@ import {
   type WorldPoint,
 } from "../game/gardenRenderer";
 import type { MyGardenState } from "@/lib/communityGarden/myGarden";
+import { BASIL_COMMONS_POLICY } from "@/lib/communityGarden/commonsPolicy";
 import {
   getMyGardenElement,
   getMyGardenPlant,
@@ -80,6 +81,10 @@ import {
   findNearbyHeritageFlower,
   type HeritageFlowerEncounter,
 } from "../lib/heritageDiscovery";
+import {
+  getCommunityRegionKeyForCell,
+  isTutorialPlantingRegionAvailable,
+} from "../lib/tutorialPlanting";
 
 const WATERING_RANGE_TILES = 5;
 const WATERING_APPROACH_TILES = 2.125;
@@ -220,6 +225,7 @@ type Runtime = {
   wateringCareStatusNextRefreshAt: number;
   snapshotNextRefreshAt: number;
   regionManifest: GardenRegionManifest | null;
+  blockedTutorialPlantingRegionKeys: Set<string>;
   loadedRegionWindowKey: string;
   effects: GardenEffect[];
   path: WorldPoint[];
@@ -1199,6 +1205,39 @@ function isValidTutorialPlantingCell(runtime: Runtime, gridX: number, gridY: num
   if (!isWithinRuntime(runtime, gridX, gridY)) return false;
   if (!isPlantable(getPlantAt(runtime, gridX, gridY))) return false;
   if (getWeedAt(runtime, gridX, gridY)) return false;
+  if (runtime.mode === "community") {
+    if (runtime.regionManifest) {
+      if (
+        !isTutorialPlantingRegionAvailable(
+          runtime.regionManifest,
+          runtime.blockedTutorialPlantingRegionKeys,
+          gridX,
+          gridY,
+        )
+      ) {
+        return false;
+      }
+    } else {
+      const regionSize = GARDEN_CONFIG.chunkSize;
+      const regionX = Math.floor(gridX / regionSize);
+      const regionY = Math.floor(gridY / regionSize);
+      let plantCount = 0;
+      for (const plant of runtime.communityPlants.values()) {
+        if (
+          Math.floor(plant.grid_x / regionSize) === regionX &&
+          Math.floor(plant.grid_y / regionSize) === regionY
+        ) {
+          plantCount += 1;
+        }
+      }
+      if (
+        runtime.blockedTutorialPlantingRegionKeys.has(`${regionX}:${regionY}`) ||
+        plantCount >= BASIL_COMMONS_POLICY.regionBusyAt
+      ) {
+        return false;
+      }
+    }
+  }
   if (runtime.mode === "personal") {
     if (hasPersonalPath(runtime, gridX, gridY)) return false;
     if (getPersonalElement(runtime, gridX, gridY)) return false;
@@ -2031,6 +2070,7 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
       wateringCareStatusNextRefreshAt: 0,
       snapshotNextRefreshAt: 0,
       regionManifest: null,
+      blockedTutorialPlantingRegionKeys: new Set(),
       loadedRegionWindowKey: "",
       effects: [],
       path: [{ ...start }],
@@ -3523,8 +3563,38 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
             runtime.connection = runtime.configured ? "online" : "offline";
           } catch (error) {
             onActionFailedRef.current?.(runtime.mode, actionState.action, error);
+            const retryTutorialPlanting =
+              tutorialDimmedRef.current &&
+              actionState.action === "plant" &&
+              runtime.mode === "community" &&
+              error instanceof Error &&
+              error.message.toLowerCase().includes("patch is resting");
             const retryTutorialWatering =
               tutorialDimmedRef.current && actionState.action === "water";
+            if (retryTutorialPlanting) {
+              const regionSize =
+                runtime.regionManifest?.regionSize ?? GARDEN_CONFIG.chunkSize;
+              runtime.blockedTutorialPlantingRegionKeys.add(
+                getCommunityRegionKeyForCell(
+                  selected.gridX,
+                  selected.gridY,
+                  regionSize,
+                ),
+              );
+              runtime.selected = null;
+              runtime.target = null;
+              runtime.suggestedPlantingCell = findSuggestedPlantingCell(runtime);
+              if (runtime.suggestedPlantingCell) {
+                bringTutorialTargetIntoView(
+                  runtime,
+                  runtime.suggestedPlantingCell,
+                );
+              }
+              runtime.snapshotNextRefreshAt = 0;
+              queueMicrotask(() => {
+                void loadPlantsRef.current();
+              });
+            }
             if (retryTutorialWatering) {
               runtime.selected = null;
               runtime.wateringCareStatusLoaded = false;
@@ -3542,7 +3612,11 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
                 message: error.message,
               });
             }
-            runtime.statusMessage = retryTutorialWatering
+            runtime.statusMessage = retryTutorialPlanting
+              ? runtime.suggestedPlantingCell
+                ? "That patch just filled. Follow the new glowing Plant Here patch."
+                : "That patch just filled. The garden is finding another open area."
+              : retryTutorialWatering
               ? "Another gardener reached that flower first. Finding a fresh water drop..."
               : error instanceof Error
                 ? error.message
