@@ -14,7 +14,9 @@ import {
 
 const GIFT_CODE_HASH =
   "28aaf815a9d2cb8a6f79d1c73c015d1e7fab50fb5f26fdd4768ab7b950aa809e";
-const GIFT_PROVIDER_PURCHASE_ID = "promo:private-friend-gift-2026";
+const GIFT_PROMO_KEY = "private-friend-gift-2026";
+const GIFT_PROMO_MAX_REDEMPTIONS = 25;
+const GIFT_PROVIDER_PURCHASE_PREFIX = `promo:${GIFT_PROMO_KEY}`;
 
 export class GardenPromoRateLimitError extends Error {
   constructor() {
@@ -76,11 +78,25 @@ export async function redeemGardenPromo(input: {
   }
 
   const supabase = getSupabaseAdmin();
+  const { data: claimed, error: claimError } = await supabase.rpc(
+    "claim_garden_promo_redemption_v1",
+    {
+      p_promo_key: GIFT_PROMO_KEY,
+      p_user_id: input.userId,
+      p_max_redemptions: GIFT_PROMO_MAX_REDEMPTIONS,
+    },
+  );
+  if (claimError) throw claimError;
+  if (!claimed) {
+    throw new Error("That gift code has reached its redemption limit.");
+  }
+
+  const providerPurchaseId = `${GIFT_PROVIDER_PURCHASE_PREFIX}:${input.userId}`;
   const { data: existingGrant, error: existingGrantError } = await supabase
     .from("garden_entitlements")
     .select("steward_id,status")
     .eq("provider", "promo")
-    .eq("provider_purchase_id", GIFT_PROVIDER_PURCHASE_ID)
+    .eq("provider_purchase_id", providerPurchaseId)
     .maybeSingle();
   if (existingGrantError) throw existingGrantError;
 
@@ -122,7 +138,7 @@ export async function redeemGardenPromo(input: {
         steward_id: stewardId,
         product_key: GARDEN_STEWARD_ORDER_TYPE,
         provider: "promo",
-        provider_purchase_id: GIFT_PROVIDER_PURCHASE_ID,
+        provider_purchase_id: providerPurchaseId,
         amount_paid_cents: 0,
         currency: "usd",
         status: "active",
@@ -130,9 +146,22 @@ export async function redeemGardenPromo(input: {
         updated_at: new Date().toISOString(),
       });
     if (entitlementError) {
-      // The provider/purchase uniqueness constraint is the durable one-use lock.
+      // A retry for the same account can race with its first successful request.
       if (entitlementError.code !== "23505") throw entitlementError;
-      throw new Error("That gift code is invalid or has already been used.");
+      const { data: racedGrant, error: racedGrantError } = await supabase
+        .from("garden_entitlements")
+        .select("steward_id,status")
+        .eq("provider", "promo")
+        .eq("provider_purchase_id", providerPurchaseId)
+        .maybeSingle();
+      if (racedGrantError) throw racedGrantError;
+      if (
+        !racedGrant ||
+        racedGrant.steward_id !== stewardId ||
+        racedGrant.status !== "active"
+      ) {
+        throw new Error("That gift code could not be redeemed.");
+      }
     }
   }
 

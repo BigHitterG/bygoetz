@@ -20,6 +20,13 @@ const offer = readFileSync(
   join(root, "app/community-garden/components/GardenMembershipOffer.tsx"),
   "utf8",
 );
+const migration = readFileSync(
+  join(
+    root,
+    "supabase/migrations/20260807205213_expand_private_friend_promo_to_25_accounts.sql",
+  ),
+  "utf8",
+);
 
 test("promo codes normalize without preserving display casing", () => {
   assert.equal(normalizeGardenPromoCode("  FriendGift  "), "friendgift");
@@ -36,13 +43,20 @@ test("promo hashes are deterministic and one-way shaped", () => {
   assert.notEqual(first, "friendgift");
 });
 
-test("database entitlement uniqueness is the durable one-use lock", () => {
-  assert.match(promoServer, /provider_purchase_id: GIFT_PROVIDER_PURCHASE_ID/);
+test("the private gift code allows 25 accounts with an atomic database cap", () => {
+  assert.match(promoServer, /GIFT_PROMO_MAX_REDEMPTIONS = 25/);
+  assert.match(promoServer, /claim_garden_promo_redemption_v1/);
+  assert.match(promoServer, /providerPurchaseId.*input\.userId/);
+  assert.match(promoServer, /provider_purchase_id: providerPurchaseId/);
   assert.match(promoServer, /provider: "promo"/);
   assert.match(promoServer, /entitlementError\.code !== "23505"/);
   assert.match(promoServer, /claimGardenAccountEmailRequest/);
   assert.match(promoServer, /timingSafeEqual/);
   assert.match(promoServer, /importMyGardenPreview/);
+  assert.match(migration, /primary key \(promo_key, user_id\)/);
+  assert.match(migration, /pg_advisory_xact_lock/);
+  assert.match(migration, /redemption_count >= p_max_redemptions/);
+  assert.match(migration, /grant execute[\s\S]*service_role/);
 });
 
 test("gift access bypasses Stripe without manufacturing a purchase", () => {
