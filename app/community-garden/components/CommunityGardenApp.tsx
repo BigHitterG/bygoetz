@@ -30,14 +30,13 @@ import {
   clearGuestGardenPreview,
   createGuestGardenPreview,
   getGuestPreviewImport,
-  GUEST_SOFT_PAYWALL_PLANTINGS,
+  GUEST_PLANTING_LIMIT,
   GuestPreviewExpiredError,
   GuestPreviewLimitError,
   isGuestPreviewExpired,
   loadGuestGardenPreview,
   markGuestPreviewContinued,
   markGuestSoftPaywallDeclined,
-  markGuestSoftPaywallSeen,
   mutateGuestGarden,
   preserveGuestGardenPreviewForCheckout,
   saveGuestGardenPreview,
@@ -74,7 +73,10 @@ import {
   type GardenShareScope,
 } from "./GardenShare";
 import {
+  COMMUNITY_CLASSIC_ONBOARDING_PLANTINGS,
+  COMMUNITY_FAST_START_PLANTINGS,
   getCommunityQuickStartPlantType,
+  isClassicGardenOnboarding,
   isGardenOnboardingFinished,
   isGardenOnboardingPlantType,
   isCommunityQuickStart,
@@ -367,6 +369,11 @@ export function CommunityGardenApp() {
       typeof window !== "undefined" &&
       isCommunityQuickStart(window.location.search),
   );
+  const [classicOnboardingRequested] = useState(
+    () =>
+      typeof window !== "undefined" &&
+      isClassicGardenOnboarding(window.location.search),
+  );
   const [communityOnboardingPlantings, setCommunityOnboardingPlantings] =
     useState(0);
   const [showFreePlantingNotice, setShowFreePlantingNotice] = useState(false);
@@ -435,6 +442,9 @@ export function CommunityGardenApp() {
       document.removeEventListener("fullscreenchange", handleFullscreenChange);
   }, [communityPresentationOpen]);
   const myGarden = memberGarden ?? guestPreview.garden;
+  const communityOnboardingPlantingTarget = communityQuickStart
+    ? COMMUNITY_FAST_START_PLANTINGS
+    : COMMUNITY_CLASSIC_ONBOARDING_PLANTINGS;
   const selectedGardenParcel =
     world === "personal" &&
     memberGarden &&
@@ -531,7 +541,7 @@ export function CommunityGardenApp() {
   const showMyGardenInvitation =
     world === "community" &&
     !memberGarden &&
-    communityOnboardingPlantings >= 3 &&
+    communityOnboardingPlantings >= communityOnboardingPlantingTarget &&
     onboardingStep !== "community-water" &&
     !isGardenOnboardingFinished(onboardingStep);
   const myGardenTutorialLocked =
@@ -539,7 +549,8 @@ export function CommunityGardenApp() {
     Boolean(onboardingStep) &&
     !isGardenOnboardingFinished(onboardingStep) &&
     onboardingStep !== "my-garden" &&
-    (communityOnboardingPlantings < 3 || onboardingStep === "community-water");
+    (communityOnboardingPlantings < communityOnboardingPlantingTarget ||
+      onboardingStep === "community-water");
   const communityGardenTutorialLocked =
     world === "personal" &&
     !memberGarden &&
@@ -1256,7 +1267,7 @@ export function CommunityGardenApp() {
       !communityQuickStart ||
       !onboardingStep ||
       isGardenOnboardingFinished(onboardingStep) ||
-      communityOnboardingPlantings >= 3
+      communityOnboardingPlantings >= communityOnboardingPlantingTarget
     ) {
       return;
     }
@@ -1271,6 +1282,7 @@ export function CommunityGardenApp() {
     canvasRef.current?.selectPlant(quickStartPlant);
   }, [
     communityOnboardingPlantings,
+    communityOnboardingPlantingTarget,
     communityQuickStart,
     onboardingStep,
     ui.selectedTool,
@@ -1286,8 +1298,12 @@ export function CommunityGardenApp() {
       return;
     }
 
-    const stored = loadGardenOnboardingStep();
-    const storedCommunityPlantings = loadCommunityOnboardingPlantings();
+    const stored = classicOnboardingRequested
+      ? null
+      : loadGardenOnboardingStep();
+    const storedCommunityPlantings = classicOnboardingRequested
+      ? 0
+      : loadCommunityOnboardingPlantings();
     communityOnboardingPlantingsRef.current = storedCommunityPlantings;
     let next = stored;
     const previewPlantings =
@@ -1297,7 +1313,7 @@ export function CommunityGardenApp() {
       !memberGarden &&
       !isGardenOnboardingFinished(stored) &&
       previewPlantings === 0 &&
-      storedCommunityPlantings < 3;
+      storedCommunityPlantings < communityOnboardingPlantingTarget;
     if (memberGarden) {
       next = "complete";
     } else if (useCommunityQuickStart) {
@@ -1308,7 +1324,9 @@ export function CommunityGardenApp() {
         guestPreviewRef.current.journey?.world === "personal"
       ) {
         next = "personal-inventory";
-      } else if (storedCommunityPlantings >= 3) {
+      } else if (
+        storedCommunityPlantings >= COMMUNITY_CLASSIC_ONBOARDING_PLANTINGS
+      ) {
         next = "community-water";
       } else if (storedCommunityPlantings > 0) {
         next = "community-tile";
@@ -1318,7 +1336,7 @@ export function CommunityGardenApp() {
     } else if (
       !memberGarden &&
       !isGardenOnboardingFinished(next) &&
-      storedCommunityPlantings >= 3 &&
+      storedCommunityPlantings >= COMMUNITY_CLASSIC_ONBOARDING_PLANTINGS &&
       next !== "community-water" &&
       next !== "personal-inventory" &&
       next !== "personal-seed" &&
@@ -1338,7 +1356,9 @@ export function CommunityGardenApp() {
     });
   }, [
     accountChecked,
+    classicOnboardingRequested,
     communityQuickStart,
+    communityOnboardingPlantingTarget,
     guestPreviewReady,
     memberGarden,
     onboardingStep,
@@ -1371,10 +1391,22 @@ export function CommunityGardenApp() {
     if (!shouldSuggestCommunity && !shouldSuggestPersonal && !shouldSuggestWatering) return;
     const frame = window.requestAnimationFrame(() => {
       if (shouldSuggestWatering) canvasRef.current?.suggestWateringSpot();
-      else canvasRef.current?.suggestPlantingSpot();
+      else {
+        canvasRef.current?.suggestPlantingSpot({
+          readyToPlant:
+            shouldSuggestCommunity &&
+            communityQuickStart &&
+            communityOnboardingPlantings === 0,
+        });
+      }
     });
     return () => window.cancelAnimationFrame(frame);
-  }, [onboardingStep, world]);
+  }, [
+    communityOnboardingPlantings,
+    communityQuickStart,
+    onboardingStep,
+    world,
+  ]);
 
   useEffect(() => {
     if (!guestPreviewReady || memberGarden) return;
@@ -1878,7 +1910,7 @@ export function CommunityGardenApp() {
       if (!memberGarden) {
         try {
           const currentPreview = guestPreviewRef.current;
-          let updatedPreview = mutateGuestGarden(currentPreview, mutation);
+          const updatedPreview = mutateGuestGarden(currentPreview, mutation);
           const used = updatedPreview.garden.preview?.plantingsUsed ?? 0;
           if (mutation.action === "plant") {
             if (used === 1) {
@@ -1890,16 +1922,7 @@ export function CommunityGardenApp() {
               ]);
               setShowFreePlantingNotice(true);
             }
-            if (
-              used === GUEST_SOFT_PAYWALL_PLANTINGS &&
-              !currentPreview.access?.softPaywallSeen
-            ) {
-              updatedPreview = markGuestSoftPaywallSeen(updatedPreview);
-              setMembershipOfferStage("soft");
-              setMembershipOfferOpen(true);
-            } else if (
-              used >= (updatedPreview.garden.preview?.plantingLimit ?? 10)
-            ) {
+            if (used >= (updatedPreview.garden.preview?.plantingLimit ?? 10)) {
               setMembershipOfferStage("hard");
               setMembershipOfferOpen(true);
             }
@@ -2270,7 +2293,7 @@ export function CommunityGardenApp() {
           onboardingStep === "community-repeat";
         if (!isGuidedCommunityPlanting) return;
         const nextPlantings = Math.min(
-          3,
+          communityOnboardingPlantingTarget,
           communityOnboardingPlantingsRef.current + 1,
         );
         communityOnboardingPlantingsRef.current = nextPlantings;
@@ -2279,7 +2302,9 @@ export function CommunityGardenApp() {
         if (nextPlantings === 1) {
           void trackBasilFunnelEvent("first_community_plant");
           trackBasilMetaCustomMilestone("BasilFirstPlant", "first_plant");
-        } else if (nextPlantings === 3) {
+        } else if (
+          nextPlantings === COMMUNITY_CLASSIC_ONBOARDING_PLANTINGS
+        ) {
           void trackBasilFunnelEvent("third_community_plant");
         }
         const guidedPlantingSteps: GardenOnboardingStep[] = [
@@ -2288,11 +2313,14 @@ export function CommunityGardenApp() {
           "community-tile",
           "community-repeat",
         ];
-        if (nextPlantings >= 3 && communityQuickStart) {
+        if (
+          nextPlantings >= communityOnboardingPlantingTarget &&
+          communityQuickStart
+        ) {
           transitionOnboarding("complete", guidedPlantingSteps);
           setShowCommunityQuickStartComplete(true);
           setCareAnnouncement(
-            "You are part of the garden. Your three community flowers are growing.",
+            "You are part of the garden. Your two community flowers are growing.",
           );
           trackBasilMetaCustomMilestone(
             "BasilCommunityTutorialCompleted",
@@ -2300,14 +2328,19 @@ export function CommunityGardenApp() {
           );
         } else {
           transitionOnboarding(
-            nextPlantings >= 3 ? "community-water" : "community-tile",
+            nextPlantings >= communityOnboardingPlantingTarget
+              ? "community-water"
+              : "community-tile",
             guidedPlantingSteps,
           );
         }
         window.requestAnimationFrame(() => {
-          if (nextPlantings >= 3 && !communityQuickStart) {
+          if (
+            nextPlantings >= communityOnboardingPlantingTarget &&
+            !communityQuickStart
+          ) {
             canvasRef.current?.suggestWateringSpot();
-          } else if (nextPlantings < 3) {
+          } else if (nextPlantings < communityOnboardingPlantingTarget) {
             canvasRef.current?.suggestPlantingSpot();
           }
         });
@@ -2328,6 +2361,7 @@ export function CommunityGardenApp() {
     },
     [
       communityQuickStart,
+      communityOnboardingPlantingTarget,
       onboardingStep,
       playGardenSound,
       transitionOnboarding,
@@ -2540,7 +2574,7 @@ export function CommunityGardenApp() {
                   ? "Plant your first rose before returning to Community Garden"
                   : `Go to Community Garden. ${myGarden.careBalance} Care.`
                 : myGardenTutorialLocked
-                  ? `Plant ${3 - communityOnboardingPlantings} more community flowers before visiting My Garden`
+                  ? `Plant ${Math.max(0, communityOnboardingPlantingTarget - communityOnboardingPlantings)} more community flowers before visiting My Garden`
                   : `Go to My Garden. ${myGarden.careBalance} Care.`
             }
             onClick={switchWorld}
@@ -2735,7 +2769,13 @@ export function CommunityGardenApp() {
             }
             aria-hidden="true"
           />
-          <span>{ui.actionLabel}</span>
+          <span>
+            {communityQuickStart &&
+            onboardingStep === "community-tile" &&
+            ui.action === "plant"
+              ? "Plant here"
+              : ui.actionLabel}
+          </span>
         </button>
 
         {world === "personal" && session && accountChecked && memberGarden ? (
@@ -2885,7 +2925,7 @@ export function CommunityGardenApp() {
         {world === "community" && showCommunityQuickStartComplete ? (
           <aside className="cg-free-planting-notice" role="status">
             <strong>You are part of the garden.</strong>
-            <span>Your three flowers are growing. Explore, plant, or water anywhere you like.</span>
+            <span>Your two flowers are growing. Explore, plant, or water anywhere you like.</span>
           </aside>
         ) : null}
 
@@ -2951,7 +2991,7 @@ export function CommunityGardenApp() {
 
       <GardenMembershipOffer
         open={membershipOfferOpen}
-        planted={myGarden.preview?.plantingsUsed ?? GUEST_SOFT_PAYWALL_PLANTINGS}
+        planted={myGarden.preview?.plantingsUsed ?? GUEST_PLANTING_LIMIT}
         gardenPlantCount={myGarden.plants.length}
         gardenPathCount={myGarden.paths.length}
         gardenElementCount={myGarden.elements.length}

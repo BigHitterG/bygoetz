@@ -16,6 +16,9 @@ export type GardenOnboardingStep =
 const STORAGE_KEY = "basil-onboarding-v1";
 const COMMUNITY_PLANTINGS_KEY = "basil-onboarding-community-plantings-v1";
 
+export const COMMUNITY_FAST_START_PLANTINGS = 2;
+export const COMMUNITY_CLASSIC_ONBOARDING_PLANTINGS = 3;
+
 // Keep the tutorial stable even as the full garden catalog grows. These are
 // the only choices that teach the core planting loop during onboarding.
 export const GARDEN_ONBOARDING_PLANT_TYPES = [
@@ -25,7 +28,15 @@ export const GARDEN_ONBOARDING_PLANT_TYPES = [
 ] as const satisfies readonly PlantType[];
 
 export function isCommunityQuickStart(search: string) {
-  return new URLSearchParams(search).get("start") === "community";
+  const params = new URLSearchParams(search);
+  return (
+    !isClassicGardenOnboarding(search) &&
+    params.get("start") !== "personal"
+  );
+}
+
+export function isClassicGardenOnboarding(search: string) {
+  return new URLSearchParams(search).get("onboarding") === "classic";
 }
 
 export function getCommunityQuickStartPlantType(

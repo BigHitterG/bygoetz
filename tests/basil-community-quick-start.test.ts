@@ -2,10 +2,16 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { test } from "node:test";
 import {
+  COMMUNITY_FAST_START_PLANTINGS,
   GARDEN_ONBOARDING_PLANT_TYPES,
   getCommunityQuickStartPlantType,
+  isClassicGardenOnboarding,
   isCommunityQuickStart,
 } from "../app/community-garden/lib/gardenOnboarding.ts";
+import {
+  TUTORIAL_PLANTING_HIT_TOLERANCE_TILES,
+  snapToTutorialPlantingTarget,
+} from "../app/community-garden/lib/tutorialTargeting.ts";
 
 const appSource = await readFile(
   new URL(
@@ -21,8 +27,20 @@ const onboardingSource = await readFile(
   ),
   "utf8",
 );
+const canvasSource = await readFile(
+  new URL(
+    "../app/community-garden/components/GardenCanvas.tsx",
+    import.meta.url,
+  ),
+  "utf8",
+);
+const rootPageSource = await readFile(
+  new URL("../app/page.tsx", import.meta.url),
+  "utf8",
+);
 
-test("only the explicit community start value selects Quick Start", () => {
+test("Quick Start is the default and classic onboarding remains addressable", () => {
+  assert.equal(isCommunityQuickStart(""), true);
   assert.equal(isCommunityQuickStart("?start=community"), true);
   assert.equal(
     isCommunityQuickStart(
@@ -31,7 +49,9 @@ test("only the explicit community start value selects Quick Start", () => {
     true,
   );
   assert.equal(isCommunityQuickStart("?start=personal"), false);
-  assert.equal(isCommunityQuickStart(""), false);
+  assert.equal(isCommunityQuickStart("?onboarding=classic"), false);
+  assert.equal(isClassicGardenOnboarding("?onboarding=classic"), true);
+  assert.equal(isClassicGardenOnboarding(""), false);
 });
 
 test("Quick Start assigns one stable tutorial-safe flower per launch session", () => {
@@ -47,10 +67,11 @@ test("Quick Start assigns one stable tutorial-safe flower per launch session", (
   }
 });
 
-test("new Quick Start visitors skip Inventory and begin on a community tile", () => {
+test("new Quick Start visitors skip Inventory and begin ready to plant", () => {
+  assert.equal(COMMUNITY_FAST_START_PLANTINGS, 2);
   assert.match(
     appSource,
-    /const useCommunityQuickStart =[\s\S]+communityQuickStart[\s\S]+storedCommunityPlantings < 3;/,
+    /const useCommunityQuickStart =[\s\S]+communityQuickStart[\s\S]+storedCommunityPlantings < communityOnboardingPlantingTarget;/,
   );
   assert.match(
     appSource,
@@ -58,21 +79,45 @@ test("new Quick Start visitors skip Inventory and begin on a community tile", ()
   );
   assert.match(onboardingSource, /A starter flower is already selected/);
   assert.match(onboardingSource, /Quick planting/);
+  assert.match(appSource, /readyToPlant:[\s\S]*communityOnboardingPlantings === 0/);
+  assert.match(canvasSource, /Your first spot is ready\. Tap Plant below\./);
+  assert.match(appSource, /\? "Plant here"/);
 });
 
-test("the third Quick Start flower ends guidance without opening My Garden or an offer", () => {
+test("the second Quick Start flower ends guidance without opening My Garden or an offer", () => {
   assert.match(
     appSource,
-    /if \(nextPlantings >= 3 && communityQuickStart\) \{\s*transitionOnboarding\("complete"/,
+    /nextPlantings >= communityOnboardingPlantingTarget &&[\s\S]*communityQuickStart[\s\S]*transitionOnboarding\("complete"/,
   );
   assert.match(appSource, /You are part of the garden\./);
+  assert.match(appSource, /Your two community flowers are growing/);
   assert.match(
     appSource,
-    /nextPlantings >= 3 && !communityQuickStart[\s\S]*suggestWateringSpot/,
+    /nextPlantings >= communityOnboardingPlantingTarget &&[\s\S]*!communityQuickStart[\s\S]*suggestWateringSpot/,
   );
+});
+
+test("near misses snap to the glowing second planting patch", () => {
+  const target = { gridX: 20, gridY: 30 };
+  assert.equal(TUTORIAL_PLANTING_HIT_TOLERANCE_TILES, 2);
+  assert.deepEqual(snapToTutorialPlantingTarget({ gridX: 18, gridY: 32 }, target), target);
+  assert.deepEqual(
+    snapToTutorialPlantingTarget({ gridX: 17, gridY: 30 }, target),
+    { gridX: 17, gridY: 30 },
+  );
+});
+
+test("the Basil root keeps campaign parameters and enters the garden", () => {
+  assert.match(rootPageSource, /isBasilHostname\(hostname\)/);
+  assert.match(rootPageSource, /redirect\(`\/community-garden/);
+  assert.match(rootPageSource, /params\.append\(key, item\)/);
+});
+
+test("My Garden has no three-flower offer and hard-gates at its configured limit", () => {
+  assert.doesNotMatch(appSource, /used === GUEST_SOFT_PAYWALL_PLANTINGS/);
   assert.match(
     appSource,
-    /nextPlantings >= 3 \? "community-water" : "community-tile"/,
+    /used >= \(updatedPreview\.garden\.preview\?\.plantingLimit \?\? 10\)[\s\S]*setMembershipOfferStage\("hard"\)/,
   );
 });
 
@@ -82,4 +127,15 @@ test("completed onboarding and member accounts are never restarted by the link",
     /communityQuickStart &&\s*!memberGarden &&\s*!isGardenOnboardingFinished\(stored\)/,
   );
   assert.match(appSource, /if \(memberGarden\) \{\s*next = "complete";/);
+});
+
+test("the classic link deliberately restores the longer onboarding", () => {
+  assert.match(
+    appSource,
+    /const stored = classicOnboardingRequested[\s\S]*\? null[\s\S]*loadGardenOnboardingStep\(\)/,
+  );
+  assert.match(
+    appSource,
+    /const storedCommunityPlantings = classicOnboardingRequested[\s\S]*\? 0[\s\S]*loadCommunityOnboardingPlantings\(\)/,
+  );
 });

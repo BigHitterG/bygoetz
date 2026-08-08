@@ -764,7 +764,7 @@ export function GardenSteward({
       <p className="cg-steward-lead">
         {accountState.status === "active"
           ? "Manage membership, progress, your Heritage Flower, the Garden Almanac, newsletter, feedback, and private account settings."
-          : "Keep playing the Community Garden for free and try three flowers in My Garden. Membership keeps what you started and saves it across devices."}
+          : "Keep playing the Community Garden for free and try ten flowers in My Garden. Membership keeps what you started and saves it across devices."}
       </p>
 
       {notice ? <p className="cg-steward-notice" aria-live="polite">{notice}</p> : null}

@@ -49,7 +49,11 @@ test("required tutorial gestures cannot move Mary away from the commanded tile",
 test("three community plantings lead to watering before My Garden", () => {
   assert.match(
     appSource,
-    /nextPlantings >= 3 \? "community-water" : "community-tile"/,
+    /communityQuickStart[\s\S]*COMMUNITY_FAST_START_PLANTINGS[\s\S]*COMMUNITY_CLASSIC_ONBOARDING_PLANTINGS/,
+  );
+  assert.match(
+    appSource,
+    /nextPlantings >= communityOnboardingPlantingTarget[\s\S]*\? "community-water"[\s\S]*: "community-tile"/,
   );
   assert.match(
     appSource,

@@ -78,6 +78,7 @@ import {
 } from "../lib/supabaseGarden";
 import { OCCUPIED_GARDEN_COORDINATE_REASON } from "../lib/gardenActionFailure";
 import { choosePlantingSuggestion } from "../lib/plantingSuggestion";
+import { snapToTutorialPlantingTarget } from "../lib/tutorialTargeting";
 import type { HeritageMoment } from "../lib/heritageNotifications";
 import {
   findNearbyHeritageFlower,
@@ -175,7 +176,7 @@ export type GardenUiState = {
 
 export type GardenCanvasHandle = {
   performAction: () => Promise<void>;
-  suggestPlantingSpot: () => void;
+  suggestPlantingSpot: (options?: { readyToPlant?: boolean }) => void;
   suggestWateringSpot: () => void;
   goToMapPosition: (mapX: number, mapY: number) => void;
   goToGridPosition: (gridX: number, gridY: number) => void;
@@ -2815,7 +2816,7 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
           if (!canvas) return null;
           return renderPersonalGardenShare(runtimeRef.current, canvas, scope);
         },
-        suggestPlantingSpot() {
+        suggestPlantingSpot(options) {
           if (!tutorialDimmedRef.current) return;
           const runtime = runtimeRef.current;
           runtime.toolMode = "plant";
@@ -2825,9 +2826,29 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
           runtime.target = null;
           if (runtime.suggestedPlantingCell) {
             bringTutorialTargetIntoView(runtime, runtime.suggestedPlantingCell);
+            if (options?.readyToPlant) {
+              const readyCell = runtime.suggestedPlantingCell;
+              const approach = getAdjacentTarget(
+                runtime,
+                readyCell.gridX,
+                readyCell.gridY,
+              );
+              runtime.selected = { ...readyCell };
+              runtime.target = null;
+              runtime.mary = { ...approach };
+              runtime.camera = { ...approach };
+              runtime.cameraAnchor = null;
+              runtime.duck = {
+                x: clampRuntimeCoordinate(runtime, approach.x - 18, "x"),
+                y: clampRuntimeCoordinate(runtime, approach.y + 10, "y"),
+              };
+              runtime.path = [{ ...approach }];
+            }
           }
           runtime.statusMessage = runtime.suggestedPlantingCell
-            ? "Tap the glowing patch to walk over and plant."
+            ? options?.readyToPlant
+              ? "Your first spot is ready. Tap Plant below."
+              : "Tap near the glowing patch to walk over and plant."
             : "The garden is finding an open patch for you.";
           publishUi();
         },
@@ -3929,6 +3950,14 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
     function selectCell(gridX: number, gridY: number) {
       const runtime = runtimeRef.current;
       queuedPlantingRef.current = null;
+      if (tutorialDimmedRef.current && runtime.suggestedPlantingCell) {
+        const snapped = snapToTutorialPlantingTarget(
+          { gridX, gridY },
+          runtime.suggestedPlantingCell,
+        );
+        gridX = snapped.gridX;
+        gridY = snapped.gridY;
+      }
       if (
         runtime.mode === "personal" &&
         onOpenGardenJournalRef.current &&

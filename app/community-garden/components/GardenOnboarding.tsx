@@ -1,4 +1,8 @@
 import type { GardenOnboardingStep } from "../lib/gardenOnboarding";
+import {
+  COMMUNITY_CLASSIC_ONBOARDING_PLANTINGS,
+  COMMUNITY_FAST_START_PLANTINGS,
+} from "../lib/gardenOnboarding";
 
 type GardenOnboardingProps = {
   step: GardenOnboardingStep | null;
@@ -34,6 +38,9 @@ export function GardenOnboarding({
 
   const actionReady =
     step === "community-water" ? waterActionReady : plantActionReady;
+  const communityPlantingTarget = communityQuickStart
+    ? COMMUNITY_FAST_START_PLANTINGS
+    : COMMUNITY_CLASSIC_ONBOARDING_PLANTINGS;
   const content =
     step === "plant"
       ? {
@@ -46,13 +53,19 @@ export function GardenOnboarding({
         }
       : step === "community-tile" || step === "community-repeat"
         ? {
-            kicker: `${communityQuickStart ? "Quick planting" : "Community planting"} ${Math.min(3, communityPlantings + 1)} of 3`,
-            title: actionReady ? "You are in place" : "Choose the glowing patch",
+            kicker: `${communityQuickStart ? "Quick planting" : "Community planting"} ${Math.min(communityPlantingTarget, communityPlantings + 1)} of ${communityPlantingTarget}`,
+            title: actionReady
+              ? communityQuickStart && communityPlantings === 0
+                ? "Plant your first flower"
+                : "You are in place"
+              : "Choose the glowing patch",
             copy: actionReady
-              ? "Tap the Plant button below to add your flower."
+              ? communityQuickStart && communityPlantings === 0
+                ? "Your flower and planting spot are ready. Tap Plant below."
+                : "Tap the Plant button below to add your flower."
               : communityPlantings > 0
                 ? communityQuickStart
-                  ? "Keep planting with the flower Basil chose. Tap the next glowing patch to walk over."
+                  ? "Tap anywhere near the next glowing patch. Basil will guide Mary to the right spot."
                   : "Keep your chosen plant. Tap the next glowing patch to walk over."
                 : communityQuickStart
                   ? "A starter flower is already selected. Tap the highlighted open ground to walk over."
@@ -75,8 +88,8 @@ export function GardenOnboarding({
         : step === "personal-inventory"
           ? {
               kicker: "Your garden preview",
-              title: "Plant three flowers of your own",
-              copy: "Try your first one with the guide, then arrange the next two however you like.",
+              title: "Plant your first flower",
+              copy: "Try your first one with the guide, then arrange up to nine more however you like.",
               desktopHint: "Press Q to open Inventory.",
               action: "Open Inventory",
               onAction: onOpenInventory,
@@ -86,7 +99,7 @@ export function GardenOnboarding({
                 kicker: "Your first flower",
                 title: actionReady ? "Ready to plant" : "Choose the glowing patch",
                 copy: actionReady
-                  ? "Tap the Plant button below. Your next two flowers are yours to arrange."
+                  ? "Tap the Plant button below. Your next nine flowers are yours to arrange."
                   : "Tap the highlighted ground and walk over to make this space your own.",
                 desktopHint: actionReady
                   ? "Press E to plant."
