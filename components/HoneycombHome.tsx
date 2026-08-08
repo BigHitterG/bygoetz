@@ -12,6 +12,7 @@ import { withSiteBasePath } from "@/lib/sitePath";
 import { getBasilOrigin } from "@/lib/communityGarden/urls";
 import conceptDrawing from "../public/concepts/images/551F39B2-861F-4C86-A128-FFDC16CEB303.png";
 import centerLogo from "../public/concepts/images/Logo-01.png";
+import gromasBubble from "../public/gromas/gromas-bubble-v3.webp";
 import styles from "./HoneycombHome.module.css";
 
 type Bubble = {
@@ -63,9 +64,12 @@ const EXPLORERS_BUBBLE_ID = `${EXPLORERS_SERIES_BUBBLE.q}:${EXPLORERS_SERIES_BUB
 const EXPLORERS_LINK_ID = "explorers";
 const COMMUNITY_GARDEN_BUBBLE = { q: -1, r: 0 };
 const COMMUNITY_GARDEN_LINK_ID = "community-garden";
+const GROMAS_BUBBLE = { q: 0, r: -1 };
+const GROMAS_LINK_ID = "gromas";
 const LINKED_BUBBLE_ROUTES: Record<string, string> = {
   [EXPLORERS_LINK_ID]: "/explorers",
   [COMMUNITY_GARDEN_LINK_ID]: getBasilOrigin(),
+  [GROMAS_LINK_ID]: "/gromas",
 };
 
 function axialDistance(q: number, r: number) {
@@ -167,14 +171,9 @@ export function HoneycombBubbles({
   maxInfluenceRadius = DEFAULT_CONFIG.maxInfluenceRadius,
   minimumGap = DEFAULT_CONFIG.minimumGap,
 }: HoneycombBubblesConfig) {
-  const [responsiveBaseBubbleSize, setResponsiveBaseBubbleSize] = useState(() => {
-    if (baseBubbleSize != null) return baseBubbleSize;
-    return getResponsiveBaseBubbleSize(
-      getViewportSize().width,
-      maxScale,
-      centerBubbleScaleMultiplier,
-    );
-  });
+  const [responsiveBaseBubbleSize, setResponsiveBaseBubbleSize] = useState(
+    baseBubbleSize ?? DEFAULT_CONFIG.baseBubbleSize,
+  );
   const [showExplorersOverlay, setShowExplorersOverlay] = useState(false);
   const surfaceRef = useRef<HTMLDivElement>(null);
   const bubbleRefs = useRef(new Map<string, HTMLDivElement>());
@@ -575,6 +574,8 @@ export function HoneycombBubbles({
         const isCommunityGardenBubble =
           bubble.q === COMMUNITY_GARDEN_BUBBLE.q &&
           bubble.r === COMMUNITY_GARDEN_BUBBLE.r;
+        const isGromasBubble =
+          bubble.q === GROMAS_BUBBLE.q && bubble.r === GROMAS_BUBBLE.r;
 
         return (
           <div
@@ -591,7 +592,9 @@ export function HoneycombBubbles({
               } as React.CSSProperties
             }
             aria-hidden={
-              isExplorersBubble || isCommunityGardenBubble
+              isExplorersBubble ||
+              isCommunityGardenBubble ||
+              isGromasBubble
                 ? undefined
                 : true
             }
@@ -633,6 +636,21 @@ export function HoneycombBubbles({
                   <span />
                 </span>
               </div>
+            ) : null}
+            {isGromasBubble ? (
+              <a
+                className={styles.gromasLink}
+                data-linked-bubble-id={GROMAS_LINK_ID}
+                aria-label="Open Gromas and the Gobbledygooks"
+                href={withSiteBasePath("/gromas")}
+              >
+                <img
+                  className={styles.gromasPreview}
+                  src={gromasBubble.src}
+                  alt=""
+                  draggable="false"
+                />
+              </a>
             ) : null}
           </div>
         );
