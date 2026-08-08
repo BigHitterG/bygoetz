@@ -4013,6 +4013,40 @@
   border: 2px solid var(--cg-ink);
 }
 
+.cg-action-button.is-quick-start-final .cg-action-guidance {
+  position: absolute;
+  left: 50%;
+  top: -48px;
+  display: grid;
+  min-width: 118px;
+  min-height: 30px;
+  place-items: center;
+  border: 2px solid #fff4df;
+  background: var(--cg-red);
+  color: #fff4df;
+  font-size: 0.72rem;
+  font-weight: 900;
+  line-height: 1;
+  pointer-events: none;
+  text-transform: uppercase;
+  transform: translateX(-50%);
+  box-shadow:
+    0 0 0 2px var(--cg-ink),
+    4px 4px 0 rgba(52, 35, 31, 0.24);
+}
+
+.cg-action-button.is-quick-start-final .cg-action-guidance::after {
+  position: absolute;
+  left: 50%;
+  top: calc(100% + 4px);
+  border-top: 12px solid var(--cg-red);
+  border-right: 10px solid transparent;
+  border-left: 10px solid transparent;
+  content: "";
+  filter: drop-shadow(0 2px 0 #fff4df);
+  transform: translateX(-50%);
+}
+
 .cg-library-tabs button {
   display: grid;
   min-width: 0;

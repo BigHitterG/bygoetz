@@ -90,7 +90,10 @@ import {
   getBasilLaunchSessionId,
   trackBasilFunnelEvent,
 } from "../lib/launchFunnel";
-import { SPECIAL_WATERING_FLOWER_NAME } from "../lib/roseLifecycle";
+import {
+  getPlantDefinition,
+  SPECIAL_WATERING_FLOWER_NAME,
+} from "../lib/roseLifecycle";
 import {
   getMyGardenElementGlyphClass,
   getMyGardenUnlockNotices,
@@ -537,6 +540,11 @@ export function CommunityGardenApp() {
     world === "community" && unreadUnlockCount > 0;
   const onboardingPlantActionReady =
     ui.action === "plant" && ui.actionEnabled;
+  const showQuickStartPlantActionCue =
+    communityQuickStart &&
+    onboardingStep === "community-tile" &&
+    communityOnboardingPlantings === 1 &&
+    onboardingPlantActionReady;
   const onboardingWaterActionReady =
     ui.action === "water" && ui.actionEnabled;
   const showMyGardenInvitation =
@@ -2478,7 +2486,8 @@ export function CommunityGardenApp() {
           tutorialClickHere={
             communityQuickStart &&
             onboardingStep === "community-tile" &&
-            communityOnboardingPlantings === 1
+            communityOnboardingPlantings === 1 &&
+            !onboardingPlantActionReady
           }
           onStateChange={onStateChange}
           onCommunityContribution={claimCommunityContribution}
@@ -2757,11 +2766,16 @@ export function CommunityGardenApp() {
             (onboardingWaterActionReady && onboardingStep === "community-water")
               ? " is-onboarding-highlight"
               : ""
-          }`}
+          }${showQuickStartPlantActionCue ? " is-quick-start-final" : ""}`}
           type="button"
           disabled={!ui.actionEnabled || !tutorialActionAllowed}
           onClick={performSelectedAction}
         >
+          {showQuickStartPlantActionCue ? (
+            <span className="cg-action-guidance" aria-hidden="true">
+              Click here
+            </span>
+          ) : null}
           <span
             className={
               ui.action === "water"
@@ -2792,7 +2806,9 @@ export function CommunityGardenApp() {
             {communityQuickStart &&
             onboardingStep === "community-tile" &&
             ui.action === "plant"
-              ? "Plant here"
+              ? communityOnboardingPlantings === 1
+                ? `Plant ${getPlantDefinition(ui.selectedPlantType).name}`
+                : "Plant here"
               : ui.actionLabel}
           </span>
         </button>

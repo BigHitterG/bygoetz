@@ -92,7 +92,7 @@ test("new Quick Start visitors skip Inventory and begin ready to plant", () => {
   assert.match(onboardingSource, /Quick planting/);
   assert.match(appSource, /readyToPlant:[\s\S]*communityOnboardingPlantings === 0/);
   assert.match(canvasSource, /Your first spot is ready\. Tap Plant below\./);
-  assert.match(appSource, /\? "Plant here"/);
+  assert.match(appSource, /: "Plant here"/);
 });
 
 test("the second Quick Start flower ends guidance without opening My Garden or an offer", () => {
@@ -119,6 +119,13 @@ test("Quick Start never teleports Mary and gives the second target one clear can
   );
   assert.match(rendererSource, /strokeText\("CLICK HERE"/);
   assert.match(rendererSource, /ctx\.lineTo\(screen\.x, arrowTipY\)/);
+  assert.match(
+    appSource,
+    /tutorialClickHere={[\s\S]*communityOnboardingPlantings === 1 &&[\s\S]*!onboardingPlantActionReady/,
+  );
+  assert.match(appSource, /className="cg-action-guidance"/);
+  assert.match(appSource, /`Plant \$\{getPlantDefinition\(ui\.selectedPlantType\)\.name\}`/);
+  assert.match(gardenCssSource, /\.cg-action-button\.is-quick-start-final/);
 });
 
 test("completion owns the screen without overlapping the Garden Heart explainer", () => {
