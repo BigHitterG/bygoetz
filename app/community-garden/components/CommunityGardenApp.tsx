@@ -382,6 +382,7 @@ export function CommunityGardenApp() {
   const [showFreePlantingNotice, setShowFreePlantingNotice] = useState(false);
   const [showCommunityQuickStartComplete, setShowCommunityQuickStartComplete] =
     useState(false);
+  const [quickStartPlantPending, setQuickStartPlantPending] = useState(false);
   const [restoreMessage, setRestoreMessage] = useState("");
   const [membershipReloadToken, setMembershipReloadToken] = useState(0);
   const [unlockNotices, setUnlockNotices] = useState<MyGardenUnlockNotice[]>([]);
@@ -2095,14 +2096,26 @@ export function CommunityGardenApp() {
       return;
     }
     if (ui.action === "water" && ui.actionEnabled) playGardenSound("water");
+    if (
+      communityQuickStart &&
+      world === "community" &&
+      onboardingStep === "community-tile" &&
+      ui.action === "plant" &&
+      ui.actionEnabled
+    ) {
+      setQuickStartPlantPending(true);
+    }
     void canvasRef.current?.performAction();
   }, [
     canvasGarden.nextExpansion,
     canvasGarden.expansionCandidates,
     myGarden.preview,
+    communityQuickStart,
+    onboardingStep,
     playGardenSound,
     ui.action,
     ui.actionEnabled,
+    world,
   ]);
 
   const confirmGardenExpansion = useCallback(() => {
@@ -2289,6 +2302,9 @@ export function CommunityGardenApp() {
 
   const handleGardenActionCompleted = useCallback(
     (mode: GardenWorldMode, action: GardenUiState["action"]) => {
+      if (mode === "community" && action === "plant") {
+        setQuickStartPlantPending(false);
+      }
       if (action === "plant") playGardenSound("plant");
       else if (action === "weed" || action === "uproot") {
         playGardenSound("uproot");
@@ -2392,6 +2408,9 @@ export function CommunityGardenApp() {
 
   const handleGardenActionFailed = useCallback(
     (mode: GardenWorldMode, action: GardenUiState["action"], error: unknown) => {
+      if (mode === "community" && action === "plant") {
+        setQuickStartPlantPending(false);
+      }
       playGardenSound("error");
       void trackBasilFunnelEvent("garden_action_failed", {
         failure_stage: mode,
@@ -2487,7 +2506,15 @@ export function CommunityGardenApp() {
             communityQuickStart &&
             onboardingStep === "community-tile" &&
             communityOnboardingPlantings === 1 &&
-            !onboardingPlantActionReady
+            !onboardingPlantActionReady &&
+            !quickStartPlantPending
+          }
+          hideTutorialPlantingLabel={
+            communityQuickStart &&
+            onboardingStep === "community-tile" &&
+            (communityOnboardingPlantings === 0 ||
+              onboardingPlantActionReady ||
+              quickStartPlantPending)
           }
           onStateChange={onStateChange}
           onCommunityContribution={claimCommunityContribution}
@@ -2945,7 +2972,7 @@ export function CommunityGardenApp() {
         ) : null}
 
         <GardenOnboarding
-          step={onboardingStep}
+          step={quickStartPlantPending ? null : onboardingStep}
           communityQuickStart={communityQuickStart}
           communityPlantings={communityOnboardingPlantings}
           inventoryOpen={inventoryOpen}
@@ -2965,6 +2992,14 @@ export function CommunityGardenApp() {
             role="status"
             aria-live="polite"
           >
+            <button
+              className="cg-community-complete-close"
+              type="button"
+              aria-label="Close welcome message"
+              onClick={() => setShowCommunityQuickStartComplete(false)}
+            >
+              {"\u00d7"}
+            </button>
             <strong>You are part of the garden.</strong>
             <span>
               Congratulations. Your two flowers are growing here with

@@ -350,6 +350,7 @@ type GardenCanvasProps = {
   showPersonalCommunityFlowers?: boolean;
   tutorialDimmed?: boolean;
   tutorialClickHere?: boolean;
+  hideTutorialPlantingLabel?: boolean;
   onPersonalGardenMutation?: (
     mutation: MyGardenMutation,
   ) => Promise<MyGardenState>;
@@ -2024,6 +2025,7 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
       showPersonalCommunityFlowers = false,
       tutorialDimmed = false,
       tutorialClickHere = false,
+      hideTutorialPlantingLabel = false,
       onPersonalGardenMutation,
       onActionCompleted,
       onActionFailed,
@@ -2049,6 +2051,7 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
     const accountAccessTokenRef = useRef(accountAccessToken);
     const tutorialDimmedRef = useRef(tutorialDimmed);
     const tutorialClickHereRef = useRef(tutorialClickHere);
+    const hideTutorialPlantingLabelRef = useRef(hideTutorialPlantingLabel);
     const personalGardenRef = useRef(personalGarden);
     const personalCommunityFlowersRef = useRef(personalCommunityFlowers);
     const showPersonalCommunityFlowersRef = useRef(
@@ -2203,6 +2206,10 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
     useEffect(() => {
       tutorialClickHereRef.current = tutorialClickHere;
     }, [tutorialClickHere]);
+
+    useEffect(() => {
+      hideTutorialPlantingLabelRef.current = hideTutorialPlantingLabel;
+    }, [hideTutorialPlantingLabel]);
 
     useEffect(() => {
       personalGardenRef.current = personalGarden;
@@ -3908,6 +3915,7 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
           wateringCareStatusLoaded: runtime.wateringCareStatusLoaded,
           suggestedPlantingCell: runtime.suggestedPlantingCell,
           tutorialClickHere: tutorialClickHereRef.current,
+          hideTutorialPlantingLabel: hideTutorialPlantingLabelRef.current,
           suggestedWateringCell: runtime.suggestedWateringCell,
           gardenWorms: Array.from(runtime.gardenWorms.values()),
           tutorialDimmed: tutorialDimmedRef.current,

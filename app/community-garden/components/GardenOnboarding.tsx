@@ -61,7 +61,10 @@ export function GardenOnboarding({
         }
       : step === "community-tile" || step === "community-repeat"
         ? {
-            kicker: `${communityQuickStart ? "Quick planting" : "Community planting"} ${Math.min(communityPlantingTarget, communityPlantings + 1)} of ${communityPlantingTarget}`,
+            kicker:
+              communityQuickStart && communityPlantings === 0
+                ? ""
+                : `${communityQuickStart ? "Quick planting" : "Community planting"} ${Math.min(communityPlantingTarget, communityPlantings + 1)} of ${communityPlantingTarget}`,
             title: actionReady
               ? communityQuickStart && communityPlantings === 0
                 ? "Plant your first flower"
@@ -144,7 +147,7 @@ export function GardenOnboarding({
       className={`cg-onboarding-card is-required is-${step}${actionReady ? " is-action-ready" : ""}`}
       aria-labelledby="cg-onboarding-title"
     >
-      <p>{content.kicker}</p>
+      {content.kicker ? <p>{content.kicker}</p> : null}
       <h2 id="cg-onboarding-title">{content.title}</h2>
       <span>{content.copy}</span>
       <kbd className="cg-onboarding-desktop-hint">{content.desktopHint}</kbd>

@@ -86,6 +86,7 @@ export type RenderGardenState = {
   wateringCareStatusLoaded?: boolean;
   suggestedPlantingCell: SelectedCell;
   tutorialClickHere?: boolean;
+  hideTutorialPlantingLabel?: boolean;
   suggestedWateringCell: SelectedCell;
   gardenWorms: Array<{ gridX: number; gridY: number; surfacedAt: number }>;
   tutorialDimmed: boolean;
@@ -513,8 +514,9 @@ function drawSuggestedPlantingLabel(
   now: number,
   zoom: number,
   clickHere = false,
+  hidden = false,
 ) {
-  if (!cell) return;
+  if (!cell || hidden) return;
   const screen = getSuggestedPlantingScreen(cell, camera, viewport, zoom);
   if (clickHere) {
     const labelY = Math.max(24, screen.y - Math.max(52, 58 * zoom));
@@ -3351,6 +3353,7 @@ export function renderGarden(ctx: CanvasRenderingContext2D, state: RenderGardenS
     state.now,
     state.zoom,
     state.tutorialClickHere,
+    state.hideTutorialPlantingLabel,
   );
   drawEffects(ctx, state.effects, state.camera, state.viewport, state.now, state.zoom);
   drawSelection(ctx, state.selected, state.camera, state.viewport, state.zoom);

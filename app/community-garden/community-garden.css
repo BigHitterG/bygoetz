@@ -1829,6 +1829,7 @@
   border-width: 3px;
   padding: 22px 20px 20px;
   background: rgba(255, 244, 223, 0.99);
+  pointer-events: auto;
   box-shadow:
     7px 7px 0 rgba(52, 35, 31, 0.28),
     inset 0 0 0 3px #ead08a;
@@ -1941,10 +1942,33 @@
   font-size: 0.6rem;
   font-weight: 800;
   line-height: 1.35;
-  pointer-events: none;
+  pointer-events: auto;
   transform: translateX(-50%);
   box-shadow: 4px 4px 0 rgba(52, 35, 31, 0.22);
   animation: cg-free-planting-notice 5.5s ease both;
+}
+
+.cg-community-complete-close {
+  position: absolute;
+  top: 8px;
+  right: 9px;
+  display: grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  border: 0;
+  background: transparent;
+  color: var(--cg-red);
+  cursor: pointer;
+  font: inherit;
+  font-size: 1.3rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.cg-community-complete-close:focus-visible {
+  outline: 3px solid rgba(184, 49, 54, 0.45);
+  outline-offset: 2px;
 }
 
 .cg-growing-edge-sprout {

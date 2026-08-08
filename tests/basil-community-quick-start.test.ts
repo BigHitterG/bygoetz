@@ -89,7 +89,10 @@ test("new Quick Start visitors skip Inventory and begin ready to plant", () => {
     /else if \(useCommunityQuickStart\) \{\s*next = "community-tile";/,
   );
   assert.match(onboardingSource, /A starter flower is already selected/);
-  assert.match(onboardingSource, /Quick planting/);
+  assert.match(
+    onboardingSource,
+    /communityQuickStart && communityPlantings === 0[\s\S]*\? ""/,
+  );
   assert.match(appSource, /readyToPlant:[\s\S]*communityOnboardingPlantings === 0/);
   assert.match(canvasSource, /Your first spot is ready\. Tap Plant below\./);
   assert.match(appSource, /: "Plant here"/);
@@ -126,6 +129,10 @@ test("Quick Start never teleports Mary and gives the second target one clear can
   assert.match(appSource, /className="cg-action-guidance"/);
   assert.match(appSource, /`Plant \$\{getPlantDefinition\(ui\.selectedPlantType\)\.name\}`/);
   assert.match(gardenCssSource, /\.cg-action-button\.is-quick-start-final/);
+  assert.match(appSource, /hideTutorialPlantingLabel=/);
+  assert.match(appSource, /step={quickStartPlantPending \? null : onboardingStep}/);
+  assert.match(canvasSource, /hideTutorialPlantingLabelRef/);
+  assert.match(rendererSource, /if \(!cell \|\| hidden\) return;/);
 });
 
 test("completion owns the screen without overlapping the Garden Heart explainer", () => {
@@ -138,6 +145,8 @@ test("completion owns the screen without overlapping the Garden Heart explainer"
   assert.match(appSource, /Seriously—thank you for planting\./);
   assert.match(gardenCssSource, /\.cg-free-planting-notice\.is-community-complete/);
   assert.match(gardenCssSource, /@keyframes cg-community-complete/);
+  assert.match(appSource, /aria-label="Close welcome message"/);
+  assert.match(gardenCssSource, /\.cg-community-complete-close/);
 });
 
 test("near misses snap to the glowing second planting patch", () => {
