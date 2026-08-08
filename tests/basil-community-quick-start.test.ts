@@ -45,6 +45,10 @@ const rendererSource = await readFile(
   ),
   "utf8",
 );
+const gardenCssSource = await readFile(
+  new URL("../app/community-garden/community-garden.css", import.meta.url),
+  "utf8",
+);
 
 test("Quick Start is the default and classic onboarding remains addressable", () => {
   assert.equal(isCommunityQuickStart(""), true);
@@ -115,6 +119,18 @@ test("Quick Start never teleports Mary and gives the second target one clear can
   );
   assert.match(rendererSource, /strokeText\("CLICK HERE"/);
   assert.match(rendererSource, /ctx\.lineTo\(screen\.x, arrowTipY\)/);
+});
+
+test("completion owns the screen without overlapping the Garden Heart explainer", () => {
+  assert.match(appSource, /quickStartCompletedThisSessionRef\.current = true/);
+  assert.match(appSource, /setGrowingEdgeIntroOpen\(false\)/);
+  assert.match(
+    appSource,
+    /growingEdgeIntroOpen &&[\s\S]*!tutorialMapDimmed &&[\s\S]*!showCommunityQuickStartComplete/,
+  );
+  assert.match(appSource, /Seriously—thank you for planting\./);
+  assert.match(gardenCssSource, /\.cg-free-planting-notice\.is-community-complete/);
+  assert.match(gardenCssSource, /@keyframes cg-community-complete/);
 });
 
 test("near misses snap to the glowing second planting patch", () => {

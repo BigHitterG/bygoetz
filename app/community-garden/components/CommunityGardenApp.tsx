@@ -397,6 +397,7 @@ export function CommunityGardenApp() {
   const restoredJourneyRef = useRef(false);
   const communityOnboardingPlantingsRef = useRef(0);
   const quickStartPlantTrackedRef = useRef(false);
+  const quickStartCompletedThisSessionRef = useRef(false);
   const adLabel = process.env.NEXT_PUBLIC_COMMUNITY_GARDEN_AD_PLACEHOLDER;
   const captureMyGarden = useCallback((scope: GardenShareScope) => {
     return canvasRef.current?.captureGarden(scope) ?? Promise.resolve(null);
@@ -1377,7 +1378,7 @@ export function CommunityGardenApp() {
     if (!showCommunityQuickStartComplete) return;
     const timeout = window.setTimeout(() => {
       setShowCommunityQuickStartComplete(false);
-    }, 5_500);
+    }, 6_500);
     return () => window.clearTimeout(timeout);
   }, [showCommunityQuickStartComplete]);
 
@@ -1522,7 +1523,9 @@ export function CommunityGardenApp() {
       world !== "community" ||
       !accountChecked ||
       ui.connection === "connecting" ||
-      !isGardenOnboardingFinished(onboardingStep)
+      !isGardenOnboardingFinished(onboardingStep) ||
+      quickStartCompletedThisSessionRef.current ||
+      showCommunityQuickStartComplete
     ) {
       return;
     }
@@ -1533,7 +1536,13 @@ export function CommunityGardenApp() {
       // The explanation can still appear once in this running session.
     }
     queueMicrotask(() => setGrowingEdgeIntroOpen(true));
-  }, [accountChecked, onboardingStep, ui.connection, world]);
+  }, [
+    accountChecked,
+    onboardingStep,
+    showCommunityQuickStartComplete,
+    ui.connection,
+    world,
+  ]);
 
   useEffect(() => {
     const regionKey = ui.recentlyOpenedRegionKey;
@@ -2318,6 +2327,8 @@ export function CommunityGardenApp() {
           nextPlantings >= communityOnboardingPlantingTarget &&
           communityQuickStart
         ) {
+          quickStartCompletedThisSessionRef.current = true;
+          setGrowingEdgeIntroOpen(false);
           transitionOnboarding("complete", guidedPlantingSteps);
           setShowCommunityQuickStartComplete(true);
           setCareAnnouncement(
@@ -2887,6 +2898,8 @@ export function CommunityGardenApp() {
 
         {growingEdgeIntroOpen &&
         world === "community" &&
+        !tutorialMapDimmed &&
+        !showCommunityQuickStartComplete &&
         !menuOpen &&
         !inventoryOpen &&
         !membershipOfferOpen ? (
@@ -2931,9 +2944,17 @@ export function CommunityGardenApp() {
         />
 
         {world === "community" && showCommunityQuickStartComplete ? (
-          <aside className="cg-free-planting-notice" role="status">
+          <aside
+            className="cg-free-planting-notice is-community-complete"
+            role="status"
+            aria-live="polite"
+          >
             <strong>You are part of the garden.</strong>
-            <span>Your two flowers are growing. Explore, plant, or water anywhere you like.</span>
+            <span>
+              Congratulations. Your two flowers are growing here with
+              everyone else&apos;s.
+            </span>
+            <em>Seriously—thank you for planting.</em>
           </aside>
         ) : null}
 

@@ -1820,6 +1820,57 @@
   line-height: 1.38;
 }
 
+.cg-free-planting-notice.is-community-complete {
+  top: 50%;
+  bottom: auto;
+  z-index: 16;
+  width: min(420px, calc(100% - 32px));
+  gap: 10px;
+  border-width: 3px;
+  padding: 22px 20px 20px;
+  background: rgba(255, 244, 223, 0.99);
+  box-shadow:
+    7px 7px 0 rgba(52, 35, 31, 0.28),
+    inset 0 0 0 3px #ead08a;
+  transform: translate(-50%, -50%);
+  animation: cg-community-complete 6.5s ease both;
+}
+
+.cg-free-planting-notice.is-community-complete strong {
+  font-size: clamp(0.9rem, 4.5vw, 1.2rem);
+  line-height: 1.15;
+}
+
+.cg-free-planting-notice.is-community-complete span {
+  font-size: clamp(0.7rem, 3.2vw, 0.88rem);
+  line-height: 1.5;
+}
+
+.cg-free-planting-notice.is-community-complete em {
+  color: #9e6817;
+  font-size: clamp(0.68rem, 3vw, 0.82rem);
+  font-style: normal;
+  font-weight: 900;
+  line-height: 1.35;
+  text-transform: uppercase;
+}
+
+@keyframes cg-community-complete {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, calc(-50% + 14px)) scale(0.96);
+  }
+  8%,
+  86% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, calc(-50% - 8px)) scale(0.99);
+  }
+}
+
 .cg-growing-edge-intro {
   position: absolute;
   right: max(14px, env(safe-area-inset-right));
