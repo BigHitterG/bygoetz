@@ -76,6 +76,8 @@ export function GardenMapKey({
     onNavigate(mapX, mapY);
   }
 
+  const detailedMapName = ui.mode === "personal" ? "My Garden map" : "Community Atlas";
+
   return (
     <aside
       className={`cg-map-key is-${ui.mode}${mapExpanded ? " is-expanded" : ""}${disabled ? " is-disabled" : ""}`}
@@ -89,10 +91,22 @@ export function GardenMapKey({
         aria-label={
           disabled
             ? "Garden overview. Finish this tutorial step before using map travel."
-            : "Community Garden overview. Locked growing edge land is marked with padlocks. Select a point to travel, or use Map below for the detailed Community Atlas."
+            : ui.mode === "personal"
+              ? "My Garden overview. Select a point to move there, or use Map below for a detailed view."
+              : "Community Garden overview. Locked growing edge land is marked with padlocks. Select a point to travel, or use Map below for the detailed Community Atlas."
         }
       >
         <span className="cg-map-north" aria-hidden="true">N</span>
+        {ui.mode === "personal"
+          ? ui.pathMapPoints.map((path, index) => (
+              <span
+                className="cg-map-path"
+                key={`${path.x}-${path.y}-${index}`}
+                style={{ left: `${path.x}%`, top: `${path.y}%` }}
+                aria-hidden="true"
+              />
+            ))
+          : null}
         {ui.regionMapCells.length > 0
           ? ui.regionMapCells.map((region) => (
               <span
@@ -128,11 +142,11 @@ export function GardenMapKey({
           className="cg-map-expand"
           type="button"
           disabled={disabled}
-          aria-label="Open the Community Atlas"
+          aria-label={`Open the ${detailedMapName}`}
           aria-expanded={mapExpanded}
           onClick={() => setExpanded(true)}
         >
-          Atlas
+          {ui.mode === "personal" ? "Map" : "Atlas"}
         </button>
       ) : null}
 

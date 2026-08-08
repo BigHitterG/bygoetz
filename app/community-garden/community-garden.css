@@ -604,6 +604,16 @@
   box-shadow: 0 0 0 4px rgba(120, 118, 168, 0.16);
 }
 
+.cg-map-path {
+  position: absolute;
+  z-index: 1;
+  width: 4px;
+  height: 4px;
+  background: #c7aa7c;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+}
+
 .cg-map-region {
   position: absolute;
   z-index: 1;
@@ -9976,12 +9986,12 @@
   bottom: max(8px, env(safe-area-inset-bottom));
   display: grid;
   width: min(650px, calc(100% - 16px));
-  grid-template-columns: repeat(3, minmax(0, 1fr)) minmax(0, 1.14fr);
-  gap: 5px;
-  border: 2px solid rgba(52, 35, 31, 0.82);
-  background: rgba(255, 244, 223, 0.82);
-  padding: 5px;
-  box-shadow: 4px 4px 0 rgba(52, 35, 31, 0.22);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 7px;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  pointer-events: none;
   transform: translateX(-50%);
 }
 
@@ -9990,28 +10000,32 @@
   position: relative;
   inset: auto;
   display: grid;
+  box-sizing: border-box;
   width: auto;
   min-width: 0;
-  min-height: 70px;
+  height: 74px;
+  min-height: 74px;
+  grid-template-rows: 30px 2.2em;
   place-items: center;
   align-content: center;
   gap: 4px;
-  border: 1px solid rgba(52, 35, 31, 0.72);
-  border-radius: 0;
-  background: rgba(247, 216, 170, 0.9);
+  border: 1px solid rgba(52, 35, 31, 0.46);
+  border-radius: 11px;
+  background: rgba(247, 231, 199, 0.94);
   color: var(--cg-ink);
   cursor: pointer;
   padding: 6px 4px;
+  pointer-events: auto;
   font: inherit;
   font-size: 0.58rem;
   font-weight: 900;
   line-height: 1.05;
   text-align: center;
-  box-shadow: 2px 2px 0 rgba(52, 35, 31, 0.16);
+  box-shadow: 0 2px 7px rgba(52, 35, 31, 0.18);
 }
 
 .cg-dock-button {
-  background: rgba(255, 244, 223, 0.94);
+  background: rgba(255, 247, 228, 0.94);
 }
 
 .cg-dock-button:disabled,
@@ -10026,17 +10040,38 @@
   outline-offset: 2px;
 }
 
-.cg-dock-button > strong,
+.cg-dock-label,
 .cg-dock-copy strong,
 .cg-dock-copy small {
   display: block;
   min-width: 0;
 }
 
+.cg-dock-label {
+  display: -webkit-box;
+  height: 2.2em;
+  overflow: hidden;
+  line-height: 1.1;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.cg-dock-icon-slot {
+  display: grid;
+  width: 34px;
+  height: 30px;
+  place-items: center;
+  overflow: visible;
+}
+
 .cg-dock-copy {
   display: grid;
+  height: 2.2em;
   min-width: 0;
+  align-content: center;
   gap: 2px;
+  line-height: 1;
+  overflow: hidden;
 }
 
 .cg-dock-copy strong {
@@ -10078,12 +10113,12 @@
 
 .cg-controls-dock .cg-action-button {
   z-index: 1;
-  background: rgba(244, 204, 137, 0.98);
+  background: rgba(244, 210, 153, 0.97);
   font-size: 0.62rem;
 }
 
 .is-personal-world .cg-controls-dock .cg-action-button {
-  background: rgba(239, 207, 151, 0.98);
+  background: rgba(239, 213, 166, 0.97);
 }
 
 .cg-dock-button.is-onboarding-highlight {
@@ -10165,14 +10200,14 @@
 @media (max-width: 520px) {
   .cg-controls-dock {
     width: calc(100% - 10px);
-    gap: 3px;
-    padding: 4px;
+    gap: 4px;
   }
 
   .cg-dock-button,
   .cg-controls-dock .cg-action-button {
     width: auto;
-    min-height: 68px;
+    height: 70px;
+    min-height: 70px;
     padding: 5px 2px;
     font-size: 0.52rem;
   }

@@ -126,6 +126,7 @@ for (const device of cases) {
   });
   await page.waitForTimeout(750);
   let inventoryModal = null;
+  let personalMap = null;
   if (device.name === "phone" || device.name === "desktop") {
     const inventoryToggle = page.locator(".cg-dock-button.is-inventory");
     const toggleDisabled = await inventoryToggle.isDisabled();
@@ -152,6 +153,27 @@ for (const device of cases) {
     }, toggleDisabled);
     if (inventoryModal.open) {
       await page.locator(".cg-inventory-close").click();
+    }
+  }
+  if (device.name === "phone") {
+    const gardenSwitch = page.locator(".cg-dock-button.is-garden");
+    if (!(await gardenSwitch.isDisabled())) {
+      await gardenSwitch.dispatchEvent("click");
+      await page.waitForTimeout(250);
+      const mapButton = page.locator(".cg-dock-button.is-map");
+      await mapButton.dispatchEvent("click");
+      await page.waitForTimeout(150);
+      personalMap = await page.evaluate(() => ({
+        personalWorld: document.querySelector(".cg-root")?.classList.contains("is-personal-world") ?? false,
+        personalMiniMap: Boolean(document.querySelector(".cg-map-key.is-personal .cg-mini-map")),
+        detailedMapTitle: document.querySelector("#cg-expanded-map-title")?.textContent?.trim() ?? "",
+        dockHeights: Array.from(
+          document.querySelectorAll(".cg-controls-dock > button"),
+          (button) => button.getBoundingClientRect().height,
+        ),
+      }));
+      await page.screenshot({ path: join(tmpdir(), "basil-browser-personal-map.png"), fullPage: true });
+      await page.locator(".cg-expanded-map-close").click();
     }
   }
   const result = await page.evaluate(() => ({
@@ -192,7 +214,7 @@ for (const device of cases) {
     path: join(tmpdir(), `basil-browser-${device.name}.png`),
     fullPage: true,
   });
-  results.push({ ...device, ...result, inventoryModal, errors, failedResponses });
+  results.push({ ...device, ...result, inventoryModal, personalMap, errors, failedResponses });
   await context.close();
 }
 

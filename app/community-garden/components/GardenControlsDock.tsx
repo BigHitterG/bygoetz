@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 
 type GardenControlsDockProps = {
   mapDisabled: boolean;
+  mapAriaLabel: string;
   inventoryDisabled: boolean;
   gardenDisabled: boolean;
   gardenHighlighted: boolean;
@@ -27,6 +28,7 @@ type GardenControlsDockProps = {
 
 export function GardenControlsDock({
   mapDisabled,
+  mapAriaLabel,
   inventoryDisabled,
   gardenDisabled,
   gardenHighlighted,
@@ -54,10 +56,12 @@ export function GardenControlsDock({
         type="button"
         disabled={mapDisabled}
         onClick={onMap}
-        aria-label="Open the detailed Community Garden map"
+        aria-label={mapAriaLabel}
       >
-        <span className="cg-dock-map-icon" aria-hidden="true" />
-        <strong>Map</strong>
+        <span className="cg-dock-icon-slot" aria-hidden="true">
+          <span className="cg-dock-map-icon" />
+        </span>
+        <strong className="cg-dock-label">Map</strong>
       </button>
 
       <button
@@ -67,8 +71,10 @@ export function GardenControlsDock({
         onClick={onInventory}
         aria-label="Open inventory"
       >
-        <span className={inventoryIconClass} aria-hidden="true" />
-        <strong>Inventory</strong>
+        <span className="cg-dock-icon-slot" aria-hidden="true">
+          <span className={inventoryIconClass} />
+        </span>
+        <strong className="cg-dock-label">Inventory</strong>
       </button>
 
       <button
@@ -78,7 +84,9 @@ export function GardenControlsDock({
         onClick={onGarden}
         aria-label={gardenAriaLabel}
       >
-        <span className={gardenIconClass} aria-hidden="true" />
+        <span className="cg-dock-icon-slot" aria-hidden="true">
+          <span className={gardenIconClass} />
+        </span>
         <span className="cg-dock-copy">
           <strong>{gardenLabel}</strong>
           <small>{gardenDetail}</small>
@@ -97,8 +105,10 @@ export function GardenControlsDock({
             Click here
           </span>
         ) : null}
-        {actionIcon}
-        <span>{actionLabel}</span>
+        <span className="cg-dock-icon-slot" aria-hidden="true">
+          {actionIcon}
+        </span>
+        <span className="cg-dock-label">{actionLabel}</span>
       </button>
     </nav>
   );

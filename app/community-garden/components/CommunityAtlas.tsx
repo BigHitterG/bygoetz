@@ -187,6 +187,7 @@ export function CommunityAtlas({
   onNavigateMap,
   onNavigateGrid,
 }: CommunityAtlasProps) {
+  const personalMap = ui.mode === "personal";
   const initialPoint = focusTarget
     ? {
         mapX: gridToMap(focusTarget.gridX, ui.mapBounds, "x"),
@@ -222,7 +223,7 @@ export function CommunityAtlas({
   const [atlasWindows, setAtlasWindows] = useState<GardenRegionWindow[]>([]);
   const windowCacheRef = useRef(new Map<string, GardenRegionWindow>());
   const [detailStatus, setDetailStatus] = useState<"idle" | "loading" | "error">(
-    "loading",
+    personalMap ? "idle" : "loading",
   );
 
   const selectedRegion =
@@ -350,8 +351,24 @@ export function CommunityAtlas({
 
     ctx.imageSmoothingEnabled = false;
     ctx.clearRect(0, 0, ATLAS_SIZE, ATLAS_SIZE);
-    ctx.fillStyle = "#eef1e4";
+    ctx.fillStyle = personalMap ? "#b8c99d" : "#eef1e4";
     ctx.fillRect(0, 0, ATLAS_SIZE, ATLAS_SIZE);
+
+    if (personalMap) {
+      ctx.strokeStyle = "rgba(71, 93, 58, 0.18)";
+      ctx.lineWidth = 1;
+      for (let line = 1; line < 16; line += 1) {
+        const position = (line / 16) * ATLAS_SIZE;
+        ctx.beginPath();
+        ctx.moveTo(position, 0);
+        ctx.lineTo(position, ATLAS_SIZE);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(0, position);
+        ctx.lineTo(ATLAS_SIZE, position);
+        ctx.stroke();
+      }
+    }
 
     for (const region of ui.regionMapCells) {
       const x = projectX(region.x);
@@ -391,6 +408,20 @@ export function CommunityAtlas({
         ctx.fillRect(markerX - 2, markerY - 2, 4, 4);
       }
       if (isLockedRegion(region)) drawRegionLock(ctx, x, y, width, height);
+    }
+
+    const pathSize = zoom === 4 ? 10 : zoom === 2 ? 7 : 5;
+    for (const path of ui.pathMapPoints) {
+      const x = projectX(path.x);
+      const y = projectY(path.y);
+      if (x < -pathSize || y < -pathSize || x > ATLAS_SIZE + pathSize || y > ATLAS_SIZE + pathSize) continue;
+      ctx.fillStyle = "#c7aa7c";
+      ctx.fillRect(
+        Math.round(x - pathSize / 2),
+        Math.round(y - pathSize / 2),
+        pathSize,
+        pathSize,
+      );
     }
 
     const dot = zoom === 4 ? 7 : zoom === 2 ? 5 : 3;
@@ -462,7 +493,7 @@ export function CommunityAtlas({
     ctx.fillStyle = "#1f6e8c";
     ctx.fillRect(playerX - 4, playerY - 4, 8, 8);
     ctx.globalAlpha = 1;
-  }, [focusTarget?.gridX, focusTarget?.gridY, focusTarget?.kind, open, selectedPoint, selectedRegionKey, ui.mapBounds, ui.mapX, ui.mapY, ui.regionMapCells, view, visiblePlants, visibleWeeds, zoom]);
+  }, [focusTarget?.gridX, focusTarget?.gridY, focusTarget?.kind, open, personalMap, selectedPoint, selectedRegionKey, ui.mapBounds, ui.mapX, ui.mapY, ui.pathMapPoints, ui.regionMapCells, view, visiblePlants, visibleWeeds, zoom]);
 
   function selectPoint(event: MouseEvent<HTMLButtonElement>) {
     if (event.detail === 0) return;
@@ -496,7 +527,7 @@ export function CommunityAtlas({
   }
 
   function travel() {
-    if (!selectedPoint || !selectedRegion?.isOpen) return;
+    if (!selectedPoint || (!personalMap && !selectedRegion?.isOpen)) return;
     if (
       typeof selectedPoint.gridX === "number" &&
       typeof selectedPoint.gridY === "number"
@@ -510,7 +541,8 @@ export function CommunityAtlas({
 
   if (!open) return null;
   const zoomIndex = ATLAS_ZOOMS.indexOf(zoom);
-  const selectedTitle = selectedPoint?.label ?? regionTitle(selectedRegion);
+  const selectedTitle =
+    selectedPoint?.label ?? (personalMap ? "My Garden spot" : regionTitle(selectedRegion));
 
   return (
     <div className="cg-expanded-map-backdrop" role="presentation">
@@ -522,21 +554,24 @@ export function CommunityAtlas({
       >
         <header>
           <div>
-            <p>Garden Membership map</p>
-            <h2 id="cg-expanded-map-title">Community Atlas</h2>
+            <p>{personalMap ? "Your private garden" : "Garden Membership map"}</p>
+            <h2 id="cg-expanded-map-title">
+              {personalMap ? "My Garden Map" : "Community Atlas"}
+            </h2>
           </div>
           <button
             className="cg-expanded-map-close"
             type="button"
-            aria-label="Close Community Atlas"
+            aria-label={`Close ${personalMap ? "My Garden map" : "Community Atlas"}`}
             onClick={onClose}
           >
             <span aria-hidden="true">&times;</span>
           </button>
         </header>
         <p className="cg-expanded-map-help">
-          Flowers load automatically at every zoom. Select a region to inspect
-          it, then choose Go here to travel.
+          {personalMap
+            ? "Select any spot in your garden, then choose Go here to move there."
+            : "Flowers load automatically at every zoom. Select a region to inspect it, then choose Go here to travel."}
         </p>
         <div className="cg-atlas-toolbar" role="group" aria-label="Atlas zoom controls">
           <button
@@ -571,14 +606,26 @@ export function CommunityAtlas({
           className="cg-expanded-map-surface"
           type="button"
           onClick={selectPoint}
-          aria-label="Community Atlas. Select a region to inspect it."
+          aria-label={
+            personalMap
+              ? "My Garden map. Select a spot to move there."
+              : "Community Atlas. Select a region to inspect it."
+          }
         >
           <canvas ref={canvasRef} width={ATLAS_SIZE} height={ATLAS_SIZE} aria-hidden="true" />
           <span className="cg-expanded-map-north" aria-hidden="true">N</span>
         </button>
         <div className="cg-atlas-selection" aria-live="polite">
           <div>
-            <small>{selectedRegion ? `Region ${selectedRegion.regionX}, ${selectedRegion.regionY}` : "Choose a region"}</small>
+            <small>
+              {personalMap
+                ? selectedPoint
+                  ? "Selected garden spot"
+                  : "Choose a spot"
+                : selectedRegion
+                  ? `Region ${selectedRegion.regionX}, ${selectedRegion.regionY}`
+                  : "Choose a region"}
+            </small>
             <strong>{selectedTitle}</strong>
             {selectedRegion ? (
               <span>
@@ -587,21 +634,30 @@ export function CommunityAtlas({
                 {selectedRegion.weedCount} weeds
               </span>
             ) : (
-              <span>Tap the map to inspect an area.</span>
+              <span>
+                {personalMap
+                  ? "Tap the map to choose where you want to go."
+                  : "Tap the map to inspect an area."}
+              </span>
             )}
-            {detailStatus === "loading" ? <span>Loading nearby flowers...</span> : null}
-            {detailStatus === "error" ? <span>Flower detail is temporarily unavailable.</span> : null}
+            {!personalMap && detailStatus === "loading" ? <span>Loading nearby flowers...</span> : null}
+            {!personalMap && detailStatus === "error" ? <span>Flower detail is temporarily unavailable.</span> : null}
           </div>
-          <button type="button" disabled={!selectedPoint || !selectedRegion?.isOpen} onClick={travel}>
+          <button
+            type="button"
+            disabled={!selectedPoint || (!personalMap && !selectedRegion?.isOpen)}
+            onClick={travel}
+          >
             {selectedPoint?.label ? `Go to ${selectedPoint.label}` : "Go here"}
           </button>
         </div>
         <footer className="cg-expanded-map-legend" aria-label="Map legend">
           <span className="is-player">You</span>
-          <span className="is-garden-heart">Garden Heart</span>
-          <span className="is-growth-ring">Growth Ring</span>
-          <span className="is-growing-edge">Locked growing edge</span>
-          <span className="is-heritage">Heritage</span>
+          {personalMap ? <span className="is-path">Path</span> : null}
+          {!personalMap ? <span className="is-garden-heart">Garden Heart</span> : null}
+          {!personalMap ? <span className="is-growth-ring">Growth Ring</span> : null}
+          {!personalMap ? <span className="is-growing-edge">Locked growing edge</span> : null}
+          {!personalMap ? <span className="is-heritage">Heritage</span> : null}
           <span className="is-rose">Rose</span>
           <span className="is-sunflower">Sunflower</span>
           <span className="is-lavender">Lavender</span>

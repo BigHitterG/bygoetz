@@ -339,7 +339,7 @@ export function CommunityGardenApp() {
   const [ui, setUi] = useState(INITIAL_UI);
   const [atlasTarget, setAtlasTarget] =
     useState<CommunityAtlasTarget | null>(null);
-  const [communityAtlasOpen, setCommunityAtlasOpen] = useState(false);
+  const [gardenMapOpen, setGardenMapOpen] = useState(false);
   const [world, setWorld] = useState<GardenWorldMode>("community");
   const [menuOpen, setMenuOpen] = useState(false);
   const [communityPresentationOpen, setCommunityPresentationOpen] =
@@ -2579,27 +2579,25 @@ export function CommunityGardenApp() {
           </button>
         </header>
 
-        {world === "community" ? (
-          <GardenMapKey
-            ui={ui}
-            canExpand
-            disabled={tutorialMapDimmed}
-            expanded={communityAtlasOpen}
-            showExpandButton={false}
-            focusTarget={atlasTarget}
-            onExpandedChange={setCommunityAtlasOpen}
-            onNavigate={(mapX, mapY) => {
-              setAtlasTarget(null);
-              setCommunityAtlasOpen(false);
-              canvasRef.current?.goToMapPosition(mapX, mapY);
-            }}
-            onNavigateGrid={(gridX, gridY) => {
-              setAtlasTarget(null);
-              setCommunityAtlasOpen(false);
-              canvasRef.current?.goToGridPosition(gridX, gridY);
-            }}
-          />
-        ) : null}
+        <GardenMapKey
+          ui={ui}
+          canExpand
+          disabled={tutorialMapDimmed}
+          expanded={gardenMapOpen}
+          showExpandButton={false}
+          focusTarget={world === "community" ? atlasTarget : null}
+          onExpandedChange={setGardenMapOpen}
+          onNavigate={(mapX, mapY) => {
+            setAtlasTarget(null);
+            setGardenMapOpen(false);
+            canvasRef.current?.goToMapPosition(mapX, mapY);
+          }}
+          onNavigateGrid={(gridX, gridY) => {
+            setAtlasTarget(null);
+            setGardenMapOpen(false);
+            canvasRef.current?.goToGridPosition(gridX, gridY);
+          }}
+        />
 
         <div className="cg-garden-utilities" aria-label="Garden utilities">
           {world === "personal" && session && accountChecked && memberGarden ? (
@@ -2711,6 +2709,7 @@ export function CommunityGardenApp() {
 
         <GardenControlsDock
           mapDisabled={tutorialMapDimmed || ui.builder.active}
+          mapAriaLabel={`Open the detailed ${world === "personal" ? "My Garden" : "Community Garden"} map`}
           inventoryDisabled={inventoryToggleLocked || ui.builder.active}
           inventoryHighlighted={inventoryHighlighted}
           inventoryIconClass={inventoryIconClass}
@@ -2814,8 +2813,7 @@ export function CommunityGardenApp() {
           onMap={() => {
             setMenuOpen(false);
             setInventoryOpen(false);
-            setWorld("community");
-            setCommunityAtlasOpen(true);
+            setGardenMapOpen(true);
             playGardenSound("select");
           }}
           onInventory={() => {

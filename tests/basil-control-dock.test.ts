@@ -18,6 +18,14 @@ const map = await readFile(
   new URL("../app/community-garden/components/GardenMapKey.tsx", import.meta.url),
   "utf8",
 );
+const atlas = await readFile(
+  new URL("../app/community-garden/components/CommunityAtlas.tsx", import.meta.url),
+  "utf8",
+);
+const css = await readFile(
+  new URL("../app/community-garden/community-garden.css", import.meta.url),
+  "utf8",
+);
 
 test("the primary dock keeps Map, Inventory, garden switch, and action in order", () => {
   const mapIndex = dock.indexOf('className="cg-dock-button is-map"');
@@ -43,4 +51,20 @@ test("secondary Tasks, Share, and Bug controls share the top utility strip", () 
   assert.match(app, /<GardenShare/);
   assert.match(app, /<GardenBugReporter/);
   assert.match(app, /className="cg-garden-tasks-button"/);
+});
+
+test("My Garden owns its mini map and detailed map without changing worlds", () => {
+  assert.match(app, /<GardenMapKey[\s\S]*ui={ui}/);
+  assert.doesNotMatch(app, /onMap={[\s\S]{0,180}setWorld\("community"\)/);
+  assert.match(map, /ui\.mode === "personal"[\s\S]*ui\.pathMapPoints\.map/);
+  assert.match(atlas, /personalMap \? "My Garden Map" : "Community Atlas"/);
+  assert.match(atlas, /!selectedPoint \|\| \(!personalMap && !selectedRegion\?\.isOpen\)/);
+});
+
+test("dock cards have equal fixed geometry and no backing rectangle", () => {
+  assert.match(css, /grid-template-columns: repeat\(4, minmax\(0, 1fr\)\)/);
+  assert.match(css, /\.cg-controls-dock {[\s\S]*background: transparent;[\s\S]*pointer-events: none;/);
+  assert.match(css, /\.cg-dock-button,[\s\S]*height: 74px;[\s\S]*border-radius: 11px;/);
+  assert.match(dock, /className="cg-dock-icon-slot"/);
+  assert.match(dock, /className="cg-dock-label"/);
 });
