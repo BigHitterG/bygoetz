@@ -24,6 +24,7 @@
     "test:promo": "node --experimental-strip-types tests/basil-promo-access.test.ts",
     "test:onboarding": "node --experimental-strip-types tests/basil-onboarding-hardening.test.ts",
     "test:quick-start": "node --experimental-strip-types tests/basil-community-quick-start.test.ts",
+    "test:plant-conflicts": "node --experimental-strip-types tests/basil-simultaneous-planting.test.ts",
     "test:phase5": "node --experimental-strip-types tests/basil-phase5-reliability.test.ts",
     "test:footprints": "node --experimental-strip-types tests/basil-account-footprints.test.ts",
     "test:reports": "node --experimental-strip-types tests/basil-anonymous-reports.test.ts",

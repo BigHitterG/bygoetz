@@ -64,6 +64,7 @@ import {
   fetchGardenRegionWindow,
   fetchGardenSnapshot,
   fetchGardenWateringStatus,
+  GardenActionRejectedError,
   GardenConnectionError,
   type GardenContribution,
   type GardenMapPlant,
@@ -75,6 +76,8 @@ import {
   plantGardenPlant,
   waterGardenPlants,
 } from "../lib/supabaseGarden";
+import { OCCUPIED_GARDEN_COORDINATE_REASON } from "../lib/gardenActionFailure";
+import { choosePlantingSuggestion } from "../lib/plantingSuggestion";
 import type { HeritageMoment } from "../lib/heritageNotifications";
 import {
   findNearbyHeritageFlower,
@@ -251,6 +254,7 @@ type Runtime = {
   mode: GardenWorldMode;
   personalGarden: MyGardenState | null;
   suggestedPlantingCell: SelectedCell;
+  blockedTutorialPlantingCells: Set<string>;
   suggestedWateringCell: SelectedCell;
   gardenWorms: Map<string, GardenWormMarker>;
   builder: BuilderDraft | null;
@@ -1197,6 +1201,9 @@ function canPlacePersonalElement(
 
 function isValidTutorialPlantingCell(runtime: Runtime, gridX: number, gridY: number) {
   if (!isWithinRuntime(runtime, gridX, gridY)) return false;
+  if (runtime.blockedTutorialPlantingCells.has(plantKey(gridX, gridY))) {
+    return false;
+  }
   if (!isPlantable(getPlantAt(runtime, gridX, gridY))) return false;
   if (getWeedAt(runtime, gridX, gridY)) return false;
   if (runtime.mode === "personal") {
@@ -1215,17 +1222,38 @@ function findSuggestedPlantingCell(runtime: Runtime): NonNullable<SelectedCell> 
     bounds.maxY - bounds.minY,
   );
 
-  for (let radius = 2; radius <= maxRadius; radius += 1) {
+  const nearbyCandidates: Array<NonNullable<SelectedCell>> = [];
+  const nearbyRadius = Math.min(6, maxRadius);
+  for (let radius = 2; radius <= nearbyRadius; radius += 1) {
     for (let offsetY = -radius; offsetY <= radius; offsetY += 1) {
       for (let offsetX = -radius; offsetX <= radius; offsetX += 1) {
         if (Math.max(Math.abs(offsetX), Math.abs(offsetY)) !== radius) continue;
         const gridX = originX + offsetX;
         const gridY = originY + offsetY;
         if (isValidTutorialPlantingCell(runtime, gridX, gridY)) {
-          return { gridX, gridY };
+          nearbyCandidates.push({ gridX, gridY });
         }
       }
     }
+  }
+
+  const nearbySuggestion = choosePlantingSuggestion(nearbyCandidates);
+  if (nearbySuggestion) return nearbySuggestion;
+
+  for (let radius = nearbyRadius + 1; radius <= maxRadius; radius += 1) {
+    const candidates: Array<NonNullable<SelectedCell>> = [];
+    for (let offsetY = -radius; offsetY <= radius; offsetY += 1) {
+      for (let offsetX = -radius; offsetX <= radius; offsetX += 1) {
+        if (Math.max(Math.abs(offsetX), Math.abs(offsetY)) !== radius) continue;
+        const gridX = originX + offsetX;
+        const gridY = originY + offsetY;
+        if (isValidTutorialPlantingCell(runtime, gridX, gridY)) {
+          candidates.push({ gridX, gridY });
+        }
+      }
+    }
+    const suggestion = choosePlantingSuggestion(candidates);
+    if (suggestion) return suggestion;
   }
 
   return null;
@@ -2057,6 +2085,7 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
       mode,
       personalGarden,
       suggestedPlantingCell: null,
+      blockedTutorialPlantingCells: new Set(),
       suggestedWateringCell: null,
       gardenWorms: new Map(),
       builder: null,
@@ -3523,8 +3552,32 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
             runtime.connection = runtime.configured ? "online" : "offline";
           } catch (error) {
             onActionFailedRef.current?.(runtime.mode, actionState.action, error);
+            const retryTutorialPlanting =
+              tutorialDimmedRef.current &&
+              actionState.action === "plant" &&
+              error instanceof GardenActionRejectedError &&
+              error.reason === OCCUPIED_GARDEN_COORDINATE_REASON;
             const retryTutorialWatering =
               tutorialDimmedRef.current && actionState.action === "water";
+            if (retryTutorialPlanting) {
+              runtime.blockedTutorialPlantingCells.add(
+                plantKey(selected.gridX, selected.gridY),
+              );
+              runtime.selected = null;
+              runtime.target = null;
+              runtime.suggestedPlantingCell = findSuggestedPlantingCell(runtime);
+              if (runtime.suggestedPlantingCell) {
+                bringTutorialTargetIntoView(
+                  runtime,
+                  runtime.suggestedPlantingCell,
+                );
+              }
+              runtime.loadedRegionWindowKey = "";
+              runtime.snapshotNextRefreshAt = 0;
+              queueMicrotask(() => {
+                void loadPlantsRef.current();
+              });
+            }
             if (retryTutorialWatering) {
               runtime.selected = null;
               runtime.wateringCareStatusLoaded = false;
@@ -3542,7 +3595,11 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
                 message: error.message,
               });
             }
-            runtime.statusMessage = retryTutorialWatering
+            runtime.statusMessage = retryTutorialPlanting
+              ? runtime.suggestedPlantingCell
+                ? "Another gardener planted there first. Follow the new glowing patch."
+                : "Another gardener planted there first. Finding another open patch."
+              : retryTutorialWatering
               ? "Another gardener reached that flower first. Finding a fresh water drop..."
               : error instanceof Error
                 ? error.message

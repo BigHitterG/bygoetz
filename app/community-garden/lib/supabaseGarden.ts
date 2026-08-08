@@ -10,6 +10,10 @@ import {
   type HeritageMoment,
 } from "./heritageNotifications";
 import type { GardenStewardshipSummary } from "./stewardshipTypes";
+import {
+  parseGardenActionFailureReason,
+  type GardenActionFailureReason,
+} from "./gardenActionFailure";
 
 export type GardenMapPlant = Pick<
   PlantRecord,
@@ -127,6 +131,16 @@ export class GardenConnectionError extends Error {
   }
 }
 
+export class GardenActionRejectedError extends Error {
+  constructor(
+    message: string,
+    readonly reason: GardenActionFailureReason | null,
+  ) {
+    super(message);
+    this.name = "GardenActionRejectedError";
+  }
+}
+
 export function isGardenConfigured() {
   return Boolean(
     process.env.NEXT_PUBLIC_SUPABASE_URL &&
@@ -147,6 +161,21 @@ async function responseError(response: Response, fallback: string) {
     return payload.error ?? fallback;
   } catch {
     return fallback;
+  }
+}
+
+async function rejectedGardenAction(response: Response, fallback: string) {
+  try {
+    const payload = (await response.json()) as {
+      error?: unknown;
+      reason?: unknown;
+    };
+    return new GardenActionRejectedError(
+      typeof payload.error === "string" ? payload.error : fallback,
+      parseGardenActionFailureReason(payload.reason),
+    );
+  } catch {
+    return new GardenActionRejectedError(fallback, null);
   }
 }
 
@@ -543,7 +572,7 @@ async function submitRawGardenAction(
   }
 
   if (!response.ok) {
-    throw new Error(await responseError(response, "That did not work."));
+    throw await rejectedGardenAction(response, "That did not work.");
   }
 
   return (await response.json()) as Record<string, unknown>;

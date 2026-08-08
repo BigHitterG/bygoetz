@@ -14,6 +14,7 @@ import { hasAllowedBasilRequestOrigin } from "@/lib/communityGarden/urls";
 import { MAX_WATERING_TARGETS } from "@/app/community-garden/lib/wateringSelection";
 import { recordGardenStewardshipAction } from "@/lib/communityGarden/stewardship";
 import { loadCommunityGardenRegionManifest } from "@/lib/communityGarden/regionDelivery";
+import { OCCUPIED_GARDEN_COORDINATE_REASON } from "@/app/community-garden/lib/gardenActionFailure";
 
 const ACTION_ID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -48,6 +49,16 @@ function errorMessage(error: unknown) {
     return message;
   }
   return "That did not work. Please try again.";
+}
+
+function actionErrorPayload(error: unknown, errorCode: string) {
+  if (errorCode === "23505") {
+    return {
+      error: "Another gardener planted there first.",
+      reason: OCCUPIED_GARDEN_COORDINATE_REASON,
+    };
+  }
+  return { error: errorMessage(error) };
 }
 
 export async function POST(request: NextRequest) {
@@ -231,7 +242,7 @@ export async function POST(request: NextRequest) {
     const errorCode = getGardenErrorCode(error);
     recordResult("action_error", errorCode);
     const response = NextResponse.json(
-      { error: errorMessage(error) },
+      actionErrorPayload(error, errorCode),
       { status: 409 },
     );
     if (actor) attachGardenSession(response, actor.session);
