@@ -11,7 +11,10 @@ type GardenMapKeyProps = {
   ui: GardenUiState;
   canExpand: boolean;
   disabled?: boolean;
+  expanded?: boolean;
+  showExpandButton?: boolean;
   focusTarget?: CommunityAtlasTarget | null;
+  onExpandedChange?: (expanded: boolean) => void;
   onNavigate: (mapX: number, mapY: number) => void;
   onNavigateGrid: (gridX: number, gridY: number) => void;
 };
@@ -31,18 +34,27 @@ export function GardenMapKey({
   ui,
   canExpand,
   disabled = false,
+  expanded: controlledExpanded,
+  showExpandButton = true,
   focusTarget,
+  onExpandedChange,
   onNavigate,
   onNavigateGrid,
 }: GardenMapKeyProps) {
-  const [expanded, setExpanded] = useState(false);
+  const [internalExpanded, setInternalExpanded] = useState(false);
   const [dismissedFocusRequest, setDismissedFocusRequest] = useState<
     number | null
   >(null);
   const focusedAtlasRequested = Boolean(
     focusTarget && focusTarget.requestId !== dismissedFocusRequest,
   );
+  const expanded = controlledExpanded ?? internalExpanded;
   const mapExpanded = (expanded || focusedAtlasRequested) && !disabled;
+
+  function setExpanded(nextExpanded: boolean) {
+    setInternalExpanded(nextExpanded);
+    onExpandedChange?.(nextExpanded);
+  }
   const mapStyle: MapStyle = {
     "--cg-map-x": `${ui.mapX}%`,
     "--cg-map-y": `${ui.mapY}%`,
@@ -77,7 +89,7 @@ export function GardenMapKey({
         aria-label={
           disabled
             ? "Garden overview. Finish this tutorial step before using map travel."
-            : "Community Garden overview. Locked growing edge land is marked with padlocks. Select a point to travel, or expand the Community Atlas for detail."
+            : "Community Garden overview. Locked growing edge land is marked with padlocks. Select a point to travel, or use Map below for the detailed Community Atlas."
         }
       >
         <span className="cg-map-north" aria-hidden="true">N</span>
@@ -111,7 +123,7 @@ export function GardenMapKey({
         <span className="cg-map-player" title="You are here" aria-hidden="true" />
       </button>
 
-      {canExpand ? (
+      {canExpand && showExpandButton ? (
         <button
           className="cg-map-expand"
           type="button"

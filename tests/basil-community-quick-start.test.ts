@@ -27,6 +27,13 @@ const onboardingSource = await readFile(
   ),
   "utf8",
 );
+const controlsDockSource = await readFile(
+  new URL(
+    "../app/community-garden/components/GardenControlsDock.tsx",
+    import.meta.url,
+  ),
+  "utf8",
+);
 const canvasSource = await readFile(
   new URL(
     "../app/community-garden/components/GardenCanvas.tsx",
@@ -126,7 +133,7 @@ test("Quick Start never teleports Mary and gives the second target one clear can
     appSource,
     /tutorialClickHere={[\s\S]*communityOnboardingPlantings === 1 &&[\s\S]*!onboardingPlantActionReady/,
   );
-  assert.match(appSource, /className="cg-action-guidance"/);
+  assert.match(controlsDockSource, /className="cg-action-guidance"/);
   assert.match(appSource, /`Plant \$\{getPlantDefinition\(ui\.selectedPlantType\)\.name\}`/);
   assert.match(gardenCssSource, /\.cg-action-button\.is-quick-start-final/);
   assert.match(appSource, /hideTutorialPlantingLabel=/);

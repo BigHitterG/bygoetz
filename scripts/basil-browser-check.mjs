@@ -127,7 +127,7 @@ for (const device of cases) {
   await page.waitForTimeout(750);
   let inventoryModal = null;
   if (device.name === "phone" || device.name === "desktop") {
-    const inventoryToggle = page.locator(".cg-inventory-toggle");
+    const inventoryToggle = page.locator(".cg-dock-button.is-inventory");
     const toggleDisabled = await inventoryToggle.isDisabled();
     if (device.name === "desktop") {
       await page.keyboard.press("q");
@@ -170,6 +170,16 @@ for (const device of cases) {
         ? { left: bounds.left, top: bounds.top, width: bounds.width, height: bounds.height }
         : null;
     })(),
+    dockBounds: (() => {
+      const bounds = document.querySelector(".cg-controls-dock")?.getBoundingClientRect();
+      return bounds
+        ? { left: bounds.left, top: bounds.top, width: bounds.width, height: bounds.height }
+        : null;
+    })(),
+    dockButtons: Array.from(
+      document.querySelectorAll(".cg-controls-dock > button"),
+      (button) => button.textContent?.trim() ?? "",
+    ),
     errorOverlay: Boolean(
       document.querySelector(
         "[data-nextjs-dialog], .vite-error-overlay, #webpack-dev-server-client-overlay",

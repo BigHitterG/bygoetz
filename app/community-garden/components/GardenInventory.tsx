@@ -33,6 +33,7 @@ type GardenInventoryProps = {
   guidePlantChoice?: boolean;
   onboardingLocked?: boolean;
   toggleLocked?: boolean;
+  showToggle?: boolean;
   designPreviewEnabled?: boolean;
   onToggle: () => void;
   onSelectPlant: (plantType: PlantType) => void;
@@ -88,6 +89,7 @@ export function GardenInventory({
   guidePlantChoice = false,
   onboardingLocked = false,
   toggleLocked = false,
+  showToggle = true,
   designPreviewEnabled = false,
   onToggle,
   onSelectPlant,
@@ -515,21 +517,23 @@ export function GardenInventory({
         </section>
       ) : null}
 
-      <button
-        className="cg-inventory-toggle"
-        type="button"
-        aria-expanded={open}
-        aria-label={`${open ? "Close" : "Open"} inventory. ${selectedName} selected.`}
-        onClick={onToggle}
-        disabled={toggleLocked}
-      >
-        <span className={selectedClass} aria-hidden="true" />
-        <span>
-          <small>{open ? "Close" : "Inventory"}</small>
-          <strong>{selectedName}</strong>
-        </span>
-        <i aria-hidden="true">{open ? "▼" : "▲"}</i>
-      </button>
+      {showToggle ? (
+        <button
+          className="cg-inventory-toggle"
+          type="button"
+          aria-expanded={open}
+          aria-label={`${open ? "Close" : "Open"} inventory. ${selectedName} selected.`}
+          onClick={onToggle}
+          disabled={toggleLocked}
+        >
+          <span className={selectedClass} aria-hidden="true" />
+          <span>
+            <small>{open ? "Close" : "Inventory"}</small>
+            <strong>{selectedName}</strong>
+          </span>
+          <i aria-hidden="true">{open ? "▼" : "▲"}</i>
+        </button>
+      ) : null}
     </div>
   );
 }
