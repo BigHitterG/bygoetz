@@ -85,6 +85,7 @@ export type RenderGardenState = {
   wateringCareReadyPlantIds?: ReadonlySet<string>;
   wateringCareStatusLoaded?: boolean;
   suggestedPlantingCell: SelectedCell;
+  tutorialClickHere?: boolean;
   suggestedWateringCell: SelectedCell;
   gardenWorms: Array<{ gridX: number; gridY: number; surfacedAt: number }>;
   tutorialDimmed: boolean;
@@ -511,9 +512,41 @@ function drawSuggestedPlantingLabel(
   viewport: GardenViewport,
   now: number,
   zoom: number,
+  clickHere = false,
 ) {
   if (!cell) return;
   const screen = getSuggestedPlantingScreen(cell, camera, viewport, zoom);
+  if (clickHere) {
+    const labelY = Math.max(24, screen.y - Math.max(52, 58 * zoom));
+    const arrowTipY = Math.max(labelY + 28, screen.y - Math.max(8, 10 * zoom));
+    const arrowWidth = Math.max(16, Math.round(18 * zoom));
+    const arrowTop = labelY + Math.max(12, Math.round(14 * zoom));
+
+    ctx.save();
+    ctx.globalAlpha = 0.98;
+    ctx.fillStyle = "#b83136";
+    ctx.strokeStyle = "#fff4df";
+    ctx.lineWidth = Math.max(3, Math.round(3 * zoom));
+    ctx.lineJoin = "round";
+    ctx.font = `900 ${Math.max(13, Math.round(14 * zoom))}px monospace`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.strokeText("CLICK HERE", screen.x, labelY);
+    ctx.fillText("CLICK HERE", screen.x, labelY);
+    ctx.beginPath();
+    ctx.moveTo(screen.x - arrowWidth * 0.25, arrowTop);
+    ctx.lineTo(screen.x + arrowWidth * 0.25, arrowTop);
+    ctx.lineTo(screen.x + arrowWidth * 0.25, arrowTipY - arrowWidth * 0.6);
+    ctx.lineTo(screen.x + arrowWidth * 0.62, arrowTipY - arrowWidth * 0.6);
+    ctx.lineTo(screen.x, arrowTipY);
+    ctx.lineTo(screen.x - arrowWidth * 0.62, arrowTipY - arrowWidth * 0.6);
+    ctx.lineTo(screen.x - arrowWidth * 0.25, arrowTipY - arrowWidth * 0.6);
+    ctx.closePath();
+    ctx.stroke();
+    ctx.fill();
+    ctx.restore();
+    return;
+  }
   const maryScreen = worldToScreen(mary, camera, viewport, zoom);
   const width = GARDEN_CONFIG.tileSize * zoom;
   const height = GARDEN_CONFIG.tileScreenHeight * zoom * 1.06;
@@ -3317,6 +3350,7 @@ export function renderGarden(ctx: CanvasRenderingContext2D, state: RenderGardenS
     state.viewport,
     state.now,
     state.zoom,
+    state.tutorialClickHere,
   );
   drawEffects(ctx, state.effects, state.camera, state.viewport, state.now, state.zoom);
   drawSelection(ctx, state.selected, state.camera, state.viewport, state.zoom);

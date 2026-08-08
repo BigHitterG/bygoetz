@@ -176,7 +176,10 @@ export type GardenUiState = {
 
 export type GardenCanvasHandle = {
   performAction: () => Promise<void>;
-  suggestPlantingSpot: (options?: { readyToPlant?: boolean }) => void;
+  suggestPlantingSpot: (options?: {
+    readyToPlant?: boolean;
+    keepMaryInPlace?: boolean;
+  }) => void;
   suggestWateringSpot: () => void;
   goToMapPosition: (mapX: number, mapY: number) => void;
   goToGridPosition: (gridX: number, gridY: number) => void;
@@ -255,6 +258,7 @@ type Runtime = {
   mode: GardenWorldMode;
   personalGarden: MyGardenState | null;
   suggestedPlantingCell: SelectedCell;
+  keepTutorialMaryInPlace: boolean;
   blockedTutorialPlantingCells: Set<string>;
   suggestedWateringCell: SelectedCell;
   gardenWorms: Map<string, GardenWormMarker>;
@@ -345,6 +349,7 @@ type GardenCanvasProps = {
   }>;
   showPersonalCommunityFlowers?: boolean;
   tutorialDimmed?: boolean;
+  tutorialClickHere?: boolean;
   onPersonalGardenMutation?: (
     mutation: MyGardenMutation,
   ) => Promise<MyGardenState>;
@@ -1260,6 +1265,44 @@ function findSuggestedPlantingCell(runtime: Runtime): NonNullable<SelectedCell> 
   return null;
 }
 
+function findImmediatePlantingCell(runtime: Runtime): NonNullable<SelectedCell> | null {
+  const originX = Math.floor(runtime.mary.x / GARDEN_CONFIG.tileSize);
+  const originY = Math.floor(runtime.mary.y / GARDEN_CONFIG.tileSize);
+  const candidates = [
+    { gridX: originX, gridY: originY - 1 },
+    { gridX: originX + 1, gridY: originY },
+    { gridX: originX, gridY: originY + 1 },
+    { gridX: originX - 1, gridY: originY },
+    { gridX: originX + 1, gridY: originY - 1 },
+    { gridX: originX + 1, gridY: originY + 1 },
+    { gridX: originX - 1, gridY: originY + 1 },
+    { gridX: originX - 1, gridY: originY - 1 },
+  ].filter((cell) =>
+    isValidTutorialPlantingCell(runtime, cell.gridX, cell.gridY),
+  );
+  return choosePlantingSuggestion(candidates);
+}
+
+function findVisibleQuickStartPlantingCell(
+  runtime: Runtime,
+): NonNullable<SelectedCell> | null {
+  const originX = Math.floor(runtime.mary.x / GARDEN_CONFIG.tileSize);
+  const originY = Math.floor(runtime.mary.y / GARDEN_CONFIG.tileSize);
+  const candidates: Array<NonNullable<SelectedCell>> = [];
+  for (let offsetY = -4; offsetY <= 1; offsetY += 1) {
+    for (let offsetX = -4; offsetX <= 4; offsetX += 1) {
+      const radius = Math.max(Math.abs(offsetX), Math.abs(offsetY));
+      if (radius < 2 || radius > 4) continue;
+      const gridX = originX + offsetX;
+      const gridY = originY + offsetY;
+      if (isValidTutorialPlantingCell(runtime, gridX, gridY)) {
+        candidates.push({ gridX, gridY });
+      }
+    }
+  }
+  return choosePlantingSuggestion(candidates);
+}
+
 function findSuggestedWateringCell(runtime: Runtime): NonNullable<SelectedCell> | null {
   const bounds = getRuntimeBounds(runtime);
   const readyPlants = Array.from(runtime.plants.values())
@@ -1980,6 +2023,7 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
       personalCommunityFlowers = [],
       showPersonalCommunityFlowers = false,
       tutorialDimmed = false,
+      tutorialClickHere = false,
       onPersonalGardenMutation,
       onActionCompleted,
       onActionFailed,
@@ -2004,6 +2048,7 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
     const heritageEncountersEnabledRef = useRef(heritageEncountersEnabled);
     const accountAccessTokenRef = useRef(accountAccessToken);
     const tutorialDimmedRef = useRef(tutorialDimmed);
+    const tutorialClickHereRef = useRef(tutorialClickHere);
     const personalGardenRef = useRef(personalGarden);
     const personalCommunityFlowersRef = useRef(personalCommunityFlowers);
     const showPersonalCommunityFlowersRef = useRef(
@@ -2086,6 +2131,7 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
       mode,
       personalGarden,
       suggestedPlantingCell: null,
+      keepTutorialMaryInPlace: false,
       blockedTutorialPlantingCells: new Set(),
       suggestedWateringCell: null,
       gardenWorms: new Map(),
@@ -2153,6 +2199,10 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
         runtime.wateringPumpSelectionKey = "";
       }
     }, [tutorialDimmed]);
+
+    useEffect(() => {
+      tutorialClickHereRef.current = tutorialClickHere;
+    }, [tutorialClickHere]);
 
     useEffect(() => {
       personalGardenRef.current = personalGarden;
@@ -2820,29 +2870,24 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
           if (!tutorialDimmedRef.current) return;
           const runtime = runtimeRef.current;
           runtime.toolMode = "plant";
-          runtime.suggestedPlantingCell = findSuggestedPlantingCell(runtime);
+          runtime.keepTutorialMaryInPlace = Boolean(options?.keepMaryInPlace);
+          runtime.suggestedPlantingCell = options?.readyToPlant
+            ? findImmediatePlantingCell(runtime)
+            : options?.keepMaryInPlace
+              ? findVisibleQuickStartPlantingCell(runtime) ??
+                findSuggestedPlantingCell(runtime)
+            : findSuggestedPlantingCell(runtime);
           runtime.suggestedWateringCell = null;
           runtime.selected = null;
           runtime.target = null;
           if (runtime.suggestedPlantingCell) {
-            bringTutorialTargetIntoView(runtime, runtime.suggestedPlantingCell);
+            if (!runtime.keepTutorialMaryInPlace) {
+              bringTutorialTargetIntoView(runtime, runtime.suggestedPlantingCell);
+            }
             if (options?.readyToPlant) {
               const readyCell = runtime.suggestedPlantingCell;
-              const approach = getAdjacentTarget(
-                runtime,
-                readyCell.gridX,
-                readyCell.gridY,
-              );
               runtime.selected = { ...readyCell };
               runtime.target = null;
-              runtime.mary = { ...approach };
-              runtime.camera = { ...approach };
-              runtime.cameraAnchor = null;
-              runtime.duck = {
-                x: clampRuntimeCoordinate(runtime, approach.x - 18, "x"),
-                y: clampRuntimeCoordinate(runtime, approach.y + 10, "y"),
-              };
-              runtime.path = [{ ...approach }];
             }
           }
           runtime.statusMessage = runtime.suggestedPlantingCell
@@ -3587,7 +3632,10 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
               runtime.selected = null;
               runtime.target = null;
               runtime.suggestedPlantingCell = findSuggestedPlantingCell(runtime);
-              if (runtime.suggestedPlantingCell) {
+              if (
+                runtime.suggestedPlantingCell &&
+                !runtime.keepTutorialMaryInPlace
+              ) {
                 bringTutorialTargetIntoView(
                   runtime,
                   runtime.suggestedPlantingCell,
@@ -3859,6 +3907,7 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
           wateringCareReadyPlantIds: runtime.wateringCareReadyPlantIds,
           wateringCareStatusLoaded: runtime.wateringCareStatusLoaded,
           suggestedPlantingCell: runtime.suggestedPlantingCell,
+          tutorialClickHere: tutorialClickHereRef.current,
           suggestedWateringCell: runtime.suggestedWateringCell,
           gardenWorms: Array.from(runtime.gardenWorms.values()),
           tutorialDimmed: tutorialDimmedRef.current,

@@ -1397,6 +1397,7 @@ export function CommunityGardenApp() {
             shouldSuggestCommunity &&
             communityQuickStart &&
             communityOnboardingPlantings === 0,
+          keepMaryInPlace: shouldSuggestCommunity && communityQuickStart,
         });
       }
     });
@@ -2461,6 +2462,11 @@ export function CommunityGardenApp() {
           personalCommunityFlowers={stewardship?.flowers.coordinates ?? []}
           showPersonalCommunityFlowers={showMyCommunityFlowers}
           tutorialDimmed={tutorialMapDimmed}
+          tutorialClickHere={
+            communityQuickStart &&
+            onboardingStep === "community-tile" &&
+            communityOnboardingPlantings === 1
+          }
           onStateChange={onStateChange}
           onCommunityContribution={claimCommunityContribution}
           onGardenWormDiscovered={discoverGardenWorm}

@@ -36,6 +36,14 @@ export function GardenOnboarding({
     return null;
   }
 
+  if (
+    communityQuickStart &&
+    communityPlantings > 0 &&
+    (step === "community-tile" || step === "community-repeat")
+  ) {
+    return null;
+  }
+
   const actionReady =
     step === "community-water" ? waterActionReady : plantActionReady;
   const communityPlantingTarget = communityQuickStart

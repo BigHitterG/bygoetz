@@ -38,6 +38,13 @@ const rootPageSource = await readFile(
   new URL("../app/page.tsx", import.meta.url),
   "utf8",
 );
+const rendererSource = await readFile(
+  new URL(
+    "../app/community-garden/game/gardenRenderer.ts",
+    import.meta.url,
+  ),
+  "utf8",
+);
 
 test("Quick Start is the default and classic onboarding remains addressable", () => {
   assert.equal(isCommunityQuickStart(""), true);
@@ -95,6 +102,18 @@ test("the second Quick Start flower ends guidance without opening My Garden or a
     appSource,
     /nextPlantings >= communityOnboardingPlantingTarget &&[\s\S]*!communityQuickStart[\s\S]*suggestWateringSpot/,
   );
+});
+
+test("Quick Start never teleports Mary and gives the second target one clear canvas cue", () => {
+  assert.match(appSource, /keepMaryInPlace: shouldSuggestCommunity && communityQuickStart/);
+  assert.match(canvasSource, /findImmediatePlantingCell\(runtime\)/);
+  assert.match(canvasSource, /findVisibleQuickStartPlantingCell\(runtime\)/);
+  assert.match(
+    onboardingSource,
+    /communityQuickStart &&[\s\S]*communityPlantings > 0[\s\S]*return null;/,
+  );
+  assert.match(rendererSource, /strokeText\("CLICK HERE"/);
+  assert.match(rendererSource, /ctx\.lineTo\(screen\.x, arrowTipY\)/);
 });
 
 test("near misses snap to the glowing second planting patch", () => {
