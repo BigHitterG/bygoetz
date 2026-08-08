@@ -106,6 +106,7 @@ test("the second Quick Start flower ends guidance without opening My Garden or a
 
 test("Quick Start never teleports Mary and gives the second target one clear canvas cue", () => {
   assert.match(appSource, /keepMaryInPlace: shouldSuggestCommunity && communityQuickStart/);
+  assert.match(appSource, /keepMaryInPlace: communityQuickStart/);
   assert.match(canvasSource, /findImmediatePlantingCell\(runtime\)/);
   assert.match(canvasSource, /findVisibleQuickStartPlantingCell\(runtime\)/);
   assert.match(

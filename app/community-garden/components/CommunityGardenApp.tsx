@@ -2342,7 +2342,9 @@ export function CommunityGardenApp() {
           ) {
             canvasRef.current?.suggestWateringSpot();
           } else if (nextPlantings < communityOnboardingPlantingTarget) {
-            canvasRef.current?.suggestPlantingSpot();
+            canvasRef.current?.suggestPlantingSpot({
+              keepMaryInPlace: communityQuickStart,
+            });
           }
         });
       } else if (
