@@ -63,12 +63,9 @@ const EXPLORERS_BUBBLE_ID = `${EXPLORERS_SERIES_BUBBLE.q}:${EXPLORERS_SERIES_BUB
 const EXPLORERS_LINK_ID = "explorers";
 const COMMUNITY_GARDEN_BUBBLE = { q: -1, r: 0 };
 const COMMUNITY_GARDEN_LINK_ID = "community-garden";
-const DUCK_POND_BUBBLE = { q: 0, r: 1 };
-const DUCK_POND_LINK_ID = "duck-pond";
 const LINKED_BUBBLE_ROUTES: Record<string, string> = {
   [EXPLORERS_LINK_ID]: "/explorers",
   [COMMUNITY_GARDEN_LINK_ID]: getBasilOrigin(),
-  [DUCK_POND_LINK_ID]: "/duck-pond",
 };
 
 function axialDistance(q: number, r: number) {
@@ -578,9 +575,6 @@ export function HoneycombBubbles({
         const isCommunityGardenBubble =
           bubble.q === COMMUNITY_GARDEN_BUBBLE.q &&
           bubble.r === COMMUNITY_GARDEN_BUBBLE.r;
-        const isDuckPondBubble =
-          bubble.q === DUCK_POND_BUBBLE.q &&
-          bubble.r === DUCK_POND_BUBBLE.r;
 
         return (
           <div
@@ -597,7 +591,7 @@ export function HoneycombBubbles({
               } as React.CSSProperties
             }
             aria-hidden={
-              isExplorersBubble || isCommunityGardenBubble || isDuckPondBubble
+              isExplorersBubble || isCommunityGardenBubble
                 ? undefined
                 : true
             }
@@ -636,17 +630,6 @@ export function HoneycombBubbles({
                 aria-label="Open Basil Community Garden"
               >
                 <span className={styles.gardenPreview} aria-hidden="true">
-                  <span />
-                </span>
-              </div>
-            ) : null}
-            {isDuckPondBubble ? (
-              <div
-                className={styles.duckPondLink}
-                data-linked-bubble-id={DUCK_POND_LINK_ID}
-                aria-label="Open the Duck Pond"
-              >
-                <span className={styles.duckPreview} aria-hidden="true">
                   <span />
                 </span>
               </div>
