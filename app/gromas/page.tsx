@@ -8,14 +8,20 @@ import previewCharge from "@/public/gromas/preview-charge-v3.webp";
 import previewDarkness from "@/public/gromas/preview-darkness-v3.webp";
 import previewPowerCrisis from "@/public/gromas/preview-power-crisis-v3.webp";
 import previewSpinette from "@/public/gromas/preview-spinette-v3.webp";
-import { gromasBook, gromasPurchase } from "@/lib/gromas/storefront";
+import {
+  gromasBook,
+  gromasPaperbackBook,
+  gromasPaperbackPurchase,
+  gromasPurchase,
+  type GromasPurchaseState,
+} from "@/lib/gromas/storefront";
 import styles from "./gromas.module.css";
 
 const pageDescription =
   "A playful rhyming picture-book adventure about Gromas, the Gobbledygooks, and the remarkable machine that turns ordinary footsteps into extraordinary energy.";
 
 export const metadata: Metadata = {
-  title: "Gromas and the Gobbledygooks | Hardcover Picture Book",
+  title: "Gromas and the Gobbledygooks | Hardcover and Paperback",
   description: pageDescription,
   alternates: { canonical: "/gromas" },
   openGraph: {
@@ -92,30 +98,54 @@ const bookJsonLd = {
   },
   image: "https://www.bygoetz.com/gromas/cover-front-v3.webp",
   description: pageDescription,
-  offers:
-    gromasPurchase.status === "available"
-      ? {
-          "@type": "Offer",
-          url: gromasPurchase.url,
-          price: "34.99",
-          priceCurrency: "USD",
-          availability: "https://schema.org/InStock",
-        }
-      : undefined,
+  offers: [
+    ...(gromasPurchase.status === "available"
+      ? [
+          {
+            "@type": "Offer",
+            name: "Premium color hardcover",
+            url: gromasPurchase.url,
+            price: "34.99",
+            priceCurrency: "USD",
+            availability: "https://schema.org/InStock",
+          },
+        ]
+      : []),
+    ...(gromasPaperbackPurchase.status === "available"
+      ? [
+          {
+            "@type": "Offer",
+            name: "Premium color paperback",
+            url: gromasPaperbackPurchase.url,
+            price: "16.99",
+            priceCurrency: "USD",
+            availability: "https://schema.org/InStock",
+          },
+        ]
+      : []),
+  ],
 };
 
-function PurchaseButton({ light = false }: { light?: boolean }) {
+function PurchaseButton({
+  label,
+  purchase,
+  light = false,
+}: {
+  label: string;
+  purchase: GromasPurchaseState;
+  light?: boolean;
+}) {
   const className = `${styles.purchaseButton} ${light ? styles.purchaseButtonLight : ""}`;
 
-  if (gromasPurchase.status === "available") {
+  if (purchase.status === "available") {
     return (
       <a
         className={className}
-        href={gromasPurchase.url}
+        href={purchase.url}
         target="_blank"
         rel="noopener noreferrer"
       >
-        Buy the hardcover · {gromasPurchase.displayPrice}
+        Buy {label} · {purchase.displayPrice}
         <span aria-hidden="true">↗</span>
       </a>
     );
@@ -123,8 +153,21 @@ function PurchaseButton({ light = false }: { light?: boolean }) {
 
   return (
     <button className={className} type="button" disabled>
-      Coming soon on Lulu
+      {label} · {purchase.displayPrice} · Publishing on Lulu
     </button>
+  );
+}
+
+function PurchaseOptions({ light = false }: { light?: boolean }) {
+  return (
+    <div className={styles.purchaseOptions} aria-label="Choose a book format">
+      <PurchaseButton label="Hardcover" purchase={gromasPurchase} light={light} />
+      <PurchaseButton
+        label="Paperback"
+        purchase={gromasPaperbackPurchase}
+        light={light}
+      />
+    </div>
   );
 }
 
@@ -209,11 +252,11 @@ export default function GromasBookPage() {
               <li>Ages 4–8</li>
               <li>32 pages</li>
               <li>Premium color</li>
-              <li>6 × 9 in. hardcover</li>
+              <li>6 × 9 in. hardcover or paperback</li>
             </ul>
 
             <div className={styles.heroActions}>
-              <PurchaseButton />
+              <PurchaseOptions />
               <a className={styles.previewButton} href="#preview">
                 Preview the story
                 <span aria-hidden="true">↓</span>
@@ -344,16 +387,16 @@ export default function GromasBookPage() {
           </div>
 
           <div className={styles.formatCopy}>
-            <p className={styles.sectionKicker}>The hardcover edition</p>
-            <h2 id="format-heading">Built as a colorful little keepsake</h2>
+            <p className={styles.sectionKicker}>Two premium-color editions</p>
+            <h2 id="format-heading">Choose hardcover or paperback</h2>
             <p>
-              The Lulu edition pairs a compact read-aloud size with
-              full-page art, premium color, and a matte casewrap cover.
+              Both Lulu editions pair the compact read-aloud size with
+              full-page art, premium color, coated paper, and a matte cover.
             </p>
             <dl className={styles.specList}>
               <div>
                 <dt>Format</dt>
-                <dd>Hardcover casewrap</dd>
+                <dd>Hardcover or paperback</dd>
               </div>
               <div>
                 <dt>Trim size</dt>
@@ -377,7 +420,8 @@ export default function GromasBookPage() {
               </div>
             </dl>
             <p className={styles.formatFootnote}>
-              ISBN {gromasBook.isbn}. Each copy is printed to order by Lulu.
+              Hardcover ISBN {gromasBook.isbn}. Paperback ISBN {gromasPaperbackBook.isbn}.
+              Each copy is printed to order by Lulu.
             </p>
           </div>
         </section>
@@ -398,16 +442,19 @@ export default function GromasBookPage() {
             <p className={styles.sectionKicker}>Before you order</p>
             <h2 id="faq-heading">Good things to know</h2>
             <p>
-              The first-edition hardcover is now available through Lulu.
+              The premium hardcover is available through Lulu. The premium
+              paperback is prepared at $16.99 and awaiting Lulu proof approval.
             </p>
           </div>
           <div className={styles.faqList}>
             <details>
-              <summary>When will the hardcover be available?</summary>
+              <summary>Which formats can I order?</summary>
               <p>
-                It is available to order now for {gromasPurchase.status === "available" ? gromasPurchase.displayPrice : "$34.99"}.
-                Lulu prints each copy on demand and shows the current delivery
-                estimate during checkout.
+                The premium-color hardcover is available for {gromasPurchase.displayPrice}.
+                The premium-color paperback is priced at {gromasPaperbackPurchase.displayPrice}
+                {gromasPaperbackPurchase.status === "available"
+                  ? " and is available now."
+                  : " and will activate here as soon as Lulu publishes its product page."}
               </p>
             </details>
             <details>
@@ -441,12 +488,12 @@ export default function GromasBookPage() {
             <p className={styles.sectionKicker}>The adventure is ready</p>
             <h2 id="final-cta-heading">Take the first step with Gromas.</h2>
             <p>
-              Preview the story art, then order the first-edition hardcover
-              through Lulu for {gromasPurchase.status === "available" ? gromasPurchase.displayPrice : "$34.99"}.
+              Preview the story art, then choose the premium-color hardcover
+              or paperback edition fulfilled by Lulu.
             </p>
           </div>
           <div className={styles.finalCtaActions}>
-            <PurchaseButton light />
+            <PurchaseOptions light />
             <a href="#preview">Return to the preview</a>
           </div>
         </section>

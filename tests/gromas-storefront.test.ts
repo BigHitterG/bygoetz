@@ -1,7 +1,12 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
-import { gromasBook, gromasPurchase } from "../lib/gromas/storefront.ts";
+import {
+  gromasBook,
+  gromasPaperbackBook,
+  gromasPaperbackPurchase,
+  gromasPurchase,
+} from "../lib/gromas/storefront.ts";
 
 const read = (path: string) =>
   readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
@@ -43,5 +48,16 @@ test("the storefront exposes the verified Lulu Bookstore purchase", () => {
   assert.match(page, /Secure checkout and print-on-demand fulfillment through Lulu/);
   assert.match(page, /ISBN \{gromasBook\.isbn\}/);
   assert.match(page, /rel="noopener noreferrer"/);
+});
+
+test("the storefront presents the premium paperback while Lulu proof approval is pending", () => {
+  const page = read("app/gromas/page.tsx");
+
+  assert.equal(gromasPaperbackPurchase.status, "coming-soon");
+  assert.equal(gromasPaperbackPurchase.displayPrice, "$16.99");
+  assert.equal(gromasPaperbackBook.isbn, "978-0-557-96628-8");
+  assert.equal(gromasPaperbackBook.format, "Paperback perfect bound");
+  assert.match(page, /Choose a book format/);
+  assert.match(page, /Publishing on Lulu/);
 });
 
