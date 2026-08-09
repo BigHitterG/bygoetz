@@ -26,7 +26,7 @@ test("the storefront uses the locked v3 publication details", () => {
     "William James Pahos",
   ]);
   assert.equal(gromasBook.pageCount, 32);
-  assert.equal(gromasBook.trimSize, "6 Ã— 9 inches");
+  assert.equal(gromasBook.trimSize, "6 × 9 inches");
   assert.equal(gromasBook.format, "Hardcover casewrap");
 });
 
