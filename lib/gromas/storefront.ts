@@ -18,7 +18,9 @@ export const gromasPurchase: GromasPurchaseState = {
 };
 
 export const gromasPaperbackPurchase: GromasPurchaseState = {
-  status: "coming-soon",
+  status: "available",
+  url: "https://www.lulu.com/shop/thomas-raymond-goetz-and-william-james-pahos/gromas-and-the-gobbledygooks/paperback/product-7kzp65m.html",
+  channel: "Lulu Bookstore",
   displayPrice: "$16.99",
 };
 

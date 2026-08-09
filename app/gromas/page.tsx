@@ -442,8 +442,8 @@ export default function GromasBookPage() {
             <p className={styles.sectionKicker}>Before you order</p>
             <h2 id="faq-heading">Good things to know</h2>
             <p>
-              The premium hardcover is available through Lulu. The premium
-              paperback is prepared at $16.99 and awaiting Lulu proof approval.
+              The premium hardcover and paperback editions are available through
+              Lulu, with printing and fulfillment handled on demand.
             </p>
           </div>
           <div className={styles.faqList}>
