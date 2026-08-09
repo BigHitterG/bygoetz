@@ -1,6 +1,7 @@
 export type GromasPurchaseState =
   | {
       status: "coming-soon";
+      displayPrice: string;
     }
   | {
       status: "available";
@@ -16,6 +17,11 @@ export const gromasPurchase: GromasPurchaseState = {
   displayPrice: "$34.99",
 };
 
+export const gromasPaperbackPurchase: GromasPurchaseState = {
+  status: "coming-soon",
+  displayPrice: "$16.99",
+};
+
 export const gromasBook = {
   title: "Gromas and the Gobbledygooks",
   authors: ["Thomas Raymond Goetz", "William James Pahos"],
@@ -27,5 +33,11 @@ export const gromasBook = {
   format: "Hardcover casewrap",
   interior: "Premium color",
   coverFinish: "Matte",
+} as const;
+
+export const gromasPaperbackBook = {
+  ...gromasBook,
+  isbn: "978-0-557-96628-8",
+  format: "Paperback perfect bound",
 } as const;
 
