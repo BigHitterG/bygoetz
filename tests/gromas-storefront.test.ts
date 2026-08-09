@@ -26,16 +26,22 @@ test("the storefront uses the locked v3 publication details", () => {
     "William James Pahos",
   ]);
   assert.equal(gromasBook.pageCount, 32);
-  assert.equal(gromasBook.trimSize, "6 × 9 inches");
+  assert.equal(gromasBook.trimSize, "6 Ã— 9 inches");
   assert.equal(gromasBook.format, "Hardcover casewrap");
 });
 
-test("the prelaunch page does not expose a fabricated Lulu checkout", () => {
+test("the storefront exposes the verified Lulu Bookstore purchase", () => {
   const page = read("app/gromas/page.tsx");
 
-  assert.equal(gromasPurchase.status, "coming-soon");
-  assert.match(page, /Coming soon on Lulu/);
-  assert.match(page, /verified Lulu purchase link/);
-  assert.doesNotMatch(page, /buy\.lulu\.com|shop\.lulu\.com/);
-  assert.match(read("lib/gromas/storefront.ts"), /displayPrice: string/);
+  assert.equal(gromasPurchase.status, "available");
+  assert.equal(gromasPurchase.channel, "Lulu Bookstore");
+  assert.equal(gromasPurchase.displayPrice, "$34.99");
+  assert.equal(
+    gromasPurchase.url,
+    "https://www.lulu.com/shop/thomas-raymond-goetz-and-william-james-pahos/gromas-and-the-gobbledygooks/hardcover/product-w4gmred.html",
+  );
+  assert.match(page, /Secure checkout and print-on-demand fulfillment through Lulu/);
+  assert.match(page, /ISBN \{gromasBook\.isbn\}/);
+  assert.match(page, /rel="noopener noreferrer"/);
 });
+
