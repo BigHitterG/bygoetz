@@ -48,29 +48,29 @@ const previews: Array<{
 }> = [
   {
     image: previewPowerCrisis,
-    label: "Sample spread · Pages 4–5",
+    label: "Sample spread Â· Pages 4â€“5",
     title: "The lights are fading",
     description:
       "Gromas gathers the hidden community and reveals that the Great Power Supply is nearly gone.",
   },
   {
     image: previewSpinette,
-    label: "Sample spread · Pages 8–9",
+    label: "Sample spread Â· Pages 8â€“9",
     title: "A remarkable little machine",
     description:
-      "Chet’s Spinette promises to turn an unnoticed human footstep into a much-needed charge.",
+      "Chetâ€™s Spinette promises to turn an unnoticed human footstep into a much-needed charge.",
   },
   {
     image: previewDarkness,
-    label: "Sample spread · Pages 20–21",
+    label: "Sample spread Â· Pages 20â€“21",
     title: "Four minutes. Three. Two. One.",
     description:
-      "The grid is ready—but no machine can help until someone upstairs takes a step.",
+      "The grid is readyâ€”but no machine can help until someone upstairs takes a step.",
   },
   {
     image: previewCharge,
-    label: "Sample spread · Pages 26–27",
-    title: "Eureka—a charge!",
+    label: "Sample spread Â· Pages 26â€“27",
+    title: "Eurekaâ€”a charge!",
     description:
       "One step becomes four, the hidden wires begin to glow, and a whole world comes back to life.",
   },
@@ -82,6 +82,7 @@ const bookJsonLd = {
   name: gromasBook.title,
   author: gromasBook.authors.map((name) => ({ "@type": "Person", name })),
   numberOfPages: gromasBook.pageCount,
+  isbn: gromasBook.isbn,
   bookFormat: "https://schema.org/Hardcover",
   inLanguage: "en",
   audience: {
@@ -91,6 +92,16 @@ const bookJsonLd = {
   },
   image: "https://www.bygoetz.com/gromas/cover-front-v3.webp",
   description: pageDescription,
+  offers:
+    gromasPurchase.status === "available"
+      ? {
+          "@type": "Offer",
+          url: gromasPurchase.url,
+          price: "34.99",
+          priceCurrency: "USD",
+          availability: "https://schema.org/InStock",
+        }
+      : undefined,
 };
 
 function PurchaseButton({ light = false }: { light?: boolean }) {
@@ -102,10 +113,10 @@ function PurchaseButton({ light = false }: { light?: boolean }) {
         className={className}
         href={gromasPurchase.url}
         target="_blank"
-        rel="noreferrer"
+        rel="noopener noreferrer"
       >
-        Buy the hardcover on {gromasPurchase.channel} · {gromasPurchase.displayPrice}
-        <span aria-hidden="true">↗</span>
+        Buy the hardcover Â· {gromasPurchase.displayPrice}
+        <span aria-hidden="true">â†—</span>
       </a>
     );
   }
@@ -137,7 +148,7 @@ function BookMockup() {
         </div>
       </div>
       <p className={styles.stageCaption}>
-        Hardcover casewrap <span aria-hidden="true">·</span> 6 × 9 in.
+        Hardcover casewrap <span aria-hidden="true">Â·</span> 6 Ã— 9 in.
       </p>
     </div>
   );
@@ -159,7 +170,7 @@ export default function GromasBookPage() {
 
       <header className={styles.header}>
         <Link className={styles.gridLink} href="/" aria-label="Return to the Lazy Grid">
-          <span aria-hidden="true">←</span>
+          <span aria-hidden="true">â†</span>
           Lazy Grid
         </Link>
         <span className={styles.headerMark} aria-hidden="true">
@@ -189,30 +200,29 @@ export default function GromasBookPage() {
               By Thomas Raymond Goetz and William James Pahos
             </p>
             <p className={styles.heroDescription}>
-              Deep beneath an ordinary apartment floor, a hidden community’s
+              Deep beneath an ordinary apartment floor, a hidden communityâ€™s
               power is running out. Gromas has one plan, one impossible
-              deadline—and a whole lot of curious Gobbledygooks ready to build.
+              deadlineâ€”and a whole lot of curious Gobbledygooks ready to build.
             </p>
 
             <ul className={styles.quickFacts} aria-label="Book details">
-              <li>Ages 4–8</li>
+              <li>Ages 4â€“8</li>
               <li>32 pages</li>
               <li>Premium color</li>
-              <li>6 × 9 in. hardcover</li>
+              <li>6 Ã— 9 in. hardcover</li>
             </ul>
 
             <div className={styles.heroActions}>
               <PurchaseButton />
               <a className={styles.previewButton} href="#preview">
                 Preview the story
-                <span aria-hidden="true">↓</span>
+                <span aria-hidden="true">â†“</span>
               </a>
             </div>
 
             <p className={styles.purchaseNote}>
-              Printed to order through Lulu after the final physical proof is
-              approved. Price and the verified purchase link will appear here
-              at launch.
+              Secure checkout and print-on-demand fulfillment through Lulu.
+              Shipping and tax are calculated at checkout.
             </p>
           </div>
         </section>
@@ -224,9 +234,9 @@ export default function GromasBookPage() {
           </h2>
           <div className={styles.promiseGrid}>
             <p>
-              The Gobbledygooks’ Great Power Supply is fading fast. With time
+              The Gobbledygooksâ€™ Great Power Supply is fading fast. With time
               running out, Gromas and clever Chet rally the crew to build the
-              Spinette—and transform ordinary footsteps into extraordinary
+              Spinetteâ€”and transform ordinary footsteps into extraordinary
               energy.
             </p>
             <p>
@@ -242,7 +252,7 @@ export default function GromasBookPage() {
           <div className={styles.sectionHeadingRow}>
             <div>
               <p className={styles.sectionKicker}>Look inside</p>
-              <h2 id="preview-heading">A first step into Gromas’s world</h2>
+              <h2 id="preview-heading">A first step into Gromasâ€™s world</h2>
             </div>
             <p>
               Four current v3 sample spreads from the 32-page book. Swipe on
@@ -337,7 +347,7 @@ export default function GromasBookPage() {
             <p className={styles.sectionKicker}>The hardcover edition</p>
             <h2 id="format-heading">Built as a colorful little keepsake</h2>
             <p>
-              The planned Lulu edition pairs a compact read-aloud size with
+              The Lulu edition pairs a compact read-aloud size with
               full-page art, premium color, and a matte casewrap cover.
             </p>
             <dl className={styles.specList}>
@@ -347,7 +357,7 @@ export default function GromasBookPage() {
               </div>
               <div>
                 <dt>Trim size</dt>
-                <dd>6 × 9 inches</dd>
+                <dd>6 Ã— 9 inches</dd>
               </div>
               <div>
                 <dt>Length</dt>
@@ -367,15 +377,14 @@ export default function GromasBookPage() {
               </div>
             </dl>
             <p className={styles.formatFootnote}>
-              Final manufacturing details remain subject to the approved Lulu
-              project and physical proof.
+              ISBN {gromasBook.isbn}. Each copy is printed to order by Lulu.
             </p>
           </div>
         </section>
 
         <section className={styles.creatorsSection} aria-labelledby="creators-heading">
           <p className={styles.sectionKicker}>From the creators</p>
-          <h2 id="creators-heading">A story about asking, “What could we build next?”</h2>
+          <h2 id="creators-heading">A story about asking, â€œWhat could we build next?â€</h2>
           <p>
             Created by Thomas Raymond Goetz and William James Pahos and
             published by Getz LLC, <em>Gromas and the Gobbledygooks</em> is a
@@ -389,26 +398,23 @@ export default function GromasBookPage() {
             <p className={styles.sectionKicker}>Before you order</p>
             <h2 id="faq-heading">Good things to know</h2>
             <p>
-              The book page is ready now; the purchase link stays closed until
-              the print edition is truly ready.
+              The first-edition hardcover is now available through Lulu.
             </p>
           </div>
           <div className={styles.faqList}>
             <details>
               <summary>When will the hardcover be available?</summary>
               <p>
-                After the final print files and specifications are set and we
-                review a physical Premium Color proof. If Global Distribution
-                is selected, the ISBN will be finalized too. This page will then
-                show the final price and verified Lulu purchase link.
+                It is available to order now for {gromasPurchase.status === "available" ? gromasPurchase.displayPrice : "$34.99"}.
+                Lulu prints each copy on demand and shows the current delivery
+                estimate during checkout.
               </p>
             </details>
             <details>
               <summary>Where will checkout happen?</summary>
               <p>
-                On the verified Lulu purchase page. If Lulu Direct checkout is
-                available for this project, we may use its hosted checkout.
-                Bygoetz will not collect payment details itself.
+                On the verified Lulu Bookstore product page. Bygoetz does not
+                collect or store your payment details.
               </p>
             </details>
             <details>
@@ -422,9 +428,9 @@ export default function GromasBookPage() {
             <details>
               <summary>Is this the final book artwork?</summary>
               <p>
-                The page uses the current v3 cover artwork and sample interior
-                spreads. Final publication still depends on Lulu’s exact cover
-                template, barcode, and our review of the physical proof.
+                The page uses the production v3 cover artwork and sample
+                interior spreads submitted to Lulu. We have ordered a physical
+                proof so the printed result can receive one final quality check.
               </p>
             </details>
           </div>
@@ -432,11 +438,11 @@ export default function GromasBookPage() {
 
         <section className={styles.finalCta} aria-labelledby="final-cta-heading">
           <div>
-            <p className={styles.sectionKicker}>The adventure is almost ready</p>
+            <p className={styles.sectionKicker}>The adventure is ready</p>
             <h2 id="final-cta-heading">Take the first step with Gromas.</h2>
             <p>
-              Preview the current story art today, then return here for the
-              verified Lulu edition and launch price.
+              Preview the story art, then order the first-edition hardcover
+              through Lulu for {gromasPurchase.status === "available" ? gromasPurchase.displayPrice : "$34.99"}.
             </p>
           </div>
           <div className={styles.finalCtaActions}>
@@ -449,9 +455,10 @@ export default function GromasBookPage() {
       <footer className={styles.footer}>
         <Link href="/">Return to the Lazy Grid</Link>
         <p>
-          © 2026 Thomas Raymond Goetz and William James Pahos. Published by Getz LLC.
+          Â© 2026 Thomas Raymond Goetz and William James Pahos. Published by Getz LLC.
         </p>
       </footer>
     </div>
   );
 }
+
