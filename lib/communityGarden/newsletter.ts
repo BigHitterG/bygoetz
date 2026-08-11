@@ -133,11 +133,11 @@ export async function syncEligibleNewsletterMembers() {
     if (!userId) continue;
     const { data: preference, error: preferenceError } = await supabase
       .from("garden_newsletter_preferences")
-      .select("subscribed,resend_contact_id")
+      .select("subscribed,resend_contact_id,unsubscribed_at")
       .eq("user_id", userId)
       .maybeSingle();
     if (preferenceError) throw preferenceError;
-    if (preference && !preference.subscribed) continue;
+    // A timestamp is the durable evidence that the member explicitly opted out.\n    // Older/default rows can be false without representing a real unsubscribe.\n    if (preference && !preference.subscribed && preference.unsubscribed_at) continue;
     const { data: authData, error: authError } = await supabase.auth.admin.getUserById(userId);
     if (authError) throw authError;
     const email = authData.user?.email?.trim().toLowerCase();

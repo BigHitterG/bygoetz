@@ -30,7 +30,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Invalid social cron mode." }, { status: 400 });
   }
   const newsletterDue = isMonthlyDraftDue(now);
-  const [socialResult, newsletterResult] = await Promise.allSettled([
+  const [socialResult, newsletterSyncResult, newsletterResult] = await Promise.allSettled([
     mode === "notify"
       ? resendLatestSocialDigest(`scheduled-notify-${now.toISOString().slice(0, 10)}`)
       : createDailySocialDigest(now, { sendEmail: false }),
@@ -50,7 +50,7 @@ export async function GET(request: Request) {
       message: newsletterResult.reason instanceof Error ? newsletterResult.reason.message : "unknown",
     }));
   }
-  const failed = socialResult.status === "rejected" || newsletterResult.status === "rejected";
+  if (newsletterSyncResult.status === "rejected") {\n    console.error(JSON.stringify({\n      event: "basil_newsletter_member_sync_failed",\n      message: newsletterSyncResult.reason instanceof Error ? newsletterSyncResult.reason.message : "unknown",\n    }));\n  }\n  const failed = socialResult.status === "rejected"\n    || newsletterSyncResult.status === "rejected"\n    || newsletterResult.status === "rejected";
   return NextResponse.json({
     ok: !failed,
     mode,
