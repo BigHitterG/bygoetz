@@ -57,8 +57,20 @@ test("My Garden owns its mini map and detailed map without changing worlds", () 
   assert.match(app, /<GardenMapKey[\s\S]*ui={ui}/);
   assert.doesNotMatch(app, /onMap={[\s\S]{0,180}setWorld\("community"\)/);
   assert.match(map, /ui\.mode === "personal"[\s\S]*ui\.pathMapPoints\.map/);
+  assert.match(map, /ui\.personalMapParcels\.map/);
+  assert.match(atlas, /for \(const parcel of ui\.personalMapParcels\)/);
+  assert.match(css, /\.cg-map-property-parcel\.has-fence-top/);
+  assert.match(css, /\.cg-map-key\.is-personal \.cg-map-plant/);
   assert.match(atlas, /personalMap \? "My Garden Map" : "Community Atlas"/);
   assert.match(atlas, /!selectedPoint \|\| \(!personalMap && !selectedRegion\?\.isOpen\)/);
+});
+
+test("non-members always have a dock-aligned upgrade route in both gardens", () => {
+  assert.match(app, /const showMembershipShortcut =\s*accountChecked &&\s*!memberGarden/);
+  assert.match(app, /upgradeVisible={showMembershipShortcut}/);
+  assert.match(dock, /className="cg-dock-upgrade"/);
+  assert.match(dock, /Save My Garden/);
+  assert.match(css, /\.cg-dock-upgrade {[\s\S]*right: 0;[\s\S]*bottom: calc\(100% \+ 7px\)/);
 });
 
 test("dock cards have equal fixed geometry and no backing rectangle", () => {

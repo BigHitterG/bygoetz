@@ -12,6 +12,7 @@ import {
   TUTORIAL_PLANTING_HIT_TOLERANCE_TILES,
   snapToTutorialPlantingTarget,
 } from "../app/community-garden/lib/tutorialTargeting.ts";
+import { GUEST_GARDEN_PREVIEW_PLANT_LIMIT } from "../lib/communityGarden/membershipConfig.ts";
 
 const appSource = await readFile(
   new URL(
@@ -172,12 +173,12 @@ test("the Basil root keeps campaign parameters and enters the garden", () => {
   assert.match(rootPageSource, /params\.append\(key, item\)/);
 });
 
-test("My Garden has no three-flower offer and hard-gates at its configured limit", () => {
+test("My Garden allows 15 preview flowers and offers membership on the next attempt", () => {
+  assert.equal(GUEST_GARDEN_PREVIEW_PLANT_LIMIT, 15);
   assert.doesNotMatch(appSource, /used === GUEST_SOFT_PAYWALL_PLANTINGS/);
-  assert.match(
-    appSource,
-    /used >= \(updatedPreview\.garden\.preview\?\.plantingLimit \?\? 10\)[\s\S]*setMembershipOfferStage\("hard"\)/,
-  );
+  assert.doesNotMatch(appSource, /used >=[\s\S]{0,180}setMembershipOfferOpen\(true\)/);
+  assert.match(appSource, /error instanceof GuestPreviewLimitError/);
+  assert.match(appSource, /setMembershipOfferStage\("hard"\)/);
 });
 
 test("completed onboarding and member accounts are never restarted by the link", () => {

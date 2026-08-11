@@ -20,6 +20,8 @@ type GardenControlsDockProps = {
   actionQuickStart: boolean;
   actionLabel: string;
   actionIcon: ReactNode;
+  upgradeVisible: boolean;
+  onUpgrade: () => void;
   onMap: () => void;
   onInventory: () => void;
   onGarden: () => void;
@@ -44,6 +46,8 @@ export function GardenControlsDock({
   actionQuickStart,
   actionLabel,
   actionIcon,
+  upgradeVisible,
+  onUpgrade,
   onMap,
   onInventory,
   onGarden,
@@ -51,6 +55,18 @@ export function GardenControlsDock({
 }: GardenControlsDockProps) {
   return (
     <nav className="cg-controls-dock" aria-label="Garden controls">
+      {upgradeVisible ? (
+        <button
+          className="cg-dock-upgrade"
+          type="button"
+          onClick={onUpgrade}
+          aria-label="Upgrade to Garden Membership and save My Garden"
+        >
+          <strong>Upgrade</strong>
+          <small>Save My Garden</small>
+        </button>
+      ) : null}
+
       <button
         className="cg-dock-button is-map"
         type="button"

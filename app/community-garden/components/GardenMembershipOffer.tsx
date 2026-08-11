@@ -18,7 +18,7 @@ type GardenMembershipOfferProps = {
   gardenElementCount: number;
   careBalance: number;
   lifetimeCare: number;
-  stage: "soft" | "hard" | "expired";
+  stage: "soft" | "hard";
   onClose: () => void;
   onJoin: (credentials: GardenMembershipCredentials) => void;
   onLater: () => void;
@@ -54,17 +54,12 @@ export function GardenMembershipOffer({
   if (!open) return null;
 
   const isSoft = stage === "soft";
-  const isExpired = stage === "expired";
   const title = isSoft
     ? "Keep this garden growing"
-    : isExpired
-      ? "Save your temporary garden"
-      : "Your preview garden is full";
+    : "Your preview garden is full";
   const description = isSoft
     ? `You planted ${planted} flowers of your own. Garden Membership turns this temporary preview into a lasting place you can keep building.`
-    : isExpired
-      ? "Your 24-hour preview has ended. Your work is still here and ready to save with Garden Membership."
-      : `You planted all ${planted} preview flowers. Upgrade to save this garden and keep growing without the preview limit.`;
+    : `You planted all ${planted} preview flowers. Upgrade to save this garden and keep growing without the preview limit.`;
 
   function submitMembership(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();

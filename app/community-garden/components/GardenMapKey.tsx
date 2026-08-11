@@ -98,6 +98,21 @@ export function GardenMapKey({
       >
         <span className="cg-map-north" aria-hidden="true">N</span>
         {ui.mode === "personal"
+          ? ui.personalMapParcels.map((parcel) => (
+              <span
+                className={`cg-map-property-parcel${parcel.fenceTop ? " has-fence-top" : ""}${parcel.fenceRight ? " has-fence-right" : ""}${parcel.fenceBottom ? " has-fence-bottom" : ""}${parcel.fenceLeft ? " has-fence-left" : ""}`}
+                key={parcel.key}
+                style={{
+                  left: `${parcel.x}%`,
+                  top: `${parcel.y}%`,
+                  width: `${parcel.width}%`,
+                  height: `${parcel.height}%`,
+                }}
+                aria-hidden="true"
+              />
+            ))
+          : null}
+        {ui.mode === "personal"
           ? ui.pathMapPoints.map((path, index) => (
               <span
                 className="cg-map-path"

@@ -47,12 +47,22 @@ test("preview normalization is deterministic and cannot duplicate occupied tiles
 
 test("malformed or oversized guest state is rejected before checkout", () => {
   assert.equal(normalizePendingGardenPreview({ ...previewFor(0), careBalance: 21 }), null);
+  assert.ok(
+    normalizePendingGardenPreview({
+      ...previewFor(0),
+      plants: Array.from({ length: 15 }, (_, index) => ({
+        gridX: index % 12,
+        gridY: Math.floor(index / 12),
+        plantType: "rose",
+      })),
+    }),
+  );
   assert.equal(
     normalizePendingGardenPreview({
       ...previewFor(0),
-      plants: Array.from({ length: 11 }, (_, index) => ({
+      plants: Array.from({ length: 16 }, (_, index) => ({
         gridX: index % 12,
-        gridY: index % 16,
+        gridY: Math.floor(index / 12),
         plantType: "rose",
       })),
     }),
@@ -71,6 +81,17 @@ test("production SQL and webhook preserve idempotent payment fulfillment", () =>
   assert.match(migration, /garden_saved_at = coalesce\(garden_saved_at, now\(\)\)/i);
   assert.match(webhook, /stripe\.webhooks\.constructEvent/);
   assert.match(webhook, /checkout\.session\.async_payment_succeeded/);
+});
+
+test("checkout, import API, and SQL all preserve the 15-flower preview", () => {
+  const route = readFileSync("app/api/community-garden/my-garden/route.ts", "utf8");
+  const migration = readFileSync(
+    "supabase/migrations/20260811145338_expand_my_garden_guest_preview.sql",
+    "utf8",
+  );
+  assert.match(route, /plants\.length > GUEST_GARDEN_PREVIEW_PLANT_LIMIT/);
+  assert.match(migration, /limit 10[\s\S]*limit 15/i);
+  assert.match(migration, /preserving up to 15 flowers/i);
 });
 
 test("10 repeated fulfillment returns are covered by one provider purchase key", () => {

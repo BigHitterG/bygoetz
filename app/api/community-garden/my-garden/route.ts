@@ -20,6 +20,7 @@ import {
 import { isLivingGardenHabitatKey } from "@/app/community-garden/lib/livingGarden";
 import { getGardenStewardByUserId } from "@/lib/communityGarden/stewards";
 import { hasAllowedBasilRequestOrigin } from "@/lib/communityGarden/urls";
+import { GUEST_GARDEN_PREVIEW_PLANT_LIMIT } from "@/lib/communityGarden/membershipConfig";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -201,7 +202,7 @@ export async function POST(request: NextRequest) {
         !Number.isInteger(payload.careBalance) ||
         Number(payload.careBalance) < 0 ||
         Number(payload.careBalance) > 20 ||
-        plants.length > 10 ||
+        plants.length > GUEST_GARDEN_PREVIEW_PLANT_LIMIT ||
         paths.length > 64 ||
         !validPlants ||
         !validPaths

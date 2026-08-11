@@ -422,7 +422,7 @@ export function GardenHealthPanel({
             <li><span>Chose to keep playing</span><b>{health.funnel.previewJourney.softDeclines}</b></li>
             <li><span>Earned Care afterward</span><b>{health.funnel.previewJourney.continuedAfterDecline}</b></li>
             <li><span>Reached ten-flower limit</span><b>{health.funnel.previewJourney.hardPaywallViews}</b></li>
-            <li><span>24-hour previews expired</span><b>{health.funnel.previewJourney.expiredPreviews}</b></li>
+            <li><span>Legacy preview expirations</span><b>{health.funnel.previewJourney.expiredPreviews}</b></li>
           </ul>
         </div>
         <div>

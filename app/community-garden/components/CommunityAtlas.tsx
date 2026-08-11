@@ -351,7 +351,7 @@ export function CommunityAtlas({
 
     ctx.imageSmoothingEnabled = false;
     ctx.clearRect(0, 0, ATLAS_SIZE, ATLAS_SIZE);
-    ctx.fillStyle = personalMap ? "#b8c99d" : "#eef1e4";
+    ctx.fillStyle = personalMap ? "#dce3d1" : "#eef1e4";
     ctx.fillRect(0, 0, ATLAS_SIZE, ATLAS_SIZE);
 
     if (personalMap) {
@@ -366,6 +366,35 @@ export function CommunityAtlas({
         ctx.beginPath();
         ctx.moveTo(0, position);
         ctx.lineTo(ATLAS_SIZE, position);
+        ctx.stroke();
+      }
+
+      for (const parcel of ui.personalMapParcels) {
+        const x = projectX(parcel.x);
+        const y = projectY(parcel.y);
+        const width = projectSize(parcel.width);
+        const height = projectSize(parcel.height);
+        ctx.fillStyle = "#9fbd85";
+        ctx.fillRect(x, y, width, height);
+        ctx.strokeStyle = "#80553d";
+        ctx.lineWidth = zoom === 4 ? 6 : 4;
+        ctx.beginPath();
+        if (parcel.fenceTop) {
+          ctx.moveTo(x, y);
+          ctx.lineTo(x + width, y);
+        }
+        if (parcel.fenceRight) {
+          ctx.moveTo(x + width, y);
+          ctx.lineTo(x + width, y + height);
+        }
+        if (parcel.fenceBottom) {
+          ctx.moveTo(x + width, y + height);
+          ctx.lineTo(x, y + height);
+        }
+        if (parcel.fenceLeft) {
+          ctx.moveTo(x, y + height);
+          ctx.lineTo(x, y);
+        }
         ctx.stroke();
       }
     }
@@ -493,7 +522,7 @@ export function CommunityAtlas({
     ctx.fillStyle = "#1f6e8c";
     ctx.fillRect(playerX - 4, playerY - 4, 8, 8);
     ctx.globalAlpha = 1;
-  }, [focusTarget?.gridX, focusTarget?.gridY, focusTarget?.kind, open, personalMap, selectedPoint, selectedRegionKey, ui.mapBounds, ui.mapX, ui.mapY, ui.pathMapPoints, ui.regionMapCells, view, visiblePlants, visibleWeeds, zoom]);
+  }, [focusTarget?.gridX, focusTarget?.gridY, focusTarget?.kind, open, personalMap, selectedPoint, selectedRegionKey, ui.mapBounds, ui.mapX, ui.mapY, ui.pathMapPoints, ui.personalMapParcels, ui.regionMapCells, view, visiblePlants, visibleWeeds, zoom]);
 
   function selectPoint(event: MouseEvent<HTMLButtonElement>) {
     if (event.detail === 0) return;

@@ -5,23 +5,22 @@ import type {
   MyGardenPlantType,
   MyGardenState,
 } from "@/lib/communityGarden/myGarden";
+import { GUEST_GARDEN_PREVIEW_PLANT_LIMIT } from "../../../lib/communityGarden/membershipConfig.ts";
 import type { MyGardenMutation } from "./myGardenMutation";
 
 const STORAGE_KEY = "basil-guest-garden-preview-v1";
 const CHECKOUT_TRANSFER_KEY = "basil-guest-garden-checkout-v1";
 const CHECKOUT_TRANSFER_LIFETIME_MS = 7 * 24 * 60 * 60 * 1000;
-export const GUEST_PREVIEW_LIFETIME_MS = 24 * 60 * 60 * 1000;
 const PREVIEW_CARE_TRANSFER_LIMIT = 20;
 const GUEST_PLANT_CARE_COST = 2;
 export const GUEST_SOFT_PAYWALL_PLANTINGS = 3;
-export const GUEST_PLANTING_LIMIT = 10;
+export const GUEST_PLANTING_LIMIT = GUEST_GARDEN_PREVIEW_PLANT_LIMIT;
 
 export type GuestGardenPreview = {
   garden: MyGardenState;
   dailyCareDate: string | null;
   access?: {
     startedAt: string;
-    expiresAt: string;
     softPaywallSeen: boolean;
     softPaywallDeclined: boolean;
     continuedAfterSoftPaywall: boolean;
@@ -45,13 +44,6 @@ export class GuestPreviewLimitError extends Error {
   constructor() {
     super("Keep this garden growing with a Garden Membership.");
     this.name = "GuestPreviewLimitError";
-  }
-}
-
-export class GuestPreviewExpiredError extends Error {
-  constructor() {
-    super("This temporary garden is ready to be saved with a Garden Membership.");
-    this.name = "GuestPreviewExpiredError";
   }
 }
 
@@ -182,7 +174,6 @@ export function loadGuestGardenPreview() {
     );
     const careBalance = clampInteger(gardenRecord.careBalance, 0, 100);
     const lifetimeCare = clampInteger(gardenRecord.lifetimeCare, careBalance, 500);
-    const now = Date.now();
     const storedAccess =
       parsed.access && typeof parsed.access === "object"
         ? (parsed.access as Record<string, unknown>)
@@ -191,12 +182,7 @@ export function loadGuestGardenPreview() {
     const startedAt =
       typeof storedStartedAt === "string" && Number.isFinite(Date.parse(storedStartedAt))
         ? new Date(storedStartedAt).toISOString()
-        : new Date(now).toISOString();
-    const storedExpiresAt = storedAccess?.expiresAt;
-    const expiresAt =
-      typeof storedExpiresAt === "string" && Number.isFinite(Date.parse(storedExpiresAt))
-        ? new Date(storedExpiresAt).toISOString()
-        : new Date(now + GUEST_PREVIEW_LIFETIME_MS).toISOString();
+        : new Date().toISOString();
     return {
       dailyCareDate:
         typeof parsed.dailyCareDate === "string" &&
@@ -207,7 +193,6 @@ export function loadGuestGardenPreview() {
         plants.length > 0 || storedAccess
           ? {
               startedAt,
-              expiresAt,
               softPaywallSeen:
                 storedAccess?.softPaywallSeen === true ||
                 plants.length >= GUEST_SOFT_PAYWALL_PLANTINGS,
@@ -320,17 +305,6 @@ export function awardGuestCare(
   };
 }
 
-export function isGuestPreviewExpired(
-  preview: GuestGardenPreview,
-  now = Date.now(),
-) {
-  return Boolean(
-    preview.access &&
-      Number.isFinite(Date.parse(preview.access.expiresAt)) &&
-      Date.parse(preview.access.expiresAt) <= now,
-  );
-}
-
 export function markGuestSoftPaywallSeen(current: GuestGardenPreview) {
   if (!current.access) return current;
   return {
@@ -365,9 +339,6 @@ export function mutateGuestGarden(
   current: GuestGardenPreview,
   mutation: MyGardenMutation,
 ) {
-  if (isGuestPreviewExpired(current)) {
-    throw new GuestPreviewExpiredError();
-  }
   const garden = current.garden;
   const preview = garden.preview ?? {
     plantingLimit: GUEST_PLANTING_LIMIT,
@@ -401,9 +372,6 @@ export function mutateGuestGarden(
     const plantedAt = new Date().toISOString();
     const access = current.access ?? {
       startedAt: plantedAt,
-      expiresAt: new Date(
-        Date.parse(plantedAt) + GUEST_PREVIEW_LIFETIME_MS,
-      ).toISOString(),
       softPaywallSeen: false,
       softPaywallDeclined: false,
       continuedAfterSoftPaywall: false,
