@@ -197,8 +197,8 @@ function supplementalDownloadFromEvidence(evidence: unknown) {
 
 function digestEmailSubject(stories: EmailStory[]) {
   const videos = stories.filter((story) => story.assetKind === "video").length;
-  const diagrams = stories.filter((story) => story.assetKind === "image").length;
-  return `Basil Garden Bulletin: ${videos} video${videos === 1 ? "" : "s"} + ${diagrams} diagram${diagrams === 1 ? "" : "s"} ready`;
+  const updates = stories.filter((story) => story.assetKind === "image").length;
+  return `Basil Garden Bulletin: ${videos} video${videos === 1 ? "" : "s"} + ${updates} garden update${updates === 1 ? "" : "s"} ready`;
 }
 
 function renderDigestEmail(digestId: string, token: string, stories: EmailStory[]) {
@@ -206,7 +206,7 @@ function renderDigestEmail(digestId: string, token: string, stories: EmailStory[
   const cards = stories.map((story, index) => {
     const storyUrl = `${reviewUrl}&story=${story.id}`;
     const visual = story.assetKind === "image"
-      ? `<div style="padding:44px 20px;background:#314239;color:#fff8e8;text-align:center"><div style="font:800 12px Arial,sans-serif;letter-spacing:1.6px;color:#e7c879">FINISHED GAME DIAGRAM</div><div style="font:700 24px Georgia,serif;margin-top:9px">4:5 PNG ready in Studio</div></div>`
+      ? `<div style="padding:44px 20px;background:#314239;color:#fff8e8;text-align:center"><div style="font:800 12px Arial,sans-serif;letter-spacing:1.6px;color:#e7c879">TODAY IN THE GARDEN</div><div style="font:700 24px Georgia,serif;margin-top:9px">4:5 update ready in Studio</div></div>`
       : `<div style="padding:44px 20px;background:#314239;color:#fff8e8;text-align:center"><div style="font:800 12px Arial,sans-serif;letter-spacing:1.6px;color:#e7c879">FINISHED VERTICAL VIDEO</div><div style="font:700 24px Georgia,serif;margin-top:9px">Poster + MP4 ready in Studio</div></div>`;
     return `
     <tr><td style="padding:0 0 18px">
@@ -218,8 +218,8 @@ function renderDigestEmail(digestId: string, token: string, stories: EmailStory[
   }).join("");
   const videoCount = stories.filter((story) => story.assetKind === "video").length;
   const imageCount = stories.filter((story) => story.assetKind === "image").length;
-  const html = `<!doctype html><html><body style="margin:0;background:#e7dfcf;color:#302321"><table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr><td align="center" style="padding:28px 12px"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:620px"><tr><td style="border:3px solid #302321;background:#f5e8ca;padding:28px 26px;text-align:center"><div style="font:700 30px Georgia,serif;letter-spacing:2px">BASIL</div><div style="font:700 12px Arial,sans-serif;letter-spacing:2px;margin-top:5px">DAILY GARDEN BULLETIN</div><h1 style="font:700 27px Georgia,serif;margin:22px 0 10px">${videoCount} videos + ${imageCount} diagram are ready</h1><p style="font:16px/1.5 Arial,sans-serif;margin:0;color:#5b4a42">The new social packages are ready for review${stories.some((story) => story.supplementalDownload) ? ", with yesterdayâ€™s rose lifecycle included as a download-only replay" : ""}.</p><p style="margin:22px 0 4px"><a href="${reviewUrl}" style="display:inline-block;background:#a94343;color:#fff8e8;border:2px solid #302321;padding:13px 22px;text-decoration:none;font:700 15px Arial,sans-serif">Review all ${stories.length} items</a></p><p style="font:12px/1.5 Arial,sans-serif;color:#6b5a51;margin:10px 0 0">Opening a link does not approve or publish. Approve each new bulletin inside Studio.</p></td></tr><tr><td style="height:18px"></td></tr>${cards}<tr><td style="font:12px/1.5 Arial,sans-serif;color:#6b5a51;text-align:center;padding:8px 20px">Sent privately to ${escapeHtml(REVIEWERS.join(", "))}. This review link expires in seven days.</td></tr></table></td></tr></table></body></html>`;
-  const text = `Basil Daily Garden Bulletin\n\n${videoCount} finished videos and ${imageCount} finished diagram are ready. Opening a link does not approve or publish anything.\n\n${stories.map((story, index) => `${index + 1}. ${story.bulletinLabel}: ${story.title}\n${story.whyToday}\nReview: ${reviewUrl}&story=${story.id}`).join("\n\n")}\n\nReview all: ${reviewUrl}`;
+  const html = `<!doctype html><html><body style="margin:0;background:#e7dfcf;color:#302321"><table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr><td align="center" style="padding:28px 12px"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:620px"><tr><td style="border:3px solid #302321;background:#f5e8ca;padding:28px 26px;text-align:center"><div style="font:700 30px Georgia,serif;letter-spacing:2px">BASIL</div><div style="font:700 12px Arial,sans-serif;letter-spacing:2px;margin-top:5px">DAILY GARDEN BULLETIN</div><h1 style="font:700 27px Georgia,serif;margin:22px 0 10px">${videoCount} lifecycle video${videoCount === 1 ? "" : "s"} + ${imageCount} garden update${imageCount === 1 ? "" : "s"} are ready</h1><p style="font:16px/1.5 Arial,sans-serif;margin:0;color:#5b4a42">The new social packages are ready for review${stories.some((story) => story.supplementalDownload) ? ", with yesterdayâ€™s rose lifecycle included as a download-only replay" : ""}.</p><p style="margin:22px 0 4px"><a href="${reviewUrl}" style="display:inline-block;background:#a94343;color:#fff8e8;border:2px solid #302321;padding:13px 22px;text-decoration:none;font:700 15px Arial,sans-serif">Review all ${stories.length} items</a></p><p style="font:12px/1.5 Arial,sans-serif;color:#6b5a51;margin:10px 0 0">Opening a link does not approve or publish. Approve each new bulletin inside Studio.</p></td></tr><tr><td style="height:18px"></td></tr>${cards}<tr><td style="font:12px/1.5 Arial,sans-serif;color:#6b5a51;text-align:center;padding:8px 20px">Sent privately to ${escapeHtml(REVIEWERS.join(", "))}. This review link expires in seven days.</td></tr></table></td></tr></table></body></html>`;
+  const text = `Basil Daily Garden Bulletin\n\n${videoCount} finished lifecycle video${videoCount === 1 ? "" : "s"} and ${imageCount} finished garden update${imageCount === 1 ? "" : "s"} are ready. Opening a link does not approve or publish anything.\n\n${stories.map((story, index) => `${index + 1}. ${story.bulletinLabel}: ${story.title}\n${story.whyToday}\nReview: ${reviewUrl}&story=${story.id}`).join("\n\n")}\n\nReview all: ${reviewUrl}`;
   return { reviewUrl, html, text };
 }
 
@@ -275,6 +275,7 @@ export async function createDailySocialDigest(date = new Date(), options: { send
   try {
     const emailStories: EmailStory[] = [];
     for (const [index, draft] of drafts.entries()) {
+      const storyStatus = index === 1 ? "held" : "ready";
       const { data: story, error: storyError } = await supabase.from("basil_social_stories").insert({
         digest_id: digest.id,
         story_key: draft.key,
@@ -287,7 +288,7 @@ export async function createDailySocialDigest(date = new Date(), options: { send
         asset_kind: draft.assetKind,
         evidence: draft.evidence,
         rank: index + 1,
-        status: "ready",
+        status: storyStatus,
       }).select("id").single();
       if (storyError) throw storyError;
       const { error: variantError } = await supabase.from("basil_social_variants").insert(draft.variants.map((variant) => ({
@@ -298,7 +299,9 @@ export async function createDailySocialDigest(date = new Date(), options: { send
         hashtags: variant.hashtags,
       })));
       if (variantError) throw variantError;
-      emailStories.push({ id: story.id as string, title: draft.title, whyToday: draft.whyToday, assetUrl: draft.assetUrl, assetKind: draft.assetKind, bulletinLabel: draft.creativeBrief.bulletinLabel });
+      if (storyStatus !== "held") {
+        emailStories.push({ id: story.id as string, title: draft.title, whyToday: draft.whyToday, assetUrl: draft.assetUrl, assetKind: draft.assetKind, bulletinLabel: draft.creativeBrief.bulletinLabel });
+      }
     }
     if (!sendEmail) return { id: digest.id as string, created: true, status: "review_ready", emailSent: false };
     const rendered = renderDigestEmail(digest.id as string, token, emailStories);
@@ -338,7 +341,7 @@ export async function resendLatestSocialDigest(requestKey: string) {
 
   const { data: stories, error: storiesError } = await supabase
     .from("basil_social_stories")
-    .select("id,title,why_today,asset_url,asset_kind,evidence")
+    .select("id,title,why_today,asset_url,asset_kind,evidence,status")
     .eq("digest_id", digest.id)
     .neq("status", "archived")
     .order("rank", { ascending: true });
@@ -360,7 +363,7 @@ export async function resendLatestSocialDigest(requestKey: string) {
   }).eq("id", digest.id);
   if (tokenError) throw tokenError;
 
-  const emailStories = stories.map((story) => ({
+  const emailStories = stories.filter((story) => story.status !== "held").map((story) => ({
     id: story.id as string,
     title: story.title as string,
     whyToday: story.why_today as string,

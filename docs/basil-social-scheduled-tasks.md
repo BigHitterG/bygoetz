@@ -26,6 +26,19 @@ Browser access is verified on every run. A missing session, account mismatch, lo
 
 ## Task 1: Create the daily package
 
+### Active two-lane override (August 11, 2026)
+
+This override supersedes every older three-package, mechanics-video, and diagram instruction later in this runbook until the reviewer explicitly reactivates that lane.
+
+- Produce exactly two active packages: one botanical lifecycle video and one verified `Today in the Garden` 4:5 image. Do not create or render an instructional/game-mechanics video or diagram.
+- Keep rank 2 as a `held` instructional placeholder. It receives no asset upload, approval, email-ready count, or publishing work. Pair the lifecycle with rank 1 and the daily update with rank 3.
+- Call `public.get_basil_social_daily_update()` once immediately before writing `today-3.json`. Its four values are cumulative community flowers, distinct anonymous-inclusive planting sessions (`New gardeners`), completed waterings, and completed weeds pulled. Its deltas compare the new capture with the immediately previous stored Studio snapshot—not rolling 24-hour windows.
+- The daily card uses the canonical Basil pixel plant mark, keeps the existing flower scene, and preserves a clear middle field so Mary and the duck remain visible.
+- Validate one 1080x1920 lifecycle MP4 and one 1080x1350 daily-update PNG. Upload five drafts total: Instagram, YouTube, and Reddit for the lifecycle; Instagram and Reddit for the daily update. Email only after both active packages pass.
+- Do not change `content/basil-social/today.json` while the instructional lane is paused. Update only `today-2.json` and `today-3.json`, plus the normal channel memory and evergreen archive records.
+
+When a later instruction says “all three,” “exactly three,” “mechanics video,” “diagram,” “rank 1-3,” “eight variants,” or “two videos,” interpret it through this active override.
+
 Schedule: every day at **6:45 a.m. America/Chicago**.
 
 Destination: **this existing chat**.
@@ -62,6 +75,8 @@ Copy this entire prompt:
 The 5:55 a.m. Vercel cron creates the private digest without emailing. The 6:45 a.m. Codex task sends the review email only after two MP4/poster pairs and one PNG pass validation and upload successfully.
 
 ## Task 2: Check approval and prepare posting
+
+While the August 11 two-lane override is active, evaluate and publish only approved rank-1 lifecycle and rank-3 daily-update packages. Rank 2 is a held placeholder and must be skipped without error.
 
 Schedule: every day at **8:00 a.m. America/Chicago**.
 

@@ -54,6 +54,7 @@ type Revision = {
 };
 type Story = {
   id: string;
+  status: string;
   key: string;
   title: string;
   summary: string;
@@ -105,6 +106,7 @@ const DEVELOPMENT_PREVIEW: Digest = {
   feedback: [],
   stories: [{
     id: "10000000-0000-4000-8000-000000000000",
+    status: "ready",
     key: "watering-spread",
     title: "Water is becoming a spreading gesture",
     summary: "A vertical-first explanation of Basil's two-tap watering rhythm and its goal of feeling like a small spread of water.",
@@ -193,6 +195,14 @@ function parseProductionBrief(evidence: Record<string, unknown>): ProductionBrie
 
 function formatDuration(durationMs: number | null) {
   return durationMs ? `${(durationMs / 1000).toFixed(1)}s` : null;
+}
+
+function storyReviewOrder(story: Story) {
+  if (story.status === "held") return 3;
+  const brief = parseProductionBrief(story.evidence);
+  if (brief?.scene === "botanical-lifecycle") return 0;
+  if (story.assetKind === "video") return 1;
+  return 2;
 }
 
 function RevisionControl({
@@ -284,8 +294,8 @@ function DailyFeedbackControl({
     <section className={styles.dailyFeedback}>
       <div>
         <p className={styles.eyebrow}>Daily feedback</p>
-        <h2>Notes for all three content packages</h2>
-        <p>The next 6:45 a.m. Codex task reads queued notes before choosing video scenes, the diagram concept, narration, and platform copy.</p>
+        <h2>Notes for the active content packages</h2>
+        <p>The next 6:45 a.m. Codex task reads queued notes before choosing the lifecycle subject, verified garden update, and platform copy.</p>
         {feedback[0] ? <small>Latest: {feedback[0].feedback}</small> : null}
       </div>
       <label>
@@ -369,7 +379,7 @@ function VariantEditor({
         <textarea value={body} onChange={(event) => setBody(event.target.value)} rows={variant.channel === "reddit" ? 10 : 6} disabled={disabled || variant.status === "published"} />
       </label>
       <label>
-        Hashtags
+        Hashtags {variant.channel === "instagram" ? "(maximum 5)" : ""}
         <input value={hashtags} onChange={(event) => setHashtags(event.target.value)} placeholder="BasilCommunityGarden CozyGames" disabled={disabled || variant.status === "published"} />
       </label>
       <div className={styles.variantActions}>
@@ -437,15 +447,15 @@ function StoryApprovalControl({
     <div className={`${styles.storyApproval} ${approved ? styles.storyApproved : ""}`}>
       <div>
         <span>{productionBrief?.bulletinLabel ?? "Basil bulletin"}</span>
-        <strong>{approved ? `Approved for ${channelNames}` : "Approve this content package"}</strong>
-        <small>One decision covers the {story.assetKind === "video" ? "video" : "diagram"} and its {channelNames} copy.</small>
+        <strong>{approved ? `Approved for ${channelNames}` : "Approve this content"}</strong>
+        <small>One decision approves this {story.assetKind} and its saved {channelNames} copy.</small>
       </div>
       <button type="button" onClick={() => void approve()} disabled={disabled || busy || approved || !hasFinishedAssets || activeVariants.length !== expectedChannels}>
         {approved
           ? "Approved"
           : hasFinishedAssets
-            ? story.assetKind === "video" ? "Approve video + 3 posts" : "Approve diagram + 2 posts"
-            : story.assetKind === "video" ? "Waiting for validated video + poster" : "Waiting for validated diagram"}
+            ? "Approve content"
+            : story.assetKind === "video" ? "Waiting for validated video + poster" : "Waiting for validated image"}
       </button>
       {notice ? <span className={styles.notice} role="status">{notice}</span> : null}
     </div>
@@ -522,10 +532,9 @@ export function SocialStudio() {
       <header className={styles.hero}>
         <div className={styles.brandMark} aria-hidden="true"><span /><span /><span /></div>
         <div>
-          <p className={styles.eyebrow}>Private creator workspace</p>
+          <p className={styles.eyebrow}>Today&apos;s private review</p>
           <h1>Basil Social Studio</h1>
-          <p className={styles.heroDescription}>Vertical stories first. Real garden footage when possible. Every channel waits for your approval.</p>
-          <p className={styles.safetyNote}>Opening the Studio never publishes a post.</p>
+          <p className={styles.safetyNote}>Review the content first. Opening this page never publishes it.</p>
         </div>
       </header>
 
@@ -534,40 +543,53 @@ export function SocialStudio() {
 
       {digest ? (
         <>
-          <section className={styles.runBar}>
-            <div><span>Daily run</span><strong>{prettyDate(digest.createdAt)}</strong></div>
-            <div><span>Stories</span><strong>{digest.stories.length}</strong></div>
-            <div><span>Review</span><strong>{digest.expired ? "Expired" : digest.status.replaceAll("_", " ")}</strong></div>
-            <div><span>Sent to</span><strong>{digest.reviewers.join(", ")}</strong></div>
-          </section>
-
-          <section className={styles.connections}>
-            <div>
-              <p className={styles.eyebrow}>Publishing desk</p>
-              <h2>Scheduled through the Codex desktop</h2>
-              <p>Instagram, YouTube, and Reddit use the signed-in desktop sessions after Studio approval. Email delivers the private review package.</p>
-            </div>
-            <div className={styles.connectorGrid}>
-              {Object.entries(digest.connectors).map(([name, connector]) => (
-                <div className={styles.connector} key={name}>
-                  <span className={`${styles.dot} ${connector.mode.startsWith("connected") ? styles.connected : ""}`} />
-                  <div><strong>{name}</strong><small>{connector.label}</small></div>
-                </div>
-              ))}
-            </div>
-          </section>
-
           <div className={styles.storyList}>
-            {digest.stories.map((story, storyIndex) => {
+            {[...digest.stories].sort((left, right) => storyReviewOrder(left) - storyReviewOrder(right)).map((story, storyIndex) => {
               const reelPlan = parseReelPlan(story.evidence);
               const productionBrief = parseProductionBrief(story.evidence);
+              if (story.status === "held") {
+                return (
+                  <section className={`${styles.story} ${styles.pausedStory}`} id={`story-${story.id}`} key={story.id}>
+                    <div className={styles.pausedLane}>
+                      <p className={styles.eyebrow}>Paused content lane</p>
+                      <h2>Instructional content placeholder</h2>
+                      <p>The diagrammatic game-mechanics format is paused while its visual strategy is refined. It is not generated, reviewed, approved, or published.</p>
+                    </div>
+                  </section>
+                );
+              }
               return (
                 <section className={styles.story} id={`story-${story.id}`} key={story.id}>
-                  <StoryApprovalControl story={story} disabled={digest.expired} request={request} onRefresh={load} />
-                  <div className={styles.storyLead}>
+                  <div className={styles.storyHeading}>
+                    <p className={styles.eyebrow}>{productionBrief?.bulletinLabel ?? `Content ${storyIndex + 1}`}</p>
+                    <h2>{story.title}</h2>
+                  </div>
+                  <div className={styles.contentFirst}>
+                    <div className={styles.visualColumn}>
+                      <div className={`${styles.verticalPreview} ${story.assetKind === "image" ? styles.diagramPreview : ""}`}>
+                        {story.assetKind === "video" ? (
+                          <video src={story.assetUrl} poster={story.posterUrl ?? undefined} controls playsInline preload="metadata" />
+                        ) : (
+                          <img src={story.assetUrl} alt={`Basil daily garden update for ${story.title}`} width={1080} height={1350} loading="eager" />
+                        )}
+                      </div>
+                      {story.assets.find((asset) => asset.kind === story.assetKind) ? (
+                        <div className={styles.assetMetadata}>
+                          <span>{story.assets.find((asset) => asset.kind === story.assetKind)?.width}×{story.assets.find((asset) => asset.kind === story.assetKind)?.height}</span>
+                          {story.assetKind === "video" ? <span>{formatDuration(story.assets.find((asset) => asset.kind === "video")?.durationMs ?? null)}</span> : <span>4:5 social image</span>}
+                          <span>Validated</span>
+                        </div>
+                      ) : null}
+                      <div className={styles.assetActions}>
+                        <a className={styles.primaryMediaAction} href={story.assets.find((asset) => asset.kind === story.assetKind)?.downloadUrl ?? story.assetUrl}>Download {story.assetKind} to your device</a>
+                        <a href={story.assetUrl} target="_blank" rel="noreferrer">Open full size</a>
+                      </div>
+                    </div>
+                  </div>
+
+                  <details className={styles.storyDetails}>
+                    <summary>Content details, evidence, and creative notes</summary>
                     <div className={styles.storyCopy}>
-                      <p className={styles.eyebrow}>{productionBrief?.bulletinLabel ?? `Bulletin ${storyIndex + 1}`} / {story.sourceType.replaceAll("_", " ")}</p>
-                      <h2>{story.title}</h2>
                       <p className={styles.summary}>{story.summary}</p>
                       <div className={styles.whyToday}><span>Why today</span>{story.whyToday}</div>
                       {story.sourceRef ? <a className={styles.sourceLink} href={story.sourceRef} target="_blank" rel="noreferrer">View supporting repository change</a> : null}
@@ -603,7 +625,7 @@ export function SocialStudio() {
                         </div>
                       ) : null}
                     </div>
-                    <div className={styles.visualColumn}>
+                    <div className={`${styles.visualColumn} ${styles.detailsVisual}`}>
                       <div className={styles.assetStatus}>
                         <span>{story.assetKind === "video" ? "Ready video" : "Ready diagram"}</span>
                         <p>{story.assetKind === "video"
@@ -631,7 +653,7 @@ export function SocialStudio() {
                         <a href={story.assetUrl} target="_blank" rel="noreferrer">Open full size</a>
                       </div>
                     </div>
-                  </div>
+                  </details>
 
                   {reelPlan && story.assetKind !== "video" && !story.assets.some((asset) => asset.kind === "image") ? (
                     <div className={styles.reelBrief}>
@@ -648,28 +670,43 @@ export function SocialStudio() {
                     </div>
                   ) : null}
 
-                  {!story.supplementalDownload ? <RevisionControl
-                    story={story}
-                    disabled={digest.expired}
-                    request={request}
-                    onRefresh={load}
-                  /> : null}
+                  <StoryApprovalControl story={story} disabled={digest.expired} request={request} onRefresh={load} />
 
-                  {!story.supplementalDownload ? <div className={styles.variants}>
-                    {CHANNEL_ORDER.map((channel) => story.variants.find((variant) => variant.channel === channel)).filter((variant): variant is Variant => Boolean(variant)).map((variant) => (
-                      <VariantEditor
-                        key={variant.id}
-                        variant={variant}
-                        disabled={digest.expired}
-                        request={request}
-                        onRefresh={load}
-                      />
-                    ))}
-                  </div> : null}
+                  {!story.supplementalDownload ? (
+                    <details className={styles.reviewTools}>
+                      <summary>Feedback and platform copy</summary>
+                      <RevisionControl story={story} disabled={digest.expired} request={request} onRefresh={load} />
+                      <div className={styles.variants}>
+                        {CHANNEL_ORDER.map((channel) => story.variants.find((variant) => variant.channel === channel)).filter((variant): variant is Variant => Boolean(variant)).map((variant) => (
+                          <VariantEditor key={variant.id} variant={variant} disabled={digest.expired} request={request} onRefresh={load} />
+                        ))}
+                      </div>
+                    </details>
+                  ) : null}
                 </section>
               );
             })}
           </div>
+          <details className={styles.studioDetails}>
+            <summary>Studio and publishing details</summary>
+            <section className={styles.runBar}>
+              <div><span>Daily run</span><strong>{prettyDate(digest.createdAt)}</strong></div>
+              <div><span>Stories</span><strong>{digest.stories.length}</strong></div>
+              <div><span>Review</span><strong>{digest.expired ? "Expired" : digest.status.replaceAll("_", " ")}</strong></div>
+              <div><span>Sent to</span><strong>{digest.reviewers.join(", ")}</strong></div>
+            </section>
+            <section className={styles.connections}>
+              <div><p>Instagram, YouTube, and Reddit use the signed-in desktop sessions after Studio approval.</p></div>
+              <div className={styles.connectorGrid}>
+                {Object.entries(digest.connectors).map(([name, connector]) => (
+                  <div className={styles.connector} key={name}>
+                    <span className={`${styles.dot} ${connector.mode.startsWith("connected") ? styles.connected : ""}`} />
+                    <div><strong>{name}</strong><small>{connector.label}</small></div>
+                  </div>
+                ))}
+              </div>
+            </section>
+          </details>
           <DailyFeedbackControl feedback={digest.feedback} disabled={digest.expired} request={request} onRefresh={load} />
         </>
       ) : null}

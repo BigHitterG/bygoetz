@@ -54,7 +54,7 @@ test("Social Studio migration keeps drafts private and approvals explicit", () =
   assert.match(migration, /enable row level security/gi);
   assert.match(migration, /revoke all on table public\.basil_social_variants from public, anon, authenticated/i);
   assert.match(migration, /approval_token_hash/);
-  assert.match(studio, /Opening the Studio never publishes/i);
+  assert.match(studio, /Opening this page never publishes/i);
   assert.match(studio, /window\.confirm/);
   assert.match(studio, /Download \{story\.assetKind\}/);
   assert.match(studio, /downloadUrl/);
@@ -69,8 +69,8 @@ test("Social Studio migration keeps drafts private and approvals explicit", () =
   const videoMigration = readFileSync(new URL("../supabase/migrations/20260731143000_basil_social_video_packages.sql", import.meta.url), "utf8");
   assert.match(videoMigration, /basil-social-assets/);
   assert.match(videoMigration, /public\.basil_social_feedback/);
-  assert.match(studio, /Approve video \+ 3 posts/);
-  assert.match(studio, /Approve diagram \+ 2 posts/);
+  assert.match(studio, /Approve this content/);
+  assert.match(studio, /Approve content/);
   assert.match(server, /approve_basil_social_story/);
   assert.match(studio, /Save feedback for the next run/);
 });
@@ -144,7 +144,7 @@ test("database approval guard limits bulk approval to the primary validated vide
   assert.match(guard, /return null/);
 });
 
-test("mixed-media review adds two video scenes, a deterministic diagram, and per-story approval", () => {
+test("mixed-media review retains renderers while Studio pauses the instructional lane", () => {
   const renderer = readFileSync(new URL("../scripts/basil-render-social-video.mjs", import.meta.url), "utf8");
   const diagramRenderer = readFileSync(new URL("../scripts/basil-render-social-diagram.mjs", import.meta.url), "utf8");
   const diagramScene = readFileSync(new URL("../app/community-garden/social-diagram/SocialDiagramScene.tsx", import.meta.url), "utf8");
@@ -174,8 +174,10 @@ test("mixed-media review adds two video scenes, a deterministic diagram, and per
   assert.match(scene, /orthogonally neighboring cell/);
   assert.match(studio, /const CHANNEL_ORDER: Channel\[\] = \["instagram", "youtube", "reddit"\]/);
   assert.match(studio, /Save daily feedback/);
-  assert.match(studio, /Approve video \+ 3 posts/);
-  assert.match(studio, /Approve diagram \+ 2 posts/);
+  assert.match(studio, /Paused content lane/);
+  assert.match(studio, /Approve content/);
+  assert.match(server, /index === 1 \? "held" : "ready"/);
+  assert.match(server, /story\.status !== "held"/);
   assert.match(server, /approveSocialStory/);
   assert.match(migration, /approve_basil_social_story/);
   assert.match(migration, /story\.rank between 1 and 3/);
