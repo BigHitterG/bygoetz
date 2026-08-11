@@ -3,6 +3,7 @@ import {
   createMonthlyNewsletterIssue,
   isMonthlyDraftDue,
   monthlyPeriodKey,
+  syncEligibleNewsletterMembers,
 } from "@/lib/communityGarden/newsletter";
 import {
   createDailySocialDigest,
@@ -34,6 +35,9 @@ export async function GET(request: Request) {
     mode === "notify"
       ? resendLatestSocialDigest(`scheduled-notify-${now.toISOString().slice(0, 10)}`)
       : createDailySocialDigest(now, { sendEmail: false }),
+    mode === "scheduled"
+      ? syncEligibleNewsletterMembers()
+      : Promise.resolve({ skipped: "social-workflow-only" }),
     mode === "scheduled" && newsletterDue
       ? createMonthlyNewsletterIssue(monthlyPeriodKey(now), now)
       : Promise.resolve({ skipped: mode === "scheduled" ? "not-monthly-draft-day" : "social-workflow-only" }),
@@ -50,11 +54,22 @@ export async function GET(request: Request) {
       message: newsletterResult.reason instanceof Error ? newsletterResult.reason.message : "unknown",
     }));
   }
-  if (newsletterSyncResult.status === "rejected") {\n    console.error(JSON.stringify({\n      event: "basil_newsletter_member_sync_failed",\n      message: newsletterSyncResult.reason instanceof Error ? newsletterSyncResult.reason.message : "unknown",\n    }));\n  }\n  const failed = socialResult.status === "rejected"\n    || newsletterSyncResult.status === "rejected"\n    || newsletterResult.status === "rejected";
+  if (newsletterSyncResult.status === "rejected") {
+    console.error(JSON.stringify({
+      event: "basil_newsletter_member_sync_failed",
+      message: newsletterSyncResult.reason instanceof Error ? newsletterSyncResult.reason.message : "unknown",
+    }));
+  }
+  const failed = socialResult.status === "rejected"
+    || newsletterSyncResult.status === "rejected"
+    || newsletterResult.status === "rejected";
   return NextResponse.json({
     ok: !failed,
     mode,
     social: socialResult.status === "fulfilled" ? socialResult.value : { error: "Social digest failed." },
+    newsletterMembers: newsletterSyncResult.status === "fulfilled"
+      ? newsletterSyncResult.value
+      : { error: "Newsletter member sync failed." },
     newsletter: newsletterResult.status === "fulfilled" ? newsletterResult.value : { error: "Newsletter draft failed." },
   }, { status: failed ? 503 : 200 });
 }
@@ -77,3 +92,4 @@ export async function POST(request: Request) {
     }, { status: 401 });
   }
 }
+
