@@ -6,6 +6,10 @@ const migration = readFileSync(
   "supabase/migrations/20260725022936_account_based_community_footprints.sql",
   "utf8",
 );
+const preservationMigration = readFileSync(
+  "supabase/migrations/20260811141216_preserve_guest_community_flowers.sql",
+  "utf8",
+);
 const gardenServer = readFileSync(
   "lib/communityGarden/publicGardenServer.ts",
   "utf8",
@@ -31,10 +35,23 @@ test("garden requests carry the current account session into authoritative route
   assert.match(actionRoute, /identityKind: actor\.identityKind/);
 });
 
-test("guest flowers expire after 24 hours and account transfer clears that expiry", () => {
-  assert.match(migration, /action_time \+ interval '24 hours'/i);
-  assert.match(migration, /guest_expires_at = null/i);
-  assert.match(migration, /guest_expires_at <= statement_timestamp\(\)/i);
+test("guest flowers use the ordinary footprint and ecology without a 24-hour expiry", () => {
+  assert.match(
+    preservationMigration,
+    /contributor_kind = case when p_is_guest then 'guest' else 'account' end,[\s\S]*guest_expires_at = null/i,
+  );
+  assert.match(
+    preservationMigration,
+    /update public\.community_garden_roses[\s\S]*where contributor_kind = 'guest'[\s\S]*guest_expires_at is not null/i,
+  );
+  assert.match(
+    preservationMigration,
+    /replace\([\s\S]*or guest_expires_at <= statement_timestamp\(\)[\s\S]*''/i,
+  );
+  assert.doesNotMatch(
+    preservationMigration,
+    /action_time \+ interval '24 hours'/i,
+  );
 });
 
 test("guest-to-account reconciliation is idempotent and preserves one newest-100 footprint", () => {

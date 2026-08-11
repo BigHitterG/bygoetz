@@ -114,7 +114,7 @@ export default function BasilPrivacyPage() {
           <li>Monthly-letter consent and delivery records remain while the account is active or as reasonably needed to honor an unsubscribe request and prevent duplicate sends.</li>
           <li>The anonymous launch session is designed to last 90 days in the browser; raw first-party funnel sessions and events are designed for 180-day retention.</li>
           <li>Pseudonymous daily Community Garden activity counters are designed for 35-day retention; action deduplication and personal watering-cooldown records are designed for approximately 24-hour retention. A flower&apos;s anonymous shared watering marker may remain with that flower until it returns to the soil.</li>
-          <li>New signed-out Community Garden flowers return after approximately 24 hours at the next ten-minute garden update. If that browser signs in first, its flowers, planted dates, and qualifying care history are transferred to the account-wide anonymous footprint.</li>
+          <li>Signed-out Community Garden flowers use a pseudonymous browser footprint and follow the same ordinary flower lifecycle as account flowers. If that browser signs in, its flowers, planted dates, and qualifying care history are transferred to the account-wide anonymous footprint.</li>
           <li>Temporary checkout handoffs expire after seven days; expired, unsuccessful handoffs are cleaned up as the system operates.</li>
           <li>Account-email rate-limit records contain hashes rather than the email text and are cleaned after approximately seven days.</li>
           <li>Operational logs and aggregated health records are kept only as reasonably needed for security and reliability, subject to provider settings.</li>

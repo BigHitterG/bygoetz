@@ -69,7 +69,7 @@ The controls are intentionally generous before they become restrictive:
 | Daily Care | No reward ceiling | Care can be earned for as long as the player contributes |
 | Rolling traffic rail | 150 actions/minute per actor; 1,500 per network | Leaves room above measured strong play while bounding automation |
 | Daily mutations | Technical stop at 30,000 per session; 120,000 per pseudonymous network | Bounds extreme automated traffic without constraining a strong 2–3 hour session |
-| Live contributor footprint | 100 ordinary flowers | A signed-in player has one newest-100 footprint across devices. A signed-out browser has a temporary newest-100 footprint whose new flowers expire after 24 hours unless transferred by sign-in. Only the exact oldest overflow is scheduled to succeed at the next ecology round. |
+| Live contributor footprint | 100 ordinary flowers | A signed-in player has one newest-100 footprint across devices. A signed-out browser has its own newest-100 footprint and uses the same ordinary flower lifecycle. Signing in transfers that browser footprint to the account. Only the exact oldest overflow is scheduled to succeed at the next ecology round. |
 | Region size | 16 by 16 tiles | Local pressure without splitting the public garden into separate maps |
 | Region pressure | Healthy below 140; busy at 140; resting at 180 | Steers new planting toward open parts of the same map |
 | Absolute lifespan | Sunflower 7 days; rose 14 days; lavender 21 days | Ordinary flowers continue cycling |

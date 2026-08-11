@@ -132,9 +132,9 @@ const GUIDE_TOPICS: GuideTopic[] = [
     details: [
       "You can keep playing beyond 100. A new flower stays while one of your oldest ordinary flowers returns during a garden update.",
       "Older watering opportunities reopen for other gardeners as your watering footprint advances; your own four-hour Care cooldown still applies.",
-      "Signed-out flowers use a temporary browser footprint and return after 24 hours unless they are attached to an account.",
+      "Signed-out flowers use the same ordinary lifecycle within a browser's newest-100 footprint. Signing in attaches that footprint to the account.",
     ],
-    keywords: "100 footprint planting watering account guest 24 hours oldest return",
+    keywords: "100 footprint planting watering account guest browser oldest return lifecycle",
   },
   {
     id: "weeds",
