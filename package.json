@@ -60,6 +60,7 @@
     "test:guest-refund": "node --experimental-strip-types tests/basil-guest-garden-refund.test.ts",
     "test:load:mock": "node scripts/basil-load-test.mjs --mock --users 5 --seconds 3",
     "test:browser:phase5": "node scripts/basil-browser-check.mjs",
+    "test:lazy-grid": "node --experimental-strip-types tests/lazy-grid-overlays.test.ts",
     "test:gromas": "node --experimental-strip-types tests/gromas-storefront.test.ts"
   },
   "dependencies": {

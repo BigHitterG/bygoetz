@@ -36,6 +36,11 @@ type HoneycombBubblesConfig = {
 type PointerInfo = { x: number; y: number; t: number };
 type PinchInfo = { distance: number; zoom: number };
 type ViewportCenter = { x: number; y: number };
+type FocusOverlayContent = {
+  kicker: string;
+  title: string;
+  description: string;
+};
 
 const DEFAULT_CONFIG = {
   rings: 8,
@@ -58,18 +63,40 @@ const MIN_ZOOM = 0.88;
 const MAX_ZOOM = 1;
 const WHEEL_ZOOM_SENSITIVITY = 0.0012;
 const TAP_DRAG_THRESHOLD = 7;
-const FOCUS_OVERLAY_DELAY = 900;
+const FOCUS_OVERLAY_DELAY = 350;
 const EXPLORERS_SERIES_BUBBLE = { q: 1, r: 0 };
 const EXPLORERS_BUBBLE_ID = `${EXPLORERS_SERIES_BUBBLE.q}:${EXPLORERS_SERIES_BUBBLE.r}`;
 const EXPLORERS_LINK_ID = "explorers";
 const COMMUNITY_GARDEN_BUBBLE = { q: -1, r: 0 };
+const COMMUNITY_GARDEN_BUBBLE_ID = `${COMMUNITY_GARDEN_BUBBLE.q}:${COMMUNITY_GARDEN_BUBBLE.r}`;
 const COMMUNITY_GARDEN_LINK_ID = "community-garden";
 const GROMAS_BUBBLE = { q: 0, r: -1 };
+const GROMAS_BUBBLE_ID = `${GROMAS_BUBBLE.q}:${GROMAS_BUBBLE.r}`;
 const GROMAS_LINK_ID = "gromas";
 const LINKED_BUBBLE_ROUTES: Record<string, string> = {
   [EXPLORERS_LINK_ID]: "/explorers",
   [COMMUNITY_GARDEN_LINK_ID]: getBasilOrigin(),
   [GROMAS_LINK_ID]: "/gromas",
+};
+const FOCUS_OVERLAYS: Record<string, FocusOverlayContent> = {
+  [EXPLORERS_BUBBLE_ID]: {
+    kicker: "The Explorers Series",
+    title: "Modern geometric animal illustrations",
+    description:
+      "A playful collection of print-ready artwork for nurseries, playrooms, reading corners, and creative homes.",
+  },
+  [COMMUNITY_GARDEN_BUBBLE_ID]: {
+    kicker: "Basil Community Garden",
+    title: "Plant, water, and grow something together",
+    description:
+      "Care for a living shared garden, earn Care, and shape a permanent garden of your own.",
+  },
+  [GROMAS_BUBBLE_ID]: {
+    kicker: "Gromas and the Gobbledygooks",
+    title: "A rhyming adventure powered by every step",
+    description:
+      "When the Great Power Supply begins to fade, Gromas and Chet rally the Gobbledygooks to build a remarkable new machine.",
+  },
 };
 
 function axialDistance(q: number, r: number) {
@@ -174,7 +201,9 @@ export function HoneycombBubbles({
   const [responsiveBaseBubbleSize, setResponsiveBaseBubbleSize] = useState(
     baseBubbleSize ?? DEFAULT_CONFIG.baseBubbleSize,
   );
-  const [showExplorersOverlay, setShowExplorersOverlay] = useState(false);
+  const [focusOverlayBubbleId, setFocusOverlayBubbleId] = useState<string | null>(
+    null,
+  );
   const surfaceRef = useRef<HTMLDivElement>(null);
   const bubbleRefs = useRef(new Map<string, HTMLDivElement>());
   const translate = useRef({ x: 0, y: 0 });
@@ -198,33 +227,42 @@ export function HoneycombBubbles({
     () => generateBubbles(rings, spacing),
     [rings, spacing],
   );
+  const focusOverlay =
+    focusOverlayBubbleId == null
+      ? null
+      : FOCUS_OVERLAYS[focusOverlayBubbleId] ?? null;
 
   const clearOverlayTimer = useCallback(() => {
     if (overlayTimer.current != null) window.clearTimeout(overlayTimer.current);
     overlayTimer.current = null;
   }, []);
 
-  const hideExplorersOverlay = useCallback(() => {
+  const hideFocusOverlay = useCallback(() => {
     clearOverlayTimer();
-    setShowExplorersOverlay(false);
+    setFocusOverlayBubbleId(null);
   }, [clearOverlayTimer]);
 
-  const scheduleExplorersOverlay = useCallback(() => {
+  const scheduleFocusOverlay = useCallback(() => {
     clearOverlayTimer();
+    setFocusOverlayBubbleId(null);
 
-    if (focusedBubbleId.current !== EXPLORERS_BUBBLE_ID || pointers.current.size !== 0) {
-      setShowExplorersOverlay(false);
+    const targetBubbleId = focusedBubbleId.current;
+    if (
+      targetBubbleId == null ||
+      FOCUS_OVERLAYS[targetBubbleId] == null ||
+      pointers.current.size !== 0
+    ) {
       return;
     }
 
     overlayTimer.current = window.setTimeout(() => {
       const canShowOverlay =
-        focusedBubbleId.current === EXPLORERS_BUBBLE_ID &&
+        focusedBubbleId.current === targetBubbleId &&
         pointers.current.size === 0 &&
         momentum.current == null &&
         snap.current == null;
 
-      setShowExplorersOverlay(canShowOverlay);
+      setFocusOverlayBubbleId(canShowOverlay ? targetBubbleId : null);
       overlayTimer.current = null;
     }, FOCUS_OVERLAY_DELAY);
   }, [clearOverlayTimer]);
@@ -286,22 +324,17 @@ export function HoneycombBubbles({
       nextFocused?.classList.add(styles.focusedBubble);
       focusedBubbleId.current = nearestId;
 
-      if (nearestId === EXPLORERS_BUBBLE_ID && pointers.current.size === 0) {
-        scheduleExplorersOverlay();
-      } else {
-        hideExplorersOverlay();
-      }
+      scheduleFocusOverlay();
     }
 
     surfaceRef.current?.setAttribute("data-bubbles-ready", "true");
   }, [
     bubbles,
     centerScale,
-    hideExplorersOverlay,
     maxInfluenceRadius,
     minScale,
     resolvedBaseBubbleSize,
-    scheduleExplorersOverlay,
+    scheduleFocusOverlay,
   ]);
 
   const renderImmediately = useCallback(() => {
@@ -354,7 +387,7 @@ export function HoneycombBubbles({
     }
 
     if (!nearestBubble || nearestDistance < 0.5) {
-      scheduleExplorersOverlay();
+      scheduleFocusOverlay();
       return;
     }
 
@@ -378,12 +411,12 @@ export function HoneycombBubbles({
         snap.current = requestAnimationFrame(tick);
       } else {
         snap.current = null;
-        scheduleExplorersOverlay();
+        scheduleFocusOverlay();
       }
     };
 
     snap.current = requestAnimationFrame(tick);
-  }, [bubbles, scheduleExplorersOverlay, scheduleRender, stopSnap]);
+  }, [bubbles, scheduleFocusOverlay, scheduleRender, stopSnap]);
 
   const startMomentum = useCallback(() => {
     stopMomentum();
@@ -457,7 +490,7 @@ export function HoneycombBubbles({
 
   function onPointerDown(event: React.PointerEvent<HTMLDivElement>) {
     event.preventDefault();
-    hideExplorersOverlay();
+    hideFocusOverlay();
     stopMomentum();
     stopSnap();
     velocity.current = { x: 0, y: 0 };
@@ -489,7 +522,7 @@ export function HoneycombBubbles({
 
     if (dragDistance.current > TAP_DRAG_THRESHOLD) {
       linkedBubbleTarget.current = null;
-      hideExplorersOverlay();
+      hideFocusOverlay();
     }
 
     if (pointers.current.size >= 2) {
@@ -541,14 +574,14 @@ export function HoneycombBubbles({
     pointers.current.delete(event.pointerId);
     pinch.current = null;
     linkedBubbleTarget.current = null;
-    hideExplorersOverlay();
+    hideFocusOverlay();
   }
 
   function onWheel(event: React.WheelEvent<HTMLDivElement>) {
     if (!event.ctrlKey && !event.metaKey) return;
 
     event.preventDefault();
-    hideExplorersOverlay();
+    hideFocusOverlay();
     stopMomentum();
     stopSnap();
     velocity.current = { x: 0, y: 0 };
@@ -655,16 +688,15 @@ export function HoneycombBubbles({
           </div>
         );
       })}
-      {showExplorersOverlay ? (
+      {focusOverlay ? (
         <div className={styles.focusOverlay} aria-hidden="true">
           <div className={styles.focusOverlayPanel}>
             <div className={styles.focusOverlayHeading}>
-              <p className={styles.focusOverlayKicker}>The Explorers Series</p>
-              <h2>Modern geometric animal illustrations</h2>
+              <p className={styles.focusOverlayKicker}>{focusOverlay.kicker}</p>
+              <h2>{focusOverlay.title}</h2>
             </div>
             <p className={styles.focusOverlayDescription}>
-              A playful collection of print-ready artwork for nurseries,
-              playrooms, reading corners, and creative homes.
+              {focusOverlay.description}
             </p>
           </div>
         </div>
