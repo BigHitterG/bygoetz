@@ -53,6 +53,11 @@ test("secondary Tasks, Share, and Bug controls share the top utility strip", () 
   assert.match(app, /className="cg-garden-tasks-button"/);
 });
 
+test("garden detail is optional so the persistent Care wallet is not repeated", () => {
+  assert.match(dock, /gardenDetail\?: string/);
+  assert.match(dock, /gardenDetail \? <small>{gardenDetail}<\/small> : null/);
+});
+
 test("My Garden owns its mini map and detailed map without changing worlds", () => {
   assert.match(app, /<GardenMapKey[\s\S]*ui={ui}/);
   assert.doesNotMatch(app, /onMap={[\s\S]{0,180}setWorld\("community"\)/);

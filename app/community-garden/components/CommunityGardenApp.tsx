@@ -41,6 +41,7 @@ import {
   type GuestGardenPreview,
 } from "../lib/guestGardenPreview";
 import { GardenControlsDock } from "./GardenControlsDock";
+import { GardenCareHud } from "./GardenCareHud";
 import { GardenInventory } from "./GardenInventory";
 import {
   GardenMembershipOffer,
@@ -2541,6 +2542,13 @@ export function CommunityGardenApp() {
           </button>
         </header>
 
+        <GardenCareHud
+          balance={myGarden.careBalance}
+          ready={accountChecked && guestPreviewReady}
+          temporary={!memberGarden}
+          world={world}
+        />
+
         <GardenMapKey
           ui={ui}
           canExpand
@@ -2687,15 +2695,14 @@ export function CommunityGardenApp() {
             showMyGardenUnlockNotice
           }
           gardenLabel={world === "personal" ? "Community" : "My Garden"}
-          gardenDetail={`Care ${myGarden.careBalance}`}
           gardenAriaLabel={
             world === "personal"
               ? communityGardenTutorialLocked
                 ? "Plant your first rose before returning to Community Garden"
-                : `Go to Community Garden. ${myGarden.careBalance} Care.`
+                : "Go to Community Garden."
               : myGardenTutorialLocked
                 ? `Plant ${Math.max(0, communityOnboardingPlantingTarget - communityOnboardingPlantings)} more community flowers before visiting My Garden`
-                : `Go to My Garden. ${myGarden.careBalance} Care.`
+                : "Go to My Garden."
           }
           gardenIconClass={
             world === "personal" ? "cg-community-mark" : "cg-home-mark"

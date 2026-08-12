@@ -9,7 +9,7 @@ type GardenControlsDockProps = {
   gardenDisabled: boolean;
   gardenHighlighted: boolean;
   gardenLabel: string;
-  gardenDetail: string;
+  gardenDetail?: string;
   gardenAriaLabel: string;
   gardenIconClass: string;
   gardenNotice?: ReactNode;
@@ -105,7 +105,7 @@ export function GardenControlsDock({
         </span>
         <span className="cg-dock-copy">
           <strong>{gardenLabel}</strong>
-          <small>{gardenDetail}</small>
+          {gardenDetail ? <small>{gardenDetail}</small> : null}
         </span>
         {gardenNotice}
       </button>
