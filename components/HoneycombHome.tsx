@@ -11,10 +11,11 @@ import {
 } from "react";
 import { withSiteBasePath } from "@/lib/sitePath";
 import { getBasilOrigin } from "@/lib/communityGarden/urls";
-import conceptDrawing from "../public/concepts/images/551F39B2-861F-4C86-A128-FFDC16CEB303.png";
 import centerLogo from "../public/concepts/images/Logo-01.png";
 import basilIcon from "../public/community-garden/basil-icon-256.png";
+import explorersMonkey from "../public/explorers/Monkey.png";
 import gromasBubble from "../public/gromas/gromas-bubble-v3.webp";
+import thomasPortrait from "../public/images/about/tj-goetz-founder.jpg";
 import styles from "./HoneycombHome.module.css";
 
 type Bubble = {
@@ -75,7 +76,11 @@ const COMMUNITY_GARDEN_LINK_ID = "community-garden";
 const GROMAS_BUBBLE = { q: 0, r: -1 };
 const GROMAS_BUBBLE_ID = `${GROMAS_BUBBLE.q}:${GROMAS_BUBBLE.r}`;
 const GROMAS_LINK_ID = "gromas";
+const ABOUT_BUBBLE = { q: 0, r: 1 };
+const ABOUT_BUBBLE_ID = `${ABOUT_BUBBLE.q}:${ABOUT_BUBBLE.r}`;
+const ABOUT_LINK_ID = "about";
 const LINKED_BUBBLE_ROUTES: Record<string, string> = {
+  [ABOUT_LINK_ID]: "/about",
   [EXPLORERS_LINK_ID]: "/explorers",
   [COMMUNITY_GARDEN_LINK_ID]: getBasilOrigin(),
   [GROMAS_LINK_ID]: "/gromas",
@@ -98,6 +103,12 @@ const FOCUS_OVERLAYS: Record<string, FocusOverlayContent> = {
     title: "A rhyming adventure powered by every step",
     description:
       "When the Great Power Supply begins to fade, Gromas and Chet rally the Gobbledygooks to build a remarkable new machine.",
+  },
+  [ABOUT_BUBBLE_ID]: {
+    kicker: "About Thomas Raymond Goetz",
+    title: "Artist, designer, and creator",
+    description:
+      "Meet the person behind By Goetz and explore the original artwork, stories, products, and playful worlds that connect the practice.",
   },
 };
 
@@ -590,6 +601,10 @@ export function HoneycombBubbles({
     setZoom(zoom.current - event.deltaY * WHEEL_ZOOM_SENSITIVITY);
   }
 
+  function preventPointerClickNavigation(event: React.MouseEvent<HTMLAnchorElement>) {
+    if (event.detail !== 0) event.preventDefault();
+  }
+
   return (
     <div
       ref={surfaceRef}
@@ -601,6 +616,9 @@ export function HoneycombBubbles({
       onPointerCancel={onPointerCancel}
       onWheel={onWheel}
     >
+      <h1 className={styles.visuallyHidden}>
+        By Goetz — Art, stories and creative worlds by Thomas Raymond Goetz
+      </h1>
       {bubbles.map((bubble) => {
         const isCenterBubble = bubble.q === 0 && bubble.r === 0;
         const isExplorersBubble =
@@ -611,6 +629,8 @@ export function HoneycombBubbles({
           bubble.r === COMMUNITY_GARDEN_BUBBLE.r;
         const isGromasBubble =
           bubble.q === GROMAS_BUBBLE.q && bubble.r === GROMAS_BUBBLE.r;
+        const isAboutBubble =
+          bubble.q === ABOUT_BUBBLE.q && bubble.r === ABOUT_BUBBLE.r;
 
         return (
           <div
@@ -629,51 +649,51 @@ export function HoneycombBubbles({
             aria-hidden={
               isExplorersBubble ||
               isCommunityGardenBubble ||
-              isGromasBubble
+              isGromasBubble ||
+              isAboutBubble
                 ? undefined
                 : true
             }
           >
             {isCenterBubble ? (
-              <img
+              <Image
                 className={styles.centerLogo}
-                src={centerLogo.src}
+                src={centerLogo}
                 alt=""
-                draggable="false"
+                draggable={false}
               />
             ) : null}
             {isExplorersBubble ? (
-              <div
+              <a
                 className={styles.explorersLink}
                 data-linked-bubble-id={EXPLORERS_LINK_ID}
                 aria-label="Open The Explorers Series"
+                href={withSiteBasePath("/explorers")}
+                onClick={preventPointerClickNavigation}
               >
-                <img
+                <Image
                   className={styles.explorersPreview}
-                  src={withSiteBasePath("/explorers/Monkey.png")}
-                  alt="The Explorers Series"
-                  draggable="false"
-                  onError={(event) => {
-                    if (event.currentTarget.src !== conceptDrawing.src) {
-                      event.currentTarget.src = conceptDrawing.src;
-                    }
-                  }}
+                  src={explorersMonkey}
+                  alt="Geometric monkey artwork from The Explorers Series"
+                  draggable={false}
                 />
-              </div>
+              </a>
             ) : null}
             {isCommunityGardenBubble ? (
-              <div
+              <a
                 className={styles.gardenLink}
                 data-linked-bubble-id={COMMUNITY_GARDEN_LINK_ID}
                 aria-label="Open Basil Community Garden"
+                href={getBasilOrigin()}
+                onClick={preventPointerClickNavigation}
               >
                 <Image
                   className={styles.gardenPreview}
                   src={basilIcon}
-                  alt=""
+                  alt="Basil Community Garden seedling"
                   draggable={false}
                 />
-              </div>
+              </a>
             ) : null}
             {isGromasBubble ? (
               <a
@@ -681,12 +701,29 @@ export function HoneycombBubbles({
                 data-linked-bubble-id={GROMAS_LINK_ID}
                 aria-label="Open Gromas and the Gobbledygooks"
                 href={withSiteBasePath("/gromas")}
+                onClick={preventPointerClickNavigation}
               >
-                <img
+                <Image
                   className={styles.gromasPreview}
-                  src={gromasBubble.src}
-                  alt=""
-                  draggable="false"
+                  src={gromasBubble}
+                  alt="Gromas from Gromas and the Gobbledygooks"
+                  draggable={false}
+                />
+              </a>
+            ) : null}
+            {isAboutBubble ? (
+              <a
+                className={styles.aboutLink}
+                data-linked-bubble-id={ABOUT_LINK_ID}
+                aria-label="About Thomas Raymond Goetz and By Goetz"
+                href={withSiteBasePath("/about")}
+                onClick={preventPointerClickNavigation}
+              >
+                <Image
+                  className={styles.aboutPreview}
+                  src={thomasPortrait}
+                  alt="Thomas Raymond Goetz, artist and creator of By Goetz"
+                  draggable={false}
                 />
               </a>
             ) : null}

@@ -14,7 +14,7 @@ test("Basil tile reuses the canonical Community Garden plant icon", () => {
   );
   assert.match(
     honeycomb,
-    /<Image[\s\S]*className=\{styles\.gardenPreview\}[\s\S]*src=\{basilIcon\}[\s\S]*alt=""/,
+    /<Image[\s\S]*className=\{styles\.gardenPreview\}[\s\S]*src=\{basilIcon\}[\s\S]*alt="Basil Community Garden seedling"/,
   );
 });
 
@@ -23,9 +23,11 @@ test("LazyGrid previews appear quickly for every featured bubble", () => {
   assert.match(honeycomb, /\[EXPLORERS_BUBBLE_ID\]:/);
   assert.match(honeycomb, /\[COMMUNITY_GARDEN_BUBBLE_ID\]:/);
   assert.match(honeycomb, /\[GROMAS_BUBBLE_ID\]:/);
+  assert.match(honeycomb, /\[ABOUT_BUBBLE_ID\]:/);
   assert.match(honeycomb, /kicker: "The Explorers Series"/);
   assert.match(honeycomb, /kicker: "Basil Community Garden"/);
   assert.match(honeycomb, /kicker: "Gromas and the Gobbledygooks"/);
+  assert.match(honeycomb, /kicker: "About Thomas Raymond Goetz"/);
 });
 
 test("the focused preview content is selected without changing tile routes", () => {
@@ -36,4 +38,5 @@ test("the focused preview content is selected without changing tile routes", () 
   assert.match(honeycomb, /\[EXPLORERS_LINK_ID\]: "\/explorers"/);
   assert.match(honeycomb, /\[COMMUNITY_GARDEN_LINK_ID\]: getBasilOrigin\(\)/);
   assert.match(honeycomb, /\[GROMAS_LINK_ID\]: "\/gromas"/);
+  assert.match(honeycomb, /\[ABOUT_LINK_ID\]: "\/about"/);
 });
