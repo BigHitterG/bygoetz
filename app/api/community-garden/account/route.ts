@@ -10,6 +10,7 @@ import { getNewsletterPreference } from "@/lib/communityGarden/newsletter";
 import { isGardenAdmin } from "@/lib/communityGarden/health";
 import { getHeritageSeedStatus } from "@/lib/communityGarden/heritageSeeds";
 import { getGardenStewardship } from "@/lib/communityGarden/stewardship";
+import { getGardenHouse } from "@/lib/communityGarden/gardenHouse";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -35,6 +36,13 @@ export async function GET(request: Request) {
     getHeritageSeedStatus(user.id),
     getGardenStewardship(steward.id),
   ]);
+  const house = await getGardenHouse(
+    steward.id,
+    user.id,
+    myGarden,
+    stewardship,
+    heritage,
+  );
 
   return NextResponse.json({
     active: true,
@@ -50,5 +58,6 @@ export async function GET(request: Request) {
     newsletterSubscribed: newsletterPreference !== false,
     heritage,
     stewardship,
+    house,
   });
 }

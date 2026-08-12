@@ -111,7 +111,7 @@ test("discovery persistence is private and service-mediated", () => {
   assert.match(migration, /on delete cascade/i);
 });
 
-test("the house opens a separate Garden Journal while Inventory remains placeable items", () => {
+test("the house opens the Hall of Growth while the Field Guide still records habitats", () => {
   const canvas = readFileSync(
     new URL("../app/community-garden/components/GardenCanvas.tsx", import.meta.url),
     "utf8",
@@ -124,8 +124,8 @@ test("the house opens a separate Garden Journal while Inventory remains placeabl
     new URL("../app/community-garden/components/LivingGardenCreature.tsx", import.meta.url),
     "utf8",
   );
-  assert.match(canvas, /onOpenGardenJournal/);
-  assert.match(canvas, /Opening your Garden Journal/);
+  assert.match(canvas, /onOpenGardenHouse/);
+  assert.match(canvas, /Opening the Hall of Growth/);
   assert.match(guide, /Habitats & Visitors/);
   assert.match(guide, /Habitat currently dormant/);
   assert.match(guide, /Currently visiting/);
