@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import {
   useCallback,
   useEffect,
@@ -12,6 +13,7 @@ import { withSiteBasePath } from "@/lib/sitePath";
 import { getBasilOrigin } from "@/lib/communityGarden/urls";
 import conceptDrawing from "../public/concepts/images/551F39B2-861F-4C86-A128-FFDC16CEB303.png";
 import centerLogo from "../public/concepts/images/Logo-01.png";
+import basilIcon from "../public/community-garden/basil-icon-256.png";
 import gromasBubble from "../public/gromas/gromas-bubble-v3.webp";
 import styles from "./HoneycombHome.module.css";
 
@@ -665,9 +667,12 @@ export function HoneycombBubbles({
                 data-linked-bubble-id={COMMUNITY_GARDEN_LINK_ID}
                 aria-label="Open Basil Community Garden"
               >
-                <span className={styles.gardenPreview} aria-hidden="true">
-                  <span />
-                </span>
+                <Image
+                  className={styles.gardenPreview}
+                  src={basilIcon}
+                  alt=""
+                  draggable={false}
+                />
               </div>
             ) : null}
             {isGromasBubble ? (

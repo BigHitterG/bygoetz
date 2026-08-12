@@ -7,6 +7,17 @@ const honeycomb = readFileSync(
   "utf8",
 );
 
+test("Basil tile reuses the canonical Community Garden plant icon", () => {
+  assert.match(
+    honeycomb,
+    /import basilIcon from "\.\.\/public\/community-garden\/basil-icon-256\.png";/,
+  );
+  assert.match(
+    honeycomb,
+    /<Image[\s\S]*className=\{styles\.gardenPreview\}[\s\S]*src=\{basilIcon\}[\s\S]*alt=""/,
+  );
+});
+
 test("LazyGrid previews appear quickly for every featured bubble", () => {
   assert.match(honeycomb, /const FOCUS_OVERLAY_DELAY = 350;/);
   assert.match(honeycomb, /\[EXPLORERS_BUBBLE_ID\]:/);
