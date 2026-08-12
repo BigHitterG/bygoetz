@@ -84,6 +84,18 @@ import {
   findNearbyHeritageFlower,
   type HeritageFlowerEncounter,
 } from "../lib/heritageDiscovery";
+import {
+  isGardenHouseDisplayUnread,
+  type GardenHouseAccolade,
+  type GardenHouseDisplayKey,
+} from "../lib/gardenHouse";
+import {
+  GARDEN_HOUSE_DOOR,
+  GARDEN_HOUSE_SPAWN,
+  GARDEN_HOUSE_WORLD_BOUNDS,
+  getGardenHouseFixtureAt,
+  isGardenHouseDoorAt,
+} from "../lib/gardenHouseWorld";
 
 const WATERING_RANGE_TILES = 5;
 const WATERING_APPROACH_TILES = 2.125;
@@ -104,6 +116,8 @@ export type GardenAction =
   | "remove-element"
   | "builder-place"
   | "builder-remove"
+  | "inspect-house"
+  | "exit-house"
   | null;
 export type GardenTool = PlantType | "path" | MyGardenElementType;
 
@@ -373,7 +387,10 @@ type GardenCanvasProps = {
   ) => void;
   onGardenWormDiscovered?: () => void;
   gardenHouseUnreadCount?: number;
+  gardenHouseDisplays?: GardenHouseAccolade[];
   onOpenGardenHouse?: () => void;
+  onInspectGardenHouseDisplay?: (key: GardenHouseDisplayKey) => void;
+  onExitGardenHouse?: () => void;
   onHeritageMoments?: (moments: HeritageMoment[]) => void;
   onHeritageEncounter?: (encounter: HeritageFlowerEncounter) => void;
   heritageEncountersEnabled?: boolean;
@@ -577,6 +594,9 @@ function getRuntimeBounds(runtime: Runtime) {
   if (runtime.mode === "community") {
     return runtime.regionManifest?.worldBounds ?? getCommunityBounds();
   }
+  if (runtime.mode === "house") {
+    return GARDEN_HOUSE_WORLD_BOUNDS;
+  }
   if (!runtime.personalGarden) {
     return getCommunityBounds();
   }
@@ -591,6 +611,9 @@ function getRuntimeBounds(runtime: Runtime) {
 function getRuntimeMapBounds(runtime: Runtime) {
   if (runtime.mode === "community") {
     return runtime.regionManifest?.mapBounds ?? getCommunityBounds();
+  }
+  if (runtime.mode === "house") {
+    return GARDEN_HOUSE_WORLD_BOUNDS;
   }
   if (!runtime.personalGarden) {
     return getCommunityBounds();
@@ -877,9 +900,9 @@ function getRuntimeMinimumZoom(
   runtime: Runtime,
   viewport?: { width: number; height: number },
 ) {
-  return runtime.mode === "community"
-    ? GARDEN_CONFIG.minCommunityCameraZoom
-    : getPersonalFitZoom(runtime, viewport);
+  if (runtime.mode === "community") return GARDEN_CONFIG.minCommunityCameraZoom;
+  if (runtime.mode === "house") return 1;
+  return getPersonalFitZoom(runtime, viewport);
 }
 
 function clampZoom(
@@ -1004,6 +1027,10 @@ function getPendingActionLabel(action: NonNullable<GardenAction>) {
       return "Building string...";
     case "builder-remove":
       return "Clearing string...";
+    case "inspect-house":
+      return "Opening accolade book...";
+    case "exit-house":
+      return "Returning to My Garden...";
   }
 
   return "Working...";
@@ -1597,6 +1624,42 @@ function getActionState(runtime: Runtime) {
     };
   }
 
+  if (runtime.mode === "house") {
+    if (!runtime.selected) {
+      return {
+        action: null as GardenAction,
+        label: "Choose a podium",
+        enabled: false,
+      };
+    }
+    const fixture = getGardenHouseFixtureAt(
+      runtime.selected.gridX,
+      runtime.selected.gridY,
+    );
+    const nearby =
+      getDistanceToCell(runtime, runtime.selected) <=
+      GARDEN_CONFIG.tileSize * 2.4;
+    if (fixture) {
+      return {
+        action: "inspect-house" as GardenAction,
+        label: `Open ${fixture.title}`,
+        enabled: nearby,
+      };
+    }
+    if (isGardenHouseDoorAt(runtime.selected.gridX, runtime.selected.gridY)) {
+      return {
+        action: "exit-house" as GardenAction,
+        label: "Return to My Garden",
+        enabled: nearby,
+      };
+    }
+    return {
+      action: null as GardenAction,
+      label: "Walk around the Hall",
+      enabled: false,
+    };
+  }
+
   if (!runtime.selected) {
     return { action: null as GardenAction, label: "Choose a spot", enabled: false };
   }
@@ -2044,7 +2107,10 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
       onActionFailed,
       onGardenWormDiscovered,
       gardenHouseUnreadCount = 0,
+      gardenHouseDisplays = [],
       onOpenGardenHouse,
+      onInspectGardenHouseDisplay,
+      onExitGardenHouse,
       onHeritageMoments,
       onHeritageEncounter,
       heritageEncountersEnabled = false,
@@ -2059,7 +2125,10 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
     const onActionFailedRef = useRef(onActionFailed);
     const onGardenWormDiscoveredRef = useRef(onGardenWormDiscovered);
     const onOpenGardenHouseRef = useRef(onOpenGardenHouse);
+    const onInspectGardenHouseDisplayRef = useRef(onInspectGardenHouseDisplay);
+    const onExitGardenHouseRef = useRef(onExitGardenHouse);
     const gardenHouseUnreadCountRef = useRef(gardenHouseUnreadCount);
+    const gardenHouseDisplaysRef = useRef(gardenHouseDisplays);
     const onHeritageMomentsRef = useRef(onHeritageMoments);
     const onHeritageEncounterRef = useRef(onHeritageEncounter);
     const heritageEncountersEnabledRef = useRef(heritageEncountersEnabled);
@@ -2191,8 +2260,20 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
     }, [onOpenGardenHouse]);
 
     useEffect(() => {
+      onInspectGardenHouseDisplayRef.current = onInspectGardenHouseDisplay;
+    }, [onInspectGardenHouseDisplay]);
+
+    useEffect(() => {
+      onExitGardenHouseRef.current = onExitGardenHouse;
+    }, [onExitGardenHouse]);
+
+    useEffect(() => {
       gardenHouseUnreadCountRef.current = gardenHouseUnreadCount;
     }, [gardenHouseUnreadCount]);
+
+    useEffect(() => {
+      gardenHouseDisplaysRef.current = gardenHouseDisplays;
+    }, [gardenHouseDisplays]);
 
     useEffect(() => {
       onHeritageMomentsRef.current = onHeritageMoments;
@@ -2483,7 +2564,34 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
       }
 
       const currentPersonalGarden = personalGardenRef.current;
-      if (mode === "personal" && currentPersonalGarden) {
+      if (mode === "house") {
+        runtime.personalGarden = null;
+        runtime.plants = new Map();
+        runtime.weeds = new Map();
+        runtime.mapPlants = new Map();
+        runtime.mapRevision += 1;
+        const saved = worldSnapshotsRef.current.house;
+        const destination = gridToWorld(
+          GARDEN_HOUSE_SPAWN.gridX,
+          GARDEN_HOUSE_SPAWN.gridY,
+        );
+        runtime.mary = saved ? { ...saved.mary } : { ...destination };
+        runtime.camera = saved ? { ...saved.camera } : { ...destination };
+        runtime.cameraAnchor = saved?.cameraAnchor
+          ? { ...saved.cameraAnchor }
+          : null;
+        runtime.zoom = saved?.zoom ?? 1;
+        runtime.duck = saved
+          ? { ...saved.duck }
+          : { x: destination.x - 18, y: destination.y + 10 };
+        runtime.path = saved
+          ? saved.path.map((point) => ({ ...point }))
+          : [{ ...destination }];
+        runtime.hasMoved = saved?.hasMoved ?? false;
+        runtime.connection = "online";
+        runtime.statusMessage =
+          "Welcome to the Hall of Growth. Walk to a podium and open its accolade book.";
+      } else if (mode === "personal" && currentPersonalGarden) {
         applyPersonalGarden(runtime, currentPersonalGarden);
         runtime.weeds = new Map();
         const saved = worldSnapshotsRef.current.personal;
@@ -2606,7 +2714,7 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
 
     const loadPlants = useCallback(async () => {
       const runtime = runtimeRef.current;
-      if (runtime.mode === "personal") {
+      if (runtime.mode === "personal" || runtime.mode === "house") {
         publishUi();
         return;
       }
@@ -3250,6 +3358,26 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
             return;
           }
           queuedPlantingRef.current = null;
+
+          if (runtime.mode === "house") {
+            if (actionState.action === "inspect-house") {
+              const fixture = getGardenHouseFixtureAt(
+                selected.gridX,
+                selected.gridY,
+              );
+              if (!fixture) return;
+              runtime.statusMessage = `${fixture.title} accolade book opened.`;
+              publishUi();
+              onInspectGardenHouseDisplayRef.current?.(fixture.key);
+              return;
+            }
+            if (actionState.action === "exit-house") {
+              runtime.statusMessage = "Returning to My Garden...";
+              publishUi();
+              onExitGardenHouseRef.current?.();
+              return;
+            }
+          }
 
           if (actionState.action === "water") {
             const wateringTargets = getWateringSelection(runtime, selected);
@@ -3987,6 +4115,15 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
           reducedMotion: runtime.reducedMotion,
           now: Date.now(),
           mode: runtime.mode,
+          houseDisplays:
+            runtime.mode === "house"
+              ? gardenHouseDisplaysRef.current.map((display) => ({
+                  key: display.key,
+                  title: display.title,
+                  tier: display.tier,
+                  unread: isGardenHouseDisplayUnread(display),
+                }))
+              : undefined,
           communityRegions:
             runtime.mode === "community"
               ? runtime.regionManifest?.regions.map((region) => ({
@@ -4199,6 +4336,22 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
           : (garden?.careBalance ?? 0) >= cost
             ? `Land selected. Confirm below to unlock it for ${cost} Care.`
             : `Earn ${Math.max(0, cost - (garden?.careBalance ?? 0))} more Care to open this land.`;
+        publishUi();
+        return;
+      }
+
+      if (runtime.mode === "house") {
+        const fixture = getGardenHouseFixtureAt(gridX, gridY);
+        const door = isGardenHouseDoorAt(gridX, gridY);
+        const selectedGridX = fixture?.gridX ?? (door ? GARDEN_HOUSE_DOOR.gridX : gridX);
+        const selectedGridY = fixture?.gridY ?? (door ? GARDEN_HOUSE_DOOR.gridY : gridY);
+        runtime.selected = { gridX: selectedGridX, gridY: selectedGridY };
+        runtime.target = getAdjacentTarget(runtime, selectedGridX, selectedGridY);
+        runtime.statusMessage = fixture
+          ? `Walking to the ${fixture.title} podium...`
+          : door
+            ? "Walking to the My Garden door..."
+            : "Walking through the Hall of Growth...";
         publishUi();
         return;
       }
@@ -4488,7 +4641,9 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
         aria-label={
           mode === "personal"
             ? "Basil My Garden. Tap a location to walk, plant, or uproot one of your flowers."
-            : "Basil Community Garden. Tap a location to walk, plant, or water a flower."
+            : mode === "house"
+              ? "Basil Hall of Growth. Tap the wood floor to walk or choose an accolade podium to open its badge book."
+              : "Basil Community Garden. Tap a location to walk, plant, or water a flower."
         }
         tabIndex={0}
         onPointerDown={onPointerDown}

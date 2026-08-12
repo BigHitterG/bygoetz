@@ -33,6 +33,12 @@ import {
   type LivingGardenDefinition,
   type LivingGardenHabitat,
 } from "../lib/livingGarden";
+import {
+  GARDEN_HOUSE_DOOR,
+  GARDEN_HOUSE_FIXTURES,
+  GARDEN_HOUSE_WORLD_BOUNDS,
+} from "../lib/gardenHouseWorld";
+import type { GardenHouseDisplayKey } from "../lib/gardenHouse";
 
 export {
   getWorldScreenOrigin,
@@ -41,7 +47,7 @@ export {
   worldToScreen,
 } from "../lib/cameraProjection";
 export type { GardenViewport, WorldPoint } from "../lib/cameraProjection";
-export type GardenWorldMode = "community" | "personal";
+export type GardenWorldMode = "community" | "personal" | "house";
 export type SelectedCell = {
   gridX: number;
   gridY: number;
@@ -94,6 +100,12 @@ export type RenderGardenState = {
   moving: boolean;
   now: number;
   mode: GardenWorldMode;
+  houseDisplays?: Array<{
+    key: GardenHouseDisplayKey;
+    title: string;
+    tier: number;
+    unread: boolean;
+  }>;
   communityRegions?: Array<{
     regionX: number;
     regionY: number;
@@ -3011,7 +3023,241 @@ function drawEffects(
   }
 }
 
+function drawHouseFixtureArt(
+  ctx: CanvasRenderingContext2D,
+  kind: (typeof GARDEN_HOUSE_FIXTURES)[number]["kind"],
+  x: number,
+  y: number,
+  zoom: number,
+  earned: boolean,
+) {
+  const unit = Math.max(1, Math.round(zoom * 2));
+  ctx.save();
+  ctx.translate(Math.round(x), Math.round(y));
+  ctx.fillStyle = earned ? "#d9b557" : "#796255";
+  if (kind === "book") {
+    ctx.fillRect(-5 * unit, -4 * unit, 4 * unit, 5 * unit);
+    ctx.fillRect(1 * unit, -4 * unit, 4 * unit, 5 * unit);
+    ctx.fillStyle = earned ? "#f1df9e" : "#9b8775";
+    ctx.fillRect(-4 * unit, -3 * unit, 3 * unit, 3 * unit);
+    ctx.fillRect(1 * unit, -3 * unit, 3 * unit, 3 * unit);
+  } else if (kind === "portrait") {
+    ctx.fillRect(-5 * unit, -5 * unit, 10 * unit, 8 * unit);
+    ctx.fillStyle = earned ? "#66845f" : "#564b43";
+    ctx.fillRect(-3 * unit, -3 * unit, 6 * unit, 4 * unit);
+    ctx.fillStyle = earned ? "#e8dba6" : "#796c60";
+    ctx.fillRect(-1 * unit, -2 * unit, 2 * unit, 2 * unit);
+  } else if (kind === "cabinet") {
+    ctx.fillRect(-5 * unit, -5 * unit, 10 * unit, 8 * unit);
+    ctx.fillStyle = earned ? "#8f5038" : "#594b43";
+    ctx.fillRect(-3 * unit, -3 * unit, 2 * unit, 2 * unit);
+    ctx.fillRect(1 * unit, -3 * unit, 2 * unit, 2 * unit);
+    ctx.fillRect(-3 * unit, 0, 2 * unit, 2 * unit);
+    ctx.fillRect(1 * unit, 0, 2 * unit, 2 * unit);
+  } else if (kind === "map") {
+    ctx.fillRect(-5 * unit, -5 * unit, 10 * unit, 8 * unit);
+    ctx.fillStyle = earned ? "#73966d" : "#5d554e";
+    ctx.fillRect(-3 * unit, -3 * unit, 3 * unit, 3 * unit);
+    ctx.fillStyle = earned ? "#b66b55" : "#71645a";
+    ctx.fillRect(1 * unit, -1 * unit, 2 * unit, 3 * unit);
+  } else {
+    ctx.fillRect(-4 * unit, -5 * unit, 8 * unit, 8 * unit);
+    ctx.fillStyle = earned ? "#8a6154" : "#574c46";
+    ctx.fillRect(-2 * unit, -3 * unit, 4 * unit, 5 * unit);
+    ctx.fillStyle = earned ? "#d88975" : "#74675e";
+    ctx.fillRect(-1 * unit, -2 * unit, 2 * unit, 3 * unit);
+  }
+  ctx.restore();
+}
+
+function drawGardenHouseWorld(
+  ctx: CanvasRenderingContext2D,
+  state: RenderGardenState,
+) {
+  ctx.imageSmoothingEnabled = false;
+  ctx.clearRect(0, 0, state.viewport.width, state.viewport.height);
+  ctx.fillStyle = "#271b18";
+  ctx.fillRect(0, 0, state.viewport.width, state.viewport.height);
+
+  const tileWidth = GARDEN_CONFIG.tileSize * state.zoom;
+  const tileHeight = GARDEN_CONFIG.tileScreenHeight * state.zoom;
+  for (let gridY = GARDEN_HOUSE_WORLD_BOUNDS.minY; gridY <= GARDEN_HOUSE_WORLD_BOUNDS.maxY; gridY += 1) {
+    for (let gridX = GARDEN_HOUSE_WORLD_BOUNDS.minX; gridX <= GARDEN_HOUSE_WORLD_BOUNDS.maxX; gridX += 1) {
+      const point = worldToScreen(
+        { x: gridX * GARDEN_CONFIG.tileSize, y: gridY * GARDEN_CONFIG.tileSize },
+        state.camera,
+        state.viewport,
+        state.zoom,
+      );
+      const wall =
+        gridX === GARDEN_HOUSE_WORLD_BOUNDS.minX ||
+        gridX === GARDEN_HOUSE_WORLD_BOUNDS.maxX ||
+        gridY === GARDEN_HOUSE_WORLD_BOUNDS.minY ||
+        gridY === GARDEN_HOUSE_WORLD_BOUNDS.maxY;
+      if (wall) {
+        ctx.fillStyle = (gridX + gridY) % 2 === 0 ? "#523328" : "#5d3b2d";
+        ctx.fillRect(Math.floor(point.x), Math.floor(point.y), Math.ceil(tileWidth + 1), Math.ceil(tileHeight + 1));
+        ctx.fillStyle = "rgba(242, 197, 116, 0.12)";
+        ctx.fillRect(Math.floor(point.x), Math.floor(point.y), Math.ceil(tileWidth), Math.max(1, Math.round(state.zoom * 2)));
+      } else {
+        const plank = (gridY * 3 + gridX) % 4;
+        ctx.fillStyle = ["#805139", "#8d5a3e", "#754832", "#86543a"][plank];
+        ctx.fillRect(Math.floor(point.x), Math.floor(point.y), Math.ceil(tileWidth + 1), Math.ceil(tileHeight + 1));
+        ctx.fillStyle = "rgba(46, 25, 20, 0.24)";
+        ctx.fillRect(Math.floor(point.x), Math.floor(point.y + tileHeight - 1), Math.ceil(tileWidth + 1), 1);
+      }
+    }
+  }
+
+  const titlePoint = worldToScreen(
+    gridToWorld(8, 1),
+    state.camera,
+    state.viewport,
+    state.zoom,
+  );
+  ctx.save();
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.font = `800 ${Math.max(7, Math.round(8 * state.zoom))}px Georgia, serif`;
+  ctx.fillStyle = "#f3d993";
+  ctx.fillText("HALL OF GROWTH", Math.round(titlePoint.x), Math.round(titlePoint.y));
+  ctx.restore();
+
+  const displayMap = new Map((state.houseDisplays ?? []).map((display) => [display.key, display]));
+  for (const fixture of GARDEN_HOUSE_FIXTURES) {
+    const display = displayMap.get(fixture.key);
+    const point = worldToScreen(
+      gridToWorld(fixture.gridX, fixture.gridY),
+      state.camera,
+      state.viewport,
+      state.zoom,
+    );
+    const selected =
+      state.selected?.gridX === fixture.gridX &&
+      state.selected?.gridY === fixture.gridY;
+    const pedestalWidth = Math.round(GARDEN_CONFIG.tileSize * state.zoom * 2.2);
+    const pedestalHeight = Math.max(5, Math.round(8 * state.zoom));
+    if (selected) {
+      ctx.strokeStyle = "#fff0a8";
+      ctx.lineWidth = Math.max(2, Math.round(2 * state.zoom));
+      ctx.strokeRect(
+        Math.round(point.x - pedestalWidth / 2 - 3),
+        Math.round(point.y - pedestalHeight * 2.7),
+        pedestalWidth + 6,
+        pedestalHeight * 3.2,
+      );
+    }
+    ctx.fillStyle = "rgba(33, 20, 16, 0.3)";
+    ctx.fillRect(
+      Math.round(point.x - pedestalWidth / 2 + 3),
+      Math.round(point.y + 3),
+      pedestalWidth,
+      pedestalHeight,
+    );
+    ctx.fillStyle = "#b98252";
+    ctx.fillRect(
+      Math.round(point.x - pedestalWidth / 2),
+      Math.round(point.y),
+      pedestalWidth,
+      pedestalHeight,
+    );
+    ctx.fillStyle = "#59382b";
+    ctx.fillRect(
+      Math.round(point.x - pedestalWidth / 2),
+      Math.round(point.y),
+      pedestalWidth,
+      Math.max(2, Math.round(state.zoom * 2)),
+    );
+    drawHouseFixtureArt(
+      ctx,
+      fixture.kind,
+      point.x,
+      point.y - pedestalHeight * 1.15,
+      state.zoom,
+      (display?.tier ?? 0) > 0,
+    );
+    ctx.save();
+    ctx.textAlign = "center";
+    ctx.textBaseline = "top";
+    ctx.font = `700 ${Math.max(5, Math.round(5.5 * state.zoom))}px Georgia, serif`;
+    ctx.fillStyle = "#f5dfab";
+    const labelTop = point.y + pedestalHeight + 2;
+    fixture.labelLines.forEach((line, lineIndex) => {
+      ctx.fillText(
+        line.toUpperCase(),
+        Math.round(point.x),
+        Math.round(labelTop + lineIndex * 7 * state.zoom),
+        Math.max(48, Math.round(66 * state.zoom)),
+      );
+    });
+    ctx.restore();
+    if (display?.unread) {
+      ctx.fillStyle = "#d6394b";
+      ctx.beginPath();
+      ctx.arc(
+        Math.round(point.x + pedestalWidth / 2),
+        Math.round(point.y - pedestalHeight * 2.4),
+        Math.max(3, 4 * state.zoom),
+        0,
+        Math.PI * 2,
+      );
+      ctx.fill();
+    }
+  }
+
+  const futurePoint = worldToScreen(
+    gridToWorld(13, 15),
+    state.camera,
+    state.viewport,
+    state.zoom,
+  );
+  ctx.fillStyle = "rgba(175, 129, 82, 0.48)";
+  ctx.fillRect(
+    Math.round(futurePoint.x - 15 * state.zoom),
+    Math.round(futurePoint.y),
+    Math.round(30 * state.zoom),
+    Math.max(5, Math.round(8 * state.zoom)),
+  );
+  ctx.fillStyle = "rgba(245, 223, 171, 0.62)";
+  ctx.textAlign = "center";
+  ctx.font = `700 ${Math.max(5, Math.round(5 * state.zoom))}px Georgia, serif`;
+  ctx.fillText("MORE TO COME", Math.round(futurePoint.x), Math.round(futurePoint.y + 15 * state.zoom));
+
+  const doorPoint = worldToScreen(
+    gridToWorld(GARDEN_HOUSE_DOOR.gridX, GARDEN_HOUSE_DOOR.gridY),
+    state.camera,
+    state.viewport,
+    state.zoom,
+  );
+  const doorWidth = Math.round(42 * state.zoom);
+  const doorHeight = Math.round(25 * state.zoom);
+  ctx.fillStyle = "#3f2822";
+  ctx.fillRect(
+    Math.round(doorPoint.x - doorWidth / 2),
+    Math.round(doorPoint.y - doorHeight),
+    doorWidth,
+    doorHeight,
+  );
+  ctx.fillStyle = "#d9af54";
+  ctx.fillRect(
+    Math.round(doorPoint.x + doorWidth * 0.26),
+    Math.round(doorPoint.y - doorHeight * 0.5),
+    Math.max(2, Math.round(2 * state.zoom)),
+    Math.max(2, Math.round(2 * state.zoom)),
+  );
+  ctx.fillStyle = "#f4dca6";
+  ctx.textAlign = "center";
+  ctx.font = `700 ${Math.max(5, Math.round(5 * state.zoom))}px Georgia, serif`;
+  ctx.fillText("MY GARDEN", Math.round(doorPoint.x), Math.round(doorPoint.y + 7 * state.zoom));
+}
+
 export function renderGarden(ctx: CanvasRenderingContext2D, state: RenderGardenState) {
+  if (state.mode === "house") {
+    drawGardenHouseWorld(ctx, state);
+    drawDuck(ctx, state.duck, state.camera, state.viewport, state.moving, state.now, state.zoom);
+    drawMary(ctx, state.mary, state.camera, state.viewport, state.moving, state.now, state.zoom);
+    return;
+  }
   if (state.mode === "personal" && state.personalGarden) {
     const visiblePlants = state.plants.filter(
       (plant) => getPlantVisual(plant, state.now).state !== "expired",

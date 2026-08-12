@@ -980,6 +980,540 @@
   }
 }
 
+/* The Hall itself is the third canvas world. Only a podium's badge book is a modal. */
+.cg-accolade-modal-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  display: grid;
+  place-items: center;
+  padding: max(10px, env(safe-area-inset-top)) 10px
+    max(10px, env(safe-area-inset-bottom));
+  background: rgba(27, 18, 15, 0.76);
+  backdrop-filter: blur(2px);
+}
+
+.cg-accolade-modal {
+  width: min(980px, 100%);
+  max-height: calc(var(--basil-viewport-height, 100dvh) - 20px);
+  overflow: auto;
+  border: 4px solid #4c3028;
+  border-radius: 10px;
+  color: #4b342c;
+  background:
+    repeating-linear-gradient(
+      0deg,
+      transparent 0 27px,
+      rgba(93, 61, 45, 0.055) 27px 28px
+    ),
+    #fff0c8;
+  box-shadow: 0 12px 0 rgba(23, 14, 12, 0.42);
+}
+
+.cg-accolade-modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 16px 18px 14px;
+  border-bottom: 3px solid #684438;
+  background: #efd292;
+}
+
+.cg-accolade-modal-header p,
+.cg-accolade-modal-header h2,
+.cg-accolade-modal-header span {
+  margin: 0;
+}
+
+.cg-accolade-modal-header p {
+  color: #a13b43;
+  font-size: 0.62rem;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.cg-accolade-modal-header h2 {
+  margin-top: 3px;
+  color: #54372d;
+  font-size: clamp(1.35rem, 4vw, 2.15rem);
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.cg-accolade-modal-header span {
+  display: block;
+  max-width: 58ch;
+  margin-top: 6px;
+  font-size: 0.7rem;
+  line-height: 1.45;
+}
+
+.cg-accolade-modal-header button {
+  min-height: 40px;
+  padding: 8px 12px;
+  border: 2px solid #4c3028;
+  border-radius: 6px;
+  color: #4c3028;
+  font: inherit;
+  font-size: 0.65rem;
+  font-weight: 900;
+  background: #f8e4ac;
+  box-shadow: 2px 3px 0 rgba(76, 48, 40, 0.26);
+}
+
+.cg-accolade-book-progress {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 18px;
+  border-bottom: 2px solid rgba(104, 68, 56, 0.34);
+  background: rgba(255, 246, 213, 0.7);
+}
+
+.cg-accolade-book-progress > div {
+  flex: 1;
+  height: 11px;
+  overflow: hidden;
+  border: 2px solid #5b3c31;
+  border-radius: 999px;
+  background: #c7ad78;
+}
+
+.cg-accolade-book-progress > div span {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, #708f68, #d8af43);
+}
+
+.cg-accolade-book-progress strong {
+  font-size: 0.58rem;
+  white-space: nowrap;
+}
+
+.cg-accolade-badge-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(168px, 1fr));
+  gap: 12px;
+  padding: 18px;
+}
+
+.cg-accolade-badge-card {
+  min-width: 0;
+  overflow: hidden;
+  border: 2px solid #684438;
+  border-radius: 8px;
+  background: rgba(255, 247, 216, 0.82);
+  box-shadow: 2px 3px 0 rgba(84, 55, 45, 0.18);
+}
+
+.cg-accolade-badge-card > button {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  min-height: 196px;
+  padding: 13px 9px 10px;
+  border: 0;
+  color: inherit;
+  font: inherit;
+  background: transparent;
+  cursor: pointer;
+}
+
+.cg-accolade-badge-card > button:focus-visible {
+  outline: 3px solid #c94751;
+  outline-offset: -4px;
+}
+
+.cg-accolade-badge-card.is-locked > button {
+  color: #74675d;
+}
+
+.cg-accolade-badge-card.is-locked .cg-accolade-badge-art {
+  opacity: 0.4;
+  filter: grayscale(1) contrast(0.8);
+}
+
+.cg-accolade-badge-art {
+  --badge-color: #a74c45;
+  --badge-light: #f0cf72;
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 112px;
+  height: 116px;
+  flex: 0 0 auto;
+}
+
+.cg-accolade-badge-art.is-tone-1 {
+  --badge-color: #607e59;
+  --badge-light: #d8c86e;
+}
+
+.cg-accolade-badge-art.is-tone-2 {
+  --badge-color: #526f81;
+  --badge-light: #d3bb73;
+}
+
+.cg-accolade-badge-art.is-tone-3 {
+  --badge-color: #8a5d7d;
+  --badge-light: #e4bd76;
+}
+
+.cg-accolade-badge-art.is-tone-4 {
+  --badge-color: #8b6b3f;
+  --badge-light: #d9cb84;
+}
+
+.cg-accolade-badge-art.is-tone-5 {
+  --badge-color: #51796f;
+  --badge-light: #e0bd6b;
+}
+
+.cg-accolade-ribbon {
+  position: absolute;
+  z-index: 0;
+  bottom: 2px;
+  width: 27px;
+  height: 47px;
+  background: var(--badge-color);
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 78%, 0 100%);
+}
+
+.cg-accolade-ribbon.is-left {
+  left: 28px;
+  transform: rotate(8deg);
+}
+
+.cg-accolade-ribbon.is-right {
+  right: 28px;
+  transform: rotate(-8deg);
+}
+
+.cg-accolade-medallion {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 86px;
+  height: 86px;
+  border: 7px solid var(--badge-light);
+  border-radius: 50%;
+  background: var(--badge-color);
+  box-shadow:
+    0 0 0 3px #5a3b30,
+    inset 0 0 0 4px rgba(255, 246, 205, 0.32),
+    3px 4px 0 rgba(73, 45, 37, 0.24);
+}
+
+.cg-accolade-symbol {
+  position: relative;
+  display: block;
+  width: 46px;
+  height: 46px;
+}
+
+.cg-accolade-symbol i,
+.cg-accolade-symbol b,
+.cg-accolade-symbol em {
+  position: absolute;
+  display: block;
+  font-style: normal;
+}
+
+.cg-accolade-badge-art.is-stewardship .cg-accolade-symbol i {
+  left: 20px;
+  top: 16px;
+  width: 7px;
+  height: 25px;
+  background: #f4e4a9;
+}
+
+.cg-accolade-badge-art.is-stewardship .cg-accolade-symbol b,
+.cg-accolade-badge-art.is-stewardship .cg-accolade-symbol em {
+  top: 7px;
+  width: 18px;
+  height: 13px;
+  background: #91ad73;
+}
+
+.cg-accolade-badge-art.is-stewardship .cg-accolade-symbol b {
+  left: 4px;
+  transform: skewY(24deg);
+}
+
+.cg-accolade-badge-art.is-stewardship .cg-accolade-symbol em {
+  right: 3px;
+  transform: skewY(-24deg);
+}
+
+.cg-accolade-badge-art.is-tasks .cg-accolade-symbol i,
+.cg-accolade-badge-art.is-calendar .cg-accolade-symbol i {
+  inset: 6px;
+  border: 4px solid #f4e4a9;
+  background: rgba(255, 244, 200, 0.12);
+}
+
+.cg-accolade-badge-art.is-tasks .cg-accolade-symbol b {
+  left: 15px;
+  top: 18px;
+  width: 20px;
+  height: 10px;
+  border-bottom: 5px solid #f4e4a9;
+  border-left: 5px solid #f4e4a9;
+  transform: rotate(-45deg);
+}
+
+.cg-accolade-badge-art.is-calendar .cg-accolade-symbol b {
+  left: 10px;
+  top: 13px;
+  width: 26px;
+  height: 5px;
+  background: #f4e4a9;
+  box-shadow: 0 9px 0 #f4e4a9, 0 18px 0 #f4e4a9;
+}
+
+.cg-accolade-badge-art.is-heritage .cg-accolade-symbol i {
+  left: 18px;
+  top: 21px;
+  width: 10px;
+  height: 24px;
+  background: #78956a;
+}
+
+.cg-accolade-badge-art.is-heritage .cg-accolade-symbol b {
+  left: 8px;
+  top: 4px;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: #efc4a5;
+  box-shadow: inset 0 0 0 9px #c84b52;
+}
+
+.cg-accolade-badge-art.is-collections .cg-accolade-symbol i {
+  left: 5px;
+  top: 9px;
+  width: 36px;
+  height: 29px;
+  border: 4px solid #f4e4a9;
+  background:
+    linear-gradient(90deg, transparent 45%, #f4e4a9 45% 55%, transparent 55%),
+    linear-gradient(0deg, transparent 45%, #f4e4a9 45% 55%, transparent 55%);
+}
+
+.cg-accolade-badge-art.is-property .cg-accolade-symbol i {
+  inset: 5px;
+  border: 4px solid #f4e4a9;
+  background:
+    linear-gradient(45deg, transparent 45%, #b6c98b 45% 57%, transparent 57%),
+    linear-gradient(-35deg, transparent 46%, #d6a65e 46% 58%, transparent 58%);
+}
+
+.cg-accolade-badge-art.is-community .cg-accolade-symbol i {
+  left: 7px;
+  top: 8px;
+  width: 8px;
+  height: 34px;
+  background: #f4e4a9;
+  box-shadow: 24px 0 0 #f4e4a9;
+}
+
+.cg-accolade-badge-art.is-community .cg-accolade-symbol b {
+  left: 13px;
+  top: 9px;
+  width: 19px;
+  height: 15px;
+  background: #c94b52;
+  clip-path: polygon(0 0, 100% 18%, 72% 100%, 0 78%);
+}
+
+.cg-accolade-badge-art.is-worms .cg-accolade-symbol i {
+  left: 6px;
+  top: 19px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #efb29a;
+  box-shadow: 9px -5px 0 #df927e, 18px -2px 0 #cf806f, 27px -7px 0 #bd6d62;
+}
+
+.cg-accolade-pixel-sprite {
+  display: grid;
+  width: 60px;
+  max-width: 60px;
+  aspect-ratio: 11 / 9;
+}
+
+.cg-accolade-pixel-sprite i {
+  display: block;
+  min-width: 0;
+}
+
+.cg-accolade-badge-name {
+  display: grid;
+  gap: 3px;
+  margin-top: 7px;
+  text-align: center;
+}
+
+.cg-accolade-badge-name strong {
+  font-size: 0.72rem;
+  line-height: 1.15;
+}
+
+.cg-accolade-badge-name small {
+  color: #6a855f;
+  font-size: 0.52rem;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.cg-accolade-badge-card.is-locked .cg-accolade-badge-name small {
+  color: #7b6e64;
+}
+
+.cg-accolade-expand-mark {
+  position: absolute;
+  right: 8px;
+  bottom: 7px;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+  font-size: 0.8rem;
+  font-weight: 900;
+}
+
+.cg-accolade-badge-details {
+  padding: 10px 11px 12px;
+  border-top: 2px dashed rgba(92, 61, 48, 0.35);
+  background: #f2dfae;
+}
+
+.cg-accolade-badge-details p,
+.cg-accolade-badge-details dl,
+.cg-accolade-badge-details dt,
+.cg-accolade-badge-details dd {
+  margin: 0;
+}
+
+.cg-accolade-badge-details p,
+.cg-accolade-badge-details dd {
+  font-size: 0.58rem;
+  line-height: 1.45;
+}
+
+.cg-accolade-badge-details dl {
+  display: grid;
+  gap: 7px;
+  margin-top: 8px;
+}
+
+.cg-accolade-badge-details dt {
+  color: #9e3d43;
+  font-size: 0.49rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+@media (max-width: 600px) {
+  .cg-accolade-modal-scrim {
+    padding-inline: 5px;
+  }
+
+  .cg-accolade-modal {
+    max-height: calc(var(--basil-viewport-height, 100dvh) - 10px);
+  }
+
+  .cg-accolade-modal-header {
+    gap: 8px;
+    padding: 11px 10px 9px;
+  }
+
+  .cg-accolade-modal-header span {
+    font-size: 0.59rem;
+  }
+
+  .cg-accolade-modal-header button {
+    min-height: 36px;
+    padding: 6px 8px;
+    font-size: 0.55rem;
+  }
+
+  .cg-accolade-book-progress {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 5px;
+    padding: 8px 10px;
+  }
+
+  .cg-accolade-book-progress strong {
+    white-space: normal;
+  }
+
+  .cg-accolade-badge-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 7px;
+    padding: 9px;
+  }
+
+  .cg-accolade-badge-card > button {
+    min-height: 165px;
+    padding-inline: 4px;
+  }
+
+  .cg-accolade-badge-art {
+    width: 92px;
+    height: 98px;
+    transform: scale(0.88);
+    transform-origin: center bottom;
+  }
+
+  .cg-accolade-badge-name {
+    margin-top: 0;
+  }
+
+  .cg-accolade-badge-name strong {
+    font-size: 0.61rem;
+  }
+}
+
+.cg-house-book-icon {
+  position: relative;
+  display: block;
+  width: 31px;
+  height: 24px;
+}
+
+.cg-house-book-icon::before,
+.cg-house-book-icon::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  width: 14px;
+  height: 19px;
+  border: 2px solid var(--cg-ink);
+  background: #f5d98c;
+}
+
+.cg-house-book-icon::before {
+  left: 1px;
+  transform: skewY(7deg);
+}
+
+.cg-house-book-icon::after {
+  right: 1px;
+  transform: skewY(-7deg);
+}
+
 .cg-expanded-map-surface {
   position: relative;
   display: block;

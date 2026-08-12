@@ -111,7 +111,7 @@ import {
   type HeritageFlowerEncounter,
 } from "../lib/heritageDiscovery";
 import type { LivingGardenHabitatKey } from "../lib/livingGarden";
-import { GardenHouseInterior } from "./GardenHouseInterior";
+import { GardenHouseBadgeModal } from "./GardenHouseInterior";
 import {
   buildGuestGardenHouseState,
   isGardenHouseDisplayUnread,
@@ -365,6 +365,8 @@ export function CommunityGardenApp() {
     useState<GardenStewardshipSummary | null>(null);
   const [gardenHouse, setGardenHouse] = useState<GardenHouseState | null>(null);
   const [gardenHouseOpen, setGardenHouseOpen] = useState(false);
+  const [gardenHouseDisplayKey, setGardenHouseDisplayKey] =
+    useState<GardenHouseDisplayKey | null>(null);
   const [gardenTasksOpen, setGardenTasksOpen] = useState(false);
   const [showMyCommunityFlowers, setShowMyCommunityFlowers] = useState(false);
   const [replacingTaskId, setReplacingTaskId] = useState<string | null>(null);
@@ -463,6 +465,14 @@ export function CommunityGardenApp() {
     () => gardenHouse ?? buildGuestGardenHouseState(myGarden),
     [gardenHouse, myGarden],
   );
+  const activeGardenHouseDisplay = useMemo(
+    () =>
+      activeGardenHouse.displays.find(
+        (display) => display.key === gardenHouseDisplayKey,
+      ) ?? null,
+    [activeGardenHouse.displays, gardenHouseDisplayKey],
+  );
+
   const communityOnboardingPlantingTarget = communityQuickStart
     ? COMMUNITY_FAST_START_PLANTINGS
     : COMMUNITY_CLASSIC_ONBOARDING_PLANTINGS;
@@ -823,7 +833,7 @@ export function CommunityGardenApp() {
     const pendingPreview = {
       ...guestPreviewRef.current,
       journey: {
-        world,
+        world: world === "house" ? "personal" : world,
         mapX: ui.mapX,
         mapY: ui.mapY,
         zoom: ui.zoom,
@@ -1249,6 +1259,7 @@ export function CommunityGardenApp() {
         setStewardship(null);
         setGardenHouse(null);
         setGardenHouseOpen(false);
+        setGardenHouseDisplayKey(null);
         setGardenTasksOpen(false);
         setShowMyCommunityFlowers(false);
         setInventoryDesignAccess(false);
@@ -1455,7 +1466,7 @@ export function CommunityGardenApp() {
       const next = {
         ...guestPreviewRef.current,
         journey: {
-          world,
+          world: world === "house" ? "personal" : world,
           mapX: ui.mapX,
           mapY: ui.mapY,
           zoom: ui.zoom,
@@ -2052,6 +2063,13 @@ export function CommunityGardenApp() {
 
   const switchWorld = useCallback(() => {
     if (ui.builder.active) return;
+    if (world === "house") {
+      setGardenHouseOpen(false);
+      setGardenHouseDisplayKey(null);
+      playGardenSound("world");
+      setWorld("personal");
+      return;
+    }
     if (world === "personal") {
       if (communityGardenTutorialLocked) return;
       if (inventoryOpen) void acknowledgeInventoryUnlocks();
@@ -2208,6 +2226,7 @@ export function CommunityGardenApp() {
       const inventoryShortcut = code === "KeyQ" || code === "KeyI";
       const gardenShortcut = code === "KeyC" || code === "KeyG";
       if (inventoryShortcut) {
+        if (world === "house") return;
         const inventoryShortcutLocked =
           onboardingInventoryLocked &&
           onboardingStep !== "plant" &&
@@ -2267,7 +2286,7 @@ export function CommunityGardenApp() {
           unlockNotices.length > 0 ||
           heritageMoments.length > 0 ||
           Boolean(heritageEncounter) ||
-          !tutorialActionAllowed
+          (world !== "house" && !tutorialActionAllowed)
         ) {
           return;
         }
@@ -2488,21 +2507,35 @@ export function CommunityGardenApp() {
   }
 
   const openGardenHouse = useCallback(() => {
-    playGardenSound("select");
+    playGardenSound("world");
     setMenuOpen(false);
     setInventoryOpen(false);
     setGardenTasksOpen(false);
-    setGardenHouseOpen(true);
+    setGardenMapOpen(false);
+    setGardenHouseOpen(false);
+    setGardenHouseDisplayKey(null);
+    setWorld("house");
     if (session) void loadMembership(session);
   }, [loadMembership, playGardenSound, session]);
 
   const closeGardenHouse = useCallback(() => {
     playGardenSound("select");
     setGardenHouseOpen(false);
+    setGardenHouseDisplayKey(null);
+  }, [playGardenSound]);
+
+  const exitGardenHouse = useCallback(() => {
+    playGardenSound("world");
+    setGardenHouseOpen(false);
+    setGardenHouseDisplayKey(null);
+    setWorld("personal");
   }, [playGardenSound]);
 
   const inspectGardenHouseDisplay = useCallback(
     (key: GardenHouseDisplayKey) => {
+      playGardenSound("select");
+      setGardenHouseDisplayKey(key);
+      setGardenHouseOpen(true);
       const inspectedAt = new Date().toISOString();
       setGardenHouse((current) => {
         if (!current) return current;
@@ -2525,7 +2558,7 @@ export function CommunityGardenApp() {
         body: JSON.stringify({ key }),
       }).catch(() => undefined);
     },
-    [session],
+    [playGardenSound, session],
   );
 
   return (
@@ -2538,7 +2571,7 @@ export function CommunityGardenApp() {
           personalGarden={canvasGarden}
           personalCommunityFlowers={stewardship?.flowers.coordinates ?? []}
           showPersonalCommunityFlowers={showMyCommunityFlowers}
-          tutorialDimmed={tutorialMapDimmed}
+          tutorialDimmed={world === "house" ? false : tutorialMapDimmed}
           tutorialClickHere={
             communityQuickStart &&
             onboardingStep === "community-tile" &&
@@ -2563,7 +2596,10 @@ export function CommunityGardenApp() {
           }
           onPersonalGardenMutation={mutateMyGarden}
           gardenHouseUnreadCount={activeGardenHouse.unreadCount}
+          gardenHouseDisplays={activeGardenHouse.displays}
           onOpenGardenHouse={openGardenHouse}
+          onInspectGardenHouseDisplay={inspectGardenHouseDisplay}
+          onExitGardenHouse={exitGardenHouse}
           onActionCompleted={handleGardenActionCompleted}
           onActionFailed={handleGardenActionFailed}
         />
@@ -2575,7 +2611,11 @@ export function CommunityGardenApp() {
           <div className="cg-title-copy">
             <h1>Basil</h1>
             <p>
-              {world === "personal" ? "My Garden" : "Community Garden"}
+              {world === "personal"
+                ? "My Garden"
+                : world === "house"
+                  ? "Hall of Growth"
+                  : "Community Garden"}
               {world === "community" ? (
                 <GardenUpdateStatus nextUpdateAt={ui.nextMapUpdateAt} />
               ) : null}
@@ -2601,25 +2641,27 @@ export function CommunityGardenApp() {
           world={world}
         />
 
-        <GardenMapKey
-          ui={ui}
-          canExpand
-          disabled={tutorialMapDimmed}
-          expanded={gardenMapOpen}
-          showExpandButton={false}
-          focusTarget={world === "community" ? atlasTarget : null}
-          onExpandedChange={setGardenMapOpen}
-          onNavigate={(mapX, mapY) => {
-            setAtlasTarget(null);
-            setGardenMapOpen(false);
-            canvasRef.current?.goToMapPosition(mapX, mapY);
-          }}
-          onNavigateGrid={(gridX, gridY) => {
-            setAtlasTarget(null);
-            setGardenMapOpen(false);
-            canvasRef.current?.goToGridPosition(gridX, gridY);
-          }}
-        />
+        {world !== "house" ? (
+          <GardenMapKey
+            ui={ui}
+            canExpand
+            disabled={tutorialMapDimmed}
+            expanded={gardenMapOpen}
+            showExpandButton={false}
+            focusTarget={world === "community" ? atlasTarget : null}
+            onExpandedChange={setGardenMapOpen}
+            onNavigate={(mapX, mapY) => {
+              setAtlasTarget(null);
+              setGardenMapOpen(false);
+              canvasRef.current?.goToMapPosition(mapX, mapY);
+            }}
+            onNavigateGrid={(gridX, gridY) => {
+              setAtlasTarget(null);
+              setGardenMapOpen(false);
+              canvasRef.current?.goToGridPosition(gridX, gridY);
+            }}
+          />
+        ) : null}
 
         <div className="cg-garden-utilities" aria-label="Garden utilities">
           {world === "personal" && session && accountChecked && memberGarden ? (
@@ -2730,25 +2772,42 @@ export function CommunityGardenApp() {
         />
 
         <GardenControlsDock
-          mapDisabled={tutorialMapDimmed || ui.builder.active}
-          mapAriaLabel={`Open the detailed ${world === "personal" ? "My Garden" : "Community Garden"} map`}
-          inventoryDisabled={inventoryToggleLocked || ui.builder.active}
+          mapDisabled={world === "house" || tutorialMapDimmed || ui.builder.active}
+          mapAriaLabel={
+            world === "house"
+              ? "The Hall of Growth is a single room"
+              : `Open the detailed ${world === "personal" ? "My Garden" : "Community Garden"} map`
+          }
+          inventoryDisabled={
+            world === "house" || inventoryToggleLocked || ui.builder.active
+          }
           inventoryHighlighted={inventoryHighlighted}
           inventoryIconClass={inventoryIconClass}
           gardenDisabled={
-            (world === "community" && myGardenTutorialLocked) ||
-            communityGardenTutorialLocked ||
-            ui.builder.active
+            world === "house"
+              ? false
+              : (world === "community" && myGardenTutorialLocked) ||
+                communityGardenTutorialLocked ||
+                ui.builder.active
           }
           gardenHighlighted={
-            showMyGardenInvitation ||
-            showContinueGardenGuidance ||
-            showMyGardenGrowthNudge ||
-            showMyGardenUnlockNotice
+            world !== "house" &&
+            (showMyGardenInvitation ||
+              showContinueGardenGuidance ||
+              showMyGardenGrowthNudge ||
+              showMyGardenUnlockNotice)
           }
-          gardenLabel={world === "personal" ? "Community" : "My Garden"}
-          gardenAriaLabel={
+          gardenLabel={
             world === "personal"
+              ? "Community"
+              : world === "house"
+                ? "My Garden"
+                : "My Garden"
+          }
+          gardenAriaLabel={
+            world === "house"
+              ? "Exit the Hall of Growth and return to My Garden."
+              : world === "personal"
               ? communityGardenTutorialLocked
                 ? "Plant your first rose before returning to Community Garden"
                 : "Go to Community Garden."
@@ -2760,10 +2819,11 @@ export function CommunityGardenApp() {
             world === "personal" ? "cg-community-mark" : "cg-home-mark"
           }
           gardenNotice={
-            showMyGardenInvitation ||
-            showContinueGardenGuidance ||
-            showMyGardenGrowthNudge ||
-            showMyGardenUnlockNotice ? (
+            world !== "house" &&
+            (showMyGardenInvitation ||
+              showContinueGardenGuidance ||
+              showMyGardenGrowthNudge ||
+              showMyGardenUnlockNotice) ? (
               <strong
                 className="cg-my-garden-notice"
                 aria-label={
@@ -2786,7 +2846,10 @@ export function CommunityGardenApp() {
               </strong>
             ) : null
           }
-          actionDisabled={!ui.actionEnabled || !tutorialActionAllowed}
+          actionDisabled={
+            !ui.actionEnabled ||
+            (world !== "house" && !tutorialActionAllowed)
+          }
           actionHighlighted={
             (onboardingPlantActionReady &&
               (onboardingStep === "community-tile" ||
@@ -2803,15 +2866,18 @@ export function CommunityGardenApp() {
                 : "Plant here"
               : ui.actionLabel
           }
-          upgradeVisible={showMembershipShortcut}
+          upgradeVisible={showMembershipShortcut && world !== "house"}
           onUpgrade={() => {
             setMembershipOfferStage("soft");
             setMembershipOfferOpen(true);
           }}
           actionIcon={
-            <span
-              className={
-                ui.action === "water"
+            world === "house" ? (
+              <span className="cg-house-book-icon" aria-hidden="true" />
+            ) : (
+              <span
+                className={
+                  ui.action === "water"
                   ? "cg-water-icon"
                   : ui.action === "weed"
                     ? "cg-plant-glyph is-weed"
@@ -2832,9 +2898,10 @@ export function CommunityGardenApp() {
                           ui.selectedTool === "path")
                       ? "cg-path-icon"
                     : `cg-plant-glyph is-${ui.selectedPlantType}`
-              }
-              aria-hidden="true"
-            />
+                }
+                aria-hidden="true"
+              />
+            )
           }
           onMap={() => {
             setMenuOpen(false);
@@ -2972,7 +3039,7 @@ export function CommunityGardenApp() {
         ) : null}
 
         <GardenOnboarding
-          step={quickStartPlantPending ? null : onboardingStep}
+          step={world === "house" || quickStartPlantPending ? null : onboardingStep}
           communityQuickStart={communityQuickStart}
           communityPlantings={communityOnboardingPlantings}
           inventoryOpen={inventoryOpen}
@@ -3019,12 +3086,10 @@ export function CommunityGardenApp() {
 
       {world === "community" ? <FutureAdSlot label={adLabel} /> : null}
 
-      {gardenHouseOpen ? (
-        <GardenHouseInterior
-          open
-          state={activeGardenHouse}
+      {gardenHouseOpen && activeGardenHouseDisplay ? (
+        <GardenHouseBadgeModal
+          display={activeGardenHouseDisplay}
           onClose={closeGardenHouse}
-          onInspect={inspectGardenHouseDisplay}
         />
       ) : null}
 

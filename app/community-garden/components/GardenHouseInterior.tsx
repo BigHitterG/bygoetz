@@ -1,43 +1,31 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import {
-  isGardenHouseDisplayUnread,
-  type GardenHouseAccolade,
-  type GardenHouseDisplayKey,
-  type GardenHouseMetadata,
-  type GardenHouseState,
+import type {
+  GardenHouseAccolade,
+  GardenHouseMetadata,
 } from "../lib/gardenHouse";
-import { LIVING_GARDEN_DEFINITIONS } from "../lib/livingGarden";
+import { GARDEN_HOUSE_TIER_THRESHOLDS } from "../lib/gardenHouse";
+import { GARDEN_STEWARDSHIP_RANKS } from "../lib/stewardshipTypes";
+import {
+  LIVING_GARDEN_DEFINITIONS,
+  type LivingGardenSprite,
+} from "../lib/livingGarden";
 import { MY_GARDEN_COLLECTIONS } from "../lib/myGardenCatalog";
 
-type Position = { x: number; y: number };
-
-const DISPLAY_LAYOUT: Record<
-  GardenHouseDisplayKey,
-  Position & { emblem: string; className: string }
-> = {
-  stewardship: { x: 11, y: 16, emblem: "★", className: "is-certificate" },
-  tasks: { x: 31, y: 16, emblem: "♜", className: "is-trophy" },
-  habitats: { x: 55, y: 15, emblem: "✦", className: "is-gallery" },
-  heritage: { x: 84, y: 20, emblem: "✿", className: "is-heritage" },
-  community: { x: 12, y: 46, emblem: "⚑", className: "is-pennant" },
-  collections: { x: 89, y: 49, emblem: "▤", className: "is-shelf" },
-  property: { x: 13, y: 73, emblem: "⌗", className: "is-map" },
-  worms: { x: 35, y: 78, emblem: "∿", className: "is-worm" },
-  calendar: { x: 87, y: 75, emblem: "▦", className: "is-calendar" },
+type AccoladeBadge = {
+  id: string;
+  name: string;
+  description: string;
+  requirement: string;
+  earned: boolean;
+  kind: GardenHouseAccolade["key"];
+  sprite?: LivingGardenSprite;
 };
-
-const START_POSITION = { x: 50, y: 84 };
 
 function asNumber(metadata: GardenHouseMetadata, key: string) {
   const value = metadata[key];
   return typeof value === "number" ? value : 0;
-}
-
-function asString(metadata: GardenHouseMetadata, key: string) {
-  const value = metadata[key];
-  return typeof value === "string" ? value : "";
 }
 
 function asStringArray(metadata: GardenHouseMetadata, key: string) {
@@ -47,294 +35,289 @@ function asStringArray(metadata: GardenHouseMetadata, key: string) {
     : [];
 }
 
-function displayStats(display: GardenHouseAccolade) {
-  const metadata = display.metadata;
-  switch (display.key) {
-    case "stewardship":
-      return [
-        ["Current rank", asString(metadata, "rankName")],
-        ["Care capacity", asNumber(metadata, "capacity").toLocaleString()],
-        ["Next", asString(metadata, "nextRank")],
-      ];
-    case "tasks":
-      return [
-        ["Tasks completed", display.progress.toLocaleString()],
-        ["Latest accolade", asString(metadata, "latestAccolade")],
-      ];
-    case "habitats":
-      return [
-        ["Habitats discovered", `${display.progress} of ${display.target}`],
-        ["Portraits remaining", Math.max(0, display.target - display.progress).toString()],
-      ];
-    case "heritage":
-      return [
-        ["Your Heritage Flower", asString(metadata, "heritageFlowerType")],
-        ["Community encounters", asNumber(metadata, "encounteredFlowers").toString()],
-      ];
-    case "collections":
-      return [
-        ["Collections completed", `${display.progress} of ${display.target}`],
-        ["Lifetime Care", asNumber(metadata, "lifetimeCare").toLocaleString()],
-      ];
-    case "calendar":
-      return [
-        ["Active days", display.progress.toLocaleString()],
-        ["Current streak", `${asNumber(metadata, "currentStreak")} days`],
-        ["Longest streak", `${asNumber(metadata, "longestStreak")} days`],
-      ];
-    case "property":
-      return [
-        ["Parcels unlocked", asNumber(metadata, "unlockedParcels").toLocaleString()],
-        ["Parcels shaped", asNumber(metadata, "shapedParcels").toLocaleString()],
-        ["Parcels returned", asNumber(metadata, "returnedParcels").toLocaleString()],
-      ];
-    case "community":
-      return [["Projects completed", display.progress.toLocaleString()]];
-    case "worms":
-      return [["Lifetime discoveries", display.progress.toLocaleString()]];
-  }
+function milestoneBadges(
+  display: GardenHouseAccolade,
+  milestones: readonly number[],
+  names: readonly string[],
+  unit: string,
+): AccoladeBadge[] {
+  return milestones.map((milestone, index) => ({
+    id: `${display.key}-${milestone}`,
+    name: names[index] ?? `${milestone.toLocaleString()} ${unit}`,
+    description: `A permanent mark for reaching ${milestone.toLocaleString()} ${unit.toLowerCase()}.`,
+    requirement: `Reach ${milestone.toLocaleString()} ${unit.toLowerCase()}.`,
+    earned: display.progress >= milestone,
+    kind: display.key,
+  }));
 }
 
-function progressLabel(display: GardenHouseAccolade) {
-  if (display.target <= 0) return "Not yet begun";
-  if (
-    (display.key === "habitats" || display.key === "collections" || display.key === "stewardship") &&
-    display.progress >= display.target
-  ) {
-    return "Complete";
+function getAccoladeBadges(display: GardenHouseAccolade): AccoladeBadge[] {
+  if (display.key === "stewardship") {
+    return GARDEN_STEWARDSHIP_RANKS.map((rank, index) => {
+      const requirements = [
+        rank.tasks > 0 ? `${rank.tasks} tasks` : null,
+        rank.categories > 0 ? `${rank.categories} task types` : null,
+        rank.activeDays > 0 ? `${rank.activeDays} active days` : null,
+        rank.projects > 0 ? `${rank.projects} community projects` : null,
+      ].filter(Boolean);
+      return {
+        id: rank.key,
+        name: rank.name,
+        description: `${rank.name} stewardship carries a ${rank.capacity.toLocaleString()}-flower community capacity.`,
+        requirement:
+          requirements.length > 0
+            ? `Complete ${requirements.join(", ")}.`
+            : "Begin caring for the Community Garden.",
+        earned: index < display.tier,
+        kind: display.key,
+      };
+    });
   }
-  if (display.progress >= display.target) return "Next milestone earned";
-  return `${display.progress.toLocaleString()} / ${display.target.toLocaleString()} to next milestone`;
-}
 
-function GardenHouseInspector({ display }: { display: GardenHouseAccolade | null }) {
-  if (!display) {
-    return (
-      <aside className="cg-house-inspector is-empty" aria-live="polite">
-        <p className="cg-house-kicker">Hall of Growth</p>
-        <h3>Your history lives here.</h3>
-        <p>Walk to a display and tap it to see what you have accomplished.</p>
-      </aside>
+  if (display.key === "habitats") {
+    const discovered = new Set(
+      asStringArray(display.metadata, "discoveredHabitats"),
+    );
+    return LIVING_GARDEN_DEFINITIONS.map((habitat) => ({
+      id: habitat.key,
+      name: habitat.name,
+      description: habitat.discoveryCopy,
+      requirement: habitat.recipe,
+      earned: discovered.has(habitat.key),
+      kind: display.key,
+      sprite: habitat.sprite,
+    }));
+  }
+
+  if (display.key === "collections") {
+    const completed = new Set(
+      asStringArray(display.metadata, "completedCollections"),
+    );
+    return MY_GARDEN_COLLECTIONS.map((collection) => ({
+      id: collection.key,
+      name: collection.name,
+      description: collection.description,
+      requirement: `Reach ${collection.completionLifetimeCareRequired.toLocaleString()} lifetime Care.`,
+      earned: completed.has(collection.key),
+      kind: display.key,
+    }));
+  }
+
+  if (display.key === "tasks") {
+    return milestoneBadges(
+      display,
+      GARDEN_HOUSE_TIER_THRESHOLDS.tasks,
+      ["First Helping Hand", "Steady Helper", "Garden Regular", "Seasoned Hand", "Hundred Acts", "Community Pillar"],
+      "Garden Tasks",
     );
   }
-
-  const progress =
-    display.target > 0
-      ? Math.min(100, Math.round((display.progress / display.target) * 100))
-      : 0;
-  const discoveredHabitats = new Set(
-    asStringArray(display.metadata, "discoveredHabitats"),
-  );
-  const completedCollections = new Set(
-    asStringArray(display.metadata, "completedCollections"),
-  );
-
-  return (
-    <aside className="cg-house-inspector" aria-live="polite">
-      <p className="cg-house-kicker">{display.category}</p>
-      <h3>{display.title}</h3>
-      <p>{display.description}</p>
-      <div className="cg-house-progress" aria-label={progressLabel(display)}>
-        <span style={{ width: `${progress}%` }} />
-      </div>
-      <strong className="cg-house-progress-label">{progressLabel(display)}</strong>
-
-      <dl className="cg-house-stats">
-        {displayStats(display).map(([label, value]) => (
-          <div key={label}>
-            <dt>{label}</dt>
-            <dd>{value || "Not yet earned"}</dd>
-          </div>
-        ))}
-      </dl>
-
-      {display.key === "habitats" ? (
-        <div className="cg-house-portrait-grid" aria-label="Habitat portrait collection">
-          {LIVING_GARDEN_DEFINITIONS.map((habitat) => {
-            const discovered = discoveredHabitats.has(habitat.key);
-            return (
-              <span
-                className={discovered ? "is-discovered" : "is-silhouette"}
-                key={habitat.key}
-                title={discovered ? habitat.name : "Undiscovered habitat"}
-              >
-                {discovered ? "✦" : "?"}
-              </span>
-            );
-          })}
-        </div>
-      ) : null}
-
-      {display.key === "collections" ? (
-        <div className="cg-house-collection-list" aria-label="Garden collections">
-          {MY_GARDEN_COLLECTIONS.map((collection) => (
-            <span
-              className={completedCollections.has(collection.key) ? "is-complete" : ""}
-              key={collection.key}
-            >
-              {completedCollections.has(collection.key) ? "◆" : "◇"} {collection.name}
-            </span>
-          ))}
-        </div>
-      ) : null}
-    </aside>
+  if (display.key === "heritage") {
+    return milestoneBadges(
+      display,
+      GARDEN_HOUSE_TIER_THRESHOLDS.heritage,
+      ["First Heritage Flower", "Heritage Keeper", "Living Memory", "Garden Historian"],
+      "Heritage Flowers",
+    );
+  }
+  if (display.key === "calendar") {
+    return milestoneBadges(
+      display,
+      GARDEN_HOUSE_TIER_THRESHOLDS.calendar,
+      ["First Day", "Garden Week", "Garden Month", "Hundred Days", "Year in the Garden"],
+      "Active Days",
+    );
+  }
+  if (display.key === "property") {
+    return milestoneBadges(
+      display,
+      GARDEN_HOUSE_TIER_THRESHOLDS.property,
+      ["First Clearing", "Garden Plan", "Land Shaper", "Garden Estate", "Landscape Keeper"],
+      "Shaped Parcels",
+    );
+  }
+  if (display.key === "community") {
+    return milestoneBadges(
+      display,
+      GARDEN_HOUSE_TIER_THRESHOLDS.community,
+      ["Project Neighbor", "Common Cause", "Community Builder", "Garden Organizer", "Commonwealth"],
+      "Community Projects",
+    );
+  }
+  return milestoneBadges(
+    display,
+    GARDEN_HOUSE_TIER_THRESHOLDS.worms,
+    ["First Garden Worm", "Soil Listener", "Worm Friend", "Living Soil Keeper"],
+    "Garden Worms",
   );
 }
 
-export function GardenHouseInterior({
-  open,
-  state,
-  onClose,
-  onInspect,
-}: {
-  open: boolean;
-  state: GardenHouseState;
-  onClose: () => void;
-  onInspect: (key: GardenHouseDisplayKey) => void;
-}) {
-  const [mary, setMary] = useState<Position>(START_POSITION);
-  const [selectedKey, setSelectedKey] = useState<GardenHouseDisplayKey | null>(null);
-  const exitButtonRef = useRef<HTMLButtonElement>(null);
-  const displayMap = useMemo(
-    () => new Map(state.displays.map((item) => [item.key, item])),
-    [state.displays],
+function PixelSprite({ sprite }: { sprite: LivingGardenSprite }) {
+  const columns = sprite.pixels[0]?.length ?? 1;
+  return (
+    <span
+      className="cg-accolade-pixel-sprite"
+      style={{ gridTemplateColumns: `repeat(${columns}, 1fr)` }}
+      aria-hidden="true"
+    >
+      {sprite.pixels.flatMap((row, rowIndex) =>
+        Array.from(row).map((pixel, columnIndex) => (
+          <i
+            key={`${rowIndex}-${columnIndex}`}
+            style={{
+              backgroundColor:
+                pixel === "." ? "transparent" : sprite.palette[pixel],
+            }}
+          />
+        )),
+      )}
+    </span>
   );
-  const selected = selectedKey ? displayMap.get(selectedKey) ?? null : null;
+}
+
+function BadgeArt({ badge, index }: { badge: AccoladeBadge; index: number }) {
+  return (
+    <span
+      className={`cg-accolade-badge-art is-${badge.kind} is-tone-${index % 6}`}
+      aria-hidden="true"
+    >
+      <span className="cg-accolade-ribbon is-left" />
+      <span className="cg-accolade-ribbon is-right" />
+      <span className="cg-accolade-medallion">
+        {badge.sprite ? (
+          <PixelSprite sprite={badge.sprite} />
+        ) : (
+          <span className="cg-accolade-symbol">
+            <i />
+            <b />
+            <em />
+          </span>
+        )}
+      </span>
+    </span>
+  );
+}
+
+function displayProgressCopy(display: GardenHouseAccolade, earned: number, total: number) {
+  if (display.key === "stewardship") {
+    return `${earned} of ${total} stewardship ranks earned`;
+  }
+  if (display.key === "habitats") {
+    return `${earned} of ${total} living-garden badges discovered`;
+  }
+  if (display.key === "collections") {
+    return `${earned} of ${total} garden collections completed`;
+  }
+  return `${earned} of ${total} milestone badges earned`;
+}
+
+export function GardenHouseBadgeModal({
+  display,
+  onClose,
+}: {
+  display: GardenHouseAccolade;
+  onClose: () => void;
+}) {
+  const [expandedBadgeId, setExpandedBadgeId] = useState<string | null>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const badges = useMemo(() => getAccoladeBadges(display), [display]);
+  const earnedCount = badges.filter((badge) => badge.earned).length;
+  const progress = badges.length > 0 ? (earnedCount / badges.length) * 100 : 0;
 
   useEffect(() => {
-    if (!open) return;
-    window.requestAnimationFrame(() => exitButtonRef.current?.focus());
-  }, [open]);
-
-  useEffect(() => {
-    if (!open) return;
+    closeButtonRef.current?.focus();
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        event.preventDefault();
-        onClose();
-        return;
-      }
-      const step = event.shiftKey ? 5 : 3;
-      const movement: Record<string, Position> = {
-        ArrowLeft: { x: -step, y: 0 },
-        a: { x: -step, y: 0 },
-        ArrowRight: { x: step, y: 0 },
-        d: { x: step, y: 0 },
-        ArrowUp: { x: 0, y: -step },
-        w: { x: 0, y: -step },
-        ArrowDown: { x: 0, y: step },
-        s: { x: 0, y: step },
-      };
-      const delta = movement[event.key];
-      if (!delta) return;
+      if (event.key !== "Escape") return;
       event.preventDefault();
-      setMary((current) => ({
-        x: Math.max(5, Math.min(95, current.x + delta.x)),
-        y: Math.max(27, Math.min(88, current.y + delta.y)),
-      }));
+      onClose();
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [onClose, open]);
-
-  if (!open) return null;
-
-  function inspect(key: GardenHouseDisplayKey) {
-    const layout = DISPLAY_LAYOUT[key];
-    setMary({
-      x: Math.max(7, Math.min(93, layout.x)),
-      y: Math.max(31, Math.min(84, layout.y + 10)),
-    });
-    setSelectedKey(key);
-    onInspect(key);
-  }
+  }, [onClose]);
 
   return (
-    <section
-      className="cg-house-overlay"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="cg-house-title"
+    <div
+      className="cg-accolade-modal-scrim"
+      role="presentation"
+      onPointerDown={onClose}
     >
-      <div className="cg-house-shell">
-        <header className="cg-house-header">
+      <section
+        className="cg-accolade-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="cg-accolade-modal-title"
+        onPointerDown={(event) => event.stopPropagation()}
+      >
+        <header className="cg-accolade-modal-header">
           <div>
-            <p>Garden House</p>
-            <h2 id="cg-house-title">Hall of Growth</h2>
+            <p>Hall of Growth</p>
+            <h2 id="cg-accolade-modal-title">{display.title}</h2>
+            <span>{display.description}</span>
           </div>
-          <button ref={exitButtonRef} type="button" onClick={onClose}>
-            Exit to My Garden
+          <button
+            ref={closeButtonRef}
+            type="button"
+            onClick={onClose}
+            aria-label={`Close ${display.title} badge book`}
+          >
+            Close
           </button>
         </header>
 
-        <div className="cg-house-layout">
-          <div className="cg-house-stage">
-            <div
-              className="cg-house-room"
-              onPointerDown={(event) => {
-                if (event.target !== event.currentTarget) return;
-                const bounds = event.currentTarget.getBoundingClientRect();
-                setMary({
-                  x: Math.max(4, Math.min(96, ((event.clientX - bounds.left) / bounds.width) * 100)),
-                  y: Math.max(27, Math.min(88, ((event.clientY - bounds.top) / bounds.height) * 100)),
-                });
-              }}
-            >
-              <div className="cg-house-room-title" aria-hidden="true">
-                Everything you have grown
-              </div>
-              {state.displays.map((item) => {
-                const layout = DISPLAY_LAYOUT[item.key];
-                return (
-                  <button
-                    type="button"
-                    key={item.key}
-                    className={`cg-house-display ${layout.className} ${selectedKey === item.key ? "is-selected" : ""}`}
-                    style={{ left: `${layout.x}%`, top: `${layout.y}%` }}
-                    onClick={() => inspect(item.key)}
-                    aria-label={`Inspect ${item.title}`}
-                  >
-                    <span aria-hidden="true">{layout.emblem}</span>
-                    <small>{item.title}</small>
-                    {isGardenHouseDisplayUnread(item) ? (
-                      <i aria-label="Updated">!</i>
-                    ) : null}
-                  </button>
-                );
-              })}
-
-              <button
-                className="cg-house-future-display"
-                type="button"
-                style={{ left: "67%", top: "75%" }}
-                onClick={() => {
-                  setMary({ x: 67, y: 84 });
-                  setSelectedKey(null);
-                }}
-                aria-label="An empty pedestal for a future accomplishment"
-              >
-                <span aria-hidden="true">?</span>
-                <small>Something still to come</small>
-              </button>
-
-              <div
-                className="cg-house-mary"
-                style={{ left: `${mary.x}%`, top: `${mary.y}%` }}
-                aria-label="You are walking inside the Garden House"
-              >
-                <span />
-              </div>
-              <button className="cg-house-door" type="button" onClick={onClose}>
-                <span aria-hidden="true" />
-                Exit
-              </button>
-            </div>
+        <div className="cg-accolade-book-progress">
+          <div>
+            <span style={{ width: `${progress}%` }} />
           </div>
-
-          <GardenHouseInspector display={selected} />
+          <strong>{displayProgressCopy(display, earnedCount, badges.length)}</strong>
         </div>
-        <p className="cg-house-help">Tap the floor to walk · Tap a display to inspect · Arrow keys or WASD also move</p>
-      </div>
-    </section>
+
+        <div className="cg-accolade-badge-grid">
+          {badges.map((badge, index) => {
+            const expanded = expandedBadgeId === badge.id;
+            return (
+              <article
+                className={`cg-accolade-badge-card${badge.earned ? " is-earned" : " is-locked"}${expanded ? " is-expanded" : ""}`}
+                key={badge.id}
+              >
+                <button
+                  type="button"
+                  aria-expanded={expanded}
+                  onClick={() =>
+                    setExpandedBadgeId((current) =>
+                      current === badge.id ? null : badge.id,
+                    )
+                  }
+                >
+                  <BadgeArt badge={badge} index={index} />
+                  <span className="cg-accolade-badge-name">
+                    <strong>{badge.name}</strong>
+                    <small>{badge.earned ? "Earned" : "Still to grow"}</small>
+                  </span>
+                  <span className="cg-accolade-expand-mark" aria-hidden="true">
+                    {expanded ? "-" : "+"}
+                  </span>
+                </button>
+                {expanded ? (
+                  <div className="cg-accolade-badge-details">
+                    <p>{badge.description}</p>
+                    <dl>
+                      <div>
+                        <dt>How to earn it</dt>
+                        <dd>{badge.requirement}</dd>
+                      </div>
+                      {display.key === "calendar" && badge.earned ? (
+                        <div>
+                          <dt>Longest streak</dt>
+                          <dd>{asNumber(display.metadata, "longestStreak")} days</dd>
+                        </div>
+                      ) : null}
+                    </dl>
+                  </div>
+                ) : null}
+              </article>
+            );
+          })}
+        </div>
+      </section>
+    </div>
   );
 }

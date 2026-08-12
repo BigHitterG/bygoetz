@@ -23,6 +23,14 @@ const interior = readFileSync(
   "app/community-garden/components/GardenHouseInterior.tsx",
   "utf8",
 );
+const houseWorld = readFileSync(
+  "app/community-garden/lib/gardenHouseWorld.ts",
+  "utf8",
+);
+const renderer = readFileSync(
+  "app/community-garden/game/gardenRenderer.ts",
+  "utf8",
+);
 const app = readFileSync(
   "app/community-garden/components/CommunityGardenApp.tsx",
   "utf8",
@@ -89,24 +97,28 @@ test("inspection is authenticated and persists the seen timestamp", () => {
   assert.match(app, /isGardenHouseDisplayUnread/);
 });
 
-test("the existing house opens an immediately available walkable interior", () => {
+test("the existing house enters a true third canvas world with the regular Mary", () => {
   assert.match(canvas, /onOpenGardenHouse/);
   assert.match(canvas, /Opening the Hall of Growth/);
   assert.match(canvas, /gridX >= 5/);
   assert.match(canvas, /gridY >= -1/);
-  assert.match(app, /<GardenHouseInterior/);
+  assert.match(renderer, /GardenWorldMode = "community" \| "personal" \| "house"/);
+  assert.match(renderer, /drawGardenHouseWorld/);
+  assert.match(renderer, /drawMary\(ctx, state\.mary/);
+  assert.match(canvas, /worldSnapshotsRef\.current\.house/);
+  assert.match(canvas, /GARDEN_HOUSE_SPAWN/);
+  assert.match(canvas, /onInspectGardenHouseDisplayRef/);
+  assert.match(canvas, /onExitGardenHouseRef/);
+  assert.match(app, /setWorld\("house"\)/);
+  assert.match(app, /<GardenHouseBadgeModal/);
   assert.match(app, /buildGuestGardenHouseState\(myGarden\)/);
   assert.doesNotMatch(interior, /125[,_]000/);
   assert.match(app, /onOpenGardenHouse=\{openGardenHouse\}/);
-  assert.match(interior, /onPointerDown/);
-  assert.match(interior, /ArrowLeft/);
-  assert.match(interior, /ArrowRight/);
-  assert.match(interior, /ArrowUp/);
-  assert.match(interior, /ArrowDown/);
-  assert.match(interior, /Exit to My Garden/);
+  assert.doesNotMatch(interior, /START_POSITION/);
+  assert.doesNotMatch(interior, /cg-house-mary/);
 });
 
-test("the fixed room includes nine earned displays, silhouettes, and a future pedestal", () => {
+test("the wood room has nine physical podiums that open badge-focused books", () => {
   for (const label of [
     "Stewardship",
     "Garden Work",
@@ -120,11 +132,20 @@ test("the fixed room includes nine earned displays, silhouettes, and a future pe
   ]) {
     assert.match(model, new RegExp(label));
   }
-  assert.match(interior, /is-silhouette/);
-  assert.match(interior, /Something still to come/);
+  assert.equal((houseWorld.match(/key: "/g) ?? []).length, 9);
+  assert.match(houseWorld, /GARDEN_HOUSE_DOOR/);
+  assert.match(renderer, /MORE TO COME/);
+  assert.match(renderer, /HALL OF GROWTH/);
+  assert.match(interior, /getAccoladeBadges/);
+  assert.match(interior, /GARDEN_STEWARDSHIP_RANKS\.map/);
+  assert.match(interior, /LIVING_GARDEN_DEFINITIONS\.map/);
+  assert.match(interior, /MY_GARDEN_COLLECTIONS\.map/);
+  assert.match(interior, /Still to grow/);
+  assert.match(interior, /How to earn it/);
+  assert.match(interior, /cg-accolade-badge-art/);
   assert.match(interior, /role="dialog"/);
   assert.match(interior, /aria-modal="true"/);
-  assert.match(styles, /\.cg-house-room/);
-  assert.match(styles, /@media \(max-width: 760px\)/);
-  assert.match(styles, /prefers-reduced-motion: reduce/);
+  assert.match(styles, /\.cg-accolade-badge-grid/);
+  assert.match(styles, /\.cg-accolade-medallion/);
+  assert.match(styles, /@media \(max-width: 600px\)/);
 });
