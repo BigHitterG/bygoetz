@@ -13,7 +13,7 @@ import { withSiteBasePath } from "@/lib/sitePath";
 import { getBasilOrigin } from "@/lib/communityGarden/urls";
 import centerLogo from "../public/concepts/images/Logo-01.png";
 import basilIcon from "../public/community-garden/basil-icon-256.png";
-import explorersMonkey from "../public/explorers/Monkey.png";
+import explorersArtwork from "../public/explorers/Explorer.png";
 import gromasBubble from "../public/gromas/gromas-bubble-v3.webp";
 import artStudioScale from "../public/art/studio-scale.jpg";
 import thomasPortrait from "../public/images/about/tj-goetz-founder.jpg";
@@ -687,8 +687,8 @@ export function HoneycombBubbles({
               >
                 <Image
                   className={styles.explorersPreview}
-                  src={explorersMonkey}
-                  alt="Geometric monkey artwork from The Explorers Series"
+                  src={explorersArtwork}
+                  alt="Geometric explorer artwork from The Explorers Series"
                   draggable={false}
                 />
               </a>

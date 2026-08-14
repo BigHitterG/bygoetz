@@ -11,6 +11,10 @@ const styles = readFileSync(
   new URL("../app/art/page.module.css", import.meta.url),
   "utf8",
 );
+const nextConfig = readFileSync(
+  new URL("../next.config.ts", import.meta.url),
+  "utf8",
+);
 
 test("art landing has a focused identity, portrait, and art-first arrival", () => {
   assert.match(page, /alternates: \{ canonical: "\/art" \}/);
@@ -33,13 +37,27 @@ test("carousel is controllable and respects reduced motion and mobile", () => {
   assert.match(carousel, /Show previous studio image/);
   assert.match(carousel, /Show next studio image/);
   assert.match(carousel, /prefers-reduced-motion: reduce/);
-  assert.match(carousel, /max-width: 760px/);
+  assert.match(carousel, /max-width: 820px/);
   assert.match(styles, /@media \(prefers-reduced-motion: reduce\)/);
   assert.match(styles, /\.carouselPause,[\s\S]*\.carouselProgress \{[\s\S]*display: none;/);
 });
 
 test("placeholder content is honest while the catalog is being assembled", () => {
   assert.match(page, /Individual records are being photographed and assembled\./);
-  assert.match(page, /Catalog details forthcoming/);
+  assert.match(page, /Studio view \/ 001/);
   assert.doesNotMatch(page, /\$[0-9]/);
+});
+
+test("art imagery and controls remain bounded on smaller screens", () => {
+  assert.match(styles, /\.studioHeroImage img \{[\s\S]*?height: auto;/);
+  assert.match(styles, /\.explorersSection figure img \{[\s\S]*?height: auto;/);
+  assert.match(styles, /\.portraitFrame \{[\s\S]*?height: clamp\(320px, 56svh, 500px\);/);
+  assert.match(styles, /\.carousel \{[\s\S]*?height: clamp\(360px, 62svh, 560px\);/);
+  assert.match(styles, /\.carouselControls button \{[\s\S]*?height: 44px;/);
+  assert.match(styles, /\.carouselImage \{[\s\S]*?object-fit: contain;/);
+  assert.match(styles, /\.workWide \.workImageFrame \{[\s\S]*?aspect-ratio: 1\.18;/);
+});
+
+test("production serves responsive image derivatives while static export stays compatible", () => {
+  assert.match(nextConfig, /images: \{ unoptimized: isGitHubPagesBuild \}/);
 });

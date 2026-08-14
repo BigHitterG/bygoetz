@@ -2,7 +2,7 @@
 
 import Image, { type StaticImageData } from "next/image";
 import { useEffect, useState } from "react";
-import conceptArtwork from "@/public/concepts/images/551F39B2-861F-4C86-A128-FFDC16CEB303.png";
+import explorersStudio from "@/public/art/explorers-studio.jpg";
 import studioRange from "@/public/art/studio-range.jpg";
 import studioScale from "@/public/art/studio-scale.jpg";
 import workingStudio from "@/public/art/working-studio.jpg";
@@ -13,7 +13,6 @@ type ArtSlide = {
   alt: string;
   label: string;
   note: string;
-  imageClassName?: string;
 };
 
 const slides: ArtSlide[] = [
@@ -24,11 +23,10 @@ const slides: ArtSlide[] = [
     note: "Studio view · Des Moines",
   },
   {
-    image: conceptArtwork,
-    alt: "Illuminated abstract line artwork by Thomas Goetz",
-    label: "Drawing, light, and graphic systems",
-    note: "Original work · Archive preview",
-    imageClassName: styles.carouselImageContained,
+    image: explorersStudio,
+    alt: "Framed prints from The Explorers Series displayed in Thomas Goetz's studio",
+    label: "An editioned world inside the practice",
+    note: "The Explorers Series · Studio view",
   },
   {
     image: studioRange,
@@ -53,7 +51,7 @@ export function ArtHeroCarousel() {
 
   useEffect(() => {
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const mobileViewport = window.matchMedia("(max-width: 760px)");
+    const mobileViewport = window.matchMedia("(max-width: 820px)");
 
     const updateAutoPlay = () => {
       setCanAutoPlay(!reducedMotion.matches && !mobileViewport.matches);
@@ -95,12 +93,12 @@ export function ArtHeroCarousel() {
       <div className={styles.carouselImageFrame}>
         <Image
           key={activeSlide.image.src}
-          className={`${styles.carouselImage} ${activeSlide.imageClassName ?? ""}`}
+          className={styles.carouselImage}
           src={activeSlide.image}
           alt={activeSlide.alt}
           fill
           priority={activeIndex === 0}
-          sizes="(max-width: 760px) 100vw, 62vw"
+          sizes="(max-width: 820px) 100vw, 62vw"
         />
       </div>
 

@@ -54,3 +54,12 @@ test("Original Artwork has its own first-ring doorway and visual preview", () =>
   assert.match(honeycomb, /href=\{withSiteBasePath\("\/art"\)\}/);
   assert.match(honeycomb, /src=\{artStudioScale\}/);
 });
+
+test("The Explorers doorway uses the legible Explorer artwork instead of Monkey", () => {
+  assert.match(
+    honeycomb,
+    /import explorersArtwork from "\.\.\/public\/explorers\/Explorer\.png";/,
+  );
+  assert.match(honeycomb, /src=\{explorersArtwork\}/);
+  assert.doesNotMatch(honeycomb, /Monkey\.png/);
+});

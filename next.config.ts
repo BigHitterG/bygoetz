@@ -28,7 +28,9 @@ const nextConfig = {
         },
       }
     : {}),
-  images: { unoptimized: true },
+  // Static exports cannot use the Next image optimizer. Vercel deployments can,
+  // which keeps the high-resolution studio photographs lightweight on phones.
+  images: { unoptimized: isGitHubPagesBuild },
   basePath,
   assetPrefix: basePath,
 };

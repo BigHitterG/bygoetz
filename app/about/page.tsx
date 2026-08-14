@@ -4,7 +4,7 @@ import Link from "next/link";
 import basilImage from "@/public/community-garden/basil-social-1200.jpg";
 import signatureLogo from "@/public/concepts/images/Logo-01.png";
 import originalArtwork from "@/public/concepts/images/551F39B2-861F-4C86-A128-FFDC16CEB303.png";
-import explorersMonkey from "@/public/explorers/Monkey.png";
+import explorersArtwork from "@/public/explorers/Explorer.png";
 import gromasCover from "@/public/gromas/cover-front-v3.webp";
 import portrait from "@/public/images/about/tj-goetz-founder.jpg";
 import styles from "./page.module.css";
@@ -142,8 +142,8 @@ export default function AboutPage() {
           <Link className={styles.workCard} href="/explorers">
             <div className={`${styles.imageFrame} ${styles.lightFrame}`}>
               <Image
-                src={explorersMonkey}
-                alt="Geometric monkey print from The Explorers Series"
+                src={explorersArtwork}
+                alt="Geometric explorer print from The Explorers Series"
                 sizes="(max-width: 760px) 92vw, 30vw"
               />
             </div>

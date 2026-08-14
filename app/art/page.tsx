@@ -5,7 +5,6 @@ import explorersStudio from "@/public/art/explorers-studio.jpg";
 import studioRange from "@/public/art/studio-range.jpg";
 import studioScale from "@/public/art/studio-scale.jpg";
 import workingStudio from "@/public/art/working-studio.jpg";
-import conceptArtwork from "@/public/concepts/images/551F39B2-861F-4C86-A128-FFDC16CEB303.png";
 import portrait from "@/public/images/about/tj-goetz-founder.jpg";
 import { ArtHeroCarousel } from "./ArtHeroCarousel";
 import styles from "./page.module.css";
@@ -86,7 +85,7 @@ export default function ArtPage() {
               src={portrait}
               alt="Thomas Raymond Goetz, artist and creator of By Goetz"
               priority
-              sizes="(max-width: 760px) 100vw, 38vw"
+              sizes="(max-width: 820px) 100vw, 38vw"
             />
             <figcaption>Thomas Raymond Goetz · Des Moines, Iowa</figcaption>
           </figure>
@@ -150,32 +149,32 @@ export default function ArtPage() {
 
         <div className={styles.workMosaic}>
           <figure className={styles.workLead}>
-            <div className={`${styles.workImageFrame} ${styles.workImageContained}`}>
+            <div className={styles.workImageFrame}>
               <Image
-                src={conceptArtwork}
-                alt="Illuminated abstract line artwork by Thomas Goetz"
-                sizes="(max-width: 760px) 100vw, 58vw"
+                src={studioScale}
+                alt="Blue circular painting installed among original works in Thomas Goetz's studio"
+                sizes="(max-width: 820px) 100vw, 58vw"
               />
             </div>
             <figcaption>
-              <span>Archive preview / 001</span>
-              <strong>Drawing, light, and graphic systems</strong>
-              <small>Catalog details forthcoming</small>
+              <span>Studio view / 001</span>
+              <strong>A blue field at physical scale</strong>
+              <small>Installation and context</small>
             </figcaption>
           </figure>
 
           <figure className={styles.workTall}>
             <div className={styles.workImageFrame}>
               <Image
-                src={studioScale}
-                alt="Original works by Thomas Goetz installed together at physical scale"
-                sizes="(max-width: 760px) 100vw, 34vw"
+                src={workingStudio}
+                alt="Paintings and drawings covering the working walls of Thomas Goetz's studio"
+                sizes="(max-width: 820px) 100vw, 34vw"
               />
             </div>
             <figcaption>
               <span>Studio view / 002</span>
-              <strong>Work at physical scale</strong>
-              <small>Installation and context</small>
+              <strong>The working wall</strong>
+              <small>Process and environment</small>
             </figcaption>
           </figure>
 
@@ -184,7 +183,7 @@ export default function ArtPage() {
               <Image
                 src={studioRange}
                 alt="Geometric, gestural, and framed works in the studio"
-                sizes="(max-width: 760px) 100vw, 70vw"
+                sizes="(max-width: 820px) 100vw, 70vw"
               />
             </div>
             <figcaption>
@@ -212,7 +211,7 @@ export default function ArtPage() {
           <Image
             src={workingStudio}
             alt="Thomas Goetz's studio with paintings and drawings covering the working walls"
-            sizes="(max-width: 760px) 100vw, 62vw"
+            sizes="(max-width: 820px) 100vw, 62vw"
           />
           <figcaption>The working studio · Des Moines, Iowa</figcaption>
         </figure>
@@ -259,7 +258,7 @@ export default function ArtPage() {
           <Image
             src={explorersStudio}
             alt="The Explorers Series prints displayed in Thomas Goetz's studio"
-            sizes="(max-width: 760px) 100vw, 58vw"
+            sizes="(max-width: 820px) 100vw, 58vw"
           />
         </figure>
         <div>
