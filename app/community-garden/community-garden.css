@@ -3205,8 +3205,8 @@
   right: max(12px, env(safe-area-inset-right));
   z-index: 19;
   display: flex;
-  min-width: 122px;
-  min-height: 44px;
+  min-width: 142px;
+  min-height: 56px;
   align-items: center;
   justify-content: center;
   gap: 8px;
@@ -3226,26 +3226,19 @@
 .cg-care-hud-emblem {
   position: relative;
   display: block;
-  width: 25px;
-  height: 25px;
+  width: 32px;
+  height: 32px;
   flex: 0 0 auto;
-  border: 1px solid rgba(52, 35, 31, 0.38);
-  border-radius: 50%;
-  background: #fff4df;
+  overflow: hidden;
+  border-radius: 5px;
 }
 
-.cg-care-hud-emblem::before {
-  position: absolute;
-  left: 9px;
-  top: 5px;
-  width: 7px;
-  height: 7px;
-  background: var(--cg-coral);
-  box-shadow:
-    -5px 5px 0 var(--cg-gold),
-    5px 5px 0 var(--cg-aqua),
-    0 10px 0 var(--cg-olive);
-  content: "";
+.cg-care-hud-emblem img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+  transform: scale(1.3);
 }
 
 .cg-care-hud-copy {
@@ -3267,6 +3260,21 @@
   color: var(--cg-red);
   font-size: 1.08rem;
   line-height: 1.05;
+}
+
+.cg-care-hud-lifetime {
+  margin-top: 3px;
+  color: #7c756e;
+  font-size: 0.46rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  line-height: 1.1;
+  text-transform: uppercase;
+}
+
+.cg-care-hud-lifetime b {
+  color: #635e59;
+  font-size: 0.52rem;
 }
 
 .cg-care-hud-reward {
@@ -3305,7 +3313,7 @@
 .cg-preview-progress {
   position: absolute;
   right: max(12px, env(safe-area-inset-right));
-  top: max(136px, calc(env(safe-area-inset-top) + 130px));
+  top: max(144px, calc(env(safe-area-inset-top) + 138px));
   z-index: 8;
   border: 1px solid rgba(52, 35, 31, 0.54);
   background: rgba(255, 244, 223, 0.9);
@@ -11330,7 +11338,7 @@
 .cg-garden-utilities {
   position: absolute;
   z-index: 18;
-  top: max(160px, calc(env(safe-area-inset-top) + 154px));
+  top: max(176px, calc(env(safe-area-inset-top) + 170px));
   right: max(12px, env(safe-area-inset-right));
   display: flex;
   align-items: stretch;
@@ -11394,13 +11402,13 @@
 
 @media (max-width: 360px) {
   .cg-care-hud {
-    min-width: 108px;
+    min-width: 126px;
     padding-inline: 7px;
   }
 
   .cg-care-hud-emblem {
-    width: 22px;
-    height: 22px;
+    width: 27px;
+    height: 27px;
   }
 
   .cg-care-hud-copy {
@@ -11409,6 +11417,10 @@
 
   .cg-care-hud-copy strong {
     font-size: 0.95rem;
+  }
+
+  .cg-care-hud-lifetime {
+    font-size: 0.41rem;
   }
 }
 

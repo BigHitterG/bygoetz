@@ -2636,6 +2636,7 @@ export function CommunityGardenApp() {
 
         <GardenCareHud
           balance={myGarden.careBalance}
+          lifetimeCare={myGarden.lifetimeCare}
           ready={accountChecked && guestPreviewReady}
           temporary={!memberGarden}
           world={world}

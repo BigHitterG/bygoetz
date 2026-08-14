@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import type { GardenWorldMode } from "../game/gardenRenderer";
 
@@ -10,6 +11,7 @@ type CareReward = {
 
 type GardenCareHudProps = {
   balance: number;
+  lifetimeCare: number;
   ready: boolean;
   temporary: boolean;
   world: GardenWorldMode;
@@ -17,6 +19,7 @@ type GardenCareHudProps = {
 
 export function GardenCareHud({
   balance,
+  lifetimeCare,
   ready,
   temporary,
   world,
@@ -30,8 +33,8 @@ export function GardenCareHud({
     if (!ready) {
       readyRef.current = false;
       previousBalanceRef.current = balance;
-      setReward(null);
-      return;
+      const timeout = window.setTimeout(() => setReward(null), 0);
+      return () => window.clearTimeout(timeout);
     }
     if (!readyRef.current) {
       readyRef.current = true;
@@ -52,7 +55,7 @@ export function GardenCareHud({
     return () => window.clearTimeout(timeout);
   }, [balance, ready]);
 
-  const balanceLabel = `${balance.toLocaleString()} ${temporary ? "temporary " : ""}Care available`;
+  const balanceLabel = `${balance.toLocaleString()} ${temporary ? "temporary " : ""}Care available. ${lifetimeCare.toLocaleString()} Lifetime Care earned.`;
 
   return (
     <aside
@@ -65,10 +68,20 @@ export function GardenCareHud({
           : "Earn Care by helping in the Community Garden. Spend it in My Garden."
       }
     >
-      <span className="cg-care-hud-emblem" aria-hidden="true" />
+      <span className="cg-care-hud-emblem" aria-hidden="true">
+        <Image
+          src="/community-garden/basil-icon-256.png"
+          alt=""
+          width={32}
+          height={32}
+        />
+      </span>
       <span className="cg-care-hud-copy">
         <small>Care{temporary ? " · temporary" : ""}</small>
         <strong>{balance.toLocaleString()}</strong>
+        <span className="cg-care-hud-lifetime">
+          Lifetime Care <b>{lifetimeCare.toLocaleString()}</b>
+        </span>
       </span>
       {reward ? (
         <span className="cg-care-hud-reward" role="status" aria-live="polite">

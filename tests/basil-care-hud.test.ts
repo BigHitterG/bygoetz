@@ -18,9 +18,19 @@ const css = await readFile(
 test("the main play screen always shows the current Care balance", () => {
   assert.match(app, /<GardenCareHud/);
   assert.match(app, /balance={myGarden\.careBalance}/);
+  assert.match(app, /lifetimeCare={myGarden\.lifetimeCare}/);
   assert.match(app, /ready={accountChecked && guestPreviewReady}/);
   assert.match(app, /temporary={!memberGarden}/);
   assert.doesNotMatch(app, /accountChecked && guestPreviewReady \? \(\s*<GardenCareHud/);
+});
+
+test("the Care wallet restores Lifetime Care with Basil's canonical mark", () => {
+  assert.match(hud, /lifetimeCare: number/);
+  assert.match(hud, /Lifetime Care earned/);
+  assert.match(hud, /\/community-garden\/basil-icon-256\.png/);
+  assert.match(hud, /cg-care-hud-lifetime/);
+  assert.match(css, /\.cg-care-hud-lifetime {[^}]*color: #7c756e/);
+  assert.doesNotMatch(css, /\.cg-care-hud-emblem::before/);
 });
 
 test("the Care wallet turns positive balance changes into an earned receipt", () => {
@@ -39,7 +49,7 @@ test("Care sits above the upper-right utilities without moving the minimap", () 
   assert.match(css, /\.cg-care-hud {[\s\S]*pointer-events: none/);
   assert.match(css, /\.cg-care-hud\.is-rewarding/);
   assert.match(css, /@keyframes cg-care-wallet-pulse/);
-  assert.match(css, /\.cg-garden-utilities {[\s\S]*top: max\(160px/);
+  assert.match(css, /\.cg-garden-utilities {[\s\S]*top: max\(176px/);
   assert.doesNotMatch(css, /\.cg-map-key\s*{\s*top: max\(136px/);
   assert.match(css, /@media \(prefers-reduced-motion: reduce\)[\s\S]*\.cg-care-hud\.is-rewarding/);
 });
