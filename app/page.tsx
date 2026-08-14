@@ -79,18 +79,24 @@ const homeJsonLd = {
           {
             "@type": "ListItem",
             position: 1,
+            name: "Original Artwork",
+            url: `${siteUrl}/art`,
+          },
+          {
+            "@type": "ListItem",
+            position: 2,
             name: "The Explorers Series",
             url: `${siteUrl}/explorers`,
           },
           {
             "@type": "ListItem",
-            position: 2,
+            position: 3,
             name: "Gromas and the Gobbledygooks",
             url: `${siteUrl}/gromas`,
           },
           {
             "@type": "ListItem",
-            position: 3,
+            position: 4,
             name: "Basil Community Garden",
             url: "https://basilcommunitygarden.com/",
           },

@@ -25,6 +25,7 @@ test("homepage exposes identity, crawlable project links, and structured data", 
   assert.match(honeycomb, /className=\{styles\.aboutLink\}/);
   assert.match(honeycomb, /src=\{thomasPortrait\}/);
   assert.match(honeycomb, /href=\{withSiteBasePath\("\/about"\)\}/);
+  assert.match(honeycomb, /href=\{withSiteBasePath\("\/art"\)\}/);
   assert.match(honeycomb, /href=\{withSiteBasePath\("\/explorers"\)\}/);
   assert.match(honeycomb, /href=\{withSiteBasePath\("\/gromas"\)\}/);
   assert.match(honeycomb, /href=\{getBasilOrigin\(\)\}/);
@@ -36,12 +37,15 @@ test("homepage exposes identity, crawlable project links, and structured data", 
 test("homepage keeps navigation inside the bubble system", () => {
   assert.doesNotMatch(honeycomb, /<summary>Explore<\/summary>|siteHeader|exploreMenu/);
   assert.match(honeycomb, /const ABOUT_BUBBLE = \{ q: 0, r: 1 \}/);
+  assert.match(honeycomb, /const ART_BUBBLE = \{ q: 1, r: -1 \}/);
+  assert.match(honeycomb, /\[ART_LINK_ID\]: "\/art"/);
   assert.match(honeycomb, /\[ABOUT_LINK_ID\]: "\/about"/);
 });
 
 test("search discovery endpoints include the public By Goetz pages", () => {
   assert.match(robots, /https:\/\/www\.bygoetz\.com\/sitemap\.xml/);
   assert.match(sitemap, /`\$\{siteUrl\}\/about`/);
+  assert.match(sitemap, /`\$\{siteUrl\}\/art`/);
   assert.match(sitemap, /`\$\{siteUrl\}\/explorers`/);
   assert.match(sitemap, /`\$\{siteUrl\}\/gromas`/);
 });

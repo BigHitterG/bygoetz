@@ -23,10 +23,12 @@ test("LazyGrid previews appear quickly for every featured bubble", () => {
   assert.match(honeycomb, /\[EXPLORERS_BUBBLE_ID\]:/);
   assert.match(honeycomb, /\[COMMUNITY_GARDEN_BUBBLE_ID\]:/);
   assert.match(honeycomb, /\[GROMAS_BUBBLE_ID\]:/);
+  assert.match(honeycomb, /\[ART_BUBBLE_ID\]:/);
   assert.match(honeycomb, /\[ABOUT_BUBBLE_ID\]:/);
   assert.match(honeycomb, /kicker: "The Explorers Series"/);
   assert.match(honeycomb, /kicker: "Basil Community Garden"/);
   assert.match(honeycomb, /kicker: "Gromas and the Gobbledygooks"/);
+  assert.match(honeycomb, /kicker: "Original Artwork"/);
   assert.match(honeycomb, /kicker: "About Thomas Raymond Goetz"/);
 });
 
@@ -38,5 +40,17 @@ test("the focused preview content is selected without changing tile routes", () 
   assert.match(honeycomb, /\[EXPLORERS_LINK_ID\]: "\/explorers"/);
   assert.match(honeycomb, /\[COMMUNITY_GARDEN_LINK_ID\]: getBasilOrigin\(\)/);
   assert.match(honeycomb, /\[GROMAS_LINK_ID\]: "\/gromas"/);
+  assert.match(honeycomb, /\[ART_LINK_ID\]: "\/art"/);
   assert.match(honeycomb, /\[ABOUT_LINK_ID\]: "\/about"/);
+});
+
+test("Original Artwork has its own first-ring doorway and visual preview", () => {
+  assert.match(honeycomb, /const ART_BUBBLE = \{ q: 1, r: -1 \}/);
+  assert.match(
+    honeycomb,
+    /import artStudioScale from "\.\.\/public\/art\/studio-scale\.jpg";/,
+  );
+  assert.match(honeycomb, /className=\{styles\.artLink\}/);
+  assert.match(honeycomb, /href=\{withSiteBasePath\("\/art"\)\}/);
+  assert.match(honeycomb, /src=\{artStudioScale\}/);
 });

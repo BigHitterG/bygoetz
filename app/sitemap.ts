@@ -4,7 +4,7 @@ import { explorerProducts } from "@/lib/explorers/products";
 const siteUrl = "https://www.bygoetz.com";
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const updated = new Date("2026-08-12T00:00:00.000Z");
+  const updated = new Date("2026-08-14T00:00:00.000Z");
 
   return [
     {
@@ -18,6 +18,13 @@ export default function sitemap(): MetadataRoute.Sitemap {
       lastModified: updated,
       changeFrequency: "monthly",
       priority: 0.9,
+    },
+    {
+      url: `${siteUrl}/art`,
+      lastModified: updated,
+      changeFrequency: "monthly",
+      priority: 0.95,
+      images: [`${siteUrl}/art/working-studio.jpg`],
     },
     {
       url: `${siteUrl}/explorers`,

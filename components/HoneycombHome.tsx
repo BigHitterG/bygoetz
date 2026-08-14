@@ -15,6 +15,7 @@ import centerLogo from "../public/concepts/images/Logo-01.png";
 import basilIcon from "../public/community-garden/basil-icon-256.png";
 import explorersMonkey from "../public/explorers/Monkey.png";
 import gromasBubble from "../public/gromas/gromas-bubble-v3.webp";
+import artStudioScale from "../public/art/studio-scale.jpg";
 import thomasPortrait from "../public/images/about/tj-goetz-founder.jpg";
 import styles from "./HoneycombHome.module.css";
 
@@ -76,10 +77,14 @@ const COMMUNITY_GARDEN_LINK_ID = "community-garden";
 const GROMAS_BUBBLE = { q: 0, r: -1 };
 const GROMAS_BUBBLE_ID = `${GROMAS_BUBBLE.q}:${GROMAS_BUBBLE.r}`;
 const GROMAS_LINK_ID = "gromas";
+const ART_BUBBLE = { q: 1, r: -1 };
+const ART_BUBBLE_ID = `${ART_BUBBLE.q}:${ART_BUBBLE.r}`;
+const ART_LINK_ID = "art";
 const ABOUT_BUBBLE = { q: 0, r: 1 };
 const ABOUT_BUBBLE_ID = `${ABOUT_BUBBLE.q}:${ABOUT_BUBBLE.r}`;
 const ABOUT_LINK_ID = "about";
 const LINKED_BUBBLE_ROUTES: Record<string, string> = {
+  [ART_LINK_ID]: "/art",
   [ABOUT_LINK_ID]: "/about",
   [EXPLORERS_LINK_ID]: "/explorers",
   [COMMUNITY_GARDEN_LINK_ID]: getBasilOrigin(),
@@ -103,6 +108,12 @@ const FOCUS_OVERLAYS: Record<string, FocusOverlayContent> = {
     title: "A rhyming adventure powered by every step",
     description:
       "When the Great Power Supply begins to fade, Gromas and Chet rally the Gobbledygooks to build a remarkable new machine.",
+  },
+  [ART_BUBBLE_ID]: {
+    kicker: "Original Artwork",
+    title: "Paintings, drawings, and visual worlds",
+    description:
+      "Enter the studio practice of Thomas Raymond Goetz—selected work, available pieces, portfolio materials, and the process behind them.",
   },
   [ABOUT_BUBBLE_ID]: {
     kicker: "About Thomas Raymond Goetz",
@@ -629,6 +640,8 @@ export function HoneycombBubbles({
           bubble.r === COMMUNITY_GARDEN_BUBBLE.r;
         const isGromasBubble =
           bubble.q === GROMAS_BUBBLE.q && bubble.r === GROMAS_BUBBLE.r;
+        const isArtBubble =
+          bubble.q === ART_BUBBLE.q && bubble.r === ART_BUBBLE.r;
         const isAboutBubble =
           bubble.q === ABOUT_BUBBLE.q && bubble.r === ABOUT_BUBBLE.r;
 
@@ -650,6 +663,7 @@ export function HoneycombBubbles({
               isExplorersBubble ||
               isCommunityGardenBubble ||
               isGromasBubble ||
+              isArtBubble ||
               isAboutBubble
                 ? undefined
                 : true
@@ -707,6 +721,22 @@ export function HoneycombBubbles({
                   className={styles.gromasPreview}
                   src={gromasBubble}
                   alt="Gromas from Gromas and the Gobbledygooks"
+                  draggable={false}
+                />
+              </a>
+            ) : null}
+            {isArtBubble ? (
+              <a
+                className={styles.artLink}
+                data-linked-bubble-id={ART_LINK_ID}
+                aria-label="Open original artwork by Thomas Raymond Goetz"
+                href={withSiteBasePath("/art")}
+                onClick={preventPointerClickNavigation}
+              >
+                <Image
+                  className={styles.artPreview}
+                  src={artStudioScale}
+                  alt="Blue circular painting in Thomas Goetz's studio"
                   draggable={false}
                 />
               </a>

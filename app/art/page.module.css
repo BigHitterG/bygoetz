@@ -1,0 +1,1195 @@
+.artPage {
+  --paper: #f2efe7;
+  --ink: #11110f;
+  --soft-ink: #5c5d58;
+  --line: rgba(17, 17, 15, 0.22);
+  --blue: #22aee4;
+  min-height: 100vh;
+  overflow-x: clip;
+  color: var(--ink);
+  background: var(--paper);
+}
+
+.siteHeader {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  display: grid;
+  min-height: 72px;
+  grid-template-columns: minmax(180px, 1fr) auto minmax(180px, 1fr);
+  align-items: center;
+  gap: 28px;
+  padding: 0 clamp(18px, 2.4vw, 36px);
+  border-bottom: 1px solid var(--line);
+  background: rgba(242, 239, 231, 0.92);
+  backdrop-filter: blur(18px);
+}
+
+.artWordmark,
+.backLink,
+.desktopNav a,
+.mobileMenu a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.artWordmark {
+  display: inline-flex;
+  align-items: baseline;
+  justify-self: start;
+  gap: 9px;
+  letter-spacing: -0.025em;
+}
+
+.artWordmark strong {
+  font-size: 0.94rem;
+  font-weight: 820;
+  text-transform: uppercase;
+}
+
+.artWordmark span {
+  color: var(--soft-ink);
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 0.69rem;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+
+.desktopNav {
+  display: flex;
+  align-items: center;
+  gap: clamp(15px, 2.2vw, 30px);
+  font-size: 0.7rem;
+  font-weight: 760;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+}
+
+.desktopNav a,
+.backLink {
+  position: relative;
+  padding: 8px 0;
+}
+
+.desktopNav a::after,
+.backLink::after,
+.aboutCopy a::after,
+.explorersSection a::after {
+  position: absolute;
+  right: 0;
+  bottom: 2px;
+  left: 0;
+  height: 2px;
+  background: var(--blue);
+  content: "";
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 180ms ease;
+}
+
+.desktopNav a:hover::after,
+.desktopNav a:focus-visible::after,
+.backLink:hover::after,
+.backLink:focus-visible::after,
+.aboutCopy a:hover::after,
+.aboutCopy a:focus-visible::after,
+.explorersSection a:hover::after,
+.explorersSection a:focus-visible::after {
+  transform: scaleX(1);
+}
+
+.backLink {
+  justify-self: end;
+  font-size: 0.7rem;
+  font-weight: 760;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.mobileMenu {
+  display: none;
+}
+
+.hero {
+  display: grid;
+  min-height: calc(100svh - 72px);
+  grid-template-columns: minmax(340px, 0.72fr) minmax(0, 1.28fr);
+  gap: 1px;
+  border-bottom: 1px solid var(--ink);
+  background: var(--ink);
+}
+
+.identityPanel {
+  display: grid;
+  min-width: 0;
+  grid-template-rows: minmax(310px, 0.86fr) auto;
+  background: var(--paper);
+}
+
+.portraitFrame {
+  position: relative;
+  min-height: 0;
+  overflow: hidden;
+  margin: 0;
+  border-bottom: 1px solid var(--ink);
+  background: #d9d8d2;
+}
+
+.portraitFrame img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 29%;
+}
+
+.portraitFrame figcaption {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  padding: 7px 9px;
+  color: #fff;
+  background: rgba(17, 17, 15, 0.82);
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 0.58rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.heroCopy {
+  padding: clamp(26px, 3.5vw, 52px);
+}
+
+.eyebrow,
+.sectionCode {
+  margin: 0;
+  color: var(--soft-ink);
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 0.65rem;
+  font-weight: 690;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.heroCopy h1 {
+  max-width: 650px;
+  margin: 19px 0 0;
+  font-size: clamp(2.7rem, 4.9vw, 5.8rem);
+  font-weight: 760;
+  line-height: 0.88;
+  letter-spacing: -0.075em;
+}
+
+.heroLede {
+  max-width: 580px;
+  margin: 25px 0 0;
+  color: #3f413d;
+  font-size: clamp(0.98rem, 1.22vw, 1.18rem);
+  line-height: 1.52;
+}
+
+.heroActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 29px;
+}
+
+.heroActions a,
+.professionalCard > a {
+  display: inline-flex;
+  min-height: 43px;
+  align-items: center;
+  justify-content: center;
+  padding: 0 17px;
+  border: 1px solid var(--ink);
+  border-radius: 999px;
+  color: inherit;
+  font-size: 0.7rem;
+  font-weight: 780;
+  letter-spacing: 0.08em;
+  text-decoration: none;
+  text-transform: uppercase;
+  transition:
+    color 180ms ease,
+    background 180ms ease,
+    transform 180ms ease;
+}
+
+.heroActions a:first-child,
+.professionalCard > a {
+  color: var(--paper);
+  background: var(--ink);
+}
+
+.heroActions a:hover,
+.heroActions a:focus-visible,
+.professionalCard > a:hover,
+.professionalCard > a:focus-visible {
+  outline: none;
+  transform: translateY(-2px);
+}
+
+.carousel {
+  position: relative;
+  min-width: 0;
+  min-height: calc(100svh - 72px);
+  overflow: hidden;
+  color: #fff;
+  background: #1a1a18;
+}
+
+.carouselImageFrame {
+  position: absolute;
+  inset: 0;
+  background: #1a1a18;
+}
+
+.carouselImage {
+  object-fit: cover;
+  object-position: center;
+  animation: carouselReveal 520ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.carouselImageContained {
+  object-fit: contain;
+  padding: clamp(18px, 4vw, 68px);
+  background: #20201e;
+}
+
+.carousel::after {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(180deg, rgba(0, 0, 0, 0.52), transparent 24%),
+    linear-gradient(0deg, rgba(0, 0, 0, 0.7), transparent 35%);
+  content: "";
+  pointer-events: none;
+}
+
+.carouselTopline,
+.carouselCaption,
+.carouselControls,
+.carouselProgress {
+  position: absolute;
+  z-index: 2;
+}
+
+.carouselTopline {
+  top: 25px;
+  right: 28px;
+  left: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 0.63rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.carouselCaption {
+  right: 28px;
+  bottom: 82px;
+  left: 28px;
+}
+
+.carouselCaption p {
+  max-width: 780px;
+  margin: 0;
+  font-size: clamp(1.9rem, 4.4vw, 5.3rem);
+  font-weight: 730;
+  line-height: 0.91;
+  letter-spacing: -0.06em;
+}
+
+.carouselCaption span {
+  display: block;
+  margin-top: 13px;
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 0.62rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.carouselControls {
+  right: 28px;
+  bottom: 24px;
+  display: flex;
+  gap: 7px;
+}
+
+.carouselControls button {
+  min-width: 41px;
+  height: 36px;
+  padding: 0 12px;
+  border: 1px solid rgba(255, 255, 255, 0.62);
+  border-radius: 999px;
+  color: #fff;
+  background: rgba(16, 16, 14, 0.4);
+  font-size: 0.8rem;
+  cursor: pointer;
+  backdrop-filter: blur(9px);
+}
+
+.carouselControls button:hover,
+.carouselControls button:focus-visible {
+  border-color: #fff;
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+
+.carouselControls .carouselPause {
+  min-width: 70px;
+  font-size: 0.62rem;
+  font-weight: 750;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.carouselProgress {
+  right: 28px;
+  bottom: 24px;
+  left: 28px;
+  height: 1px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.32);
+  pointer-events: none;
+  transform: translateY(47px);
+}
+
+.carouselProgress span {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: #fff;
+  transform: scaleX(0);
+  transform-origin: left;
+}
+
+.carouselProgress .carouselProgressActive {
+  animation: carouselProgress 7s linear both;
+}
+
+.directory {
+  position: relative;
+  overflow: hidden;
+  padding: clamp(86px, 10vw, 150px) clamp(20px, 4vw, 66px);
+  color: #f5f2eb;
+  background: var(--ink);
+}
+
+.doodleThread {
+  position: absolute;
+  inset: 20px -4% auto;
+  width: 108%;
+  height: 82%;
+  fill: none;
+  stroke: var(--blue);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.2;
+  opacity: 0.2;
+  pointer-events: none;
+}
+
+.sectionIntro,
+.directoryList {
+  position: relative;
+  z-index: 1;
+}
+
+.sectionIntro {
+  display: grid;
+  max-width: 1420px;
+  grid-template-columns: minmax(100px, 0.45fr) minmax(320px, 1.1fr) minmax(240px, 0.75fr);
+  align-items: end;
+  gap: clamp(24px, 4vw, 72px);
+  margin: 0 auto clamp(68px, 9vw, 124px);
+}
+
+.directory .sectionCode,
+.contactSection .sectionCode {
+  color: #9c9e98;
+}
+
+.sectionIntro h2,
+.sectionHeading h2,
+.studioStatement h2,
+.professionalCard h2,
+.explorersSection h2,
+.aboutSection h2,
+.contactSection h2 {
+  margin: 0;
+  font-size: clamp(2.5rem, 6vw, 7.3rem);
+  font-weight: 740;
+  line-height: 0.88;
+  letter-spacing: -0.07em;
+}
+
+.sectionIntro > p:last-child {
+  margin: 0;
+  color: #bfc0ba;
+  font-size: clamp(0.95rem, 1.25vw, 1.15rem);
+  line-height: 1.55;
+}
+
+.directoryList {
+  max-width: 1420px;
+  margin: 0 auto;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.22);
+}
+
+.directoryRow {
+  display: grid;
+  grid-template-columns: 70px minmax(170px, 0.7fr) minmax(260px, 1.3fr) 40px;
+  align-items: center;
+  gap: 24px;
+  min-height: clamp(84px, 8vw, 122px);
+  border-top: 1px solid rgba(255, 255, 255, 0.22);
+  color: inherit;
+  text-decoration: none;
+  transition:
+    color 180ms ease,
+    background 180ms ease,
+    padding 180ms ease;
+}
+
+.directoryRow:hover,
+.directoryRow:focus-visible {
+  padding-right: 15px;
+  padding-left: 15px;
+  color: var(--ink);
+  background: var(--blue);
+  outline: none;
+}
+
+.directoryIndex,
+.directoryDetail {
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 0.68rem;
+  letter-spacing: 0.07em;
+}
+
+.directoryRow strong {
+  font-size: clamp(1.55rem, 3.5vw, 4.2rem);
+  font-weight: 710;
+  line-height: 0.95;
+  letter-spacing: -0.055em;
+}
+
+.directoryDetail {
+  max-width: 490px;
+  color: #bfc0ba;
+  line-height: 1.45;
+}
+
+.directoryRow:hover .directoryDetail,
+.directoryRow:focus-visible .directoryDetail {
+  color: rgba(17, 17, 15, 0.72);
+}
+
+.directoryArrow {
+  justify-self: end;
+  font-size: 1.35rem;
+}
+
+.worksSection,
+.studioSection,
+.professionalSection,
+.explorersSection,
+.aboutSection {
+  padding-right: clamp(20px, 4vw, 66px);
+  padding-left: clamp(20px, 4vw, 66px);
+}
+
+.worksSection {
+  padding-top: clamp(90px, 11vw, 170px);
+  padding-bottom: clamp(100px, 13vw, 190px);
+}
+
+.sectionHeading {
+  display: grid;
+  max-width: 1420px;
+  grid-template-columns: minmax(0, 1.3fr) minmax(250px, 0.55fr);
+  align-items: end;
+  gap: clamp(34px, 7vw, 120px);
+  margin: 0 auto clamp(58px, 8vw, 116px);
+}
+
+.sectionHeading h2 {
+  max-width: 940px;
+  margin-top: 17px;
+}
+
+.sectionHeading > p {
+  margin: 0;
+  color: var(--soft-ink);
+  font-size: clamp(0.96rem, 1.18vw, 1.1rem);
+  line-height: 1.6;
+}
+
+.workMosaic {
+  display: grid;
+  max-width: 1420px;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  align-items: start;
+  gap: clamp(18px, 2.7vw, 42px);
+  margin: 0 auto;
+}
+
+.workMosaic figure {
+  margin: 0;
+}
+
+.workLead {
+  grid-column: 1 / span 7;
+}
+
+.workTall {
+  grid-column: 9 / span 4;
+  padding-top: clamp(80px, 12vw, 190px);
+}
+
+.workWide {
+  grid-column: 3 / span 8;
+  margin-top: clamp(45px, 8vw, 130px) !important;
+}
+
+.workImageFrame {
+  position: relative;
+  overflow: hidden;
+  background: #d4d2cb;
+}
+
+.workLead .workImageFrame {
+  aspect-ratio: 1;
+}
+
+.workTall .workImageFrame {
+  aspect-ratio: 0.72;
+}
+
+.workWide .workImageFrame {
+  aspect-ratio: 1.45;
+}
+
+.workImageFrame img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 700ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.workImageContained {
+  background: #20201e;
+}
+
+.workImageContained img {
+  object-fit: contain;
+  padding: 5%;
+}
+
+.workMosaic figure:hover img {
+  transform: scale(1.015);
+}
+
+.workMosaic figcaption {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 16px;
+  padding-top: 13px;
+  border-top: 1px solid var(--ink);
+}
+
+.workMosaic figcaption span,
+.workMosaic figcaption small {
+  color: var(--soft-ink);
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 0.59rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.workMosaic figcaption strong {
+  font-size: 0.82rem;
+  font-weight: 720;
+}
+
+.workMosaic figcaption small {
+  text-align: right;
+}
+
+.studioSection {
+  display: grid;
+  grid-template-columns: minmax(300px, 0.7fr) minmax(0, 1.3fr);
+  align-items: center;
+  gap: clamp(45px, 8vw, 130px);
+  padding-top: clamp(85px, 10vw, 150px);
+  padding-bottom: clamp(85px, 10vw, 150px);
+  color: #f4f1e9;
+  background: #20211e;
+}
+
+.studioStatement {
+  max-width: 610px;
+  justify-self: end;
+}
+
+.studioStatement .sectionCode {
+  color: #a9aaa4;
+}
+
+.studioStatement h2 {
+  margin-top: 22px;
+  font-size: clamp(3rem, 5.5vw, 6.6rem);
+}
+
+.studioStatement > p:not(.sectionCode) {
+  margin: 31px 0 0;
+  color: #c5c6c0;
+  font-size: clamp(1rem, 1.4vw, 1.22rem);
+  line-height: 1.65;
+}
+
+.studioStatement > span {
+  display: inline-block;
+  margin-top: 26px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.26);
+  color: #92958e;
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 0.61rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.studioHeroImage {
+  margin: 0;
+}
+
+.studioHeroImage img {
+  display: block;
+  width: 100%;
+  max-height: 920px;
+  object-fit: cover;
+  object-position: center;
+}
+
+.studioHeroImage figcaption {
+  padding-top: 11px;
+  color: #aeb0a9;
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 0.6rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.professionalSection {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1px;
+  padding-top: clamp(100px, 12vw, 180px);
+  padding-bottom: clamp(100px, 12vw, 180px);
+  background: var(--ink);
+}
+
+.professionalCard {
+  display: flex;
+  min-height: 610px;
+  align-items: flex-start;
+  flex-direction: column;
+  padding: clamp(34px, 5vw, 76px);
+  background: var(--paper);
+}
+
+.portfolioCard {
+  color: #f5f2eb;
+  background: var(--blue);
+}
+
+.portfolioCard .sectionCode,
+.portfolioCard p,
+.portfolioCard li {
+  color: rgba(17, 17, 15, 0.72);
+}
+
+.professionalCard h2 {
+  max-width: 690px;
+  margin-top: 24px;
+  font-size: clamp(3.1rem, 6vw, 7rem);
+}
+
+.professionalCard > p:not(.sectionCode) {
+  max-width: 560px;
+  margin: 32px 0 0;
+  color: var(--soft-ink);
+  font-size: clamp(1rem, 1.35vw, 1.22rem);
+  line-height: 1.58;
+}
+
+.professionalCard ul {
+  width: 100%;
+  margin: 38px 0 40px;
+  padding: 0;
+  list-style: none;
+}
+
+.professionalCard li {
+  padding: 11px 0;
+  border-top: 1px solid currentColor;
+  color: #545650;
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 0.64rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.professionalCard li:last-child {
+  border-bottom: 1px solid currentColor;
+}
+
+.professionalCard > a {
+  gap: 12px;
+  margin-top: auto;
+}
+
+.portfolioCard > a {
+  border-color: var(--ink);
+}
+
+.explorersSection {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(300px, 0.75fr);
+  align-items: center;
+  gap: clamp(42px, 8vw, 130px);
+  padding-top: clamp(95px, 12vw, 180px);
+  padding-bottom: clamp(95px, 12vw, 180px);
+}
+
+.explorersSection figure {
+  margin: 0;
+}
+
+.explorersSection figure img {
+  display: block;
+  width: 100%;
+  max-height: 850px;
+  object-fit: cover;
+}
+
+.explorersSection > div {
+  max-width: 560px;
+}
+
+.explorersSection h2 {
+  margin-top: 20px;
+  font-size: clamp(3rem, 6vw, 6.8rem);
+}
+
+.explorersSection p:not(.sectionCode) {
+  margin: 30px 0 0;
+  color: var(--soft-ink);
+  font-size: clamp(1rem, 1.4vw, 1.2rem);
+  line-height: 1.62;
+}
+
+.explorersSection a,
+.aboutCopy a {
+  position: relative;
+  display: inline-flex;
+  gap: 10px;
+  margin-top: 30px;
+  padding-bottom: 7px;
+  color: inherit;
+  font-size: 0.72rem;
+  font-weight: 790;
+  letter-spacing: 0.08em;
+  text-decoration: none;
+  text-transform: uppercase;
+}
+
+.aboutSection {
+  display: grid;
+  grid-template-columns: minmax(250px, 0.72fr) minmax(300px, 0.86fr) minmax(260px, 0.62fr);
+  align-items: start;
+  gap: clamp(40px, 7vw, 110px);
+  padding-top: clamp(95px, 10vw, 160px);
+  padding-bottom: clamp(95px, 10vw, 160px);
+  border-top: 1px solid var(--ink);
+}
+
+.aboutSection h2 {
+  max-width: 600px;
+  margin-top: 20px;
+  font-size: clamp(3rem, 5.4vw, 6.2rem);
+}
+
+.aboutCopy > p {
+  margin: 0;
+  font-size: clamp(1.25rem, 2.15vw, 2.15rem);
+  line-height: 1.25;
+  letter-spacing: -0.035em;
+}
+
+.aboutFacts {
+  margin: 0;
+}
+
+.aboutFacts div {
+  padding: 14px 0;
+  border-top: 1px solid var(--ink);
+}
+
+.aboutFacts div:last-child {
+  border-bottom: 1px solid var(--ink);
+}
+
+.aboutFacts dt {
+  color: var(--soft-ink);
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 0.59rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.aboutFacts dd {
+  margin: 8px 0 0;
+  font-size: 0.9rem;
+  font-weight: 690;
+}
+
+.contactSection {
+  padding: clamp(80px, 10vw, 150px) clamp(20px, 4vw, 66px) 36px;
+  color: #f4f1e9;
+  background: var(--ink);
+}
+
+.contactSection h2 {
+  max-width: 1100px;
+  margin-top: 23px;
+  font-size: clamp(4rem, 10vw, 12rem);
+}
+
+.contactSection > p:not(.sectionCode) {
+  max-width: 640px;
+  margin: 35px 0 0;
+  color: #bfc0ba;
+  font-size: clamp(1rem, 1.45vw, 1.25rem);
+  line-height: 1.58;
+}
+
+.contactLinks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px 34px;
+  margin-top: clamp(45px, 7vw, 90px);
+}
+
+.contactLinks a {
+  color: inherit;
+  font-size: clamp(1.3rem, 3vw, 3rem);
+  font-weight: 680;
+  letter-spacing: -0.04em;
+  text-decoration-color: var(--blue);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 7px;
+}
+
+.otherWorlds {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 15px 27px;
+  margin-top: clamp(90px, 13vw, 180px);
+  padding-top: 24px;
+  border-top: 1px solid rgba(255, 255, 255, 0.25);
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 0.63rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.otherWorlds span {
+  margin-right: auto;
+  color: #888b84;
+}
+
+.otherWorlds a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.otherWorlds a:hover,
+.otherWorlds a:focus-visible {
+  color: var(--blue);
+}
+
+@keyframes carouselReveal {
+  from {
+    opacity: 0;
+    transform: scale(1.018);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes carouselProgress {
+  to {
+    transform: scaleX(1);
+  }
+}
+
+@media (max-width: 1080px) {
+  .siteHeader {
+    grid-template-columns: minmax(160px, 1fr) auto;
+  }
+
+  .desktopNav {
+    display: none;
+  }
+
+  .backLink {
+    display: none;
+  }
+
+  .mobileMenu {
+    position: relative;
+    display: block;
+    justify-self: end;
+  }
+
+  .mobileMenu summary {
+    font-size: 0.7rem;
+    font-weight: 780;
+    letter-spacing: 0.1em;
+    cursor: pointer;
+    list-style: none;
+    text-transform: uppercase;
+  }
+
+  .mobileMenu summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .mobileMenu nav {
+    position: absolute;
+    top: 34px;
+    right: 0;
+    display: grid;
+    width: min(280px, calc(100vw - 36px));
+    padding: 10px 18px;
+    border: 1px solid var(--ink);
+    background: var(--paper);
+    box-shadow: 0 18px 50px rgba(17, 17, 15, 0.16);
+  }
+
+  .mobileMenu nav a {
+    padding: 12px 0;
+    border-bottom: 1px solid var(--line);
+    font-size: 0.72rem;
+    font-weight: 740;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .mobileMenu nav a:last-child {
+    border-bottom: 0;
+  }
+
+  .hero {
+    grid-template-columns: minmax(310px, 0.85fr) minmax(0, 1.15fr);
+  }
+
+  .sectionIntro {
+    grid-template-columns: minmax(80px, 0.25fr) minmax(0, 1fr);
+  }
+
+  .sectionIntro > p:last-child {
+    grid-column: 2;
+  }
+
+  .aboutSection {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .aboutFacts {
+    grid-column: 2;
+  }
+}
+
+@media (max-width: 760px) {
+  .siteHeader {
+    min-height: 62px;
+  }
+
+  .hero {
+    display: flex;
+    min-height: 0;
+    flex-direction: column;
+  }
+
+  .identityPanel {
+    display: contents;
+  }
+
+  .portraitFrame {
+    min-height: 65svh;
+    order: 1;
+  }
+
+  .heroCopy {
+    order: 2;
+    padding: 35px 20px 48px;
+    background: var(--paper);
+  }
+
+  .heroCopy h1 {
+    font-size: clamp(3.2rem, 14.4vw, 5.2rem);
+  }
+
+  .carousel {
+    min-height: 72svh;
+    order: 3;
+  }
+
+  .carouselPause,
+  .carouselProgress {
+    display: none;
+  }
+
+  .carouselCaption {
+    bottom: 76px;
+  }
+
+  .carouselCaption p {
+    font-size: clamp(2.1rem, 10vw, 3.4rem);
+  }
+
+  .directory,
+  .worksSection,
+  .studioSection,
+  .professionalSection,
+  .explorersSection,
+  .aboutSection {
+    padding-right: 20px;
+    padding-left: 20px;
+  }
+
+  .doodleThread {
+    top: 70px;
+    left: -35%;
+    width: 170%;
+    height: 38%;
+    opacity: 0.13;
+  }
+
+  .sectionIntro,
+  .sectionHeading,
+  .studioSection,
+  .explorersSection,
+  .aboutSection {
+    grid-template-columns: 1fr;
+  }
+
+  .sectionIntro {
+    gap: 20px;
+  }
+
+  .sectionIntro > p:last-child {
+    grid-column: auto;
+  }
+
+  .directoryRow {
+    grid-template-columns: 42px minmax(0, 1fr) 28px;
+    gap: 12px;
+    min-height: 92px;
+  }
+
+  .directoryDetail {
+    display: none;
+  }
+
+  .workMosaic {
+    display: block;
+  }
+
+  .workMosaic figure,
+  .workWide {
+    margin: 0 0 58px !important;
+    padding: 0;
+  }
+
+  .workMosaic figcaption {
+    grid-template-columns: 1fr;
+    gap: 7px;
+  }
+
+  .workMosaic figcaption small {
+    text-align: left;
+  }
+
+  .workWide .workImageFrame {
+    aspect-ratio: 0.84;
+  }
+
+  .studioStatement {
+    justify-self: start;
+  }
+
+  .studioHeroImage img {
+    max-height: none;
+  }
+
+  .professionalSection {
+    grid-template-columns: 1fr;
+    padding-right: 0;
+    padding-left: 0;
+  }
+
+  .professionalCard {
+    min-height: 570px;
+  }
+
+  .explorersSection {
+    gap: 47px;
+  }
+
+  .explorersSection figure img {
+    max-height: none;
+  }
+
+  .aboutFacts {
+    grid-column: auto;
+  }
+
+  .contactSection h2 {
+    font-size: clamp(4rem, 21vw, 7rem);
+  }
+
+  .otherWorlds span {
+    flex-basis: 100%;
+    margin-right: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .carouselImage,
+  .carouselProgress .carouselProgressActive {
+    animation: none;
+  }
+
+  .workImageFrame img,
+  .directoryRow,
+  .heroActions a,
+  .professionalCard > a,
+  .desktopNav a::after,
+  .backLink::after,
+  .aboutCopy a::after,
+  .explorersSection a::after {
+    transition: none;
+  }
+}

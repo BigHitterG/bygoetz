@@ -122,7 +122,7 @@ export default function AboutPage() {
           <h2>One creative practice, many forms.</h2>
         </div>
         <div className={styles.workGrid}>
-          <article className={`${styles.workCard} ${styles.artCard}`}>
+          <Link className={`${styles.workCard} ${styles.artCard}`} href="/art">
             <div className={styles.imageFrame}>
               <Image
                 src={originalArtwork}
@@ -137,7 +137,7 @@ export default function AboutPage() {
                 Drawing, color, light, and visual experiments made in the studio.
               </span>
             </div>
-          </article>
+          </Link>
 
           <Link className={styles.workCard} href="/explorers">
             <div className={`${styles.imageFrame} ${styles.lightFrame}`}>
