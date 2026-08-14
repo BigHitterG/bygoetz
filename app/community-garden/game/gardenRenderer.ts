@@ -2783,23 +2783,54 @@ function drawMary(
   moving: boolean,
   now: number,
   zoom: number,
+  spriteScale = 1,
+  detailed = false,
 ) {
   const screen = worldToScreen(point, camera, viewport, zoom);
   const step = moving && Math.floor(now / 170) % 2 === 0 ? 1 : 0;
   ctx.save();
   ctx.translate(Math.round(screen.x), Math.round(screen.y) - step * zoom);
-  ctx.scale(zoom, zoom);
+  ctx.scale(zoom * spriteScale, zoom * spriteScale);
+  if (detailed) {
+    ctx.fillStyle = "rgba(34, 18, 14, 0.32)";
+    ctx.fillRect(-9, 9, 18, 4);
+  }
   ctx.fillStyle = "#5e2f25";
   ctx.fillRect(-6, -22, 12, 9);
   ctx.fillRect(-8, -19, 16, 9);
+  if (detailed) {
+    ctx.fillStyle = "#7b4534";
+    ctx.fillRect(-5, -21, 7, 2);
+    ctx.fillStyle = "#3f211d";
+    ctx.fillRect(5, -18, 3, 7);
+  }
   ctx.fillStyle = "#e5c4a1";
   ctx.fillRect(-5, -12, 10, 5);
+  if (detailed) {
+    ctx.fillStyle = "#f1d3af";
+    ctx.fillRect(-3, -12, 6, 2);
+    ctx.fillStyle = "#55352c";
+    ctx.fillRect(-3, -10, 1, 1);
+    ctx.fillRect(2, -10, 1, 1);
+  }
   ctx.fillStyle = "#f0e0c4";
   ctx.fillRect(-7, -8, 14, 8);
+  if (detailed) {
+    ctx.fillStyle = "#d5c29e";
+    ctx.fillRect(-6, -1, 12, 2);
+  }
   ctx.fillStyle = "#65704a";
   ctx.fillRect(-6, -7, 4, 13);
   ctx.fillRect(2, -7, 4, 13);
   ctx.fillRect(-2, -3, 4, 9);
+  if (detailed) {
+    ctx.fillStyle = "#829064";
+    ctx.fillRect(-5, -6, 2, 9);
+    ctx.fillStyle = "#d5ad4f";
+    ctx.fillRect(-1, -5, 3, 3);
+    ctx.fillStyle = "#f2d879";
+    ctx.fillRect(0, -5, 1, 1);
+  }
   ctx.fillStyle = "#49382e";
   ctx.fillRect(-7, 5, 6, 4 + step);
   ctx.fillRect(1, 5, 6, 5 - step);
@@ -2893,15 +2924,27 @@ function drawDuck(
   moving: boolean,
   now: number,
   zoom: number,
+  spriteScale = 1,
+  detailed = false,
 ) {
   const screen = worldToScreen(point, camera, viewport, zoom);
   const waddle = moving && Math.floor(now / 150) % 2 === 0 ? 1 : -1;
   ctx.save();
   ctx.translate(Math.round(screen.x) + waddle * zoom, Math.round(screen.y));
-  ctx.scale(zoom, zoom);
+  ctx.scale(zoom * spriteScale, zoom * spriteScale);
+  if (detailed) {
+    ctx.fillStyle = "rgba(34, 18, 14, 0.24)";
+    ctx.fillRect(-7, 1, 14, 3);
+  }
   ctx.fillStyle = "#f5f0df";
   ctx.fillRect(-5, -8, 10, 8);
   ctx.fillRect(-3, -12, 7, 6);
+  if (detailed) {
+    ctx.fillStyle = "#fff9e9";
+    ctx.fillRect(-3, -11, 4, 3);
+    ctx.fillStyle = "#d9d2c1";
+    ctx.fillRect(-4, -2, 5, 2);
+  }
   ctx.fillStyle = "#2f3130";
   ctx.fillRect(2, -10, 1, 1);
   ctx.fillStyle = "#d6a13b";
@@ -3023,49 +3066,182 @@ function drawEffects(
   }
 }
 
+const HALL_OF_GROWTH_RUG_SRC =
+  "/community-garden/hall-of-growth-rug.jpg";
+
+let hallOfGrowthRug: HTMLImageElement | null = null;
+
+function getHallOfGrowthRug() {
+  if (typeof window === "undefined") return null;
+  if (!hallOfGrowthRug) {
+    hallOfGrowthRug = new window.Image();
+    hallOfGrowthRug.decoding = "async";
+    hallOfGrowthRug.src = HALL_OF_GROWTH_RUG_SRC;
+  }
+  return hallOfGrowthRug.complete && hallOfGrowthRug.naturalWidth > 0
+    ? hallOfGrowthRug
+    : null;
+}
+
+function drawHouseSconce(
+  ctx: CanvasRenderingContext2D,
+  state: RenderGardenState,
+  gridX: number,
+  gridY: number,
+  phase: number,
+) {
+  const point = worldToScreen(
+    gridToWorld(gridX, gridY),
+    state.camera,
+    state.viewport,
+    state.zoom,
+  );
+  const pulse = state.reducedMotion
+    ? 0.88
+    : 0.82 + Math.sin(state.now / 310 + phase) * 0.08;
+  const radius = 46 * state.zoom;
+  const halo = ctx.createRadialGradient(
+    point.x,
+    point.y,
+    2,
+    point.x,
+    point.y,
+    radius,
+  );
+  halo.addColorStop(0, `rgba(255, 214, 128, ${0.24 * pulse})`);
+  halo.addColorStop(0.46, `rgba(230, 148, 67, ${0.1 * pulse})`);
+  halo.addColorStop(1, "rgba(93, 47, 28, 0)");
+  ctx.fillStyle = halo;
+  ctx.fillRect(point.x - radius, point.y - radius, radius * 2, radius * 2);
+
+  const unit = Math.max(1, Math.round(state.zoom * 1.4));
+  ctx.save();
+  ctx.translate(Math.round(point.x), Math.round(point.y));
+  ctx.fillStyle = "#2f1d18";
+  ctx.fillRect(-5 * unit, -2 * unit, 10 * unit, 3 * unit);
+  ctx.fillStyle = "#aa7743";
+  ctx.fillRect(-3 * unit, -6 * unit, 6 * unit, 5 * unit);
+  ctx.fillStyle = "#f2c465";
+  ctx.fillRect(-2 * unit, -7 * unit, 4 * unit, 4 * unit);
+  ctx.fillStyle = "#fff0a1";
+  ctx.fillRect(-unit, -8 * unit, 2 * unit, 3 * unit);
+  ctx.restore();
+}
+
+function drawHallBasilMark(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  zoom: number,
+) {
+  const unit = Math.max(1, Math.round(zoom * 1.1));
+  ctx.save();
+  ctx.translate(Math.round(x), Math.round(y));
+  ctx.fillStyle = "#d7b55f";
+  ctx.fillRect(-unit, -3 * unit, 2 * unit, 7 * unit);
+  ctx.fillStyle = "#76905d";
+  ctx.fillRect(-5 * unit, -4 * unit, 4 * unit, 3 * unit);
+  ctx.fillRect(1 * unit, -6 * unit, 5 * unit, 4 * unit);
+  ctx.fillStyle = "#9bae72";
+  ctx.fillRect(-4 * unit, -5 * unit, 3 * unit, 2 * unit);
+  ctx.fillRect(2 * unit, -7 * unit, 3 * unit, 2 * unit);
+  ctx.restore();
+}
+
 function drawHouseFixtureArt(
   ctx: CanvasRenderingContext2D,
+  key: GardenHouseDisplayKey,
   kind: (typeof GARDEN_HOUSE_FIXTURES)[number]["kind"],
   x: number,
   y: number,
   zoom: number,
   earned: boolean,
 ) {
-  const unit = Math.max(1, Math.round(zoom * 2));
+  const unit = Math.max(1, Math.round(zoom * 1.65));
+  const metal = earned ? "#d9b557" : "#76665c";
+  const light = earned ? "#f5e7b5" : "#a99a8d";
+  const dark = earned ? "#4b2d26" : "#463b36";
   ctx.save();
   ctx.translate(Math.round(x), Math.round(y));
-  ctx.fillStyle = earned ? "#d9b557" : "#796255";
+  ctx.fillStyle = "rgba(32, 18, 15, 0.28)";
+  ctx.fillRect(-7 * unit, 2 * unit, 14 * unit, 3 * unit);
+  ctx.fillStyle = metal;
   if (kind === "book") {
-    ctx.fillRect(-5 * unit, -4 * unit, 4 * unit, 5 * unit);
-    ctx.fillRect(1 * unit, -4 * unit, 4 * unit, 5 * unit);
-    ctx.fillStyle = earned ? "#f1df9e" : "#9b8775";
-    ctx.fillRect(-4 * unit, -3 * unit, 3 * unit, 3 * unit);
-    ctx.fillRect(1 * unit, -3 * unit, 3 * unit, 3 * unit);
+    ctx.fillRect(-7 * unit, -5 * unit, 6 * unit, 7 * unit);
+    ctx.fillRect(1 * unit, -5 * unit, 6 * unit, 7 * unit);
+    ctx.fillStyle = dark;
+    ctx.fillRect(-unit, -5 * unit, 2 * unit, 7 * unit);
+    ctx.fillStyle = light;
+    ctx.fillRect(-6 * unit, -4 * unit, 5 * unit, 5 * unit);
+    ctx.fillRect(1 * unit, -4 * unit, 5 * unit, 5 * unit);
+    ctx.fillStyle = earned ? "#9f4b43" : "#6c5c54";
+    ctx.fillRect(-5 * unit, -3 * unit, 3 * unit, unit);
+    ctx.fillRect(2 * unit, -3 * unit, 3 * unit, unit);
+    ctx.fillRect(-5 * unit, -unit, 2 * unit, unit);
+    ctx.fillRect(3 * unit, -unit, 2 * unit, unit);
   } else if (kind === "portrait") {
-    ctx.fillRect(-5 * unit, -5 * unit, 10 * unit, 8 * unit);
+    ctx.fillRect(-7 * unit, -7 * unit, 14 * unit, 10 * unit);
+    ctx.fillStyle = dark;
+    ctx.fillRect(-5 * unit, -5 * unit, 10 * unit, 6 * unit);
     ctx.fillStyle = earned ? "#66845f" : "#564b43";
-    ctx.fillRect(-3 * unit, -3 * unit, 6 * unit, 4 * unit);
-    ctx.fillStyle = earned ? "#e8dba6" : "#796c60";
-    ctx.fillRect(-1 * unit, -2 * unit, 2 * unit, 2 * unit);
+    ctx.fillRect(-4 * unit, -4 * unit, 8 * unit, 4 * unit);
+    ctx.fillStyle = light;
+    ctx.fillRect(-unit, -3 * unit, 2 * unit, 2 * unit);
+    ctx.fillStyle = earned ? "#9db071" : "#766b62";
+    ctx.fillRect(-4 * unit, -unit, 3 * unit, unit);
+    ctx.fillRect(1 * unit, -2 * unit, 3 * unit, 2 * unit);
   } else if (kind === "cabinet") {
-    ctx.fillRect(-5 * unit, -5 * unit, 10 * unit, 8 * unit);
+    ctx.fillRect(-7 * unit, -7 * unit, 14 * unit, 10 * unit);
+    ctx.fillStyle = dark;
+    ctx.fillRect(-6 * unit, -6 * unit, 12 * unit, 8 * unit);
     ctx.fillStyle = earned ? "#8f5038" : "#594b43";
-    ctx.fillRect(-3 * unit, -3 * unit, 2 * unit, 2 * unit);
-    ctx.fillRect(1 * unit, -3 * unit, 2 * unit, 2 * unit);
-    ctx.fillRect(-3 * unit, 0, 2 * unit, 2 * unit);
-    ctx.fillRect(1 * unit, 0, 2 * unit, 2 * unit);
+    for (const offsetX of [-4, 1]) {
+      for (const offsetY of [-4, 0]) {
+        ctx.fillRect(offsetX * unit, offsetY * unit, 3 * unit, 3 * unit);
+        ctx.fillStyle = light;
+        ctx.fillRect(
+          (offsetX + 1) * unit,
+          (offsetY + 1) * unit,
+          unit,
+          unit,
+        );
+        ctx.fillStyle = earned ? "#8f5038" : "#594b43";
+      }
+    }
   } else if (kind === "map") {
-    ctx.fillRect(-5 * unit, -5 * unit, 10 * unit, 8 * unit);
-    ctx.fillStyle = earned ? "#73966d" : "#5d554e";
-    ctx.fillRect(-3 * unit, -3 * unit, 3 * unit, 3 * unit);
-    ctx.fillStyle = earned ? "#b66b55" : "#71645a";
-    ctx.fillRect(1 * unit, -1 * unit, 2 * unit, 3 * unit);
+    ctx.fillRect(-7 * unit, -6 * unit, 14 * unit, 9 * unit);
+    ctx.fillStyle = light;
+    ctx.fillRect(-6 * unit, -5 * unit, 12 * unit, 7 * unit);
+    ctx.fillStyle = earned ? "#73966d" : "#6b655f";
+    ctx.fillRect(-5 * unit, -4 * unit, 4 * unit, 3 * unit);
+    ctx.fillRect(1 * unit, -unit, 4 * unit, 2 * unit);
+    ctx.fillStyle = earned ? "#b66b55" : "#80736b";
+    ctx.fillRect(-unit, -4 * unit, 2 * unit, 5 * unit);
+    ctx.fillRect(3 * unit, -4 * unit, unit, 2 * unit);
   } else {
-    ctx.fillRect(-4 * unit, -5 * unit, 8 * unit, 8 * unit);
-    ctx.fillStyle = earned ? "#8a6154" : "#574c46";
-    ctx.fillRect(-2 * unit, -3 * unit, 4 * unit, 5 * unit);
-    ctx.fillStyle = earned ? "#d88975" : "#74675e";
-    ctx.fillRect(-1 * unit, -2 * unit, 2 * unit, 3 * unit);
+    ctx.fillRect(-6 * unit, -7 * unit, 12 * unit, 10 * unit);
+    ctx.fillStyle = earned ? "#6f5045" : "#574c46";
+    ctx.fillRect(-5 * unit, -6 * unit, 10 * unit, 8 * unit);
+    if (key === "worms") {
+      ctx.fillStyle = earned ? "#d88975" : "#74675e";
+      ctx.fillRect(-4 * unit, -2 * unit, 3 * unit, 2 * unit);
+      ctx.fillRect(-unit, -4 * unit, 3 * unit, 2 * unit);
+      ctx.fillRect(2 * unit, -2 * unit, 3 * unit, 2 * unit);
+      ctx.fillStyle = light;
+      ctx.fillRect(4 * unit, -2 * unit, unit, unit);
+    } else {
+      ctx.fillStyle = earned ? "#78956a" : "#74675e";
+      ctx.fillRect(-unit, -4 * unit, 2 * unit, 6 * unit);
+      ctx.fillStyle = earned ? "#c94b52" : "#76675f";
+      ctx.fillRect(-4 * unit, -6 * unit, 8 * unit, 4 * unit);
+      ctx.fillStyle = light;
+      ctx.fillRect(-unit, -5 * unit, 2 * unit, 2 * unit);
+    }
+    ctx.strokeStyle = earned
+      ? "rgba(229, 239, 220, 0.62)"
+      : "rgba(190, 181, 170, 0.32)";
+    ctx.lineWidth = Math.max(1, unit);
+    ctx.strokeRect(-5 * unit, -6 * unit, 10 * unit, 8 * unit);
   }
   ctx.restore();
 }
@@ -3076,7 +3252,7 @@ function drawGardenHouseWorld(
 ) {
   ctx.imageSmoothingEnabled = false;
   ctx.clearRect(0, 0, state.viewport.width, state.viewport.height);
-  ctx.fillStyle = "#271b18";
+  ctx.fillStyle = "#211612";
   ctx.fillRect(0, 0, state.viewport.width, state.viewport.height);
 
   const tileWidth = GARDEN_CONFIG.tileSize * state.zoom;
@@ -3095,19 +3271,99 @@ function drawGardenHouseWorld(
         gridY === GARDEN_HOUSE_WORLD_BOUNDS.minY ||
         gridY === GARDEN_HOUSE_WORLD_BOUNDS.maxY;
       if (wall) {
-        ctx.fillStyle = (gridX + gridY) % 2 === 0 ? "#523328" : "#5d3b2d";
+        const wallTone = (gridX * 3 + gridY) % 3;
+        ctx.fillStyle = ["#3e2822", "#493028", "#54362b"][wallTone];
         ctx.fillRect(Math.floor(point.x), Math.floor(point.y), Math.ceil(tileWidth + 1), Math.ceil(tileHeight + 1));
-        ctx.fillStyle = "rgba(242, 197, 116, 0.12)";
-        ctx.fillRect(Math.floor(point.x), Math.floor(point.y), Math.ceil(tileWidth), Math.max(1, Math.round(state.zoom * 2)));
+        ctx.fillStyle = "rgba(233, 182, 103, 0.12)";
+        ctx.fillRect(
+          Math.floor(point.x + tileWidth * 0.12),
+          Math.floor(point.y + tileHeight * 0.14),
+          Math.ceil(tileWidth * 0.76),
+          Math.max(1, Math.round(tileHeight * 0.12)),
+        );
+        ctx.fillStyle = "rgba(22, 12, 10, 0.25)";
+        ctx.fillRect(
+          Math.floor(point.x + tileWidth - Math.max(1, state.zoom * 2)),
+          Math.floor(point.y),
+          Math.max(1, Math.round(state.zoom * 2)),
+          Math.ceil(tileHeight + 1),
+        );
       } else {
-        const plank = (gridY * 3 + gridX) % 4;
-        ctx.fillStyle = ["#805139", "#8d5a3e", "#754832", "#86543a"][plank];
+        const plank = Math.abs(gridY * 7 + gridX * 3) % 5;
+        ctx.fillStyle = ["#70452f", "#7d4d34", "#87553a", "#69402e", "#784932"][plank];
         ctx.fillRect(Math.floor(point.x), Math.floor(point.y), Math.ceil(tileWidth + 1), Math.ceil(tileHeight + 1));
-        ctx.fillStyle = "rgba(46, 25, 20, 0.24)";
-        ctx.fillRect(Math.floor(point.x), Math.floor(point.y + tileHeight - 1), Math.ceil(tileWidth + 1), 1);
+        ctx.fillStyle = "rgba(241, 194, 119, 0.08)";
+        ctx.fillRect(
+          Math.floor(point.x + tileWidth * 0.15),
+          Math.floor(point.y + tileHeight * 0.22),
+          Math.max(2, Math.ceil(tileWidth * 0.46)),
+          Math.max(1, Math.round(state.zoom)),
+        );
+        ctx.fillRect(
+          Math.floor(point.x + tileWidth * 0.5),
+          Math.floor(point.y + tileHeight * 0.62),
+          Math.max(2, Math.ceil(tileWidth * 0.32)),
+          Math.max(1, Math.round(state.zoom)),
+        );
+        ctx.fillStyle = "rgba(29, 16, 13, 0.3)";
+        ctx.fillRect(
+          Math.floor(point.x),
+          Math.floor(point.y + tileHeight - Math.max(1, state.zoom)),
+          Math.ceil(tileWidth + 1),
+          Math.max(1, Math.round(state.zoom)),
+        );
+        if ((gridX + gridY * 2) % 5 === 0) {
+          ctx.fillStyle = "rgba(35, 18, 14, 0.42)";
+          ctx.fillRect(
+            Math.floor(point.x + tileWidth * 0.14),
+            Math.floor(point.y + tileHeight * 0.72),
+            Math.max(1, Math.round(state.zoom * 1.4)),
+            Math.max(1, Math.round(state.zoom * 1.4)),
+          );
+        }
       }
     }
   }
+
+  const roomLight = ctx.createLinearGradient(
+    0,
+    0,
+    state.viewport.width,
+    state.viewport.height,
+  );
+  roomLight.addColorStop(0, "rgba(255, 223, 160, 0.13)");
+  roomLight.addColorStop(0.44, "rgba(233, 170, 91, 0.04)");
+  roomLight.addColorStop(1, "rgba(26, 13, 12, 0.18)");
+  ctx.fillStyle = roomLight;
+  ctx.fillRect(0, 0, state.viewport.width, state.viewport.height);
+
+  const rug = getHallOfGrowthRug();
+  if (rug) {
+    const rugTopLeft = worldToScreen(
+      {
+        x: 5 * GARDEN_CONFIG.tileSize,
+        y: 11 * GARDEN_CONFIG.tileSize,
+      },
+      state.camera,
+      state.viewport,
+      state.zoom,
+    );
+    ctx.save();
+    ctx.globalAlpha = 0.84;
+    ctx.drawImage(
+      rug,
+      Math.round(rugTopLeft.x),
+      Math.round(rugTopLeft.y),
+      Math.round(tileWidth * 8),
+      Math.round(tileHeight * 6),
+    );
+    ctx.restore();
+  }
+
+  drawHouseSconce(ctx, state, 1, 6, 0);
+  drawHouseSconce(ctx, state, 16, 6, Math.PI * 0.7);
+  drawHouseSconce(ctx, state, 1, 13, Math.PI * 1.2);
+  drawHouseSconce(ctx, state, 16, 13, Math.PI * 1.8);
 
   const titlePoint = worldToScreen(
     gridToWorld(8, 1),
@@ -3115,11 +3371,55 @@ function drawGardenHouseWorld(
     state.viewport,
     state.zoom,
   );
+  const titleWidth = Math.round(132 * state.zoom);
+  const titleHeight = Math.max(18, Math.round(24 * state.zoom));
   ctx.save();
+  ctx.fillStyle = "rgba(28, 15, 12, 0.42)";
+  ctx.fillRect(
+    Math.round(titlePoint.x - titleWidth / 2 + 4 * state.zoom),
+    Math.round(titlePoint.y - titleHeight / 2 + 4 * state.zoom),
+    titleWidth,
+    titleHeight,
+  );
+  ctx.fillStyle = "#2f1d18";
+  ctx.fillRect(
+    Math.round(titlePoint.x - titleWidth / 2),
+    Math.round(titlePoint.y - titleHeight / 2),
+    titleWidth,
+    titleHeight,
+  );
+  ctx.fillStyle = "#a87543";
+  ctx.fillRect(
+    Math.round(titlePoint.x - titleWidth / 2 + 3 * state.zoom),
+    Math.round(titlePoint.y - titleHeight / 2 + 3 * state.zoom),
+    Math.round(titleWidth - 6 * state.zoom),
+    Math.round(titleHeight - 6 * state.zoom),
+  );
+  ctx.fillStyle = "#503025";
+  ctx.fillRect(
+    Math.round(titlePoint.x - titleWidth / 2 + 7 * state.zoom),
+    Math.round(titlePoint.y - titleHeight / 2 + 7 * state.zoom),
+    Math.round(titleWidth - 14 * state.zoom),
+    Math.round(titleHeight - 14 * state.zoom),
+  );
+  drawHallBasilMark(
+    ctx,
+    titlePoint.x - titleWidth * 0.36,
+    titlePoint.y,
+    state.zoom,
+  );
+  drawHallBasilMark(
+    ctx,
+    titlePoint.x + titleWidth * 0.36,
+    titlePoint.y,
+    state.zoom,
+  );
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  ctx.font = `800 ${Math.max(7, Math.round(8 * state.zoom))}px Georgia, serif`;
-  ctx.fillStyle = "#f3d993";
+  ctx.font = `800 ${Math.max(8, Math.round(9 * state.zoom))}px Georgia, serif`;
+  ctx.fillStyle = "#f5dea1";
+  ctx.shadowColor = "rgba(20, 10, 8, 0.75)";
+  ctx.shadowBlur = Math.max(1, 2 * state.zoom);
   ctx.fillText("HALL OF GROWTH", Math.round(titlePoint.x), Math.round(titlePoint.y));
   ctx.restore();
 
@@ -3135,68 +3435,115 @@ function drawGardenHouseWorld(
     const selected =
       state.selected?.gridX === fixture.gridX &&
       state.selected?.gridY === fixture.gridY;
-    const pedestalWidth = Math.round(GARDEN_CONFIG.tileSize * state.zoom * 2.2);
-    const pedestalHeight = Math.max(5, Math.round(8 * state.zoom));
+    const earned = (display?.tier ?? 0) > 0;
+    const pedestalWidth = Math.round(GARDEN_CONFIG.tileSize * state.zoom * 2.35);
+    const pedestalHeight = Math.max(8, Math.round(12 * state.zoom));
     if (selected) {
-      ctx.strokeStyle = "#fff0a8";
-      ctx.lineWidth = Math.max(2, Math.round(2 * state.zoom));
+      const pulse = state.reducedMotion
+        ? 0.72
+        : 0.68 + Math.sin(state.now / 260) * 0.18;
+      const glow = ctx.createRadialGradient(
+        point.x,
+        point.y - pedestalHeight,
+        3,
+        point.x,
+        point.y - pedestalHeight,
+        44 * state.zoom,
+      );
+      glow.addColorStop(0, `rgba(255, 238, 166, ${pulse * 0.28})`);
+      glow.addColorStop(1, "rgba(255, 217, 112, 0)");
+      ctx.fillStyle = glow;
+      ctx.fillRect(
+        point.x - 48 * state.zoom,
+        point.y - 54 * state.zoom,
+        96 * state.zoom,
+        70 * state.zoom,
+      );
+      ctx.strokeStyle = `rgba(255, 240, 168, ${pulse})`;
+      ctx.lineWidth = Math.max(2, Math.round(2.5 * state.zoom));
       ctx.strokeRect(
         Math.round(point.x - pedestalWidth / 2 - 3),
-        Math.round(point.y - pedestalHeight * 2.7),
+        Math.round(point.y - pedestalHeight * 3.2),
         pedestalWidth + 6,
-        pedestalHeight * 3.2,
+        pedestalHeight * 3.85,
       );
     }
-    ctx.fillStyle = "rgba(33, 20, 16, 0.3)";
+    ctx.fillStyle = "rgba(24, 13, 11, 0.38)";
     ctx.fillRect(
-      Math.round(point.x - pedestalWidth / 2 + 3),
-      Math.round(point.y + 3),
-      pedestalWidth,
-      pedestalHeight,
+      Math.round(point.x - pedestalWidth / 2 + 6 * state.zoom),
+      Math.round(point.y + 5 * state.zoom),
+      Math.round(pedestalWidth * 0.96),
+      Math.round(pedestalHeight * 0.68),
     );
-    ctx.fillStyle = "#b98252";
+    ctx.fillStyle = earned ? "#7d4c34" : "#5e453a";
+    ctx.fillRect(
+      Math.round(point.x - pedestalWidth * 0.42),
+      Math.round(point.y - pedestalHeight * 0.1),
+      Math.round(pedestalWidth * 0.84),
+      Math.round(pedestalHeight * 0.94),
+    );
+    ctx.fillStyle = earned ? "#bd8651" : "#81675a";
     ctx.fillRect(
       Math.round(point.x - pedestalWidth / 2),
-      Math.round(point.y),
+      Math.round(point.y - pedestalHeight * 0.3),
       pedestalWidth,
-      pedestalHeight,
+      Math.max(5, Math.round(pedestalHeight * 0.38)),
     );
-    ctx.fillStyle = "#59382b";
+    ctx.fillStyle = earned ? "#e0ad68" : "#9d8372";
     ctx.fillRect(
-      Math.round(point.x - pedestalWidth / 2),
-      Math.round(point.y),
-      pedestalWidth,
+      Math.round(point.x - pedestalWidth / 2 + 2 * state.zoom),
+      Math.round(point.y - pedestalHeight * 0.3),
+      Math.round(pedestalWidth - 4 * state.zoom),
       Math.max(2, Math.round(state.zoom * 2)),
+    );
+    ctx.fillStyle = earned ? "#4a2b23" : "#493b35";
+    ctx.fillRect(
+      Math.round(point.x - pedestalWidth * 0.37),
+      Math.round(point.y + pedestalHeight * 0.32),
+      Math.round(pedestalWidth * 0.74),
+      Math.max(3, Math.round(pedestalHeight * 0.29)),
     );
     drawHouseFixtureArt(
       ctx,
+      fixture.key,
       fixture.kind,
       point.x,
-      point.y - pedestalHeight * 1.15,
+      point.y - pedestalHeight * 1.6,
       state.zoom,
-      (display?.tier ?? 0) > 0,
+      earned,
     );
     ctx.save();
     ctx.textAlign = "center";
-    ctx.textBaseline = "top";
-    ctx.font = `700 ${Math.max(5, Math.round(5.5 * state.zoom))}px Georgia, serif`;
-    ctx.fillStyle = "#f5dfab";
-    const labelTop = point.y + pedestalHeight + 2;
+    ctx.textBaseline = "middle";
+    ctx.font = `800 ${Math.max(5, Math.round(5.2 * state.zoom))}px Georgia, serif`;
+    ctx.fillStyle = earned ? "#f5dfab" : "#c7b7a8";
+    const labelTop = point.y + pedestalHeight * 0.47;
     fixture.labelLines.forEach((line, lineIndex) => {
       ctx.fillText(
         line.toUpperCase(),
         Math.round(point.x),
-        Math.round(labelTop + lineIndex * 7 * state.zoom),
+        Math.round(labelTop + lineIndex * 6 * state.zoom),
         Math.max(48, Math.round(66 * state.zoom)),
       );
     });
     ctx.restore();
     if (display?.unread) {
+      const unreadY = point.y - pedestalHeight * 3.25;
+      ctx.fillStyle = "rgba(255, 215, 112, 0.28)";
+      ctx.beginPath();
+      ctx.arc(
+        Math.round(point.x + pedestalWidth / 2),
+        Math.round(unreadY),
+        Math.max(6, 8 * state.zoom),
+        0,
+        Math.PI * 2,
+      );
+      ctx.fill();
       ctx.fillStyle = "#d6394b";
       ctx.beginPath();
       ctx.arc(
         Math.round(point.x + pedestalWidth / 2),
-        Math.round(point.y - pedestalHeight * 2.4),
+        Math.round(unreadY),
         Math.max(3, 4 * state.zoom),
         0,
         Math.PI * 2,
@@ -3211,17 +3558,35 @@ function drawGardenHouseWorld(
     state.viewport,
     state.zoom,
   );
-  ctx.fillStyle = "rgba(175, 129, 82, 0.48)";
+  ctx.fillStyle = "rgba(31, 18, 15, 0.34)";
   ctx.fillRect(
-    Math.round(futurePoint.x - 15 * state.zoom),
-    Math.round(futurePoint.y),
-    Math.round(30 * state.zoom),
-    Math.max(5, Math.round(8 * state.zoom)),
+    Math.round(futurePoint.x - 21 * state.zoom + 4 * state.zoom),
+    Math.round(futurePoint.y - 19 * state.zoom + 4 * state.zoom),
+    Math.round(42 * state.zoom),
+    Math.round(31 * state.zoom),
   );
-  ctx.fillStyle = "rgba(245, 223, 171, 0.62)";
+  ctx.fillStyle = "rgba(82, 55, 43, 0.9)";
+  ctx.fillRect(
+    Math.round(futurePoint.x - 21 * state.zoom),
+    Math.round(futurePoint.y - 19 * state.zoom),
+    Math.round(42 * state.zoom),
+    Math.round(31 * state.zoom),
+  );
+  ctx.fillStyle = "rgba(188, 142, 86, 0.62)";
+  ctx.fillRect(
+    Math.round(futurePoint.x - 18 * state.zoom),
+    Math.round(futurePoint.y - 16 * state.zoom),
+    Math.round(36 * state.zoom),
+    Math.round(5 * state.zoom),
+  );
+  ctx.fillStyle = "rgba(245, 223, 171, 0.7)";
   ctx.textAlign = "center";
   ctx.font = `700 ${Math.max(5, Math.round(5 * state.zoom))}px Georgia, serif`;
-  ctx.fillText("MORE TO COME", Math.round(futurePoint.x), Math.round(futurePoint.y + 15 * state.zoom));
+  ctx.fillText(
+    "MORE TO COME",
+    Math.round(futurePoint.x),
+    Math.round(futurePoint.y + 5 * state.zoom),
+  );
 
   const doorPoint = worldToScreen(
     gridToWorld(GARDEN_HOUSE_DOOR.gridX, GARDEN_HOUSE_DOOR.gridY),
@@ -3229,14 +3594,41 @@ function drawGardenHouseWorld(
     state.viewport,
     state.zoom,
   );
-  const doorWidth = Math.round(42 * state.zoom);
-  const doorHeight = Math.round(25 * state.zoom);
-  ctx.fillStyle = "#3f2822";
+  const doorWidth = Math.round(48 * state.zoom);
+  const doorHeight = Math.round(30 * state.zoom);
+  ctx.fillStyle = "rgba(25, 13, 11, 0.42)";
+  ctx.fillRect(
+    Math.round(doorPoint.x - doorWidth / 2 + 4 * state.zoom),
+    Math.round(doorPoint.y - doorHeight + 4 * state.zoom),
+    doorWidth,
+    doorHeight,
+  );
+  ctx.fillStyle = "#2d1b17";
   ctx.fillRect(
     Math.round(doorPoint.x - doorWidth / 2),
     Math.round(doorPoint.y - doorHeight),
     doorWidth,
     doorHeight,
+  );
+  ctx.fillStyle = "#704430";
+  ctx.fillRect(
+    Math.round(doorPoint.x - doorWidth / 2 + 4 * state.zoom),
+    Math.round(doorPoint.y - doorHeight + 4 * state.zoom),
+    Math.round(doorWidth - 8 * state.zoom),
+    Math.round(doorHeight - 4 * state.zoom),
+  );
+  ctx.fillStyle = "#4a2b23";
+  ctx.fillRect(
+    Math.round(doorPoint.x - doorWidth / 2 + 8 * state.zoom),
+    Math.round(doorPoint.y - doorHeight + 8 * state.zoom),
+    Math.round(doorWidth - 16 * state.zoom),
+    Math.round(8 * state.zoom),
+  );
+  ctx.fillRect(
+    Math.round(doorPoint.x - doorWidth / 2 + 8 * state.zoom),
+    Math.round(doorPoint.y - doorHeight + 20 * state.zoom),
+    Math.round(doorWidth - 16 * state.zoom),
+    Math.round(7 * state.zoom),
   );
   ctx.fillStyle = "#d9af54";
   ctx.fillRect(
@@ -3244,6 +3636,13 @@ function drawGardenHouseWorld(
     Math.round(doorPoint.y - doorHeight * 0.5),
     Math.max(2, Math.round(2 * state.zoom)),
     Math.max(2, Math.round(2 * state.zoom)),
+  );
+  ctx.fillStyle = "#c89254";
+  ctx.fillRect(
+    Math.round(doorPoint.x - doorWidth * 0.62),
+    Math.round(doorPoint.y + 1 * state.zoom),
+    Math.round(doorWidth * 1.24),
+    Math.max(3, Math.round(4 * state.zoom)),
   );
   ctx.fillStyle = "#f4dca6";
   ctx.textAlign = "center";
@@ -3254,8 +3653,28 @@ function drawGardenHouseWorld(
 export function renderGarden(ctx: CanvasRenderingContext2D, state: RenderGardenState) {
   if (state.mode === "house") {
     drawGardenHouseWorld(ctx, state);
-    drawDuck(ctx, state.duck, state.camera, state.viewport, state.moving, state.now, state.zoom);
-    drawMary(ctx, state.mary, state.camera, state.viewport, state.moving, state.now, state.zoom);
+    drawDuck(
+      ctx,
+      state.duck,
+      state.camera,
+      state.viewport,
+      state.moving,
+      state.now,
+      state.zoom,
+      1.12,
+      true,
+    );
+    drawMary(
+      ctx,
+      state.mary,
+      state.camera,
+      state.viewport,
+      state.moving,
+      state.now,
+      state.zoom,
+      1.18,
+      true,
+    );
     return;
   }
   if (state.mode === "personal" && state.personalGarden) {

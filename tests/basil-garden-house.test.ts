@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import test from "node:test";
 
 const migration = readFileSync(
@@ -148,4 +148,23 @@ test("the wood room has nine physical podiums that open badge-focused books", ()
   assert.match(styles, /\.cg-accolade-badge-grid/);
   assert.match(styles, /\.cg-accolade-medallion/);
   assert.match(styles, /@media \(max-width: 600px\)/);
+});
+
+test("the Hall of Growth uses a richer memory-hall art pass without changing worlds", () => {
+  assert.equal(
+    existsSync("public/community-garden/hall-of-growth-rug.jpg"),
+    true,
+  );
+  assert.match(renderer, /hall-of-growth-rug\.jpg/);
+  assert.match(renderer, /drawHouseSconce/);
+  assert.match(renderer, /drawHallBasilMark/);
+  assert.match(renderer, /createLinearGradient/);
+  assert.match(renderer, /createRadialGradient/);
+  assert.match(renderer, /spriteScale = 1/);
+  assert.match(renderer, /1\.18,[\s\r\n]+true/);
+  assert.match(renderer, /state\.reducedMotion/);
+  assert.match(renderer, /fixture\.key,[\s\r\n]+fixture\.kind/);
+  assert.match(renderer, /HALL_OF_GROWTH_RUG_SRC/);
+  assert.match(canvas, /GARDEN_HOUSE_CAMERA_ZOOM = 1\.35/);
+  assert.match(canvas, /saved\?\.zoom \?\? GARDEN_HOUSE_CAMERA_ZOOM/);
 });

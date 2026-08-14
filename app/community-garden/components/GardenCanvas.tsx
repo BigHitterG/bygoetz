@@ -896,12 +896,14 @@ function getPersonalFitZoom(
   );
 }
 
+const GARDEN_HOUSE_CAMERA_ZOOM = 1.35;
+
 function getRuntimeMinimumZoom(
   runtime: Runtime,
   viewport?: { width: number; height: number },
 ) {
   if (runtime.mode === "community") return GARDEN_CONFIG.minCommunityCameraZoom;
-  if (runtime.mode === "house") return 1;
+  if (runtime.mode === "house") return GARDEN_HOUSE_CAMERA_ZOOM;
   return getPersonalFitZoom(runtime, viewport);
 }
 
@@ -2580,7 +2582,7 @@ export const GardenCanvas = forwardRef<GardenCanvasHandle, GardenCanvasProps>(
         runtime.cameraAnchor = saved?.cameraAnchor
           ? { ...saved.cameraAnchor }
           : null;
-        runtime.zoom = saved?.zoom ?? 1;
+        runtime.zoom = saved?.zoom ?? GARDEN_HOUSE_CAMERA_ZOOM;
         runtime.duck = saved
           ? { ...saved.duck }
           : { x: destination.x - 18, y: destination.y + 10 };
