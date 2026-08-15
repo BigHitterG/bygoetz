@@ -328,15 +328,16 @@ export async function createDailySocialDigest(date = new Date(), options: { send
   }
 }
 
-export async function resendLatestSocialDigest(requestKey: string) {
+export async function resendLatestSocialDigest(requestKey: string, digestId?: string) {
   if (requestKey.length < 16 || requestKey.length > 200) throw new Error("Invalid Social Studio resend key.");
   const supabase = getSupabaseAdmin();
-  const { data: digest, error: digestError } = await supabase
+  let digestQuery = supabase
     .from("basil_social_digests")
-    .select("id,approval_token_hash,approval_expires_at")
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .single();
+    .select("id,approval_token_hash,approval_expires_at");
+  digestQuery = digestId
+    ? digestQuery.eq("id", digestId)
+    : digestQuery.order("created_at", { ascending: false }).limit(1);
+  const { data: digest, error: digestError } = await digestQuery.single();
   if (digestError) throw digestError;
 
   const { data: stories, error: storiesError } = await supabase
@@ -522,6 +523,7 @@ export async function resendSocialDigestWithCapability(storyId: string, token: s
   if (claimed !== true) throw new Error("This notification capability is invalid, expired, or already used.");
   return resendLatestSocialDigest(
     `capability-notify-${story.digest_id}-${tokenHash(token).slice(0, 24)}`,
+    story.digest_id as string,
   );
 }
 
