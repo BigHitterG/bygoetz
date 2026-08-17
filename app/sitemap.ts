@@ -1,10 +1,13 @@
 import type { MetadataRoute } from "next";
+import { artSeries, artworks } from "@/lib/art/catalog";
 import { explorerProducts } from "@/lib/explorers/products";
 
 const siteUrl = "https://www.bygoetz.com";
 
+export const dynamic = "force-static";
+
 export default function sitemap(): MetadataRoute.Sitemap {
-  const updated = new Date("2026-08-14T00:00:00.000Z");
+  const updated = new Date("2026-08-17T00:00:00.000Z");
 
   return [
     {
@@ -26,6 +29,18 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.95,
       images: [`${siteUrl}/art/working-studio.jpg`],
     },
+    ...artSeries.map((series) => ({
+      url: `${siteUrl}/art/series/${series.slug}`,
+      lastModified: updated,
+      changeFrequency: "monthly" as const,
+      priority: 0.78,
+    })),
+    ...artworks.map((artwork) => ({
+      url: `${siteUrl}/art/works/${artwork.slug}`,
+      lastModified: updated,
+      changeFrequency: "monthly" as const,
+      priority: 0.76,
+    })),
     {
       url: `${siteUrl}/explorers`,
       lastModified: updated,

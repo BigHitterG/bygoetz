@@ -7,6 +7,10 @@ const carousel = readFileSync(
   new URL("../app/art/ArtHeroCarousel.tsx", import.meta.url),
   "utf8",
 );
+const selectedWork = readFileSync(
+  new URL("../app/art/_components/SelectedArtChapters.tsx", import.meta.url),
+  "utf8",
+);
 const styles = readFileSync(
   new URL("../app/art/page.module.css", import.meta.url),
   "utf8",
@@ -42,10 +46,13 @@ test("carousel is controllable and respects reduced motion and mobile", () => {
   assert.match(styles, /\.carouselPause,[\s\S]*\.carouselProgress \{[\s\S]*display: none;/);
 });
 
-test("placeholder content is honest while the catalog is being assembled", () => {
-  assert.match(page, /Individual records are being photographed and assembled\./);
-  assert.match(page, /Studio view \/ 001/);
-  assert.doesNotMatch(page, /\$[0-9]/);
+test("selected work distinguishes bodies of work from individual artworks", () => {
+  assert.match(page, /<SelectedArtChapters \/>/);
+  assert.match(selectedWork, /Body of work \/ 01/);
+  assert.match(selectedWork, /Individual work \/ 02/);
+  assert.match(selectedWork, /Ongoing series \/ 03/);
+  assert.match(selectedWork, /getMediaForTarget/);
+  assert.doesNotMatch(selectedWork, /\$[0-9]/);
 });
 
 test("art imagery and controls remain bounded on smaller screens", () => {

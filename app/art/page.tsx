@@ -2,10 +2,9 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import explorersStudio from "@/public/art/explorers-studio.jpg";
-import studioRange from "@/public/art/studio-range.jpg";
-import studioScale from "@/public/art/studio-scale.jpg";
 import workingStudio from "@/public/art/working-studio.jpg";
 import portrait from "@/public/images/about/tj-goetz-founder.jpg";
+import { SelectedArtChapters } from "./_components/SelectedArtChapters";
 import { ArtHeroCarousel } from "./ArtHeroCarousel";
 import styles from "./page.module.css";
 
@@ -142,57 +141,11 @@ export default function ArtPage() {
             <h2 id="works-title">The catalog begins in the studio.</h2>
           </div>
           <p>
-            Individual records are being photographed and assembled. For now,
-            these views show the range, scale, and visual language of the work.
+            Some work stands alone. Other images belong to a larger body,
+            installation, or material story. The catalog keeps those differences visible.
           </p>
         </div>
-
-        <div className={styles.workMosaic}>
-          <figure className={styles.workLead}>
-            <div className={styles.workImageFrame}>
-              <Image
-                src={studioScale}
-                alt="Blue circular painting installed among original works in Thomas Goetz's studio"
-                sizes="(max-width: 820px) 100vw, 58vw"
-              />
-            </div>
-            <figcaption>
-              <span>Studio view / 001</span>
-              <strong>A blue field at physical scale</strong>
-              <small>Installation and context</small>
-            </figcaption>
-          </figure>
-
-          <figure className={styles.workTall}>
-            <div className={styles.workImageFrame}>
-              <Image
-                src={workingStudio}
-                alt="Paintings and drawings covering the working walls of Thomas Goetz's studio"
-                sizes="(max-width: 820px) 100vw, 34vw"
-              />
-            </div>
-            <figcaption>
-              <span>Studio view / 002</span>
-              <strong>The working wall</strong>
-              <small>Process and environment</small>
-            </figcaption>
-          </figure>
-
-          <figure className={styles.workWide}>
-            <div className={styles.workImageFrame}>
-              <Image
-                src={studioRange}
-                alt="Geometric, gestural, and framed works in the studio"
-                sizes="(max-width: 820px) 100vw, 70vw"
-              />
-            </div>
-            <figcaption>
-              <span>Studio view / 003</span>
-              <strong>Many visual languages, one practice</strong>
-              <small>Current studio overview</small>
-            </figcaption>
-          </figure>
-        </div>
+        <SelectedArtChapters />
       </section>
 
       <section className={styles.studioSection} id="studio" aria-labelledby="studio-title">

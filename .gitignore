@@ -7,3 +7,4 @@ out/
 .vercel/
 *.tsbuildinfo
 /.tmp-inventory-audit.png
+/.art-inbox/

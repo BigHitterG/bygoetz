@@ -56,6 +56,7 @@
     "social:archive-evergreen": "node scripts/basil-archive-evergreen-assets.mjs",
     "social:prepare-approved": "node scripts/basil-prepare-approved-posts.mjs",
     "social:mark-published": "node scripts/basil-mark-social-published.mjs",
+    "art:inbox": "node scripts/art-inbox-scan.mjs",
     "test:stewardship": "node --experimental-strip-types tests/basil-community-stewardship.test.ts",
     "test:zones": "node --experimental-strip-types tests/basil-garden-zones.test.ts",
     "test:guest-refund": "node --experimental-strip-types tests/basil-guest-garden-refund.test.ts",
@@ -63,7 +64,7 @@
     "test:browser:phase5": "node scripts/basil-browser-check.mjs",
     "test:lazy-grid": "node --experimental-strip-types tests/lazy-grid-overlays.test.ts",
     "test:home-seo": "node --experimental-strip-types tests/home-seo.test.ts",
-    "test:art": "node --experimental-strip-types tests/art-landing.test.ts",
+    "test:art": "node --experimental-strip-types --test tests/art-landing.test.ts tests/art-catalog.test.ts",
     "test:gromas": "node --experimental-strip-types tests/gromas-storefront.test.ts"
   },
   "dependencies": {
