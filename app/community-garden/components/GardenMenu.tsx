@@ -4,7 +4,7 @@ import { useState } from "react";
 import { GardenFounder } from "./GardenFounder";
 import { GardenFieldGuide } from "./GardenFieldGuide";
 import { GardenGuide } from "./GardenGuide";
-import { GardenSteward } from "./GardenSteward";
+import { GardenSteward, type GardenGiftPreview } from "./GardenSteward";
 import { BasilPolicyLinks } from "./BasilPolicyLinks";
 import type { GardenAudioControls } from "../lib/gardenAudio";
 import type { GardenWorldMode } from "../game/gardenRenderer";
@@ -28,12 +28,14 @@ type GardenMenuProps = {
   audio: GardenAudioControls;
   mode: GardenWorldMode;
   lifetimeCare: number;
+  giftPreview: GardenGiftPreview;
   livingGardenDiscoveries: LivingGardenDiscovery[];
   livingGardenHabitats: LivingGardenHabitat[];
   onClose: () => void;
   onSectionChange: (section: LibrarySection) => void;
   onVisitHeritage?: (gridX: number, gridY: number) => void;
   onVisitHabitat?: (gridX: number, gridY: number) => void;
+  onMembershipActivated: () => void;
   onViewCommunityGarden: () => void;
   guideInitialShelf?: "home" | "habitats";
 };
@@ -44,12 +46,14 @@ export function GardenMenu({
   audio,
   mode,
   lifetimeCare,
+  giftPreview,
   livingGardenDiscoveries,
   livingGardenHabitats,
   onClose,
   onSectionChange,
   onVisitHeritage,
   onVisitHabitat,
+  onMembershipActivated,
   onViewCommunityGarden,
   guideInitialShelf = "home",
 }: GardenMenuProps) {
@@ -188,6 +192,8 @@ export function GardenMenu({
               ) : null}
               {section === "account" ? (
                 <GardenSteward
+                  giftPreview={giftPreview}
+                  onMembershipActivated={onMembershipActivated}
                   onVisitHeritage={onVisitHeritage}
                   onViewCommunityGarden={onViewCommunityGarden}
                 />

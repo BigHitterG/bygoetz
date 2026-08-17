@@ -25,6 +25,7 @@ import { GardenCatalogSprite } from "./GardenCatalogSprite";
 import type { HeritageSeedStatus } from "@/lib/communityGarden/heritageSeeds";
 import type { GardenStewardshipSummary } from "../lib/stewardshipTypes";
 import { CommunityStewardshipPanel } from "./CommunityStewardship";
+import type { getGuestPreviewImport } from "../lib/guestGardenPreview";
 
 const PENDING_VERIFICATION_KEY = "basil-account-verification-pending-v1";
 
@@ -154,7 +155,11 @@ function clearAccountLinkFromAddress() {
   window.history.replaceState({}, "", `${url.pathname}${url.search}${url.hash}`);
 }
 
+export type GardenGiftPreview = ReturnType<typeof getGuestPreviewImport>;
+
 type GardenStewardProps = {
+  giftPreview: GardenGiftPreview;
+  onMembershipActivated: () => void;
   onVisitHeritage?: (gridX: number, gridY: number) => void;
   onViewCommunityGarden: () => void;
 };
@@ -164,6 +169,8 @@ function flowerName(type: "rose" | "sunflower" | "lavender") {
 }
 
 export function GardenSteward({
+  giftPreview,
+  onMembershipActivated,
   onVisitHeritage,
   onViewCommunityGarden,
 }: GardenStewardProps) {
@@ -181,6 +188,7 @@ export function GardenSteward({
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [passwordConfirm, setPasswordConfirm] = useState("");
+  const [promoCode, setPromoCode] = useState("");
   const [category, setCategory] = useState("plants");
   const [idea, setIdea] = useState("");
   const [replacingTaskId, setReplacingTaskId] = useState<string | null>(null);
@@ -346,1053 +354,94 @@ export function GardenSteward({
     }
   }, []);
 
-  useEffect(() => {
-    queueMicrotask(() => setVerificationPending(loadPendingVerification()));
-    const client = getGardenAccountClient();
-    if (!client) {
-      queueMicrotask(() => {
-        setAccountState({ status: "error", message: "Private accounts are not configured yet." });
-      });
+  const redeemGiftCode = useCallback(async ({
+    activeSession,
+    accountEmail,
+    accountPassword,
+  }: {
+    activeSession?: Session | null;
+    accountEmail?: string;
+    accountPassword?: string;
+  }) => {
+    const normalizedCode = promoCode.trim().toLowerCase();
+    if (!normalizedCode) {
+      setNotice("Enter your Basil gift code first.");
       return;
     }
 
-    const params = new URLSearchParams(window.location.search);
-    const stewardStatus = params.get("steward");
-    const tokenHash = params.get("token_hash");
-    const verificationType = params.get("type");
-    if (
-      stewardStatus === "confirm-account" &&
-      tokenHash &&
-      (verificationType === "signup" ||
-        verificationType === "recovery" ||
-        verificationType === "magiclink")
-    ) {
-      queueMicrotask(() => {
-        setPendingLink({
-          tokenHash,
-          type: verificationType,
-          checkout: params.get("checkout") === "1",
-          setup: params.get("setup") === "1",
-          verified: false,
+    setBusy("gift-code");
+    setNotice("");
+    try {
+      const response = await fetch("/api/community-garden/promo", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          ...(activeSession
+            ? { authorization: `Bearer ${activeSession.access_token}` }
+            : {}),
+        },
+        body: JSON.stringify({
+          preview: giftPreview,
+          promoCode: normalizedCode,
+          ...(accountEmail ? { email: accountEmail.trim().toLowerCase() } : {}),
+          ...(accountPassword ? { password: accountPassword } : {}),
+        }),
+      });
+      if (!response.ok) {
+        throw new Error(
+          await getResponseError(response, "That gift code could not be used."),
+        );
+      }
+      const gift = (await response.json()) as { createdAccount?: boolean };
+
+      let memberSession = activeSession ?? null;
+      if (!memberSession) {
+        const client = getGardenAccountClient();
+        if (!client || !accountEmail || !accountPassword) {
+          throw new Error(
+            "Your gift was accepted, but Basil could not sign you in automatically.",
+          );
+        }
+        const { data, error } = await client.auth.signInWithPassword({
+          email: accountEmail.trim().toLowerCase(),
+          password: accountPassword,
         });
-      });
-    }
-
-    void client.auth.getSession().then(({ data }) => {
-      setSession(data.session);
-      if (data.session) void loadAccount(data.session);
-      else setAccountState({ status: "signed-out" });
-    });
-
-    const { data: listener } = client.auth.onAuthStateChange((_event, nextSession) => {
-      setSession(nextSession);
-      if (nextSession) void loadAccount(nextSession);
-      else setAccountState({ status: "signed-out" });
-    });
-
-    queueMicrotask(() => {
-      if (stewardStatus === "welcome") {
-        setNotice("Purchase complete. Your Garden Membership is ready on this account.");
-      } else if (stewardStatus === "verification-sent") {
-        setPaidVerificationPending(true);
-        setNotice("Payment complete. Your preview garden is safely stored on the server.");
-      } else if (stewardStatus === "unverified") {
-        setNotice("The purchase could not be verified. Please check your Stripe receipt.");
-      } else if (params.get("checkout") === "cancelled") {
-        void trackBasilFunnelEvent("checkout_canceled");
-        setNotice("Checkout cancelled. The community garden is still free to play.");
+        if (error || !data.session) {
+          throw new Error(
+            error?.message ??
+              "Your gift was accepted, but Basil could not sign you in automatically.",
+          );
+        }
+        memberSession = data.session;
+        setSession(data.session);
       }
-    });
 
-    return () => listener.subscription.unsubscribe();
-  }, [loadAccount]);
-
-  useEffect(() => {
-    if (!paidVerificationPending || session) return;
-    queueMicrotask(() => void refreshPaidPurchaseStatus());
-    const timer = window.setInterval(() => {
-      if (document.visibilityState === "visible") {
-        void refreshPaidPurchaseStatus();
+      if (gift.createdAccount) {
+        trackBasilMetaStandardEvent(
+          "CompleteRegistration",
+          "complete_registration",
+          { content_name: "Basil gift account" },
+        );
+        void trackBasilFunnelEvent("verification_completed");
       }
-    }, 3_000);
-    return () => window.clearInterval(timer);
-  }, [paidVerificationPending, refreshPaidPurchaseStatus, session]);
-
-  async function sendAccountEmail(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const intent = authView === "signup" ? "signup" : "recovery";
-    const trimmedEmail = email.trim();
-    if (!trimmedEmail) return;
-    if (intent === "signup" && password !== passwordConfirm) {
-      setNotice("Those passwords do not match.");
-      return;
-    }
-
-    setBusy("account-email");
-    setNotice("");
-    if (intent === "signup") {
-      void trackBasilFunnelEvent("signup_started");
-    }
-    try {
-      const response = await fetch("/api/community-garden/auth/email", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          intent,
-          email: trimmedEmail,
-          password: intent === "signup" ? password : undefined,
-        }),
-      });
-      if (!response.ok) {
-        throw new Error(await getResponseError(response, "The account email could not be sent."));
-      }
-      const payload = (await response.json()) as {
-        message?: string;
-        accountStatus?: "new" | "existing";
-      };
+      await loadAccount(memberSession);
+      setPromoCode("");
       setPassword("");
       setPasswordConfirm("");
-      const pending = {
-        email: trimmedEmail,
-        existingAccount: payload.accountStatus === "existing",
-      };
-      setVerificationPending(pending);
-      savePendingVerification(pending);
-      void trackBasilFunnelEvent("verification_sent");
-      setNotice(
-        payload.message ??
-          "Check your email for a private account message from Basil by Goetz.",
-      );
-    } catch (error) {
-      setNotice(error instanceof Error ? error.message : "The account email could not be sent.");
-    } finally {
+      setNotice("Gift accepted. Your Garden Membership is active.");
       setBusy(null);
-    }
-  }
-
-  async function signIn(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const client = getGardenAccountClient();
-    if (!client || !email.trim() || !password) return;
-
-    setBusy("sign-in");
-    setNotice("");
-    const { data, error } = await client.auth.signInWithPassword({
-      email: email.trim(),
-      password,
-    });
-    if (error || !data.session) {
-      setBusy(null);
-      if (
-        error?.message.toLowerCase().includes("email not confirmed") ||
-        error?.message.toLowerCase().includes("email_not_confirmed")
-      ) {
-        const pending = { email: email.trim(), existingAccount: true };
-        setVerificationPending(pending);
-        savePendingVerification(pending);
-        setNotice(
-          "This account already exists but has not yet been verified. Check your email or resend the verification link.",
-        );
-        return;
-      }
-      setNotice(
-        error?.message === "Invalid login credentials"
-          ? "That email or password was not recognized. You can reset the password below."
-          : error?.message ?? "Basil could not sign in.",
-      );
-      return;
-    }
-
-    setSession(data.session);
-    setPassword("");
-    const account = await loadAccount(data.session);
-    if (account?.active) {
-      setNotice("Signed in. Your Garden Membership is active.");
-      setBusy(null);
-      return;
-    }
-    if (account) {
-      await beginCheckout(data.session);
-      return;
-    }
-    setBusy(null);
-  }
-
-  async function confirmAccountLink() {
-    const client = getGardenAccountClient();
-    if (!client || !pendingLink || pendingLink.verified) return;
-
-    setBusy("confirm-account");
-    setNotice("");
-    const { data, error } = await client.auth.verifyOtp({
-      token_hash: pendingLink.tokenHash,
-      type: pendingLink.type,
-    });
-    if (error || !data.session) {
-      setBusy(null);
-      clearAccountLinkFromAddress();
-      setPendingLink(null);
-      setVerificationPending(loadPendingVerification());
-      setNotice(
-        "That verification link has expired or was already used. Resend a fresh link or return to sign in.",
-      );
-      return;
-    }
-
-    clearAccountLinkFromAddress();
-    savePendingVerification(null);
-    setVerificationPending(null);
-    setPaidVerificationPending(false);
-    trackBasilMetaStandardEvent(
-      "CompleteRegistration",
-      "complete_registration",
-      { content_name: "Basil account" },
-    );
-    void trackBasilFunnelEvent("verification_completed");
-    setSession(data.session);
-    await finalizePaidVerification(data.session);
-    if (pendingLink.type === "recovery" || pendingLink.setup) {
-      setPendingLink({ ...pendingLink, verified: true });
-      setPassword("");
-      setPasswordConfirm("");
-      setBusy(null);
-      setNotice("Email confirmed. Choose the password you want to use on your devices.");
-      return;
-    }
-
-    setPendingLink(null);
-    if (pendingLink.checkout) {
-      await beginCheckout(data.session);
-    } else {
-      await loadAccount(data.session);
-      setBusy(null);
-    }
-  }
-
-  async function setNewPassword(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const client = getGardenAccountClient();
-    if (!client || !session || !pendingLink?.verified) return;
-    if (password !== passwordConfirm) {
-      setNotice("Those passwords do not match.");
-      return;
-    }
-    if (password.length < 10 || password.length > 128) {
-      setNotice("Use a password between 10 and 128 characters.");
-      return;
-    }
-
-    setBusy("set-password");
-    setNotice("");
-    const { error } = await client.auth.updateUser({ password });
-    if (error) {
-      setBusy(null);
-      setNotice(error.message);
-      return;
-    }
-
-    const continueToCheckout = pendingLink.checkout;
-    setPassword("");
-    setPasswordConfirm("");
-    setPendingLink(null);
-    if (continueToCheckout) {
-      await beginCheckout(session);
-    } else {
-      await loadAccount(session);
-      setNotice("Password updated. You are signed in on this device.");
-      setBusy(null);
-    }
-  }
-
-  async function submitIdea(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (!session || !idea.trim()) return;
-
-    setBusy("feedback");
-    setNotice("");
-    try {
-      const response = await fetch("/api/community-garden/feedback", {
-        method: "POST",
-        headers: {
-          authorization: `Bearer ${session.access_token}`,
-          "content-type": "application/json",
-        },
-        body: JSON.stringify({ category, message: idea.trim() }),
-      });
-      if (!response.ok) throw new Error(await getResponseError(response, "The idea could not be sent."));
-      setIdea("");
-      setNotice("Idea received. It is now in the practical upgrade queue.");
-      await loadAccount(session);
-    } catch (error) {
-      setNotice(error instanceof Error ? error.message : "The idea could not be sent.");
-    } finally {
-      setBusy(null);
-    }
-  }
-
-  async function signOut() {
-    setBusy("sign-out");
-    await getGardenAccountClient()?.auth.signOut();
-    setBusy(null);
-    setNotice("Signed out on this device. Your purchase remains on your account.");
-  }
-
-  async function updateNewsletterPreference(subscribed: boolean) {
-    if (!session || accountState.status !== "active") return;
-    setBusy("newsletter");
-    setNotice("");
-    try {
-      const response = await fetch("/api/community-garden/newsletter/preference", {
-        method: "POST",
-        headers: {
-          authorization: `Bearer ${session.access_token}`,
-          "content-type": "application/json",
-        },
-        body: JSON.stringify({ subscribed }),
-      });
-      if (!response.ok) throw new Error(await getResponseError(response, "The monthly-letter preference could not be saved."));
-      setAccountState((current) => current.status === "active" ? {
-        status: "active",
-        account: { ...current.account, newsletterSubscribed: subscribed },
-      } : current);
-      setNotice(subscribed ? "Youâ€™ll receive the monthly Basil Garden Letter." : "Youâ€™ve been unsubscribed from the monthly Basil Garden Letter.");
-    } catch (error) {
-      setNotice(error instanceof Error ? error.message : "The monthly-letter preference could not be saved.");
-    } finally {
-      setBusy(null);
-    }
-  }
-
-  async function resendVerification() {
-    if (!verificationPending?.email) return;
-    setBusy("resend-verification");
-    setNotice("");
-    try {
-      const response = await fetch("/api/community-garden/auth/email", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          intent: "recovery",
-          email: verificationPending.email,
-        }),
-      });
-      if (!response.ok) {
-        throw new Error(
-          await getResponseError(
-            response,
-            "The verification email could not be resent.",
-          ),
-        );
-      }
-      setNotice(
-        "A fresh Basil verification email was sent. Check spam, junk, promotions, and other filtered folders too.",
-      );
-      void trackBasilFunnelEvent("verification_sent");
+      onMembershipActivated();
     } catch (error) {
       setNotice(
         error instanceof Error
           ? error.message
-          : "The verification email could not be resent.",
+          : "That gift code could not be used.",
       );
-    } finally {
       setBusy(null);
     }
-  }
-
-  async function resendPaidVerification() {
-    setBusy("resend-paid-verification");
-    setNotice("");
-    try {
-      const response = await fetch("/api/community-garden/purchase/status", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ action: "resend" }),
-      });
-      if (!response.ok) {
-        throw new Error(
-          await getResponseError(
-            response,
-            "The Basil confirmation email could not be resent.",
-          ),
-        );
-      }
-      const payload = (await response.json()) as { email?: string };
-      setNotice(
-        `A fresh Basil confirmation was sent${
-          payload.email ? ` to ${payload.email}` : ""
-        }. Check spam, junk, and promotions too.`,
-      );
-      await refreshPaidPurchaseStatus();
-    } catch (error) {
-      setNotice(
-        error instanceof Error
-          ? error.message
-          : "The Basil confirmation email could not be resent.",
-      );
-    } finally {
-      setBusy(null);
-    }
-  }
-
-  const confirmAccountLinkEvent = useEffectEvent(confirmAccountLink);
+  }, [giftPreview, loadAccount, onMembershipActivated, promoCode]);
 
   useEffect(() => {
-    if (!pendingLink || pendingLink.verified) return;
-    if (confirmationStartedRef.current === pendingLink.tokenHash) return;
-    confirmationStartedRef.current = pendingLink.tokenHash;
-    queueMicrotask(() => void confirmAccountLinkEvent());
-  }, [pendingLink]);
-
-  const showAccountLink = Boolean(pendingLink);
-  const showVerificationPending =
-    Boolean(verificationPending) &&
-    !showAccountLink &&
-    accountState.status !== "active";
-  const showPaidVerificationPending =
-    paidVerificationPending &&
-    !showAccountLink &&
-    accountState.status !== "active";
-
-  return (
-    <section className="cg-steward" aria-labelledby="garden-steward-title">
-      <p className="cg-kicker">
-        {accountState.status === "active"
-          ? "Private account Â· anonymous public play"
-          : `One time Â· ${GARDEN_MEMBERSHIP_PRICE_LABEL}`}
-      </p>
-      <h2 id="garden-steward-title">Account &amp; Membership</h2>
-      <p className="cg-steward-lead">
-        {accountState.status === "active"
-          ? "Manage membership, progress, your Heritage Flower, the Garden Almanac, newsletter, feedback, and private account settings."
-          : "Keep playing the Community Garden for free and try ten flowers in My Garden. Membership keeps what you started and saves it across devices."}
-      </p>
-
-      {notice ? <p className="cg-steward-notice" aria-live="polite">{notice}</p> : null}
-
-      {accountState.status !== "active" && !showAccountLink && !showVerificationPending && !showPaidVerificationPending ? (
-        <div className="cg-pass-preview">
-          <div className="cg-pass-ticket" aria-label="Basil Community Garden Membership">
-            <div className="cg-pass-ticket-art" aria-hidden="true">
-              <span className="cg-pass-sun" />
-              <span className="cg-pass-flower is-one" />
-              <span className="cg-pass-flower is-two" />
-              <span className="cg-pass-flower is-three" />
-            </div>
-            <div className="cg-pass-ticket-copy">
-              <small>Basil Community Garden</small>
-              <strong>Garden Member</strong>
-              <span>My Garden forever Â· One payment, no subscription</span>
-            </div>
-          </div>
-
-          <div className="cg-pass-promise">
-            <p className="cg-auth-step">Keep what you started</p>
-            <h3>Let your preview garden grow</h3>
-            <p>
-              Save your preview flowers and Care, then grow your garden by
-              helping the Community Garden flourish.
-            </p>
-          </div>
-
-          <ul className="cg-pass-benefits">
-            <li>
-              <span className="cg-benefit-icon is-almanac" aria-hidden="true">01</span>
-              <div>
-                <strong>Keep your cozy garden</strong>
-                <p>Your preview flowers remain, plus a walkable property, little shed, and 8 starter Care.</p>
-              </div>
-            </li>
-            <li>
-              <span className="cg-benefit-icon is-ideas" aria-hidden="true">02</span>
-              <div>
-                <strong>Earn Care by helping everyone</strong>
-                <p>Everyone sees Care earned. Membership permanently banks it for your home garden.</p>
-              </div>
-            </li>
-            <li>
-              <span className="cg-benefit-icon is-devices" aria-hidden="true">03</span>
-              <div>
-                <strong>Keep it on every device</strong>
-                <p>Your garden, Almanac, and membership follow your private account.</p>
-              </div>
-            </li>
-          </ul>
-
-          <div className="cg-pass-offer">
-            <div>
-              <span>One-time membership</span>
-              <strong>{GARDEN_MEMBERSHIP_PRICE_LABEL}</strong>
-            </div>
-            <p>No subscription. Community play stays free for everyone.</p>
-          </div>
-        </div>
-      ) : null}
-
-      {accountState.status === "loading" && !showAccountLink && !showVerificationPending && !showPaidVerificationPending ? (
-        <p className="cg-steward-loading">Checking for a private Basil accountâ€¦</p>
-      ) : null}
-
-      {accountState.status === "error" && !showAccountLink && !showVerificationPending && !showPaidVerificationPending ? (
-        <div className="cg-steward-error" role="alert">
-          <p>{accountState.message}</p>
-          {session ? (
-            <button type="button" onClick={() => void loadAccount(session)}>Try again</button>
-          ) : null}
-        </div>
-      ) : null}
-
-      {pendingLink && !pendingLink.verified ? (
-        <div className="cg-sign-in cg-auth-confirm">
-          <p className="cg-auth-step">Account confirmation</p>
-          <h3>Verifying your Basil account</h3>
-          <p>
-            Please wait while Basil confirms your email
-            {pendingLink.checkout ? " and resumes your purchase." : "."}
-          </p>
-          <button
-            type="button"
-            disabled={busy === "confirm-account"}
-            onClick={() => void confirmAccountLink()}
-          >
-            {busy === "confirm-account"
-              ? "Confirming accountâ€¦"
-              : pendingLink.checkout
-                ? "Confirm account & continue to payment"
-                : "Confirm Basil account"}
-          </button>
-        </div>
-      ) : null}
-
-      {showVerificationPending && verificationPending ? (
-        <div className="cg-sign-in cg-auth-confirm cg-verification-pending">
-          <p className="cg-auth-step">Account created</p>
-          <h3>Check your email to verify your account</h3>
-          <p>
-            We sent a verification link to <strong>{verificationPending.email}</strong>.
-            Open the email and follow the link before signing in or continuing your
-            purchase.
-          </p>
-          {verificationPending.existingAccount ? (
-            <p className="cg-auth-existing">
-              This account already exists but may not yet be verified. Check your email
-              or resend the verification link.
-            </p>
-          ) : null}
-          <p className="cg-auth-folder-reminder">
-            The message is from Basil by Goetz. If it is not in your inbox, check spam,
-            junk, promotions, and other filtered folders.
-          </p>
-          <button
-            type="button"
-            disabled={busy === "resend-verification"}
-            onClick={() => void resendVerification()}
-          >
-            {busy === "resend-verification"
-              ? "Sending a fresh link..."
-              : "Resend verification email"}
-          </button>
-          <button
-            className="cg-auth-text-button"
-            type="button"
-            onClick={() => {
-              savePendingVerification(null);
-              setVerificationPending(null);
-              setEmail("");
-              setAuthView("signup");
-              setNotice("");
-            }}
-          >
-            Change email address
-          </button>
-          <button
-            className="cg-auth-text-button"
-            type="button"
-            onClick={() => {
-              savePendingVerification(null);
-              setVerificationPending(null);
-              setAuthView("signin");
-              setNotice("After verifying, sign in here to continue your purchase.");
-            }}
-          >
-            Return to sign in after verification
-          </button>
-        </div>
-      ) : null}
-
-      {showPaidVerificationPending ? (
-        <div className="cg-sign-in cg-auth-confirm cg-verification-pending">
-          <p className="cg-auth-step">Payment complete</p>
-          <h3>Check your email to finish your Basil account</h3>
-          <p>
-            We sent a Basil verification link
-            {paidPurchaseStatus?.email ? (
-              <> to <strong>{paidPurchaseStatus.email}</strong></>
-            ) : null}
-            . {paidPurchaseStatus?.paid
-              ? "Your preview flowers, paths, and remaining Care are already stored safely."
-              : "Basil is finishing the secure save of your preview garden."}
-          </p>
-          {paidPurchaseStatus?.error ? (
-            <p className="cg-auth-existing" role="alert">
-              Your payment is safe, but Basil needs another moment to finish saving
-              the garden. This page will keep trying.
-            </p>
-          ) : null}
-          <p className="cg-auth-folder-reminder">
-            The message is from Basil by Goetz. If it is not in your inbox, check spam,
-            junk, promotions, and other filtered folders.
-          </p>
-          <button
-            type="button"
-            disabled={busy === "resend-paid-verification"}
-            onClick={() => void resendPaidVerification()}
-          >
-            {busy === "resend-paid-verification"
-              ? "Sending a fresh confirmationâ€¦"
-              : "Resend confirmation email"}
-          </button>
-          <button
-            className="cg-auth-text-button"
-            type="button"
-            onClick={() => void refreshPaidPurchaseStatus()}
-          >
-            I verified â€” continue on this device
-          </button>
-        </div>
-      ) : null}
-
-      {pendingLink?.verified ? (
-        <div className="cg-sign-in cg-auth-confirm">
-          <p className="cg-auth-step">Private password</p>
-          <h3>Choose your Basil password</h3>
-          <p>This password is only for signing in. Nothing becomes public in the garden.</p>
-          <form onSubmit={setNewPassword}>
-            <label htmlFor="basil-new-password">New password</label>
-            <input
-              id="basil-new-password"
-              type="password"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              autoComplete="new-password"
-              minLength={10}
-              maxLength={128}
-              required
-            />
-            <label htmlFor="basil-new-password-confirm">Confirm password</label>
-            <input
-              id="basil-new-password-confirm"
-              type="password"
-              value={passwordConfirm}
-              onChange={(event) => setPasswordConfirm(event.target.value)}
-              autoComplete="new-password"
-              minLength={10}
-              maxLength={128}
-              required
-            />
-            <small className="cg-auth-help">Use at least 10 characters.</small>
-            <button
-              type="submit"
-              disabled={
-                busy === "set-password" ||
-                password.length < 10 ||
-                password !== passwordConfirm
-              }
-            >
-              {busy === "set-password"
-                ? "Saving passwordâ€¦"
-                : pendingLink.checkout
-                  ? "Save password & continue to payment"
-                  : "Save new password"}
-            </button>
-          </form>
-        </div>
-      ) : null}
-
-      {accountState.status === "signed-out" && !showAccountLink && !showVerificationPending && !showPaidVerificationPending ? (
-        <div className="cg-sign-in">
-          <ol className="cg-auth-steps" aria-label="Purchase steps">
-            <li><span>1</span>Private account</li>
-            <li><span>2</span>Email confirmation</li>
-            <li><span>3</span>Secure payment</li>
-          </ol>
-          <div className="cg-auth-tabs" role="group" aria-label="Account options">
-            <button
-              type="button"
-              aria-pressed={authView === "signin"}
-              onClick={() => {
-                setAuthView("signin");
-                setNotice("");
-              }}
-            >
-              Sign in
-            </button>
-            <button
-              type="button"
-              aria-pressed={authView === "signup"}
-              onClick={() => {
-                setAuthView("signup");
-                setNotice("");
-              }}
-            >
-              Create account
-            </button>
-          </div>
-
-          {authView === "signin" ? (
-            <>
-              <h3>Sign in & continue</h3>
-              <p>
-                Your email is your private login. There is no public username, profile,
-                or name attached to what you plant.
-              </p>
-              <form onSubmit={signIn}>
-                <label htmlFor="basil-signin-email">Email address</label>
-                <input
-                  id="basil-signin-email"
-                  type="email"
-                  value={email}
-                  onChange={(event) => setEmail(event.target.value)}
-                  autoComplete="email"
-                  required
-                />
-                <label htmlFor="basil-signin-password">Password</label>
-                <input
-                  id="basil-signin-password"
-                  type="password"
-                  value={password}
-                  onChange={(event) => setPassword(event.target.value)}
-                  autoComplete="current-password"
-                  required
-                />
-                <button
-                  type="submit"
-                  disabled={busy === "sign-in" || !email.trim() || !password}
-                >
-                  {busy === "sign-in" ? "Signing inâ€¦" : "Sign in & continue"}
-                </button>
-              </form>
-              <button
-                className="cg-auth-text-button"
-                type="button"
-                onClick={() => {
-                  setAuthView("recovery");
-                  setPassword("");
-                  setNotice("");
-                }}
-              >
-                Forgot your password?
-              </button>
-            </>
-          ) : null}
-
-          {authView === "signup" ? (
-            <>
-              <h3>Create a private account</h3>
-              <p>
-                Use the same email on your other devices. We will send one confirmation
-                from Basil by Goetz, then take you to the{" "}
-                {GARDEN_MEMBERSHIP_PRICE_LABEL} Stripe checkout.
-              </p>
-              <form onSubmit={sendAccountEmail}>
-                <label htmlFor="basil-signup-email">Email address</label>
-                <input
-                  id="basil-signup-email"
-                  type="email"
-                  value={email}
-                  onChange={(event) => setEmail(event.target.value)}
-                  autoComplete="email"
-                  required
-                />
-                <label htmlFor="basil-signup-password">Create password</label>
-                <input
-                  id="basil-signup-password"
-                  type="password"
-                  value={password}
-                  onChange={(event) => setPassword(event.target.value)}
-                  autoComplete="new-password"
-                  minLength={10}
-                  maxLength={128}
-                  required
-                />
-                <label htmlFor="basil-signup-password-confirm">Confirm password</label>
-                <input
-                  id="basil-signup-password-confirm"
-                  type="password"
-                  value={passwordConfirm}
-                  onChange={(event) => setPasswordConfirm(event.target.value)}
-                  autoComplete="new-password"
-                  minLength={10}
-                  maxLength={128}
-                  required
-                />
-                <small className="cg-auth-help">Use at least 10 characters.</small>
-                <button
-                  type="submit"
-                  disabled={
-                    busy === "account-email" ||
-                    !email.trim() ||
-                    password.length < 10 ||
-                    password !== passwordConfirm
-                  }
-                >
-                  {busy === "account-email"
-                    ? "Sending confirmationâ€¦"
-                    : "Create account & continue to payment"}
-                </button>
-              </form>
-            </>
-          ) : null}
-
-          {authView === "recovery" ? (
-            <>
-              <h3>Reset your password</h3>
-              <p>
-                We will send a private password-reset email from Basil by Goetz. You will
-                stay signed in on this device afterward.
-              </p>
-              <form onSubmit={sendAccountEmail}>
-                <label htmlFor="basil-recovery-email">Email address</label>
-                <input
-                  id="basil-recovery-email"
-                  type="email"
-                  value={email}
-                  onChange={(event) => setEmail(event.target.value)}
-                  autoComplete="email"
-                  required
-                />
-                <button
-                  type="submit"
-                  disabled={busy === "account-email" || !email.trim()}
-                >
-                  {busy === "account-email" ? "Sending resetâ€¦": "Email me a password reset"}
-                </button>
-              </form>
-              <button
-                className="cg-auth-text-button"
-                type="button"
-                onClick={() => {
-                  setAuthView("signin");
-                  setNotice("");
-                }}
-              >
-                Back to sign in
-              </button>
-            </>
-          ) : null}
-        </div>
-      ) : null}
-
-      {accountState.status === "free" && !showAccountLink && !showVerificationPending && !showPaidVerificationPending ? (
-        <div className="cg-pass-card">
-          <div className="cg-signed-in-row">
-            <span>Signed in privately as {accountState.email}</span>
-            <button type="button" onClick={() => void signOut()}>Sign out</button>
-          </div>
-          <div className="cg-pass-price">
-            <span>Garden Membership</span>
-            <strong>{GARDEN_MEMBERSHIP_PRICE_LABEL}</strong>
-            <small>once, not a subscription</small>
-          </div>
-          <ul>
-            <li>Keep your preview flowers and remaining temporary Care</li>
-            <li>Starter pack: a walkable fenced property, cozy shed, and 8 Care</li>
-            <li>Plant and uproot inside your personal garden</li>
-            <li>Permanent plants plus benches, birdhouses, and pavers to place</li>
-            <li>Use membership on any browser or device with the same email</li>
-            <li>Garden Almanac with live community totals</li>
-            <li>Feedback tracked through the upgrade queue</li>
-          </ul>
-          <button
-            className="cg-support-button"
-            type="button"
-            disabled={busy === "checkout" || !session}
-            onClick={() => session && void beginCheckout(session)}
-          >
-            {busy === "checkout"
-              ? "Opening secure checkoutâ€¦"
-              : `Keep My Garden Â· ${GARDEN_MEMBERSHIP_PRICE_LABEL}`}
-          </button>
-        </div>
-      ) : null}
-
-      {accountState.status === "active" && !showAccountLink ? (
-        <div className="cg-steward-account">
-          <div className="cg-steward-welcome">
-            <div className="cg-signed-in-row">
-              <span>Signed in privately as {accountState.account.steward.email}</span>
-              <button type="button" disabled={busy === "sign-out"} onClick={() => void signOut()}>
-                Sign out
-              </button>
-            </div>
-            <p className="cg-kicker">Community Garden Membership</p>
-            <h3>Membership active</h3>
-            <p>
-              Your account works across devices. Nothing you plant is labeled with your
-              email or linked to a public profile.
-            </p>
-          </div>
-
-          {accountState.account.heritage.eligible ? (
-            <section className="cg-heritage-seed" aria-labelledby="heritage-seed-title">
-              <div className="cg-steward-section-heading">
-                <div>
-                  <p className="cg-kicker">One lifetime seed</p>
-                  <h3 id="heritage-seed-title">
-                    {accountState.account.heritage.badgeEarned
-                      ? "Heritage Gardener"
-                      : "Growing your Heritage Flower"}
-                  </h3>
-                </div>
-                <span className="cg-heritage-badge" aria-hidden="true">âœ¦</span>
-              </div>
-
-              {accountState.account.heritage.heritageFlower ? (
-                <>
-                  <button
-                    className="cg-heritage-visit-button"
-                    type="button"
-                    onClick={() => {
-                      const flower = accountState.account.heritage.heritageFlower;
-                      if (flower) onVisitHeritage?.(flower.gridX, flower.gridY);
-                    }}
-                  >
-                    <strong>Visit your Heritage Flower</strong>
-                    <span>Open the Community Atlas with your landmark centered.</span>
-                  </button>
-                  <div className="cg-heritage-earned">
-                    <GardenCatalogSprite
-                      kind="plant"
-                      type={accountState.account.heritage.heritageFlower.plantType}
-                      heritage
-                    />
-                    <div>
-                      <strong>
-                        {flowerName(accountState.account.heritage.heritageFlower.plantType)} Â· Heritage Flower
-                      </strong>
-                      <p>
-                        You and the community established this permanent landmark. Your
-                        account has earned its Heritage Gardener badge.
-                      </p>
-                    </div>
-                  </div>
-                </>
-              ) : (
-                <div className="cg-heritage-empty">
-                  <strong>You do not have a Heritage Flower to visit yet.</strong>
-                  <p>
-                    Keep planting and caring for the Community Garden. One of your
-                    flowers may naturally become Heritage after it grows with enough
-                    time, community care, and neighboring flowers. When that happens,
-                    Basil will add the visit button here and let you know in the garden.
-                  </p>
-                </div>
-              )}
-            </section>
-          ) : null}
-
-          <CommunityStewardshipPanel
-            summary={accountState.account.stewardship}
-            replacingId={replacingTaskId}
-            onReplace={(assignmentId) => void replaceStewardshipTask(assignmentId)}
-          />
-
-          <div className="cg-almanac" aria-labelledby="garden-almanac-title">
-            <div className="cg-steward-section-heading">
-              <h3 id="garden-almanac-title">Garden Almanac</h3>
-              <small>Live community totals</small>
-            </div>
-            <dl>
-              <div><dt>Growing</dt><dd>{accountState.account.almanac.total}</dd></div>
-              <div><dt>Planted today</dt><dd>{accountState.account.almanac.planted24h}</dd></div>
-              <div><dt>Watered today</dt><dd>{accountState.account.almanac.active24h}</dd></div>
-              <div><dt>Roses</dt><dd>{accountState.account.almanac.byType.rose}</dd></div>
-              <div><dt>Sunflowers</dt><dd>{accountState.account.almanac.byType.sunflower}</dd></div>
-              <div><dt>Lavender</dt><dd>{accountState.account.almanac.byType.lavender}</dd></div>
-            </dl>
-          </div>
-
-          <div className="cg-newsletter-preference">
-            <div>
-              <strong>Monthly Garden Letter</strong>
-              <p>Receive a monthly snapshot of what the community has grown. Every letter includes an unsubscribe link.</p>
-            </div>
-            <button
-              type="button"
-              disabled={busy === "newsletter"}
-              onClick={() => void updateNewsletterPreference(!accountState.account.newsletterSubscribed)}
-            >
-              {busy === "newsletter"
-                ? "Savingâ€¦"
-                : accountState.account.newsletterSubscribed
-                  ? "Unsubscribe"
-                  : "Subscribe"}
-            </button>
-          </div>
-
-          <form className="cg-feedback-form" onSubmit={submitIdea}>
-            <div className="cg-steward-section-heading">
-              <h3>Shape the next upgrade</h3>
-              <small>Ideas are reviewed, never auto-published</small>
-            </div>
-            <label htmlFor="feedback-category">Area</label>
-            <select
-              id="feedback-category"
-              value={category}
-              onChange={(event) => setCategory(event.target.value)}
-            >
-              {FEEDBACK_CATEGORIES.map(([value, label]) => (
-                <option key={value} value={value}>{label}</option>
-              ))}
-            </select>
-            <label htmlFor="feedback-idea">What would make you return to the garden?</label>
-            <textarea
-              id="feedback-idea"
-              value={idea}
-              onChange={(event) => setIdea(event.target.value.slice(0, 280))}
-              maxLength={280}
-              rows={4}
-            />
-            <div className="cg-feedback-submit">
-              <small>{idea.length}/280</small>
-              <button type="submit" disabled={busy === "feedback" || !idea.trim()}>
-                {busy === "feedback" ? "Sendingâ€¦" : "Send idea"}
-              </button>
-            </div>
-          </form>
-
-          {accountState.account.feedback.length ? (
-            <div className="cg-feedback-history">
-              <h3>Your upgrade queue</h3>
-              <ul>
-                {accountState.account.feedback.map((item) => (
-                  <li key={item.id}>
-                    <span>{item.category}</span>
-                    <p>{item.message}</p>
-                    <small>{item.status}</small>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ) : null}
-        </div>
-      ) : null}
-
-      {session && !showAccountLink && !showVerificationPending && !showPaidVerificationPending ? (
-        <GardenHealthPanel
-          session={session}
-          onViewCommunityGarden={onViewCommunityGarden}
-        />
-      ) : null}
-
-      <div className="cg-steward-privacy">
-        <strong>Private account, anonymous play</strong>
-        <p>
-          Basil stores your private account email, payment entitlement, and feedback.
-          Stripe handles card and receipt details. The public garden never shows who you
-          are or connects your identity to plants. You stay signed in on a device until
-          you sign out. Future verified store purchases can attach to this same account.
-        </p>
-      </div>
-    </section>
-  );
-}
+    queueMicrotask(() => setVerificationPending(loadPendingVerification()÷~v¶‰ËkºwµçM¥¹ÕÀµÁÉ½µ¼ˆ(€€€€€€€€€€€€€€€€€€€ÑåÁ”ô‰Ñ•áĞˆ(€€€€€€€€€€€€€€€€€€€Ù…±Õ”õíÁÉ½µ½½‘•ô(€€€€€€€€€€€€€€€€€€€½¹¡…¹”õì¡•Ù•¹Ğ¤€ôøÍ•ÑAÉ½µ½½‘”¡•Ù•¹Ğ¹Ñ…É•Ğ¹Ù…±Õ”¹Ñ½1½İ•É…Í” ¤¥ô(€€€€€€€€€€€€€€€€€€€…ÕÑ½½µÁ±•Ñ”ô‰½™˜ˆ(€€€€€€€€€€€€€€€€€€€…ÕÑ½…Á¥Ñ…±¥é”ô‰¹½¹”ˆ(€€€€€€€€€€€€€€€€€€€…ÕÑ½½ÉÉ•Ğô‰½™˜ˆ(€€€€€€€€€€€€€€€€€€€ÍÁ•±±¡•¬õí™…±Í•ô(€€€€€€€€€€€€€€€€€€€µ…á1•¹Ñ õìÌÉô(€€€€€€€€€€€€€€€€€€€Á±…•¡½±‘•Èô‰•¹Ñ•È¥™Ğ½‘”ˆ(€€€€€€€€€€€€€€€€€€€‘¥Í…‰±•õí‰ÕÍä€ôôô€‰…½Õ¹Ğµ•µ…¥°ˆñğ‰ÕÍä€ôôô€‰¥™Ğµ½‘”‰ô(€€€€€€€€€€€€€€€€€€¼ø(€€€€€€€€€€€€€€€€€€ñÍµ…±°ù¥™Ğ½‘”Í­¥ÁÌ•µ…¥°½¹™¥Éµ…Ñ¥½¸…¹Á…åµ•¹Ğ¸ğ½Íµ…±°ø(€€€€€€€€€€€€€€€€ğ½‘¥Øø(€€€€€€€€€€€€€€€€ñ±…‰•°¡Ñµ±½Èô‰‰…Í¥°µÍ¥¹ÕÀµ•µ…¥°ˆùµ…¥°…‘‘É•ÍÌğ½±…‰•°ø(€€€€€€€€€€€€€€€€ñ¥¹ÁÕĞ4(€€€€€€€€€€€€€€€€€¥ô‰‰…Í¥°µÍ¥¹ÕÀµ•µ…¥°ˆ4(€€€€€€€€€€€€€€€€€ÑåÁ”ô‰•µ…¥°ˆ4(€€€€€€€€€€€€€€€€€Ù…±Õ”õí•µ…¥±ô4(€€€€€€€€€€€€€€€€€½¹¡…¹”õì¡•Ù•¹Ğ¤€ôøÍ•Ñµ…¥°¡•Ù•¹Ğ¹Ñ…É•Ğ¹Ù…±Õ”¥ô4(€€€€€€€€€€€€€€€€€…ÕÑ½½µÁ±•Ñ”ô‰•µ…¥°ˆ4(€€€€€€€€€€€€€€€€€É•ÅÕ¥É•4(€€€€€€€€€€€€€€€€¼ø4(€€€€€€€€€€€€€€€€ñ±…‰•°¡Ñµ±½Èô‰‰…Í¥°µÍ¥¹ÕÀµÁ…ÍÍİ½ÉˆùÉ•…Ñ”Á…ÍÍİ½Éğ½±…‰•°ø4(€€€€€€€€€€€€€€€€ñ¥¹ÁÕĞ4(€€€€€€€€€€€€€€€€€¥ô‰‰…Í¥°µÍ¥¹ÕÀµÁ…ÍÍİ½Éˆ4(€€€€€€€€€€€€€€€€€ÑåÁ”ô‰Á…ÍÍİ½Éˆ4(€€€€€€€€€€€€€€€€€Ù…±Õ”õíÁ…ÍÍİ½É‘ô4(€€€€€€€€€€€€€€€€€½¹¡…¹”õì¡•Ù•¹Ğ¤€ôøÍ•ÑA…ÍÍİ½É¡•Ù•¹Ğ¹Ñ…É•Ğ¹Ù…±Õ”¥ô4(€€€€€€€€€€€€€€€€€…ÕÑ½½µÁ±•Ñ”ô‰¹•ÜµÁ…ÍÍİ½Éˆ4(€€€€€€€€€€€€€€€€€µ¥¹1•¹Ñ õìÄÁô4(€€€€€€€€€€€€€€€€€µ…á1•¹Ñ õìÄÈáô4(€€€€€€€€€€€€€€€€€É•ÅÕ¥É•4(€€€€€€€€€€€€€€€€¼ø4(€€€€€€€€€€€€€€€€ñ±…‰•°¡Ñµ±½Èô‰‰…Í¥°µÍ¥¹ÕÀµÁ…ÍÍİ½Éµ½¹™¥É´ˆù½¹™¥É´Á…ÍÍİ½Éğ½±…‰•°ø4(€€€€€€€€€€€€€€€€ñ¥¹ÁÕĞ4(€€€€€€€€€€€€€€€€€¥ô‰‰…Í¥°µÍ¥¹ÕÀµÁ…ÍÍİ½Éµ½¹™¥É´ˆ4(€€€€€€€€€€€€€€€€€ÑåÁ”ô‰Á…ÍÍİ½Éˆ4(€€€€€€€€€€€€€€€€€Ù…±Õ”õíÁ…ÍÍİ½É‘½¹™¥Éµô4(€€€€€€€€€€€€€€€€€½¹¡…¹”õì¡•Ù•¹Ğ¤€ôøÍ•ÑA…ÍÍİ½É‘½¹™¥É´¡•Ù•¹Ğ¹Ñ…É•Ğ¹Ù…±Õ”¥ô4(€€€€€€€€€€€€€€€€€…ÕÑ½½µÁ±•Ñ”ô‰¹•ÜµÁ…ÍÍİ½Éˆ4(€€€€€€€€€€€€€€€€€µ¥¹1•¹Ñ õìÄÁô4(€€€€€€€€€€€€€€€€€µ…á1•¹Ñ õìÄÈáô4(€€€€€€€€€€€€€€€€€É•ÅÕ¥É•4(€€€€€€€€€€€€€€€€¼ø4(€€€€€€€€€€€€€€€€ñÍµ…±°±…ÍÍ9…µ”ô‰œµ…ÕÑ µ¡•±ÀˆùUÍ”…Ğ±•…ÍĞ€ÄÀ¡…É…Ñ•ÉÌ¸ğ½Íµ…±°ø4(€€€€€€€€€€€€€€€€ñ‰ÕÑÑ½¸4(€€€€€€€€€€€€€€€€€ÑåÁ”ô‰ÍÕ‰µ¥Ğˆ4(€€€€€€€€€€€€€€€€€‘¥Í…‰±•õì(€€€€€€€€€€€€€€€€€€€‰ÕÍä€ôôô€‰…½Õ¹Ğµ•µ…¥°ˆñğ‰ÕÍä€ôôô€‰¥™Ğµ½‘”ˆñğ(€€€€€€€€€€€€€€€€€€€€…•µ…¥°¹ÑÉ¥´ ¤ñğ(€€€€€€€€€€€€€€€€€€€Á…ÍÍİ½É¹±•¹Ñ €ğ€ÄÀñğ(€€€€€€€€€€€€€€€€€€€Á…ÍÍİ½É€„ôôÁ…ÍÍİ½É‘½¹™¥É´(€€€€€€€€€€€€€€€€€ô(€€€€€€€€€€€€€€€€ø(€€€€€€€€€€€€€€€€€í‰ÕÍä€ôôô€‰…½Õ¹Ğµ•µ…¥°ˆ(€€€€€€€€€€€€€€€€€€€€ü€‰M•¹‘¥¹œ½¹™¥Éµ…Ñ¥½»Š˜ˆ(€€€€€€€€€€€€€€€€€€€€è‰ÕÍä€ôôô€‰¥™Ğµ½‘”ˆ(€€€€€€€€€€€€€€€€€€€€€€ü€‰ÁÁ±å¥¹œ¥™ÓŠ˜ˆ(€€€€€€€€€€€€€€€€€€€€€€èÁÉ½µ½½‘”¹ÑÉ¥´ ¤(€€€€€€€€€€€€€€€€€€€€€€€€ü€‰É•…Ñ”…½Õ¹Ğ€˜ÕÍ”¥™Ğ½‘”ˆ(€€€€€€€€€€€€€€€€€€€€€€€€è€‰É•…Ñ”…½Õ¹Ğ€˜½¹Ñ¥¹Õ”Ñ¼Á…åµ•¹Ğ‰ô(€€€€€€€€€€€€€€€€ğ½‰ÕÑÑ½¸ø(€€€€€€€€€€€€€€ğ½™½É´ø4(€€€€€€€€€€€€ğ¼ø4(€€€€€€€€€€¤€è¹Õ±±ô4(4(€€€€€€€€€í…ÕÑ¡Y¥•Ü€ôôô€‰É•½Ù•Éäˆ€ü€ 4(€€€€€€€€€€€€ğø4(€€€€€€€€€€€€€€ñ ÌùI•Í•Ğå½ÕÈÁ…ÍÍİ½Éğ½ Ìø4(€€€€€€€€€€€€€€ñÀø4(€€€€€€€€€€€€€€€]”İ¥±°Í•¹„ÁÉ¥Ù…Ñ”Á…ÍÍİ½ÉµÉ•Í•Ğ•µ…¥°™É½´	…Í¥°‰ä½•Ñè¸e½Ôİ¥±°4(€€€€€€€€€€€€€€€ÍÑ…äÍ¥¹•¥¸½¸Ñ¡¥Ì‘•Ù¥”…™Ñ•Éİ…É¸4(€€€€€€€€€€€€€€ğ½Àø4(€€€€€€€€€€€€€€ñ™½É´½¹MÕ‰µ¥ĞõíÍ•¹‘½Õ¹Ñµ…¥±ôø4(€€€€€€€€€€€€€€€€ñ±…‰•°¡Ñµ±½Èô‰‰…Í¥°µÉ•½Ù•Éäµ•µ…¥°ˆùµ…¥°…‘‘É•ÍÌğ½±…‰•°ø4(€€€€€€€€€€€€€€€€ñ¥¹ÁÕĞ4(€€€€€€€€€€€€€€€€€¥ô‰‰…Í¥°µÉ•½Ù•Éäµ•µ…¥°ˆ4(€€€€€€€€€€€€€€€€€ÑåÁ”ô‰•µ…¥°ˆ4(€€€€€€€€€€€€€€€€€Ù…±Õ”õí•µ…¥±ô4(€€€€€€€€€€€€€€€€€½¹¡…¹”õì¡•Ù•¹Ğ¤€ôøÍ•Ñµ…¥°¡•Ù•¹Ğ¹Ñ…É•Ğ¹Ù…±Õ”¥ô4(€€€€€€€€€€€€€€€€€…ÕÑ½½µÁ±•Ñ”ô‰•µ…¥°ˆ4(€€€€€€€€€€€€€€€€€É•ÅÕ¥É•4(€€€€€€€€€€€€€€€€¼ø4(€€€€€€€€€€€€€€€€ñ‰ÕÑÑ½¸4(€€€€€€€€€€€€€€€€€ÑåÁ”ô‰ÍÕ‰µ¥Ğˆ4(€€€€€€€€€€€€€€€€€‘¥Í…‰±•õí‰ÕÍä€ôôô€‰…½Õ¹Ğµ•µ…¥°ˆñğ€…•µ…¥°¹ÑÉ¥´ ¥ô4(€€€€€€€€€€€€€€€€ø4(€€€€€€€€€€€€€€€€€í‰ÕÍä€ôôô€‰…½Õ¹Ğµ•µ…¥°ˆ€ü€‰M•¹‘¥¹œÉ•Í•ÓŠ˜ˆè€‰µ…¥°µ”„Á…ÍÍİ½ÉÉ•Í•Ğ‰ô4(€€€€€€€€€€€€€€€€ğ½‰ÕÑÑ½¸ø4(€€€€€€€€€€€€€€ğ½™½É´ø4(€€€€€€€€€€€€€€ñ‰ÕÑÑ½¸4(€€€€€€€€€€€€€€€±…ÍÍ9…µ”ô‰œµ…ÕÑ µÑ•áĞµ‰ÕÑÑ½¸ˆ4(€€€€€€€€€€€€€€€ÑåÁ”ô‰‰ÕÑÑ½¸ˆ4(€€€€€€€€€€€€€€€½¹±¥¬õì ¤€ôøì4(€€€€€€€€€€€€€€€€€Í•ÑÕÑ¡Y¥•Ü ‰Í¥¹¥¸ˆ¤ì4(€€€€€€€€€€€€€€€€€Í•Ñ9½Ñ¥” ˆˆ¤ì4(€€€€€€€€€€€€€€€õô4(€€€€€€€€€€€€€€ø4(€€€€€€€€€€€€€€€	…¬Ñ¼Í¥¸¥¸4(€€€€€€€€€€€€€€ğ½‰ÕÑÑ½¸ø4(€€€€€€€€€€€€ğ¼ø4(€€€€€€€€€€¤€è¹Õ±±ô4(€€€€€€€€ğ½‘¥Øø4(€€€€€€¤€è¹Õ±±ô4(4(€€€€€í…½Õ¹ÑMÑ…Ñ”¹ÍÑ…ÑÕÌ€ôôô€‰™É•”ˆ€˜˜€…Í¡½İ½Õ¹Ñ1¥¹¬€˜˜€…Í¡½İY•É¥™¥…Ñ¥½¹A•¹‘¥¹œ€˜˜€…Í¡½İA…¥‘Y•É¥™¥…Ñ¥½¹A•¹‘¥¹œ€ü€ 4(€€€€€€€€ñ‘¥Ø±…ÍÍ9…µ”ô‰œµÁ…ÍÌµ…Éˆø4(€€€€€€€€€€ñ‘¥Ø±…ÍÍ9…µ”ô‰œµÍ¥¹•µ¥¸µÉ½Üˆø4(€€€€€€€€€€€€ñÍÁ…¸ùM¥¹•¥¸ÁÉ¥Ù…Ñ•±ä…Ìí…½Õ¹ÑMÑ…Ñ”¹•µ…¥±ôğ½ÍÁ…¸ø4(€€€€€€€€€€€€ñ‰ÕÑÑ½¸ÑåÁ”ô‰‰ÕÑÑ½¸ˆ½¹±¥¬õì ¤€ôøÙ½¥Í¥¹=ÕĞ ¥ôùM¥¸½ÕĞğ½‰ÕÑÑ½¸ø4(€€€€€€€€€€ğ½‘¥Øø4(€€€€€€€€€€ñ‘¥Ø±…ÍÍ9…µ”ô‰œµÁ…ÍÌµÁÉ¥”ˆø(€€€€€€€€€€€€ñÍÁ…¸ù…É‘•¸5•µ‰•ÉÍ¡¥Àğ½ÍÁ…¸ø(€€€€€€€€€€€€ñÍÑÉ½¹œùíI9}55	IM!%A}AI%}1	1ôğ½ÍÑÉ½¹œø(€€€€€€€€€€€€ñÍµ…±°ù½¹”°¹½Ğ„ÍÕ‰ÍÉ¥ÁÑ¥½¸ğ½Íµ…±°ø(€€€€€€€€€€ğ½‘¥Øø(€€€€€€€€€€ñ‘¥Ø±…ÍÍ9…µ”ô‰œµµ•µ‰•ÉÍ¡¥Àµ¥™Ğµ½‘”¥ÌµÁÉ½µ¥¹•¹Ğˆø(€€€€€€€€€€€€ñ±…‰•°¡Ñµ±½Èô‰‰…Í¥°µ…½Õ¹ĞµÁÉ½µ¼ˆù!…Ù”„¥™Ğ½‘”üğ½±…‰•°ø(€€€€€€€€€€€€ñ¥¹ÁÕĞ(€€€€€€€€€€€€€¥ô‰‰…Í¥°µ…½Õ¹ĞµÁÉ½µ¼ˆ(€€€€€€€€€€€€€ÑåÁ”ô‰Ñ•áĞˆ(€€€€€€€€€€€€€Ù…±Õ”õíÁÉ½µ½½‘•ô(€€€€€€€€€€€€€½¹¡…¹”õì¡•Ù•¹Ğ¤€ôøÍ•ÑAÉ½µ½½‘”¡•Ù•¹Ğ¹Ñ…É•Ğ¹Ù…±Õ”¹Ñ½1½İ•É…Í” ¤¥ô(€€€€€€€€€€€€€…ÕÑ½½µÁ±•Ñ”ô‰½™˜ˆ(€€€€€€€€€€€€€…ÕÑ½…Á¥Ñ…±¥é”ô‰¹½¹”ˆ(€€€€€€€€€€€€€…ÕÑ½½ÉÉ•Ğô‰½™˜ˆ(€€€€€€€€€€€€€ÍÁ•±±¡•¬õí™…±Í•ô(€€€€€€€€€€€€€µ…á1•¹Ñ õìÌÉô(€€€€€€€€€€€€€Á±…•¡½±‘•Èô‰•¹Ñ•È¥™Ğ½‘”ˆ(€€€€€€€€€€€€€‘¥Í…‰±•õí‰ÕÍä€ôôô€‰¥™Ğµ½‘”ˆñğ‰ÕÍä€ôôô€‰¡•­½ÕĞ‰ô(€€€€€€€€€€€€¼ø(€€€€€€€€€€€€ñÍµ…±°ùÙ…±¥¥™Ğ½‘”…Ñ¥Ù…Ñ•Ìµ•µ‰•ÉÍ¡¥Àİ¥Ñ¡½ÕĞÁ…åµ•¹Ğ¸ğ½Íµ…±°ø(€€€€€€€€€€€€ñ‰ÕÑÑ½¸(€€€€€€€€€€€€€±…ÍÍ9…µ”ô‰œµ¥™Ğµ½‘”µ‰ÕÑÑ½¸ˆ(€€€€€€€€€€€€€ÑåÁ”ô‰‰ÕÑÑ½¸ˆ(€€€€€€€€€€€€€‘¥Í…‰±•õí‰ÕÍä€ôôô€‰¥™Ğµ½‘”ˆñğ€…ÁÉ½µ½½‘”¹ÑÉ¥´ ¤ñğ€…Í•ÍÍ¥½¹ô(€€€€€€€€€€€€€½¹±¥¬õì ¤€ôø(€€€€€€€€€€€€€€€Í•ÍÍ¥½¸€˜˜Ù½¥É•‘••µ¥™Ñ½‘”¡ì…Ñ¥Ù•M•ÍÍ¥½¸èÍ•ÍÍ¥½¸ô¤(€€€€€€€€€€€€€ô(€€€€€€€€€€€€ø(€€€€€€€€€€€€€í‰ÕÍä€ôôô€‰¥™Ğµ½‘”ˆ€ü€‰ÁÁ±å¥¹œ¥™ÓŠ˜ˆ€è€‰UÍ”¥™Ğ½‘”‰ô(€€€€€€€€€€€€ğ½‰ÕÑÑ½¸ø(€€€€€€€€€€ğ½‘¥Øø(€€€€€€€€€€ñÀ±…ÍÍ9…µ”ô‰œµµ•µ‰•ÉÍ¡¥ÀµÁ…åµ•¹Ğµ‘¥Ù¥‘•ÈˆøñÍÁ…¸ù½ÈÁ…äÍ•ÕÉ•±äğ½ÍÁ…¸øğ½Àø(€€€€€€€€€€ñÕ°ø(€€€€€€€€€€€€ñ±¤ù-••Àå½ÕÈÁÉ•Ù¥•Ü™±½İ•ÉÌ…¹É•µ…¥¹¥¹œÑ•µÁ½É…Éä…É”ğ½±¤ø4(€€€€€€€€€€€€ñ±¤ùMÑ…ÉÑ•ÈÁ…¬è„İ…±­…‰±”™•¹•ÁÉ½Á•ÉÑä°½éäÍ¡•°…¹€à…É”ğ½±¤ø4(€€€€€€€€€€€€ñ±¤ùA±…¹Ğ…¹ÕÁÉ½½Ğ¥¹Í¥‘”å½ÕÈÁ•ÉÍ½¹…°…É‘•¸ğ½±¤ø4(€€€€€€€€€€€€ñ±¤ùA•Éµ…¹•¹ĞÁ±…¹ÑÌÁ±ÕÌ‰•¹¡•Ì°‰¥É‘¡½ÕÍ•Ì°…¹Á…Ù•ÉÌÑ¼Á±…”ğ½±¤ø4(€€€€€€€€€€€€ñ±¤ùUÍ”µ•µ‰•ÉÍ¡¥À½¸…¹ä‰É½İÍ•È½È‘•Ù¥”İ¥Ñ Ñ¡”Í…µ”•µ…¥°ğ½±¤ø4(€€€€€€€€€€€€ñ±¤ù…É‘•¸±µ…¹…Œİ¥Ñ ±¥Ù”½µµÕ¹¥ÑäÑ½Ñ…±Ìğ½±¤ø4(€€€€€€€€€€€€ñ±¤ù••‘‰…¬ÑÉ…­•Ñ¡É½Õ Ñ¡”ÕÁÉ…‘”ÅÕ•Õ”ğ½±¤ø4(€€€€€€€€€€ğ½Õ°ø4(€€€€€€€€€€ñ‰ÕÑÑ½¸4(€€€€€€€€€€€±…ÍÍ9…µ”ô‰œµÍÕÁÁ½ÉĞµ‰ÕÑÑ½¸ˆ(€€€€€€€€€€€ÑåÁ”ô‰‰ÕÑÑ½¸ˆ(€€€€€€€€€€€‘¥Í…‰±•õí‰ÕÍä€ôôô€‰¡•­½ÕĞˆñğ‰ÕÍä€ôôô€‰¥™Ğµ½‘”ˆñğ€…Í•ÍÍ¥½¹ô(€€€€€€€€€€€½¹±¥¬õì ¤€ôøÍ•ÍÍ¥½¸€˜˜Ù½¥‰•¥¹¡•­½ÕĞ¡Í•ÍÍ¥½¸¥ô4(€€€€€€€€€€ø4(€€€€€€€€€€€í‰ÕÍä€ôôô€‰¡•­½ÕĞˆ4(€€€€€€€€€€€€€€ü€‰=Á•¹¥¹œÍ•ÕÉ”¡•­½ÕÓŠ˜ˆ4(€€€€€€€€€€€€€€è-••À5ä…É‘•¸ƒ
+Ü€‘íI9}55	IM!%A}AI%}1	1õô4(€€€€€€€€€€ğ½‰ÕÑÑ½¸ø4(€€€€€€€€ğ½‘¥Øø4(€€€€€€¤€è¹Õ±±ô4(4(€€€€€í…½Õ¹ÑMÑ…Ñ”¹ÍÑ…ÑÕÌ€ôôô€‰…Ñ¥Ù”ˆ€˜˜€…Í¡½İ½Õ¹Ñ1¥¹¬€ü€ 4(€€€€€€€€ñ‘¥Ø±…ÍÍ9…µ”ô‰œµÍÑ•İ…Éµ…½Õ¹Ğˆø4(€€€€€€€€€€ñ‘¥Ø±…ÍÍ9…µ”ô‰œµÍÑ•İ…Éµİ•±½µ”ˆø4(€€€€€€€€€€€€ñ‘¥Ø±…ÍÍ9…µ”ô‰œµÍ¥¹•µ¥¸µÉ½Üˆø4(€€€€€€€€€€€€€€ñÍÁ…¸ùM¥¹•¥¸ÁÉ¥Ù…Ñ•±ä…Ìí…½Õ¹ÑMÑ…Ñ”¹…½Õ¹Ğ¹ÍÑ•İ…É¹•µ…¥±ôğ½ÍÁ…¸ø4(€€€€€€€€€€€€€€ñ‰ÕÑÑ½¸ÑåÁ”ô‰‰ÕÑÑ½¸ˆ‘¥Í…‰±•õí‰ÕÍä€ôôô€‰Í¥¸µ½ÕĞ‰ô½¹±¥¬õì ¤€ôøÙ½¥Í¥¹=ÕĞ ¥ôø4(€€€€€€€€€€€€€€€M¥¸½ÕĞ4(€€€€€€€€€€€€€€ğ½‰ÕÑÑ½¸ø4(€€€€€€€€€€€€ğ½‘¥Øø4(€€€€€€€€€€€€ñÀ±…ÍÍ9…µ”ô‰œµ­¥­•Èˆù½µµÕ¹¥Ñä…É‘•¸5•µ‰•ÉÍ¡¥Àğ½Àø4(€€€€€€€€€€€€ñ Ìù5•µ‰•ÉÍ¡¥À…Ñ¥Ù”ğ½ Ìø4(€€€€€€€€€€€€ñÀø4(€€€€€€€€€€€€€e½ÕÈ…½Õ¹Ğİ½É­Ì…É½ÍÌ‘•Ù¥•Ì¸9½Ñ¡¥¹œå½ÔÁ±…¹Ğ¥Ì±…‰•±•İ¥Ñ å½ÕÈ4(€€€€€€€€€€€€€•µ…¥°½È±¥¹­•Ñ¼„ÁÕ‰±¥ŒÁÉ½™¥±”¸4(€€€€€€€€€€€€ğ½Àø4(€€€€€€€€€€ğ½‘¥Øø4(4(€€€€€€€€€í…½Õ¹ÑMÑ…Ñ”¹…½Õ¹Ğ¹¡•É¥Ñ…”¹•±¥¥‰±”€ü€ 4(€€€€€€€€€€€€ñÍ•Ñ¥½¸±…ÍÍ9…µ”ô‰œµ¡•É¥Ñ…”µÍ••ˆ…É¥„µ±…‰•±±•‘‰äô‰¡•É¥Ñ…”µÍ••µÑ¥Ñ±”ˆø4(€€€€€€€€€€€€€€ñ‘¥Ø±…ÍÍ9…µ”ô‰œµÍÑ•İ…ÉµÍ•Ñ¥½¸µ¡•…‘¥¹œˆø4(€€€€€€€€€€€€€€€€ñ‘¥Øø4(€€€€€€€€€€€€€€€€€€ñÀ±…ÍÍ9…µ”ô‰œµ­¥­•Èˆù=¹”±¥™•Ñ¥µ”Í••ğ½Àø4(€€€€€€€€€€€€€€€€€€ñ Ì¥ô‰¡•É¥Ñ…”µÍ••µÑ¥Ñ±”ˆø4(€€€€€€€€€€€€€€€€€€€í…½Õ¹ÑMÑ…Ñ”¹…½Õ¹Ğ¹¡•É¥Ñ…”¹‰…‘•…É¹•4(€€€€€€€€€€€€€€€€€€€€€€ü€‰!•É¥Ñ…”…É‘•¹•Èˆ4(€€€€€€€€€€€€€€€€€€€€€€è€‰É½İ¥¹œå½ÕÈ!•É¥Ñ…”±½İ•È‰ô4(€€€€€€€€€€€€€€€€€€ğ½ Ìø4(€€€€€€€€€€€€€€€€ğ½‘¥Øø4(€€€€€€€€€€€€€€€€ñÍÁ…¸±…ÍÍ9…µ”ô‰œµ¡•É¥Ñ…”µ‰…‘”ˆ…É¥„µ¡¥‘‘•¸ô‰ÑÉÕ”ˆûŠr˜ğ½ÍÁ…¸ø4(€€€€€€€€€€€€€€ğ½‘¥Øø4(4(€€€€€€€€€€€€€í…½Õ¹ÑMÑ…Ñ”¹…½Õ¹Ğ¹¡•É¥Ñ…”¹¡•É¥Ñ…•±½İ•È€ü€ 4(€€€€€€€€€€€€€€€€ğø4(€€€€€€€€€€€€€€€€€€ñ‰ÕÑÑ½¸4(€€€€€€€€€€€€€€€€€€€±…ÍÍ9…µ”ô‰œµ¡•É¥Ñ…”µÙ¥Í¥Ğµ‰ÕÑÑ½¸ˆ4(€€€€€€€€€€€€€€€€€€€ÑåÁ”ô‰‰ÕÑÑ½¸ˆ4(€€€€€€€€€€€€€€€€€€€½¹±¥¬õì ¤€ôøì4(€€€€€€€€€€€€€€€€€€€€€½¹ÍĞ™±½İ•È€ô…½Õ¹ÑMÑ…Ñ”¹…½Õ¹Ğ¹¡•É¥Ñ…”¹¡•É¥Ñ…•±½İ•Èì4(€€€€€€€€€€€€€€€€€€€€€¥˜€¡™±½İ•È¤½¹Y¥Í¥Ñ!•É¥Ñ…”ü¸¡™±½İ•È¹É¥‘`°™±½İ•È¹É¥‘d¤ì4(€€€€€€€€€€€€€€€€€€€õô4(€€€€€€€€€€€€€€€€€€ø4(€€€€€€€€€€€€€€€€€€€€ñÍÑÉ½¹œùY¥Í¥Ğå½ÕÈ!•É¥Ñ…”±½İ•Èğ½ÍÑÉ½¹œø4(€€€€€€€€€€€€€€€€€€€€ñÍÁ…¸ù=Á•¸Ñ¡”½µµÕ¹¥ÑäÑ±…Ìİ¥Ñ å½ÕÈ±…¹‘µ…É¬•¹Ñ•É•¸ğ½ÍÁ…¸ø4(€€€€€€€€€€€€€€€€€€ğ½‰ÕÑÑ½¸ø4(€€€€€€€€€€€€€€€€€€ñ‘¥Ø±…ÍÍ9…µ”ô‰œµ¡•É¥Ñ…”µ•…É¹•ˆø4(€€€€€€€€€€€€€€€€€€€€ñ…É‘•¹…Ñ…±½MÁÉ¥Ñ”4(€€€€€€€€€€€€€€€€€€€€€­¥¹ô‰Á±…¹Ğˆ4(€€€€€€€€€€€€€€€€€€€€€ÑåÁ”õí…½Õ¹ÑMÑ…Ñ”¹…½Õ¹Ğ¹¡•É¥Ñ…”¹¡•É¥Ñ…•±½İ•È¹Á±…¹ÑQåÁ•ô4(€€€€€€€€€€€€€€€€€€€€€¡•É¥Ñ…”4(€€€€€€€€€€€€€€€€€€€€¼ø4(€€€€€€€€€€€€€€€€€€€€ñ‘¥Øø4(€€€€€€€€€€€€€€€€€€€€€€ñÍÑÉ½¹œø4(€€€€€€€€€€€€€€€€€€€€€€€í™±½İ•É9…µ”¡…½Õ¹ÑMÑ…Ñ”¹…½Õ¹Ğ¹¡•É¥Ñ…”¹¡•É¥Ñ…•±½İ•È¹Á±…¹ÑQåÁ”¥ôƒ
+Ü!•É¥Ñ…”±½İ•È4(€€€€€€€€€€€€€€€€€€€€€€ğ½ÍÑÉ½¹œø4(€€€€€€€€€€€€€€€€€€€€€€ñÀø4(€€€€€€€€€€€€€€€€€€€€€€€e½Ô…¹Ñ¡”½µµÕ¹¥Ñä•ÍÑ…‰±¥Í¡•Ñ¡¥ÌÁ•Éµ…¹•¹Ğ±…¹‘µ…É¬¸e½ÕÈ4(€€€€€€€€€€€€€€€€€€€€€€€…½Õ¹Ğ¡…Ì•…É¹•¥ÑÌ!•É¥Ñ…”…É‘•¹•È‰…‘”¸4(€€€€€€€€€€€€€€€€€€€€€€ğ½Àø4(€€€€€€€€€€€€€€€€€€€€ğ½‘¥Øø4(€€€€€€€€€€€€€€€€€€ğ½‘¥Øø4(€€€€€€€€€€€€€€€€ğ¼ø4(€€€€€€€€€€€€€€¤€è€ 4(€€€€€€€€€€€€€€€€ñ‘¥Ø±…ÍÍ9…µ”ô‰œµ¡•É¥Ñ…”µ•µÁÑäˆø4(€€€€€€€€€€€€€€€€€€ñÍÑÉ½¹œùe½Ô‘¼¹½Ğ¡…Ù”„!•É¥Ñ…”±½İ•ÈÑ¼Ù¥Í¥Ğå•Ğ¸ğ½ÍÑÉ½¹œø4(€€€€€€€€€€€€€€€€€€ñÀø4(€€€€€€€€€€€€€€€€€€€-••ÀÁ±…¹Ñ¥¹œ…¹…É¥¹œ™½ÈÑ¡”½µµÕ¹¥Ñä…É‘•¸¸=¹”½˜å½ÕÈ4(€€€€€€€€€€€€€€€€€€€™±½İ•ÉÌµ…ä¹…ÑÕÉ…±±ä‰•½µ”!•É¥Ñ…”…™Ñ•È¥ĞÉ½İÌİ¥Ñ •¹½Õ 4(€€€€€€€€€€€€€€€€€€€Ñ¥µ”°½µµÕ¹¥Ñä…É”°…¹¹•¥¡‰½É¥¹œ™±½İ•ÉÌ¸]¡•¸Ñ¡…Ğ¡…ÁÁ•¹Ì°4(€€€€€€€€€€€€€€€€€€€	…Í¥°İ¥±°…‘Ñ¡”Ù¥Í¥Ğ‰ÕÑÑ½¸¡•É”…¹±•Ğå½Ô­¹½Ü¥¸Ñ¡”…É‘•¸¸4(€€€€€€€€€€€€€€€€€€ğ½Àø4(€€€€€€€€€€€€€€€€ğ½‘¥Øø4(€€€€€€€€€€€€€€¥ô4(€€€€€€€€€€€€ğ½Í•Ñ¥½¸ø4(€€€€€€€€€€¤€è¹Õ±±ô4(4(€€€€€€€€€€ñ½µµÕ¹¥ÑåMÑ•İ…É‘Í¡¥ÁA…¹•°4(€€€€€€€€€€€ÍÕµµ…Éäõí…½Õ¹ÑMÑ…Ñ”¹…½Õ¹Ğ¹ÍÑ•İ…É‘Í¡¥Áô4(€€€€€€€€€€€É•Á±…¥¹%õíÉ•Á±…¥¹Q…Í­%‘ô4(€€€€€€€€€€€½¹I•Á±…”õì¡…ÍÍ¥¹µ•¹Ñ%¤€ôøÙ½¥É•Á±…•MÑ•İ…É‘Í¡¥ÁQ…Í¬¡…ÍÍ¥¹µ•¹Ñ%¥ô4(€€€€€€€€€€¼ø4(4(€€€€€€€€€€ñ‘¥Ø±…ÍÍ9…µ”ô‰œµ…±µ…¹…Œˆ…É¥„µ±…‰•±±•‘‰äô‰…É‘•¸µ…±µ…¹…ŒµÑ¥Ñ±”ˆø4(€€€€€€€€€€€€ñ‘¥Ø±…ÍÍ9…µ”ô‰œµÍÑ•İ…ÉµÍ•Ñ¥½¸µ¡•…‘¥¹œˆø4(€€€€€€€€€€€€€€ñ Ì¥ô‰…É‘•¸µ…±µ…¹…ŒµÑ¥Ñ±”ˆù…É‘•¸±µ…¹…Œğ½ Ìø4(€€€€€€€€€€€€€€ñÍµ…±°ù1¥Ù”½µµÕ¹¥ÑäÑ½Ñ…±Ìğ½Íµ…±°ø4(€€€€€€€€€€€€ğ½‘¥Øø4(€€€€€€€€€€€€ñ‘°ø4(€€€€€€€€€€€€€€ñ‘¥Øøñ‘ĞùÉ½İ¥¹œğ½‘Ğøñ‘ùí…½Õ¹ÑMÑ…Ñ”¹…½Õ¹Ğ¹…±µ…¹…Œ¹Ñ½Ñ…±ôğ½‘øğ½‘¥Øø4(€€€€€€€€€€€€€€ñ‘¥Øøñ‘ĞùA±…¹Ñ•Ñ½‘…äğ½‘Ğøñ‘ùí…½Õ¹ÑMÑ…Ñ”¹…½Õ¹Ğ¹…±µ…¹…Œ¹Á±…¹Ñ•ÈÑ¡ôğ½‘øğ½‘¥Øø4(€€€€€€€€€€€€€€ñ‘¥Øøñ‘Ğù]…Ñ•É•Ñ½‘…äğ½‘Ğøñ‘ùí…½Õ¹ÑMÑ…Ñ”¹…½Õ¹Ğ¹…±µ…¹…Œ¹…Ñ¥Ù”ÈÑ¡ôğ½‘øğ½‘¥Øø4(€€€€€€€€€€€€€€ñ‘¥Øøñ‘ĞùI½Í•Ìğ½‘Ğøñ‘ùí…½Õ¹ÑMÑ…Ñ”¹…½Õ¹Ğ¹…±µ…¹…Œ¹‰åQåÁ”¹É½Í•ôğ½‘øğ½‘¥Øø4(€€€€€€€€€€€€€€ñ‘¥Øøñ‘ĞùMÕ¹™±½İ•ÉÌğ½‘Ğøñ‘ùí…½Õ¹ÑMÑ…Ñ”¹…½Õ¹Ğ¹…±µ…¹…Œ¹‰åQåÁ”¹ÍÕ¹™±½İ•Éôğ½‘øğ½‘¥Øø4(€€€€€€€€€€€€€€ñ‘¥Øøñ‘Ğù1…Ù•¹‘•Èğ½‘Ğøñ‘ùí…½Õ¹ÑMÑ…Ñ”¹…½Õ¹Ğ¹…±µ…¹…Œ¹‰åQåÁ”¹±…Ù•¹‘•Éôğ½‘øğ½‘¥Øø4(€€€€€€€€€€€€ğ½‘°ø4(€€€€€€€€€€ğ½‘¥Øø4(4(€€€€€€€€€€ñ‘¥Ø±…ÍÍ9…µ”ô‰œµ¹•İÍ±•ÑÑ•ÈµÁÉ•™•É•¹”ˆø4(€€€€€€€€€€€€ñ‘¥Øø4(€€€€€€€€€€€€€€ñÍÑÉ½¹œù5½¹Ñ¡±ä…É‘•¸1•ÑÑ•Èğ½ÍÑÉ½¹œø4(€€€€€€€€€€€€€€ñÀùI••¥Ù”„µ½¹Ñ¡±äÍ¹…ÁÍ¡½Ğ½˜İ¡…ĞÑ¡”½µµÕ¹¥Ñä¡…ÌÉ½İ¸¸Ù•Éä±•ÑÑ•È¥¹±Õ‘•Ì…¸Õ¹ÍÕ‰ÍÉ¥‰”±¥¹¬¸ğ½Àø4(€€€€€€€€€€€€ğ½‘¥Øø4(€€€€€€€€€€€€ñ‰ÕÑÑ½¸4(€€€€€€€€€€€€€ÑåÁ”ô‰‰ÕÑÑ½¸ˆ4(€€€€€€€€€€€€€‘¥Í…‰±•õí‰ÕÍä€ôôô€‰¹•İÍ±•ÑÑ•È‰ô4(€€€€€€€€€€€€€½¹±¥¬õì ¤€ôøÙ½¥ÕÁ‘…Ñ•9•İÍ±•ÑÑ•ÉAÉ•™•É•¹” ……½Õ¹ÑMÑ…Ñ”¹…½Õ¹Ğ¹¹•İÍ±•ÑÑ•ÉMÕ‰ÍÉ¥‰•¥ô4(€€€€€€€€€€€€ø4(€€€€€€€€€€€€€í‰ÕÍä€ôôô€‰¹•İÍ±•ÑÑ•Èˆ4(€€€€€€€€€€€€€€€€ü€‰M…Ù¥¹ŸŠ˜ˆ4(€€€€€€€€€€€€€€€€è…½Õ¹ÑMÑ…Ñ”¹…½Õ¹Ğ¹¹•İÍ±•ÑÑ•ÉMÕ‰ÍÉ¥‰•4(€€€€€€€€€€€€€€€€€€ü€‰U¹ÍÕ‰ÍÉ¥‰”ˆ4(€€€€€€€€€€€€€€€€€€è€‰MÕ‰ÍÉ¥‰”‰ô4(€€€€€€€€€€€€ğ½‰ÕÑÑ½¸ø4(€€€€€€€€€€ğ½‘¥Øø4(4(€€€€€€€€€€ñ™½É´±…ÍÍ9…µ”ô‰œµ™••‘‰…¬µ™½É´ˆ½¹MÕ‰µ¥ĞõíÍÕ‰µ¥Ñ%‘•…ôø4(€€€€€€€€€€€€ñ‘¥Ø±…ÍÍ9…µ”ô‰œµÍÑ•İ…ÉµÍ•Ñ¥½¸µ¡•…‘¥¹œˆø4(€€€€€€€€€€€€€€ñ ÌùM¡…Á”Ñ¡”¹•áĞÕÁÉ…‘”ğ½ Ìø4(€€€€€€€€€€€€€€ñÍµ…±°ù%‘•…Ì…É”É•Ù¥•İ•°¹•Ù•È…ÕÑ¼µÁÕ‰±¥Í¡•ğ½Íµ…±°ø4(€€€€€€€€€€€€ğ½‘¥Øø4(€€€€€€€€€€€€ñ±…‰•°¡Ñµ±½Èô‰™••‘‰…¬µ…Ñ•½ÉäˆùÉ•„ğ½±…‰•°ø4(€€€€€€€€€€€€ñÍ•±•Ğ4(€€€€€€€€€€€€€¥ô‰™••‘‰…¬µ…Ñ•½Éäˆ4(€€€€€€€€€€€€€Ù…±Õ”õí…Ñ•½Éåô4(€€€€€€€€€€€€€½¹¡…¹”õì¡•Ù•¹Ğ¤€ôøÍ•Ñ…Ñ•½Éä¡•Ù•¹Ğ¹Ñ…É•Ğ¹Ù…±Õ”¥ô4(€€€€€€€€€€€€ø4(€€€€€€€€€€€€€í	-}Q=I%L¹µ…À ¡mÙ…±Õ”°±…‰•±t¤€ôø€ 4(€€€€€€€€€€€€€€€€ñ½ÁÑ¥½¸­•äõíÙ…±Õ•ôÙ…±Õ”õíÙ…±Õ•ôùí±…‰•±ôğ½½ÁÑ¥½¸ø4(€€€€€€€€€€€€€€¤¥ô4(€€€€€€€€€€€€ğ½Í•±•Ğø4(€€€€€€€€€€€€ñ±…‰•°¡Ñµ±½Èô‰™••‘‰…¬µ¥‘•„ˆù]¡…Ğİ½Õ±µ…­”å½ÔÉ•ÑÕÉ¸Ñ¼Ñ¡”…É‘•¸üğ½±…‰•°ø4(€€€€€€€€€€€€ñÑ•áÑ…É•„4(€€€€€€€€€€€€€¥ô‰™••‘‰…¬µ¥‘•„ˆ4(€€€€€€€€€€€€€Ù…±Õ”õí¥‘•…ô4(€€€€€€€€€€€€€½¹¡…¹”õì¡•Ù•¹Ğ¤€ôøÍ•Ñ%‘•„¡•Ù•¹Ğ¹Ñ…É•Ğ¹Ù…±Õ”¹Í±¥” À°€ÈàÀ¤¥ô4(€€€€€€€€€€€€€µ…á1•¹Ñ õìÈàÁô4(€€€€€€€€€€€€€É½İÌõìÑô4(€€€€€€€€€€€€¼ø4(€€€€€€€€€€€€ñ‘¥Ø±…ÍÍ9…µ”ô‰œµ™••‘‰…¬µÍÕ‰µ¥Ğˆø4(€€€€€€€€€€€€€€ñÍµ…±°ùí¥‘•„¹±•¹Ñ¡ô¼ÈàÀğ½Íµ…±°ø4(€€€€€€€€€€€€€€ñ‰ÕÑÑ½¸ÑåÁ”ô‰ÍÕ‰µ¥Ğˆ‘¥Í…‰±•õí‰ÕÍä€ôôô€‰™••‘‰…¬ˆñğ€…¥‘•„¹ÑÉ¥´ ¥ôø4(€€€€€€€€€€€€€€€í‰ÕÍä€ôôô€‰™••‘‰…¬ˆ€ü€‰M•¹‘¥¹ŸŠ˜ˆ€è€‰M•¹¥‘•„‰ô4(€€€€€€€€€€€€€€ğ½‰ÕÑÑ½¸ø4(€€€€€€€€€€€€ğ½‘¥Øø4(€€€€€€€€€€ğ½™½É´ø4(4(€€€€€€€€€í…½Õ¹ÑMÑ…Ñ”¹…½Õ¹Ğ¹™••‘‰…¬¹±•¹Ñ €ü€ 4(€€€€€€€€€€€€ñ‘¥Ø±…ÍÍ9…µ”ô‰œµ™••‘‰…¬µ¡¥ÍÑ½Éäˆø4(€€€€€€€€€€€€€€ñ Ìùe½ÕÈÕÁÉ…‘”ÅÕ•Õ”ğ½ Ìø4(€€€€€€€€€€€€€€ñÕ°ø4(€€€€€€€€€€€€€€€í…½Õ¹ÑMÑ…Ñ”¹…½Õ¹Ğ¹™••‘‰…¬¹µ…À ¡¥Ñ•´¤€ôø€ 4(€€€€€€€€€€€€€€€€€€ñ±¤­•äõí¥Ñ•´¹¥‘ôø4(€€€€€€€€€€€€€€€€€€€€ñÍÁ…¸ùí¥Ñ•´¹…Ñ•½Éåôğ½ÍÁ…¸ø4(€€€€€€€€€€€€€€€€€€€€ñÀùí¥Ñ•´¹µ•ÍÍ…•ôğ½Àø4(€€€€€€€€€€€€€€€€€€€€ñÍµ…±°ùí¥Ñ•´¹ÍÑ…ÑÕÍôğ½Íµ…±°ø4(€€€€€€€€€€€€€€€€€€ğ½±¤ø4(€€€€€€€€€€€€€€€€¤¥ô4(€€€€€€€€€€€€€€ğ½Õ°ø4(€€€€€€€€€€€€ğ½‘¥Øø4(€€€€€€€€€€¤€è¹Õ±±ô4(€€€€€€€€ğ½‘¥Øø4(€€€€€€¤€è¹Õ±±ô4(4(€€€€€íÍ•ÍÍ¥½¸€˜˜€…Í¡½İ½Õ¹Ñ1¥¹¬€˜˜€…Í¡½İY•É¥™¥…Ñ¥½¹A•¹‘¥¹œ€˜˜€…Í¡½İA…¥‘Y•É¥™¥…Ñ¥½¹A•¹‘¥¹œ€ü€ 4(€€€€€€€€ñ…É‘•¹!•…±Ñ¡A…¹•°(€€€€€€€€€Í•ÍÍ¥½¸õíÍ•ÍÍ¥½¹ô(€€€€€€€€€½¹Y¥•İ½µµÕ¹¥Ñå…É‘•¸õí½¹Y¥•İ½µµÕ¹¥Ñå…É‘•¹ô(€€€€€€€€¼ø(€€€€€€¤€è¹Õ±±ô4(4(€€€€€€ñ‘¥Ø±…ÍÍ9…µ”ô‰œµÍÑ•İ…ÉµÁÉ¥Ù…äˆø4(€€€€€€€€ñÍÑÉ½¹œùAÉ¥Ù…Ñ”…½Õ¹Ğ°…¹½¹åµ½ÕÌÁ±…äğ½ÍÑÉ½¹œø4(€€€€€€€€ñÀø4(€€€€€€€€€	…Í¥°ÍÑ½É•Ìå½ÕÈÁÉ¥Ù…Ñ”…½Õ¹Ğ•µ…¥°°Á…åµ•¹Ğ•¹Ñ¥Ñ±•µ•¹Ğ°…¹™••‘‰…¬¸4(€€€€€€€€€MÑÉ¥Á”¡…¹‘±•Ì…É…¹É••¥ÁĞ‘•Ñ…¥±Ì¸Q¡”ÁÕ‰±¥Œ…É‘•¸¹•Ù•ÈÍ¡½İÌİ¡¼å½Ô4(€€€€€€€€€…É”½È½¹¹•ÑÌå½ÕÈ¥‘•¹Ñ¥ÑäÑ¼Á±…¹ÑÌ¸e½ÔÍÑ…äÍ¥¹•¥¸½¸„‘•Ù¥”Õ¹Ñ¥°4(€€€€€€€€€å½ÔÍ¥¸½ÕĞ¸ÕÑÕÉ”Ù•É¥™¥•ÍÑ½É”ÁÕÉ¡…Í•Ì…¸…ÑÑ… Ñ¼Ñ¡¥ÌÍ…µ”…½Õ¹Ğ¸4(€€€€€€€€ğ½Àø4(€€€€€€ğ½‘¥Øø4(€€€€ğ½Í•Ñ¥½¸ø4(€€¤ì4)ô4

@@ -20,6 +20,18 @@ const offer = readFileSync(
   join(root, "app/community-garden/components/GardenMembershipOffer.tsx"),
   "utf8",
 );
+const steward = readFileSync(
+  join(root, "app/community-garden/components/GardenSteward.tsx"),
+  "utf8",
+);
+const menu = readFileSync(
+  join(root, "app/community-garden/components/GardenMenu.tsx"),
+  "utf8",
+);
+const app = readFileSync(
+  join(root, "app/community-garden/components/CommunityGardenApp.tsx"),
+  "utf8",
+);
 const migration = readFileSync(
   join(
     root,
@@ -68,11 +80,31 @@ test("gift access bypasses Stripe without manufacturing a purchase", () => {
   assert.match(route, /redeemGardenPromo/);
   assert.match(route, /account_exists/);
   assert.match(offer, /Have a gift code\?/);
-  assert.match(offer, /A valid gift code skips checkout\./);
+  assert.match(offer, /A valid gift code activates membership without payment\./);
+});
+
+test("every membership surface offers gift access before payment", () => {
+  assert.ok(
+    offer.indexOf("Have a gift code?") < offer.indexOf("{accountReady ?"),
+    "the main offer should show the gift field before account-specific payment UI",
+  );
+  assert.match(steward, /id="basil-signup-promo"/);
+  assert.match(steward, /id="basil-account-promo"/);
+  assert.match(steward, /fetch\("\/api\/community-garden\/promo"/);
+  assert.match(steward, /Use a gift code or choose secure payment below\./);
+  assert.doesNotMatch(
+    steward,
+    /if \(account\) \{\s*await beginCheckout\(data\.session\)/,
+  );
+  assert.match(menu, /giftPreview: GardenGiftPreview/);
+  assert.match(menu, /onMembershipActivated/);
+  assert.match(app, /giftPreview={getGuestPreviewImport\(guestPreview\)}/);
+  assert.match(app, /setMembershipReloadToken\(\(current\) => current \+ 1\)/);
 });
 
 test("the raw private code is absent from application source", () => {
   assert.doesNotMatch(promoServer, /southpaw/i);
   assert.doesNotMatch(route, /southpaw/i);
   assert.doesNotMatch(offer, /southpaw/i);
+  assert.doesNotMatch(steward, /southpaw/i);
 });

@@ -169,30 +169,30 @@ export function GardenMembershipOffer({
           <span>Garden Membership · one time</span>
           <strong>{GARDEN_MEMBERSHIP_PRICE_LABEL}</strong>
         </div>
+        <div className="cg-membership-gift-code is-prominent">
+          <label htmlFor="basil-membership-promo">
+            Have a gift code?
+          </label>
+          <input
+            id="basil-membership-promo"
+            type="text"
+            value={promoCode}
+            onChange={(event) => setPromoCode(event.target.value.toLowerCase())}
+            autoComplete="off"
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
+            maxLength={32}
+            placeholder="enter gift code"
+            disabled={checkoutBusy}
+          />
+          <small>A valid gift code activates membership without payment.</small>
+        </div>
         {accountReady ? (
           <div className="cg-membership-offer-account">
             <div className="cg-membership-offer-account-heading">
               <strong>Your private Basil account is ready</strong>
               <span>This payment will stay with the account already signed in.</span>
-            </div>
-            <div className="cg-membership-gift-code">
-              <label htmlFor="basil-membership-promo-signed-in">
-                Have a gift code?
-              </label>
-              <input
-                id="basil-membership-promo-signed-in"
-                type="text"
-                value={promoCode}
-                onChange={(event) => setPromoCode(event.target.value.toLowerCase())}
-                autoComplete="off"
-                autoCapitalize="none"
-                autoCorrect="off"
-                spellCheck={false}
-                maxLength={32}
-                placeholder="enter code"
-                disabled={checkoutBusy}
-              />
-              <small>A valid gift code skips checkout.</small>
             </div>
             {checkoutError ? (
               <p className="cg-steward-notice" role="alert">{checkoutError}</p>
@@ -257,23 +257,6 @@ export function GardenMembershipOffer({
             required
           />
           <small>Use at least 10 characters.</small>
-          <div className="cg-membership-gift-code">
-            <label htmlFor="basil-membership-promo">Have a gift code?</label>
-            <input
-              id="basil-membership-promo"
-              type="text"
-              value={promoCode}
-              onChange={(event) => setPromoCode(event.target.value.toLowerCase())}
-              autoComplete="off"
-              autoCapitalize="none"
-              autoCorrect="off"
-              spellCheck={false}
-              maxLength={32}
-              placeholder="enter code"
-              disabled={checkoutBusy}
-            />
-            <small>A valid gift code skips checkout.</small>
-          </div>
           {formError || checkoutError ? (
             <>
               <p className="cg-steward-notice" role="alert">
