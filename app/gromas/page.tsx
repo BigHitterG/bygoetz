@@ -4,10 +4,12 @@ import Link from "next/link";
 import coverBack from "@/public/gromas/cover-back-v3.webp";
 import coverFront from "@/public/gromas/cover-front-v3.webp";
 import gromasCharacter from "@/public/gromas/gromas-character-v3.webp";
+import williamJamesPahos from "@/public/gromas/author-william-james-pahos.jpg";
 import previewCharge from "@/public/gromas/preview-charge-v3.webp";
 import previewDarkness from "@/public/gromas/preview-darkness-v3.webp";
 import previewPowerCrisis from "@/public/gromas/preview-power-crisis-v3.webp";
 import previewSpinette from "@/public/gromas/preview-spinette-v3.webp";
+import thomasRaymondGoetz from "@/public/images/about/tj-goetz-founder.jpg";
 import {
   gromasBook,
   gromasPaperbackBook,
@@ -427,14 +429,51 @@ export default function GromasBookPage() {
         </section>
 
         <section className={styles.creatorsSection} aria-labelledby="creators-heading">
-          <p className={styles.sectionKicker}>From the creators</p>
-          <h2 id="creators-heading">A story about asking, “What could we build next?”</h2>
-          <p>
-            Created by Thomas Raymond Goetz and William James Pahos and
-            published by Getz LLC, <em>Gromas and the Gobbledygooks</em> is a
-            first-edition picture book for young readers who love hidden
-            worlds, marvelous machines, and a wonderfully strange word or two.
-          </p>
+          <div className={styles.creatorsIntro}>
+            <p className={styles.sectionKicker}>Meet the authors</p>
+            <h2 id="creators-heading">Two good friends. One wonderfully strange world.</h2>
+            <p>
+              Thomas Raymond Goetz and William James Pahos are good friends with
+              a shared passion for storytelling, learning, and creative thinking.
+              Together, they created <em>Gromas and the Gobbledygooks</em>—a
+              playful read-aloud adventure about curiosity, teamwork, and what
+              can happen when a big problem meets an imaginative idea.
+            </p>
+          </div>
+
+          <div className={styles.creatorGrid}>
+            <article className={styles.creatorCard}>
+              <div className={`${styles.creatorPortrait} ${styles.creatorPortraitThomas}`}>
+                <Image
+                  src={thomasRaymondGoetz}
+                  alt="Thomas Raymond Goetz, co-author of Gromas and the Gobbledygooks"
+                  fill
+                  sizes="(max-width: 760px) 42vw, (max-width: 900px) 44vw, 300px"
+                  placeholder="blur"
+                />
+              </div>
+              <div className={styles.creatorCardCopy}>
+                <p className={styles.creatorRole}>Co-author</p>
+                <h3>Thomas Raymond Goetz</h3>
+              </div>
+            </article>
+
+            <article className={styles.creatorCard}>
+              <div className={styles.creatorPortrait}>
+                <Image
+                  src={williamJamesPahos}
+                  alt="William James Pahos, co-author of Gromas and the Gobbledygooks"
+                  fill
+                  sizes="(max-width: 760px) 42vw, (max-width: 900px) 44vw, 300px"
+                  placeholder="blur"
+                />
+              </div>
+              <div className={styles.creatorCardCopy}>
+                <p className={styles.creatorRole}>Co-author</p>
+                <h3>William James Pahos</h3>
+              </div>
+            </article>
+          </div>
         </section>
 
         <section className={styles.faqSection} aria-labelledby="faq-heading">

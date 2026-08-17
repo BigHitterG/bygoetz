@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { test } from "node:test";
 import {
   gromasBook,
@@ -64,5 +64,20 @@ test("the storefront exposes the premium paperback Lulu purchase", () => {
   assert.equal(gromasPaperbackBook.format, "Paperback perfect bound");
   assert.match(page, /Choose a book format/);
   assert.match(page, /Buy \{label\}/);
+});
+
+test("the storefront introduces both authors with portraits", () => {
+  const page = read("app/gromas/page.tsx");
+  const williamPortrait = new URL(
+    "../public/gromas/author-william-james-pahos.jpg",
+    import.meta.url,
+  );
+
+  assert.match(page, /Meet the authors/);
+  assert.match(page, /Two good friends\. One wonderfully strange world\./);
+  assert.match(page, /shared passion for storytelling, learning, and creative thinking/);
+  assert.match(page, /Thomas Raymond Goetz, co-author/);
+  assert.match(page, /William James Pahos, co-author/);
+  assert.equal(existsSync(williamPortrait), true);
 });
 
