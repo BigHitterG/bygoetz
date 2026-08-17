@@ -819,21 +819,89 @@
 }
 
 .creatorsSection {
-  padding: clamp(5.5rem, 10vw, 10rem) max(2rem, calc((100vw - 1040px) / 2));
-  text-align: center;
+  display: grid;
+  grid-template-columns: minmax(280px, 0.78fr) minmax(0, 1.22fr);
+  align-items: center;
+  padding: clamp(5.5rem, 10vw, 9rem) max(2rem, calc((100vw - 1260px) / 2));
+  gap: clamp(3rem, 7vw, 7.5rem);
+  border-top: 1px solid rgba(55, 49, 35, 0.12);
+  border-bottom: 1px solid rgba(55, 49, 35, 0.12);
+  background:
+    radial-gradient(circle at 12% 22%, rgba(167, 102, 47, 0.1), transparent 32%),
+    var(--paper-light);
 }
 
-.creatorsSection h2 {
-  max-width: 930px;
-  margin: 0 auto;
+.creatorsIntro {
+  max-width: 34rem;
 }
 
-.creatorsSection > p:last-child {
-  max-width: 720px;
-  margin: 2rem auto 0;
+.creatorsIntro > p:last-child {
+  margin: 2rem 0 0;
   color: #5b5d54;
   font-size: clamp(1rem, 1.4vw, 1.17rem);
   line-height: 1.75;
+}
+
+.creatorGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: clamp(1rem, 2.4vw, 2rem);
+}
+
+.creatorCard {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid rgba(55, 49, 35, 0.17);
+  border-radius: 1.6rem;
+  background: rgba(255, 252, 244, 0.84);
+  box-shadow: 0 1.4rem 3.5rem rgba(44, 39, 28, 0.09);
+}
+
+.creatorPortrait {
+  position: relative;
+  aspect-ratio: 1;
+  overflow: hidden;
+  background: #ddd5c5;
+}
+
+.creatorPortrait::after {
+  position: absolute;
+  inset: 0;
+  border: 1px solid rgba(255, 255, 255, 0.32);
+  content: "";
+  pointer-events: none;
+}
+
+.creatorPortrait img {
+  object-fit: cover;
+  object-position: 50% 40%;
+}
+
+.creatorPortraitThomas img {
+  object-position: 50% 28%;
+  transform: scale(1.18);
+}
+
+.creatorCardCopy {
+  padding: 1.25rem 1.35rem 1.45rem;
+}
+
+.creatorRole {
+  margin: 0;
+  color: var(--copper);
+  font-size: 0.68rem;
+  font-weight: 850;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.creatorCard h3 {
+  margin: 0.55rem 0 0;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(1.35rem, 2.4vw, 2rem);
+  font-weight: 650;
+  letter-spacing: -0.035em;
+  line-height: 1.03;
 }
 
 .faqSection {
@@ -1047,6 +1115,7 @@
   .sectionHeadingRow,
   .characterSection,
   .formatSection,
+  .creatorsSection,
   .faqSection,
   .finalCta {
     grid-template-columns: 1fr;
@@ -1076,6 +1145,10 @@
   .formatCopy {
     width: min(100%, 680px);
     margin: 0 auto;
+  }
+
+  .creatorsIntro {
+    max-width: 680px;
   }
 
   .faqSection,
@@ -1196,6 +1269,21 @@
   .formatSection {
     padding-right: 1.25rem;
     padding-left: 1.25rem;
+  }
+
+  .creatorGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .creatorCard {
+    display: grid;
+    grid-template-columns: minmax(8.5rem, 0.72fr) minmax(0, 1.28fr);
+    align-items: stretch;
+  }
+
+  .creatorCardCopy {
+    align-self: center;
+    padding: 1rem 1.1rem;
   }
 
   .characterSection {
