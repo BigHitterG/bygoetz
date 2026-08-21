@@ -1,9 +1,18 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import { test } from "node:test";
 import {
   advanceWateringSpray,
   selectDirectionalWateringTargets,
 } from "../app/community-garden/lib/wateringSelection.ts";
+
+const personalCareMigration = await readFile(
+  new URL(
+    "../supabase/migrations/20260804031012_basil_personal_watering_care.sql",
+    import.meta.url,
+  ),
+  "utf8",
+);
 
 function flower(id: string, gridX: number, gridY: number, careReady = true) {
   return { id, gridX, gridY, careReady };
@@ -111,7 +120,7 @@ test("watering stays inside the nearby connected flower island", () => {
   ]);
 });
 
-test("only Care-ready flowers join the same connected spray", () => {
+test("Care-ready flowers are preferred while resting flowers remain waterable", () => {
   const targets = selectDirectionalWateringTargets({
     clickedGridX: 2,
     clickedGridY: 2,
@@ -127,13 +136,21 @@ test("only Care-ready flowers join the same connected spray", () => {
       flower("ready-d", 6, 2),
     ],
   });
+  assert.equal(targets[0].id, "ready-a");
   assert.deepEqual(
     new Set(targets.map((target) => target.id)),
-    new Set(["ready-a", "ready-b", "ready-c", "ready-d"]),
+    new Set([
+      "ready-a",
+      "ready-b",
+      "ready-c",
+      "ready-d",
+      "resting-a",
+      "resting-b",
+    ]),
   );
 });
 
-test("already-watered flowers never fill remaining capacity", () => {
+test("resting flowers fill remaining spray capacity", () => {
   const targets = selectDirectionalWateringTargets({
     clickedGridX: 2,
     clickedGridY: 2,
@@ -147,10 +164,15 @@ test("already-watered flowers never fill remaining capacity", () => {
       flower("resting-b", 5, 2, false),
     ],
   });
-  assert.deepEqual(targets.map((target) => target.id), ["ready-a", "ready-b"]);
+  assert.deepEqual(targets.map((target) => target.id), [
+    "ready-a",
+    "ready-b",
+    "resting-a",
+    "resting-b",
+  ]);
 });
 
-test("a flower without a water drop cannot anchor a sequence", () => {
+test("a resting flower can anchor a watering sequence without earning Care", () => {
   const targets = selectDirectionalWateringTargets({
     clickedGridX: 2,
     clickedGridY: 2,
@@ -163,5 +185,29 @@ test("a flower without a water drop cannot anchor a sequence", () => {
       flower("ready-b", 4, 2),
     ],
   });
-  assert.deepEqual(targets, []);
+  assert.equal(targets[0].id, "resting-a");
+  assert.deepEqual(
+    new Set(targets.map((target) => target.id)),
+    new Set(["resting-a", "ready-a", "ready-b"]),
+  );
 });
+
+test("Care eligibility is personal and legacy shared claims are retired", () => {
+  assert.match(
+    personalCareMigration,
+    /left join public\.community_garden_watering_history as personal/,
+  );
+  assert.match(
+    personalCareMigration,
+    /personal\.last_rewarded_at is null[\s\S]*personal\.last_rewarded_at <= checked_at - interval '4 hours'/,
+  );
+  assert.doesNotMatch(
+    personalCareMigration,
+    /insert into public\.community_garden_watering_claims/,
+  );
+  assert.match(
+    personalCareMigration,
+    /update public\.community_garden_watering_claims[\s\S]*where released_at is null/,
+  );
+});
+

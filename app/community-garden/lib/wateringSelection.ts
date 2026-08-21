@@ -72,10 +72,10 @@ function chebyshevDistance(
 
 /**
  * Starts with the directional 2x2 quadrant in front of Mary, then follows a
- * loose chain of Care-ready flowers outward. Already-watered flowers never
- * bridge or fill the chain. Watering must begin on a real Care-ready flower,
- * which remains the first target while up to five connected flowers extend
- * across two deliberate three-flower sprays.
+ * loose chain of living flowers outward. Care-ready flowers are preferred,
+ * but a resting flower can still receive water and can bridge or fill the
+ * chain. The tapped flower remains the first target while up to five connected
+ * flowers extend across two deliberate three-flower sprays.
  */
 export function selectDirectionalWateringTargets({
   clickedGridX,
@@ -92,7 +92,7 @@ export function selectDirectionalWateringTargets({
   const anchorCandidate = candidates.find(
     (candidate) => candidate.id === anchorCandidateId,
   );
-  if (!anchorCandidate?.careReady) return [];
+  if (!anchorCandidate) return [];
 
   const originX = maryGridX <= clickedGridX ? clickedGridX : clickedGridX - 1;
   const originY = maryGridY <= clickedGridY ? clickedGridY : clickedGridY - 1;
@@ -111,7 +111,6 @@ export function selectDirectionalWateringTargets({
   const unitY = directionY / directionLength;
 
   const pool = candidates.filter((candidate) => {
-    if (!candidate.careReady) return false;
     if (
       chebyshevDistance(
         candidate.gridX,
@@ -213,3 +212,4 @@ export function selectDirectionalWateringTargets({
   });
   return [anchor, ...selectedConnected];
 }
+
