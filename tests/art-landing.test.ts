@@ -19,6 +19,14 @@ const nextConfig = readFileSync(
   new URL("../next.config.ts", import.meta.url),
   "utf8",
 );
+const printDetail = readFileSync(
+  new URL("../app/art/prints/[slug]/PrintDetail.tsx", import.meta.url),
+  "utf8",
+);
+const printStyles = readFileSync(
+  new URL("../app/art/prints/[slug]/page.module.css", import.meta.url),
+  "utf8",
+);
 
 test("art landing has a focused identity, portrait, and art-first arrival", () => {
   assert.match(page, /alternates: \{ canonical: "\/art" \}/);
@@ -67,4 +75,24 @@ test("art imagery and controls remain bounded on smaller screens", () => {
 
 test("production serves responsive image derivatives while static export stays compatible", () => {
   assert.match(nextConfig, /images: \{ unoptimized: isGitHubPagesBuild \}/);
+});
+
+test("art landing features Portland Sun as an available print without turning every work into a product", () => {
+  assert.match(page, /id="available"/);
+  assert.match(page, /getArtPrint\("portland-sun"\)/);
+  assert.match(page, /View and buy the print/);
+  assert.match(page, /portlandSun\.canonicalPath/);
+  assert.match(styles, /\.featuredPrintImage img \{[\s\S]*?max-width: 100%;[\s\S]*?height: auto;/);
+});
+
+test("Portland Sun product page is editorial, direct, and honest about mockups", () => {
+  assert.match(printDetail, /Buy the 8 × 8 print/);
+  assert.match(printDetail, /Secure checkout through Stripe/);
+  assert.match(printDetail, /context\.caption/);
+  assert.match(printDetail, /These visualizations show/);
+  assert.match(printDetail, /artwork is sold unframed/);
+  assert.match(printDetail, /<Image/g);
+  assert.match(printDetail, /sizes="\(max-width: 760px\) 100vw, 58vw"/);
+  assert.match(printStyles, /\.artworkFrame img,[\s\S]*?max-width: 100%;/);
+  assert.match(printStyles, /@media \(max-width: 760px\) \{[\s\S]*?\.hero,[\s\S]*?grid-template-columns: 1fr;/);
 });

@@ -24,11 +24,13 @@ test("LazyGrid previews appear quickly for every featured bubble", () => {
   assert.match(honeycomb, /\[COMMUNITY_GARDEN_BUBBLE_ID\]:/);
   assert.match(honeycomb, /\[GROMAS_BUBBLE_ID\]:/);
   assert.match(honeycomb, /\[ART_BUBBLE_ID\]:/);
+  assert.match(honeycomb, /\[PORTLAND_SUN_BUBBLE_ID\]:/);
   assert.match(honeycomb, /\[ABOUT_BUBBLE_ID\]:/);
   assert.match(honeycomb, /kicker: "The Explorers Series"/);
   assert.match(honeycomb, /kicker: "Basil Community Garden"/);
   assert.match(honeycomb, /kicker: "Gromas and the Gobbledygooks"/);
   assert.match(honeycomb, /kicker: "Original Artwork"/);
+  assert.match(honeycomb, /kicker: "Featured print · \$45"/);
   assert.match(honeycomb, /kicker: "About Thomas Raymond Goetz"/);
 });
 
@@ -41,6 +43,7 @@ test("the focused preview content is selected without changing tile routes", () 
   assert.match(honeycomb, /\[COMMUNITY_GARDEN_LINK_ID\]: getBasilOrigin\(\)/);
   assert.match(honeycomb, /\[GROMAS_LINK_ID\]: "\/gromas"/);
   assert.match(honeycomb, /\[ART_LINK_ID\]: "\/art"/);
+  assert.match(honeycomb, /\[PORTLAND_SUN_LINK_ID\]: "\/portland-sun"/);
   assert.match(honeycomb, /\[ABOUT_LINK_ID\]: "\/about"/);
 });
 
@@ -62,4 +65,12 @@ test("The Explorers doorway uses the legible Explorer artwork instead of Monkey"
   );
   assert.match(honeycomb, /src=\{explorersArtwork\}/);
   assert.doesNotMatch(honeycomb, /Monkey\.png/);
+});
+
+test("Portland Sun temporarily occupies the vacant first-ring feature bubble", () => {
+  assert.match(honeycomb, /const PORTLAND_SUN_BUBBLE = \{ q: -1, r: 1 \}/);
+  assert.match(honeycomb, /className=\{styles\.portlandSunLink\}/);
+  assert.match(honeycomb, /href=\{withSiteBasePath\("\/portland-sun"\)\}/);
+  assert.match(honeycomb, /\/art\/portland-sun\/artwork\.jpg/);
+  assert.match(honeycomb, /8 by 8 inch art print/);
 });

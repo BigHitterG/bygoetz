@@ -487,6 +487,119 @@
   font-size: 1.35rem;
 }
 
+.featuredPrint {
+  display: grid;
+  grid-template-columns: minmax(0, 1.08fr) minmax(360px, 0.92fr);
+  color: #fff0ca;
+  background: #8b001d;
+  scroll-margin-top: 88px;
+}
+
+.featuredPrintImage {
+  display: block;
+  min-width: 0;
+  padding: clamp(24px, 4.5vw, 72px);
+  background: #071b45;
+}
+
+.featuredPrintImage img {
+  display: block;
+  width: min(100%, 880px);
+  height: auto;
+  max-width: 100%;
+  margin: auto;
+  box-shadow: 0 24px 70px rgba(1, 8, 24, 0.28);
+}
+
+.featuredPrintCopy {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: clamp(64px, 8vw, 140px) clamp(24px, 6vw, 104px);
+}
+
+.featuredPrintCopy .sectionCode {
+  color: rgba(255, 240, 202, 0.62);
+}
+
+.featuredAvailability {
+  width: fit-content;
+  margin: clamp(46px, 7vw, 94px) 0 0;
+  padding: 7px 11px;
+  border: 1px solid rgba(255, 240, 202, 0.54);
+  border-radius: 999px;
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 0.62rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.featuredPrintCopy h2 {
+  margin: 18px 0 0;
+  font-size: clamp(4rem, 8vw, 9rem);
+  font-weight: 540;
+  letter-spacing: -0.078em;
+  line-height: 0.8;
+}
+
+.featuredPrintCopy > p:not(.sectionCode, .featuredAvailability) {
+  max-width: 590px;
+  margin: 30px 0 0;
+  color: rgba(255, 240, 202, 0.76);
+  font-size: clamp(1rem, 1.35vw, 1.2rem);
+  line-height: 1.6;
+}
+
+.featuredPrintCopy dl {
+  display: grid;
+  margin: 38px 0 0;
+  border-top: 1px solid rgba(255, 240, 202, 0.28);
+}
+
+.featuredPrintCopy dl div {
+  display: grid;
+  grid-template-columns: 108px minmax(0, 1fr);
+  gap: 18px;
+  padding: 13px 0;
+  border-bottom: 1px solid rgba(255, 240, 202, 0.22);
+}
+
+.featuredPrintCopy dt {
+  color: rgba(255, 240, 202, 0.6);
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 0.64rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.featuredPrintCopy dd {
+  margin: 0;
+}
+
+.featuredPrintLink {
+  display: inline-flex;
+  width: fit-content;
+  min-height: 52px;
+  align-items: center;
+  gap: 18px;
+  margin-top: 34px;
+  padding: 0 20px;
+  border-radius: 999px;
+  color: #071b45;
+  background: #fff0ca;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.075em;
+  text-decoration: none;
+  text-transform: uppercase;
+}
+
+.featuredPrintImage:focus-visible,
+.featuredPrintLink:focus-visible {
+  outline: 3px solid #ef891e;
+  outline-offset: 5px;
+}
+
 .worksSection,
 .studioSection,
 .professionalCard,
@@ -1089,6 +1202,27 @@
   .directory {
     padding-top: 72px;
     padding-bottom: 72px;
+  }
+
+  .featuredPrint {
+    grid-template-columns: 1fr;
+    scroll-margin-top: 70px;
+  }
+
+  .featuredPrintImage {
+    padding: 18px;
+  }
+
+  .featuredPrintCopy {
+    padding: 64px 20px 76px;
+  }
+
+  .featuredAvailability {
+    margin-top: 44px;
+  }
+
+  .featuredPrintCopy h2 {
+    font-size: clamp(4.2rem, 21vw, 6.6rem);
   }
 
   .worksSection {

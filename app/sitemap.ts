@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
 import { artSeries, artworks } from "@/lib/art/catalog";
+import { artPrints } from "@/lib/art/prints";
 import { explorerProducts } from "@/lib/explorers/products";
 
 const siteUrl = "https://www.bygoetz.com";
@@ -7,7 +8,7 @@ const siteUrl = "https://www.bygoetz.com";
 export const dynamic = "force-static";
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const updated = new Date("2026-08-17T00:00:00.000Z");
+  const updated = new Date("2026-08-20T00:00:00.000Z");
 
   return [
     {
@@ -40,6 +41,13 @@ export default function sitemap(): MetadataRoute.Sitemap {
       lastModified: updated,
       changeFrequency: "monthly" as const,
       priority: 0.76,
+    })),
+    ...artPrints.map((print) => ({
+      url: `${siteUrl}${print.canonicalPath}`,
+      lastModified: updated,
+      changeFrequency: "monthly" as const,
+      priority: 0.86,
+      images: [`${siteUrl}${print.images[0].src}`],
     })),
     {
       url: `${siteUrl}/explorers`,

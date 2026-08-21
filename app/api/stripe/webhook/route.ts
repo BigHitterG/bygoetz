@@ -15,6 +15,8 @@ import {
   EXPLORERS_PHYSICAL_ORDER_TYPE,
 } from "@/lib/explorers/orderTypes";
 import { processExplorerPhysicalOrder } from "@/lib/explorers/physicalOrders";
+import { ART_PRINT_ORDER_TYPE } from "@/lib/art/orderTypes";
+import { processArtPrintOrder } from "@/lib/art/physicalOrders";
 import { getStripe } from "@/lib/stripe";
 
 export const runtime = "nodejs";
@@ -62,6 +64,8 @@ export async function POST(request: Request) {
             : await fulfillGardenStewardCheckout(session)
           : session.metadata?.order_type === EXPLORERS_PHYSICAL_ORDER_TYPE
             ? await processExplorerPhysicalOrder(session)
+            : session.metadata?.order_type === ART_PRINT_ORDER_TYPE
+              ? await processArtPrintOrder(session)
             : session.metadata?.order_type === EXPLORERS_DIGITAL_ORDER_TYPE
               ? await processExplorerDigitalOrder(session)
               : await fulfillDigitalDownloadCheckout(session);
