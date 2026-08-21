@@ -80,11 +80,15 @@ const GROMAS_LINK_ID = "gromas";
 const ART_BUBBLE = { q: 1, r: -1 };
 const ART_BUBBLE_ID = `${ART_BUBBLE.q}:${ART_BUBBLE.r}`;
 const ART_LINK_ID = "art";
+const PORTLAND_SUN_BUBBLE = { q: -1, r: 1 };
+const PORTLAND_SUN_BUBBLE_ID = `${PORTLAND_SUN_BUBBLE.q}:${PORTLAND_SUN_BUBBLE.r}`;
+const PORTLAND_SUN_LINK_ID = "portland-sun";
 const ABOUT_BUBBLE = { q: 0, r: 1 };
 const ABOUT_BUBBLE_ID = `${ABOUT_BUBBLE.q}:${ABOUT_BUBBLE.r}`;
 const ABOUT_LINK_ID = "about";
 const LINKED_BUBBLE_ROUTES: Record<string, string> = {
   [ART_LINK_ID]: "/art",
+  [PORTLAND_SUN_LINK_ID]: "/portland-sun",
   [ABOUT_LINK_ID]: "/about",
   [EXPLORERS_LINK_ID]: "/explorers",
   [COMMUNITY_GARDEN_LINK_ID]: getBasilOrigin(),
@@ -114,6 +118,12 @@ const FOCUS_OVERLAYS: Record<string, FocusOverlayContent> = {
     title: "Paintings, drawings, and visual worlds",
     description:
       "Enter the studio practice of Thomas Raymond Goetz—selected work, available pieces, portfolio materials, and the process behind them.",
+  },
+  [PORTLAND_SUN_BUBBLE_ID]: {
+    kicker: "Featured print · $45",
+    title: "Portland Sun",
+    description:
+      "A new open-edition 8 × 8 inch art print by Thomas Raymond Goetz, available unframed through secure checkout.",
   },
   [ABOUT_BUBBLE_ID]: {
     kicker: "About Thomas Raymond Goetz",
@@ -642,6 +652,9 @@ export function HoneycombBubbles({
           bubble.q === GROMAS_BUBBLE.q && bubble.r === GROMAS_BUBBLE.r;
         const isArtBubble =
           bubble.q === ART_BUBBLE.q && bubble.r === ART_BUBBLE.r;
+        const isPortlandSunBubble =
+          bubble.q === PORTLAND_SUN_BUBBLE.q &&
+          bubble.r === PORTLAND_SUN_BUBBLE.r;
         const isAboutBubble =
           bubble.q === ABOUT_BUBBLE.q && bubble.r === ABOUT_BUBBLE.r;
 
@@ -664,6 +677,7 @@ export function HoneycombBubbles({
               isCommunityGardenBubble ||
               isGromasBubble ||
               isArtBubble ||
+              isPortlandSunBubble ||
               isAboutBubble
                 ? undefined
                 : true
@@ -737,6 +751,25 @@ export function HoneycombBubbles({
                   className={styles.artPreview}
                   src={artStudioScale}
                   alt="Blue circular painting in Thomas Goetz's studio"
+                  draggable={false}
+                />
+              </a>
+            ) : null}
+            {isPortlandSunBubble ? (
+              <a
+                className={styles.portlandSunLink}
+                data-linked-bubble-id={PORTLAND_SUN_LINK_ID}
+                aria-label="View Portland Sun, an 8 by 8 inch art print by Thomas Raymond Goetz"
+                href={withSiteBasePath("/portland-sun")}
+                onClick={preventPointerClickNavigation}
+              >
+                <Image
+                  className={styles.portlandSunPreview}
+                  src={withSiteBasePath("/art/portland-sun/artwork.jpg")}
+                  alt="Portland Sun, a red, orange, cream, and deep blue digital artwork"
+                  width={1280}
+                  height={1280}
+                  sizes="260px"
                   draggable={false}
                 />
               </a>

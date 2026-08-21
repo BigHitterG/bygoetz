@@ -4,6 +4,12 @@ import Link from "next/link";
 import explorersStudio from "@/public/art/explorers-studio.jpg";
 import workingStudio from "@/public/art/working-studio.jpg";
 import portrait from "@/public/images/about/tj-goetz-founder.jpg";
+import {
+  formatArtPrintPrice,
+  getArtPrint,
+  getArtPrintImage,
+} from "@/lib/art/prints";
+import { withSiteBasePath } from "@/lib/sitePath";
 import { SelectedArtChapters } from "./_components/SelectedArtChapters";
 import { ArtHeroCarousel } from "./ArtHeroCarousel";
 import styles from "./page.module.css";
@@ -42,6 +48,11 @@ const directoryItems = [
 ];
 
 export default function ArtPage() {
+  const portlandSun = getArtPrint("portland-sun");
+  const portlandSunArtwork = portlandSun
+    ? getArtPrintImage(portlandSun, "artwork")
+    : undefined;
+
   return (
     <main className={styles.artPage}>
       <header className={styles.siteHeader}>
@@ -134,6 +145,46 @@ export default function ArtPage() {
         </div>
       </section>
 
+      {portlandSun && portlandSunArtwork ? (
+        <section
+          className={styles.featuredPrint}
+          id="available"
+          aria-labelledby="featured-print-title"
+        >
+          <Link
+            className={styles.featuredPrintImage}
+            href={portlandSun.canonicalPath}
+            aria-label={`View and purchase ${portlandSun.title}`}
+          >
+            <Image
+              src={withSiteBasePath(portlandSunArtwork.src)}
+              alt={portlandSunArtwork.alt}
+              width={portlandSunArtwork.width}
+              height={portlandSunArtwork.height}
+              sizes="(max-width: 820px) 100vw, 52vw"
+            />
+          </Link>
+          <div className={styles.featuredPrintCopy}>
+            <p className={styles.sectionCode}>New print / 03</p>
+            <p className={styles.featuredAvailability}>Available now</p>
+            <h2 id="featured-print-title">{portlandSun.title}</h2>
+            <p>{portlandSun.summary}</p>
+            <dl>
+              <div><dt>Size</dt><dd>8 × 8 in.</dd></div>
+              <div><dt>Edition</dt><dd>{portlandSun.edition.label}</dd></div>
+              <div><dt>Format</dt><dd>Print only · unframed</dd></div>
+              <div>
+                <dt>Price</dt>
+                <dd>{formatArtPrintPrice(portlandSun.unitAmount, portlandSun.currency)}</dd>
+              </div>
+            </dl>
+            <Link className={styles.featuredPrintLink} href={portlandSun.canonicalPath}>
+              View and buy the print <span aria-hidden="true">↗</span>
+            </Link>
+          </div>
+        </section>
+      ) : null}
+
       <section className={styles.worksSection} id="works" aria-labelledby="works-title">
         <div className={styles.sectionHeading}>
           <div>
@@ -171,9 +222,9 @@ export default function ArtPage() {
       </section>
 
       <section className={styles.professionalSection} aria-label="Collector and gallery information">
-        <article className={styles.professionalCard} id="available">
-          <p className={styles.sectionCode}>Collect / 03</p>
-          <h2>Available work</h2>
+        <article className={styles.professionalCard}>
+          <p className={styles.sectionCode}>Studio inquiries / 03B</p>
+          <h2>More available work</h2>
           <p>
             For current availability, pricing, shipping, or a studio appointment,
             request the current works list.

@@ -4,6 +4,7 @@ import { test } from "node:test";
 
 const catalog = readFileSync(new URL("../lib/art/catalog.ts", import.meta.url), "utf8");
 const types = readFileSync(new URL("../lib/art/types.ts", import.meta.url), "utf8");
+const prints = readFileSync(new URL("../lib/art/prints.ts", import.meta.url), "utf8");
 const seriesRoute = readFileSync(
   new URL("../app/art/series/[slug]/page.tsx", import.meta.url),
   "utf8",
@@ -13,6 +14,18 @@ const workRoute = readFileSync(
   "utf8",
 );
 const sitemap = readFileSync(new URL("../app/sitemap.ts", import.meta.url), "utf8");
+const printRoute = readFileSync(
+  new URL("../app/art/prints/[slug]/page.tsx", import.meta.url),
+  "utf8",
+);
+const shortPrintRoute = readFileSync(
+  new URL("../app/portland-sun/page.tsx", import.meta.url),
+  "utf8",
+);
+const checkoutButton = readFileSync(
+  new URL("../app/art/prints/[slug]/CheckoutButton.tsx", import.meta.url),
+  "utf8",
+);
 const gitignore = readFileSync(new URL("../.gitignore", import.meta.url), "utf8");
 
 const publicDerivatives = [
@@ -58,6 +71,41 @@ test("series and work routes are static-export safe", () => {
   }
   assert.match(sitemap, /artSeries\.map/);
   assert.match(sitemap, /artworks\.map/);
+});
+
+test("Portland Sun is a typed, server-owned print offer", () => {
+  assert.match(prints, /export type ArtPrintCatalogItem/);
+  assert.match(prints, /slug: "portland-sun"/);
+  assert.match(prints, /title: "Portland Sun"/);
+  assert.match(prints, /artist: "Thomas Raymond Goetz"/);
+  assert.match(prints, /year: 2026/);
+  assert.match(prints, /medium: "Digital artwork"/);
+  assert.match(prints, /kind: "open"/);
+  assert.match(prints, /width: 8/);
+  assert.match(prints, /height: 8/);
+  assert.match(prints, /framed: false/);
+  assert.match(prints, /unitAmount: 4500/);
+  assert.match(prints, /currency: "usd"/);
+  assert.match(prints, /availability: "available"/);
+});
+
+test("print detail and campaign routes are canonical and static-export safe", () => {
+  assert.match(printRoute, /export const dynamicParams = false/);
+  assert.match(printRoute, /generateStaticParams/);
+  assert.match(printRoute, /generateMetadata/);
+  assert.match(printRoute, /await params/);
+  assert.match(printRoute, /notFound\(\)/);
+  assert.match(shortPrintRoute, /canonical: "\/art\/prints\/portland-sun"/);
+  assert.match(shortPrintRoute, /<PrintDetail print=\{print\} \/>/);
+  assert.match(sitemap, /artPrints\.map/);
+  assert.doesNotMatch(sitemap, /siteUrl\}\/portland-sun/);
+});
+
+test("print checkout sends only a catalog slug and quantity to the server", () => {
+  assert.match(checkoutButton, /\/api\/stripe\/art-print\/checkout/);
+  assert.match(checkoutButton, /JSON\.stringify\(\{ slug, quantity: 1 \}\)/);
+  assert.match(checkoutButton, /window\.location\.assign\(result\.url\)/);
+  assert.doesNotMatch(checkoutButton, /unitAmount|4500|price:/);
 });
 
 test("only lightweight sanitized derivatives enter the public catalog", () => {
